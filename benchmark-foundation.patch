@@ -1,0 +1,447 @@
+diff --git a/src/trd_bot/backtesting/__init__.py b/src/trd_bot/backtesting/__init__.py
+index 187246a..3731f68 100644
+--- a/src/trd_bot/backtesting/__init__.py
++++ b/src/trd_bot/backtesting/__init__.py
+@@ -1,3 +1,12 @@
++from trd_bot.backtesting.benchmarks import (
++    BenchmarkComparison,
++    BenchmarkResult,
++    BenchmarkType,
++    BuyAndHoldBenchmark,
++    ComparisonOutcome,
++    PerformanceComparator,
++    build_benchmark_run_id,
++)
+ from trd_bot.backtesting.engine import BacktestEngine
+ from trd_bot.backtesting.models import (
+     BacktestConfig,
+@@ -21,9 +30,16 @@ __all__ = [
+     "BacktestEventType",
+     "BacktestPerformanceAnalyzer",
+     "BacktestPerformanceReport",
++    "BenchmarkComparison",
++    "BenchmarkResult",
++    "BenchmarkType",
++    "BuyAndHoldBenchmark",
+     "ClosedBacktestTrade",
++    "ComparisonOutcome",
+     "EquityPoint",
+     "ExitReason",
++    "PerformanceComparator",
+     "PositionSide",
+     "build_backtest_event_id",
++    "build_benchmark_run_id",
+ ]
+diff --git a/src/trd_bot/backtesting/benchmarks.py b/src/trd_bot/backtesting/benchmarks.py
+new file mode 100644
+index 0000000..8bd984c
+--- /dev/null
++++ b/src/trd_bot/backtesting/benchmarks.py
+@@ -0,0 +1,242 @@
++import hashlib
++import json
++from decimal import Decimal
++from enum import StrEnum
++from typing import Self
++
++from pydantic import BaseModel, ConfigDict, Field, model_validator
++
++from trd_bot.backtesting.models import (
++    BacktestConfig,
++    BacktestEvent,
++    BacktestEventType,
++    ExitReason,
++    PositionSide,
++    build_backtest_event_id,
++)
++from trd_bot.backtesting.performance import (
++    BacktestPerformanceAnalyzer,
++    BacktestPerformanceReport,
++)
++from trd_bot.research.datasets import DatasetSnapshot
++
++
++class BenchmarkType(StrEnum):
++    """Supported offline research benchmarks."""
++
++    BUY_AND_HOLD = "buy_and_hold"
++
++
++class ComparisonOutcome(StrEnum):
++    """Result of comparing strategy return with benchmark return."""
++
++    STRATEGY = "strategy"
++    BENCHMARK = "benchmark"
++    TIE = "tie"
++
++
++class BenchmarkResult(BaseModel):
++    """Complete result of one deterministic benchmark run."""
++
++    model_config = ConfigDict(frozen=True)
++
++    benchmark_type: BenchmarkType
++    run_id: str = Field(pattern=r"^benchmark-[a-f0-9]{16}$")
++    dataset_id: str = Field(min_length=1)
++    config: BacktestConfig
++    events: tuple[BacktestEvent, ...]
++    performance_report: BacktestPerformanceReport
++
++    @model_validator(mode="after")
++    def validate_result(self) -> Self:
++        if len(self.events) != 2:
++            raise ValueError("buy-and-hold benchmark must contain exactly two events")
++        if self.events[0].event_type != BacktestEventType.POSITION_OPENED:
++            raise ValueError("benchmark must start with a position-opened event")
++        if self.events[1].event_type != BacktestEventType.POSITION_CLOSED:
++            raise ValueError("benchmark must end with a position-closed event")
++        if self.performance_report.run_id != self.run_id:
++            raise ValueError("benchmark performance report run does not match")
++        if self.performance_report.dataset_id != self.dataset_id:
++            raise ValueError("benchmark performance report dataset does not match")
++        if self.performance_report.starting_balance != self.config.starting_balance:
++            raise ValueError("benchmark performance report balance does not match config")
++        return self
++
++
++class BenchmarkComparison(BaseModel):
++    """Risk-aware comparison between one strategy and one benchmark."""
++
++    model_config = ConfigDict(frozen=True)
++
++    strategy_run_id: str = Field(min_length=1)
++    benchmark_run_id: str = Field(pattern=r"^benchmark-[a-f0-9]{16}$")
++    dataset_id: str = Field(min_length=1)
++    strategy_return: Decimal
++    benchmark_return: Decimal
++    return_delta: Decimal
++    net_pnl_delta: Decimal
++    max_drawdown_fraction_delta: Decimal
++    strategy_has_lower_drawdown: bool
++    outcome: ComparisonOutcome
++
++    @model_validator(mode="after")
++    def validate_comparison(self) -> Self:
++        if self.return_delta != self.strategy_return - self.benchmark_return:
++            raise ValueError("return delta is inconsistent with compared returns")
++
++        expected_outcome = ComparisonOutcome.TIE
++        if self.return_delta > 0:
++            expected_outcome = ComparisonOutcome.STRATEGY
++        elif self.return_delta < 0:
++            expected_outcome = ComparisonOutcome.BENCHMARK
++
++        if self.outcome != expected_outcome:
++            raise ValueError("comparison outcome is inconsistent with return delta")
++        return self
++
++
++def build_benchmark_run_id(
++    *,
++    dataset_id: str,
++    benchmark_type: BenchmarkType,
++    config: BacktestConfig,
++) -> str:
++    """Build a deterministic benchmark run identifier."""
++
++    config_payload = json.dumps(
++        config.model_dump(mode="json"),
++        sort_keys=True,
++        separators=(",", ":"),
++    )
++    identity = "::".join([dataset_id, benchmark_type.value, config_payload])
++    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
++    return f"benchmark-{digest[:16]}"
++
++
++class BuyAndHoldBenchmark:
++    """Hold one simulated long position across the complete dataset."""
++
++    def __init__(
++        self,
++        performance_analyzer: BacktestPerformanceAnalyzer | None = None,
++    ) -> None:
++        self._performance_analyzer = performance_analyzer or BacktestPerformanceAnalyzer()
++
++    def run(
++        self,
++        *,
++        dataset: DatasetSnapshot,
++        config: BacktestConfig,
++    ) -> BenchmarkResult:
++        run_id = build_benchmark_run_id(
++            dataset_id=dataset.dataset_id,
++            benchmark_type=BenchmarkType.BUY_AND_HOLD,
++            config=config,
++        )
++
++        first_candle = dataset.candles[0]
++        final_candle = dataset.candles[-1]
++        entry_price = first_candle.open_price * (Decimal("1") + config.slippage_rate)
++        exit_price = final_candle.close_price * (Decimal("1") - config.slippage_rate)
++        allocation = config.starting_balance * config.allocation_fraction
++        quantity = allocation / entry_price
++
++        events = (
++            BacktestEvent(
++                event_id=build_backtest_event_id(
++                    run_id=run_id,
++                    sequence_number=1,
++                    event_type=BacktestEventType.POSITION_OPENED,
++                    timestamp=first_candle.open_time,
++                ),
++                sequence_number=1,
++                event_type=BacktestEventType.POSITION_OPENED,
++                timestamp=first_candle.open_time,
++                pair=dataset.pair,
++                side=PositionSide.LONG,
++                price=entry_price,
++                quantity=quantity,
++                signal_id=self._build_signal_id(run_id),
++                exit_reason=None,
++            ),
++            BacktestEvent(
++                event_id=build_backtest_event_id(
++                    run_id=run_id,
++                    sequence_number=2,
++                    event_type=BacktestEventType.POSITION_CLOSED,
++                    timestamp=final_candle.close_time,
++                ),
++                sequence_number=2,
++                event_type=BacktestEventType.POSITION_CLOSED,
++                timestamp=final_candle.close_time,
++                pair=dataset.pair,
++                side=PositionSide.LONG,
++                price=exit_price,
++                quantity=quantity,
++                signal_id=None,
++                exit_reason=ExitReason.END_OF_DATA,
++            ),
++        )
++
++        performance_report = self._performance_analyzer.analyze(
++            run_id=run_id,
++            dataset_id=dataset.dataset_id,
++            events=events,
++            config=config,
++        )
++
++        return BenchmarkResult(
++            benchmark_type=BenchmarkType.BUY_AND_HOLD,
++            run_id=run_id,
++            dataset_id=dataset.dataset_id,
++            config=config,
++            events=events,
++            performance_report=performance_report,
++        )
++
++    @staticmethod
++    def _build_signal_id(run_id: str) -> str:
++        digest = hashlib.sha256(f"{run_id}::entry".encode()).hexdigest()
++        return f"signal-{digest[:16]}"
++
++
++class PerformanceComparator:
++    """Compare one strategy report with a benchmark result."""
++
++    def compare(
++        self,
++        *,
++        strategy: BacktestPerformanceReport,
++        benchmark: BenchmarkResult,
++    ) -> BenchmarkComparison:
++        benchmark_report = benchmark.performance_report
++
++        if strategy.dataset_id != benchmark.dataset_id:
++            raise ValueError("strategy and benchmark must use the same dataset")
++        if strategy.starting_balance != benchmark_report.starting_balance:
++            raise ValueError("strategy and benchmark must use the same starting balance")
++
++        return_delta = strategy.total_return - benchmark_report.total_return
++        outcome = ComparisonOutcome.TIE
++        if return_delta > 0:
++            outcome = ComparisonOutcome.STRATEGY
++        elif return_delta < 0:
++            outcome = ComparisonOutcome.BENCHMARK
++
++        return BenchmarkComparison(
++            strategy_run_id=strategy.run_id,
++            benchmark_run_id=benchmark.run_id,
++            dataset_id=strategy.dataset_id,
++            strategy_return=strategy.total_return,
++            benchmark_return=benchmark_report.total_return,
++            return_delta=return_delta,
++            net_pnl_delta=strategy.net_pnl - benchmark_report.net_pnl,
++            max_drawdown_fraction_delta=(
++                strategy.max_drawdown_fraction - benchmark_report.max_drawdown_fraction
++            ),
++            strategy_has_lower_drawdown=(
++                strategy.max_drawdown_fraction < benchmark_report.max_drawdown_fraction
++            ),
++            outcome=outcome,
++        )
+diff --git a/tests/test_benchmarks.py b/tests/test_benchmarks.py
+new file mode 100644
+index 0000000..cdc054c
+--- /dev/null
++++ b/tests/test_benchmarks.py
+@@ -0,0 +1,159 @@
++from datetime import UTC, datetime, timedelta
++from decimal import Decimal
++
++import pytest
++
++from trd_bot.backtesting import (
++    BacktestConfig,
++    BenchmarkType,
++    BuyAndHoldBenchmark,
++    ComparisonOutcome,
++    PerformanceComparator,
++    build_benchmark_run_id,
++)
++from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
++from trd_bot.research import DatasetBuilder, DatasetSnapshot
++
++PAIR = TradingPair(base_asset="BTC", quote_asset="USDT")
++
++NO_COST_CONFIG = BacktestConfig(
++    starting_balance=Decimal("10000"),
++    allocation_fraction=Decimal("0.10"),
++    fee_rate=Decimal("0"),
++    slippage_rate=Decimal("0"),
++)
++
++
++def create_dataset(prices: list[str], *, source: str = "test-exchange") -> DatasetSnapshot:
++    start = datetime(2026, 8, 21, 10, tzinfo=UTC)
++    candles = []
++
++    for index, price_text in enumerate(prices):
++        price = Decimal(price_text)
++        open_time = start + timedelta(hours=index)
++        candles.append(
++            OHLCVCandle(
++                source=source,
++                pair=PAIR,
++                timeframe=Timeframe.HOUR_1,
++                open_time=open_time,
++                close_time=open_time + timedelta(hours=1),
++                received_at=start + timedelta(days=1),
++                open_price=price,
++                high_price=price + Decimal("1"),
++                low_price=price - Decimal("1"),
++                close_price=price,
++                volume=Decimal("1000"),
++                is_closed=True,
++            )
++        )
++
++    return DatasetBuilder().build(name="Benchmark dataset", candles=candles)
++
++
++def test_buy_and_hold_uses_first_open_and_final_close() -> None:
++    dataset = create_dataset(["100", "110", "120"])
++
++    result = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++
++    assert result.benchmark_type == BenchmarkType.BUY_AND_HOLD
++    assert result.events[0].timestamp == dataset.candles[0].open_time
++    assert result.events[0].price == Decimal("100")
++    assert result.events[1].timestamp == dataset.candles[-1].close_time
++    assert result.events[1].price == Decimal("120")
++    assert result.performance_report.total_trades == 1
++    assert result.performance_report.net_pnl == Decimal("200")
++
++
++def test_buy_and_hold_applies_costs_and_unfavorable_slippage() -> None:
++    dataset = create_dataset(["100", "120"])
++    config = NO_COST_CONFIG.model_copy(
++        update={"fee_rate": Decimal("0.001"), "slippage_rate": Decimal("0.01")}
++    )
++
++    result = BuyAndHoldBenchmark().run(dataset=dataset, config=config)
++
++    assert result.events[0].price == Decimal("101.00")
++    assert result.events[1].price == Decimal("118.80")
++    assert result.performance_report.total_fees > 0
++    assert result.performance_report.net_pnl < result.performance_report.gross_pnl
++
++
++def test_benchmark_run_is_deterministic() -> None:
++    dataset = create_dataset(["100", "110", "120"])
++
++    first = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++    second = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++
++    assert first == second
++    assert first.run_id == build_benchmark_run_id(
++        dataset_id=dataset.dataset_id,
++        benchmark_type=BenchmarkType.BUY_AND_HOLD,
++        config=NO_COST_CONFIG,
++    )
++
++
++def test_falling_market_produces_loss_and_drawdown() -> None:
++    dataset = create_dataset(["100", "90", "80"])
++
++    result = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++    report = result.performance_report
++
++    assert report.net_pnl == Decimal("-200")
++    assert report.max_drawdown == Decimal("200")
++    assert report.max_drawdown_fraction == Decimal("0.02")
++    assert report.profit_factor == Decimal("0")
++
++
++def test_comparator_identifies_higher_strategy_return() -> None:
++    dataset = create_dataset(["100", "110", "120"])
++    benchmark = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++    larger_allocation = NO_COST_CONFIG.model_copy(update={"allocation_fraction": Decimal("0.20")})
++    strategy_report = (
++        BuyAndHoldBenchmark()
++        .run(
++            dataset=dataset,
++            config=larger_allocation,
++        )
++        .performance_report.model_copy(update={"run_id": "strategy-test"})
++    )
++
++    comparison = PerformanceComparator().compare(
++        strategy=strategy_report,
++        benchmark=benchmark,
++    )
++
++    assert comparison.outcome == ComparisonOutcome.STRATEGY
++    assert comparison.return_delta > 0
++    assert comparison.net_pnl_delta > 0
++
++
++def test_comparator_reports_a_tie_for_equal_performance() -> None:
++    dataset = create_dataset(["100", "110", "120"])
++    benchmark = BuyAndHoldBenchmark().run(dataset=dataset, config=NO_COST_CONFIG)
++    strategy_report = benchmark.performance_report.model_copy(update={"run_id": "strategy-test"})
++
++    comparison = PerformanceComparator().compare(
++        strategy=strategy_report,
++        benchmark=benchmark,
++    )
++
++    assert comparison.outcome == ComparisonOutcome.TIE
++    assert comparison.return_delta == Decimal("0")
++
++
++def test_comparator_rejects_different_datasets() -> None:
++    first_dataset = create_dataset(["100", "110", "120"])
++    second_dataset = create_dataset(["100", "110", "121"], source="other-exchange")
++    benchmark = BuyAndHoldBenchmark().run(dataset=first_dataset, config=NO_COST_CONFIG)
++    other_report = (
++        BuyAndHoldBenchmark()
++        .run(
++            dataset=second_dataset,
++            config=NO_COST_CONFIG,
++        )
++        .performance_report
++    )
++
++    with pytest.raises(ValueError, match="same dataset"):
++        PerformanceComparator().compare(strategy=other_report, benchmark=benchmark)
