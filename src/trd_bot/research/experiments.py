@@ -1,6 +1,7 @@
 import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Self
 
 from pydantic import (
@@ -88,6 +89,12 @@ class ExperimentSummary(BaseModel):
     horizon_candles: int = Field(ge=1)
     parameters: tuple[ExperimentParameter, ...]
     generated_signals: int = Field(ge=0)
+    total_trades: int = Field(ge=0)
+    net_pnl: Decimal
+    total_return: Decimal
+    win_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    max_drawdown_fraction: Decimal = Field(ge=0)
+    profit_factor: Decimal | None = Field(default=None, ge=0)
 
     @classmethod
     def from_experiment(
@@ -103,6 +110,12 @@ class ExperimentSummary(BaseModel):
             horizon_candles=experiment.horizon_candles,
             parameters=experiment.parameters,
             generated_signals=experiment.result.generated_signals,
+            total_trades=experiment.result.performance_report.total_trades,
+            net_pnl=experiment.result.performance_report.net_pnl,
+            total_return=experiment.result.performance_report.total_return,
+            win_rate=experiment.result.performance_report.win_rate,
+            max_drawdown_fraction=(experiment.result.performance_report.max_drawdown_fraction),
+            profit_factor=experiment.result.performance_report.profit_factor,
         )
 
 

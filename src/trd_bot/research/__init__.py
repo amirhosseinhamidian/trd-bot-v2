@@ -17,8 +17,10 @@ from trd_bot.research.experiments import (
     build_experiment_id,
 )
 from trd_bot.research.pipeline import (
+    DEFAULT_RESEARCH_BACKTEST_CONFIG,
     ResearchPipeline,
     ResearchPipelineResult,
+    build_research_backtest_run_id,
 )
 from trd_bot.research.reporting import (
     DirectionMetrics,
@@ -27,6 +29,7 @@ from trd_bot.research.reporting import (
 )
 
 __all__ = [
+    "DEFAULT_RESEARCH_BACKTEST_CONFIG",
     "DatasetBuilder",
     "DatasetSnapshot",
     "DirectionMetrics",
@@ -44,4 +47,5 @@ __all__ = [
     "StrategyEvaluationSummary",
     "StrategyReportBuilder",
     "build_experiment_id",
+    "build_research_backtest_run_id",
 ]

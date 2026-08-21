@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -5,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.dependencies import get_experiment_registry
 from trd_bot.api.pagination import Page, PaginationParams, build_page
+from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import (
     DatasetBuilder,
@@ -53,6 +55,15 @@ class EMACrossoverResearchRequest(BaseModel):
     slow_period: int = Field(default=21, ge=3)
     horizon_candles: int = Field(default=1, ge=1)
 
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
+def _canonical_decimal(value: Decimal) -> str:
+    return format(value.normalize(), "f")
+
 
 def _run_research_pipeline(
     request: EMACrossoverResearchRequest,
@@ -72,6 +83,12 @@ def _run_research_pipeline(
             dataset=dataset,
             strategy=strategy,
             horizon_candles=request.horizon_candles,
+            backtest_config=BacktestConfig(
+                starting_balance=request.starting_balance,
+                allocation_fraction=request.allocation_fraction,
+                fee_rate=request.fee_rate,
+                slippage_rate=request.slippage_rate,
+            ),
         )
 
     except InvalidDatasetError as error:
@@ -124,6 +141,22 @@ def create_ema_crossover_experiment(
             ExperimentParameter(
                 name="slow_period",
                 value=str(request.slow_period),
+            ),
+            ExperimentParameter(
+                name="starting_balance",
+                value=_canonical_decimal(request.starting_balance),
+            ),
+            ExperimentParameter(
+                name="allocation_fraction",
+                value=_canonical_decimal(request.allocation_fraction),
+            ),
+            ExperimentParameter(
+                name="fee_rate",
+                value=_canonical_decimal(request.fee_rate),
+            ),
+            ExperimentParameter(
+                name="slippage_rate",
+                value=_canonical_decimal(request.slippage_rate),
             ),
         ),
     )

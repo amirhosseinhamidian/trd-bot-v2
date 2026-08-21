@@ -189,7 +189,37 @@ def test_api_lists_experiments_idempotently(
 
     assert summary["experiment_id"] == experiment_id
     assert summary["generated_signals"] == 1
+    assert summary["total_trades"] == 1
+    assert "net_pnl" in summary
+    assert "total_return" in summary
+    assert "win_rate" in summary
+    assert "max_drawdown_fraction" in summary
+    assert "profit_factor" in summary
     assert "result" not in summary
+
+
+def test_api_treats_different_backtest_costs_as_different_experiments(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    first_payload = create_request_payload()
+    first_payload["fee_rate"] = "0.001"
+
+    second_payload = create_request_payload()
+    second_payload["fee_rate"] = "0.002"
+
+    first_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=first_payload,
+    )
+    second_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=second_payload,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert first_response.json()["experiment_id"] != second_response.json()["experiment_id"]
+    assert registry.count() == 2
 
 
 def test_api_paginates_experiment_summaries(

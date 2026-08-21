@@ -109,6 +109,10 @@ def test_research_api_runs_complete_pipeline() -> None:
     assert data["generated_signals"] == 1
     assert data["summary"]["resolved_signals"] == 1
     assert data["summary"]["long_metrics"]["correct_signals"] == 1
+    assert data["backtest_run_id"].startswith("backtest-")
+    assert data["backtest_config"]["starting_balance"] == "10000"
+    assert data["performance_report"]["total_trades"] == 1
+    assert len(data["backtest_events"]) == 2
 
 
 def test_research_api_rejects_missing_candle() -> None:

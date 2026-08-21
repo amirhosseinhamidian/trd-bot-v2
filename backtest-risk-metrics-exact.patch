@@ -1,0 +1,684 @@
+diff --git a/src/trd_bot/backtesting/__init__.py b/src/trd_bot/backtesting/__init__.py
+index b29fe1b..187246a 100644
+--- a/src/trd_bot/backtesting/__init__.py
++++ b/src/trd_bot/backtesting/__init__.py
+@@ -11,6 +11,7 @@ from trd_bot.backtesting.performance import (
+     BacktestPerformanceAnalyzer,
+     BacktestPerformanceReport,
+     ClosedBacktestTrade,
++    EquityPoint,
+ )
+
+ __all__ = [
+@@ -21,6 +22,7 @@ __all__ = [
+     "BacktestPerformanceAnalyzer",
+     "BacktestPerformanceReport",
+     "ClosedBacktestTrade",
++    "EquityPoint",
+     "ExitReason",
+     "PositionSide",
+     "build_backtest_event_id",
+diff --git a/src/trd_bot/backtesting/performance.py b/src/trd_bot/backtesting/performance.py
+index ed82de2..a5609c4 100644
+--- a/src/trd_bot/backtesting/performance.py
++++ b/src/trd_bot/backtesting/performance.py
+@@ -23,13 +23,11 @@ class ClosedBacktestTrade(BaseModel):
+     trade_number: int = Field(ge=1)
+     pair: TradingPair
+     side: PositionSide
+-
+     entry_time: datetime
+     exit_time: datetime
+     entry_price: Decimal = Field(gt=0)
+     exit_price: Decimal = Field(gt=0)
+     quantity: Decimal = Field(gt=0)
+-
+     gross_pnl: Decimal
+     fees: Decimal = Field(ge=0)
+     net_pnl: Decimal
+@@ -40,17 +38,42 @@ class ClosedBacktestTrade(BaseModel):
+     def timestamp_must_be_timezone_aware(cls, value: datetime) -> datetime:
+         if value.tzinfo is None or value.utcoffset() is None:
+             raise ValueError("timestamp must include timezone information")
+-
+         return value.astimezone(UTC)
+
+     @model_validator(mode="after")
+     def validate_trade(self) -> Self:
+         if self.exit_time <= self.entry_time:
+             raise ValueError("trade exit time must be after entry time")
+-
+         if self.net_pnl != self.gross_pnl - self.fees:
+             raise ValueError("trade net PnL must equal gross PnL minus fees")
++        return self
++
++
++class EquityPoint(BaseModel):
++    """Realized account equity after one closed simulated trade."""
++
++    model_config = ConfigDict(frozen=True)
++
++    trade_number: int = Field(ge=1)
++    timestamp: datetime
++    balance: Decimal
++    peak_balance: Decimal = Field(gt=0)
++    drawdown: Decimal = Field(ge=0)
++    drawdown_fraction: Decimal = Field(ge=0)
++
++    @field_validator("timestamp")
++    @classmethod
++    def timestamp_must_be_timezone_aware(cls, value: datetime) -> datetime:
++        if value.tzinfo is None or value.utcoffset() is None:
++            raise ValueError("timestamp must include timezone information")
++        return value.astimezone(UTC)
+
++    @model_validator(mode="after")
++    def validate_point(self) -> Self:
++        if self.drawdown != self.peak_balance - self.balance:
++            raise ValueError("drawdown must equal peak balance minus current balance")
++        if self.drawdown_fraction != self.drawdown / self.peak_balance:
++            raise ValueError("drawdown fraction is inconsistent with drawdown")
+         return self
+
+
+@@ -61,49 +84,83 @@ class BacktestPerformanceReport(BaseModel):
+
+     run_id: str = Field(min_length=1, max_length=200)
+     dataset_id: str = Field(min_length=1)
+-
+     starting_balance: Decimal = Field(gt=0)
+     ending_balance: Decimal
+     gross_pnl: Decimal
+     total_fees: Decimal = Field(ge=0)
+     net_pnl: Decimal
+     total_return: Decimal
+-
++    gross_profit: Decimal = Field(ge=0)
++    gross_loss: Decimal = Field(ge=0)
++    profit_factor: Decimal | None = Field(default=None, ge=0)
++    peak_balance: Decimal = Field(gt=0)
++    max_drawdown: Decimal = Field(ge=0)
++    max_drawdown_fraction: Decimal = Field(ge=0)
+     total_trades: int = Field(ge=0)
+     winning_trades: int = Field(ge=0)
+     losing_trades: int = Field(ge=0)
+     flat_trades: int = Field(ge=0)
+     win_rate: Decimal | None = Field(default=None, ge=0, le=1)
+-
+     trades: tuple[ClosedBacktestTrade, ...] = ()
++    equity_curve: tuple[EquityPoint, ...] = ()
+
+     @model_validator(mode="after")
+     def validate_report(self) -> Self:
+         if self.total_trades != len(self.trades):
+             raise ValueError("total trades must match the trade collection")
+-
++        if self.total_trades != len(self.equity_curve):
++            raise ValueError("total trades must match the equity curve")
+         outcomes = self.winning_trades + self.losing_trades + self.flat_trades
+         if outcomes != self.total_trades:
+             raise ValueError("trade outcome counts must equal total trades")
+-
+         if self.ending_balance != self.starting_balance + self.net_pnl:
+             raise ValueError("ending balance must equal starting balance plus net PnL")
+-
+         if self.net_pnl != self.gross_pnl - self.total_fees:
+             raise ValueError("net PnL must equal gross PnL minus fees")
+-
++        if self.net_pnl != self.gross_profit - self.gross_loss:
++            raise ValueError("net PnL must equal gross profit minus gross loss")
+         if self.total_return != self.net_pnl / self.starting_balance:
+             raise ValueError("total return must equal net PnL divided by starting balance")
+
++        expected_profit_factor = (
++            self.gross_profit / self.gross_loss if self.gross_loss > 0 else None
++        )
++        if self.profit_factor != expected_profit_factor:
++            raise ValueError("profit factor is inconsistent with profit and loss")
++
++        expected_peak_balance = max(
++            (point.peak_balance for point in self.equity_curve),
++            default=self.starting_balance,
++        )
++        if self.peak_balance != expected_peak_balance:
++            raise ValueError("peak balance is inconsistent with the equity curve")
++
++        expected_max_drawdown = max(
++            (point.drawdown for point in self.equity_curve),
++            default=Decimal("0"),
++        )
++        if self.max_drawdown != expected_max_drawdown:
++            raise ValueError("maximum drawdown is inconsistent with the equity curve")
++
++        expected_max_drawdown_fraction = max(
++            (point.drawdown_fraction for point in self.equity_curve),
++            default=Decimal("0"),
++        )
++        if self.max_drawdown_fraction != expected_max_drawdown_fraction:
++            raise ValueError("maximum drawdown fraction is inconsistent with the equity curve")
++
++        for expected_trade_number, point in enumerate(self.equity_curve, start=1):
++            if point.trade_number != expected_trade_number:
++                raise ValueError("equity curve trade numbers must be continuous")
++
++        if self.equity_curve and self.equity_curve[-1].balance != self.ending_balance:
++            raise ValueError("final equity point must match ending balance")
+         if self.total_trades == 0 and self.win_rate is not None:
+             raise ValueError("an empty report cannot have a win rate")
+-
+         if self.total_trades > 0:
+             expected_win_rate = Decimal(self.winning_trades) / Decimal(self.total_trades)
+-
+             if self.win_rate != expected_win_rate:
+                 raise ValueError("win rate is inconsistent with trade outcomes")
+-
+         return self
+
+
+@@ -120,12 +177,10 @@ class BacktestPerformanceAnalyzer:
+     ) -> BacktestPerformanceReport:
+         if not run_id.strip():
+             raise ValueError("run ID cannot be empty")
+-
+         if not dataset_id.strip():
+             raise ValueError("dataset ID cannot be empty")
+
+         self._validate_sequence(events)
+-
+         trades: list[ClosedBacktestTrade] = []
+         opened_event: BacktestEvent | None = None
+
+@@ -133,13 +188,10 @@ class BacktestPerformanceAnalyzer:
+             if event.event_type == BacktestEventType.POSITION_OPENED:
+                 if opened_event is not None:
+                     raise ValueError("cannot open a position while another position is open")
+-
+                 opened_event = event
+                 continue
+-
+             if opened_event is None:
+                 raise ValueError("cannot close a position before it is opened")
+-
+             trades.append(
+                 self._build_trade(
+                     trade_number=len(trades) + 1,
+@@ -148,29 +200,43 @@ class BacktestPerformanceAnalyzer:
+                     fee_rate=config.fee_rate,
+                 )
+             )
+-
+             opened_event = None
+
+         if opened_event is not None:
+             raise ValueError("backtest events contain an unclosed position")
+
+-        gross_pnl = sum(
+-            (trade.gross_pnl for trade in trades),
++        gross_pnl = sum((trade.gross_pnl for trade in trades), start=Decimal("0"))
++        total_fees = sum((trade.fees for trade in trades), start=Decimal("0"))
++        net_pnl = gross_pnl - total_fees
++        gross_profit = sum(
++            (trade.net_pnl for trade in trades if trade.net_pnl > 0),
+             start=Decimal("0"),
+         )
+-
+-        total_fees = sum(
+-            (trade.fees for trade in trades),
++        gross_loss = sum(
++            (-trade.net_pnl for trade in trades if trade.net_pnl < 0),
+             start=Decimal("0"),
+         )
+-
+-        net_pnl = gross_pnl - total_fees
+-
++        profit_factor = gross_profit / gross_loss if gross_loss > 0 else None
++        equity_curve = self._build_equity_curve(
++            trades=trades,
++            starting_balance=config.starting_balance,
++        )
++        peak_balance = max(
++            (point.peak_balance for point in equity_curve),
++            default=config.starting_balance,
++        )
++        max_drawdown = max(
++            (point.drawdown for point in equity_curve),
++            default=Decimal("0"),
++        )
++        max_drawdown_fraction = max(
++            (point.drawdown_fraction for point in equity_curve),
++            default=Decimal("0"),
++        )
+         winning_trades = sum(trade.net_pnl > 0 for trade in trades)
+         losing_trades = sum(trade.net_pnl < 0 for trade in trades)
+         flat_trades = sum(trade.net_pnl == 0 for trade in trades)
+         total_trades = len(trades)
+-
+         win_rate = Decimal(winning_trades) / Decimal(total_trades) if total_trades else None
+
+         return BacktestPerformanceReport(
+@@ -182,14 +248,49 @@ class BacktestPerformanceAnalyzer:
+             total_fees=total_fees,
+             net_pnl=net_pnl,
+             total_return=net_pnl / config.starting_balance,
++            gross_profit=gross_profit,
++            gross_loss=gross_loss,
++            profit_factor=profit_factor,
++            peak_balance=peak_balance,
++            max_drawdown=max_drawdown,
++            max_drawdown_fraction=max_drawdown_fraction,
+             total_trades=total_trades,
+             winning_trades=winning_trades,
+             losing_trades=losing_trades,
+             flat_trades=flat_trades,
+             win_rate=win_rate,
+             trades=tuple(trades),
++            equity_curve=equity_curve,
+         )
+
++    @staticmethod
++    def _build_equity_curve(
++        *,
++        trades: Sequence[ClosedBacktestTrade],
++        starting_balance: Decimal,
++    ) -> tuple[EquityPoint, ...]:
++        balance = starting_balance
++        peak_balance = starting_balance
++        points: list[EquityPoint] = []
++
++        for trade in trades:
++            balance += trade.net_pnl
++            peak_balance = max(peak_balance, balance)
++            drawdown = peak_balance - balance
++
++            points.append(
++                EquityPoint(
++                    trade_number=trade.trade_number,
++                    timestamp=trade.exit_time,
++                    balance=balance,
++                    peak_balance=peak_balance,
++                    drawdown=drawdown,
++                    drawdown_fraction=drawdown / peak_balance,
++                )
++            )
++
++        return tuple(points)
++
+     @staticmethod
+     def _validate_sequence(events: Sequence[BacktestEvent]) -> None:
+         for expected_sequence, event in enumerate(events, start=1):
+@@ -206,16 +307,12 @@ class BacktestPerformanceAnalyzer:
+     ) -> ClosedBacktestTrade:
+         if closed_event.event_type != BacktestEventType.POSITION_CLOSED:
+             raise ValueError("expected a position-closed event")
+-
+         if opened_event.pair != closed_event.pair:
+             raise ValueError("trade events must use the same pair")
+-
+         if opened_event.side != closed_event.side:
+             raise ValueError("trade events must use the same position side")
+-
+         if opened_event.quantity != closed_event.quantity:
+             raise ValueError("trade events must use the same quantity")
+-
+         if closed_event.exit_reason is None:
+             raise ValueError("closed trade requires an exit reason")
+
+diff --git a/src/trd_bot/research/experiments.py b/src/trd_bot/research/experiments.py
+index 9b19519..e2dadb5 100644
+--- a/src/trd_bot/research/experiments.py
++++ b/src/trd_bot/research/experiments.py
+@@ -93,6 +93,8 @@ class ExperimentSummary(BaseModel):
+     net_pnl: Decimal
+     total_return: Decimal
+     win_rate: Decimal | None = Field(default=None, ge=0, le=1)
++    max_drawdown_fraction: Decimal = Field(ge=0)
++    profit_factor: Decimal | None = Field(default=None, ge=0)
+
+     @classmethod
+     def from_experiment(
+@@ -112,6 +114,8 @@ class ExperimentSummary(BaseModel):
+             net_pnl=experiment.result.performance_report.net_pnl,
+             total_return=experiment.result.performance_report.total_return,
+             win_rate=experiment.result.performance_report.win_rate,
++            max_drawdown_fraction=(experiment.result.performance_report.max_drawdown_fraction),
++            profit_factor=experiment.result.performance_report.profit_factor,
+         )
+
+
+diff --git a/tests/test_backtest_performance.py b/tests/test_backtest_performance.py
+index 646ce02..91e28ec 100644
+--- a/tests/test_backtest_performance.py
++++ b/tests/test_backtest_performance.py
+@@ -13,10 +13,7 @@ from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
+ from trd_bot.research import DatasetBuilder, DatasetSnapshot
+ from trd_bot.strategies import SignalDirection, StrategySignal, build_signal_id
+
+-PAIR = TradingPair(
+-    base_asset="BTC",
+-    quote_asset="USDT",
+-)
++PAIR = TradingPair(base_asset="BTC", quote_asset="USDT")
+
+ NO_COST_CONFIG = BacktestConfig(
+     starting_balance=Decimal("10000"),
+@@ -28,11 +25,9 @@ NO_COST_CONFIG = BacktestConfig(
+
+ def create_dataset(prices: list[str]) -> DatasetSnapshot:
+     candles = []
+-
+     for index, price_text in enumerate(prices):
+         price = Decimal(price_text)
+         hour = 10 + index
+-
+         candles.append(
+             OHLCVCandle(
+                 source="test-exchange",
+@@ -49,11 +44,7 @@ def create_dataset(prices: list[str]) -> DatasetSnapshot:
+                 is_closed=True,
+             )
+         )
+-
+-    return DatasetBuilder().build(
+-        name="Backtest performance dataset",
+-        candles=candles,
+-    )
++    return DatasetBuilder().build(name="Backtest performance dataset", candles=candles)
+
+
+ def create_signal(
+@@ -63,7 +54,6 @@ def create_signal(
+     direction: SignalDirection,
+ ) -> StrategySignal:
+     candle = dataset.candles[candle_index]
+-
+     signal_id = build_signal_id(
+         strategy_name="test-strategy",
+         strategy_version="1.0.0",
+@@ -71,9 +61,7 @@ def create_signal(
+         candle_close_time=candle.close_time,
+         direction=direction,
+     )
+-
+     score = Decimal("0.5") if direction == SignalDirection.LONG else Decimal("-0.5")
+-
+     return StrategySignal(
+         signal_id=signal_id,
+         strategy_name="test-strategy",
+@@ -97,81 +85,62 @@ def test_empty_events_produce_an_empty_report() -> None:
+         events=(),
+         config=NO_COST_CONFIG,
+     )
+-
+     assert report.total_trades == 0
+     assert report.ending_balance == Decimal("10000")
+     assert report.net_pnl == Decimal("0")
+     assert report.total_return == Decimal("0")
+     assert report.win_rate is None
+     assert report.trades == ()
++    assert report.equity_curve == ()
++    assert report.peak_balance == Decimal("10000")
++    assert report.max_drawdown == Decimal("0")
++    assert report.max_drawdown_fraction == Decimal("0")
++    assert report.profit_factor is None
+
+
+ def test_long_trade_performance_includes_fees() -> None:
+     dataset = create_dataset(["100", "100", "120"])
+-
+-    signal = create_signal(
+-        dataset=dataset,
+-        candle_index=0,
+-        direction=SignalDirection.LONG,
+-    )
+-
+-    config = NO_COST_CONFIG.model_copy(
+-        update={"fee_rate": Decimal("0.001")},
+-    )
+-
++    signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.LONG)
++    config = NO_COST_CONFIG.model_copy(update={"fee_rate": Decimal("0.001")})
+     events = BacktestEngine().run(
+-        run_id="long-with-fees",
+-        dataset=dataset,
+-        signals=[signal],
+-        config=config,
++        run_id="long-with-fees", dataset=dataset, signals=[signal], config=config
+     )
+-
+     report = BacktestPerformanceAnalyzer().analyze(
+         run_id="long-with-fees",
+         dataset_id=dataset.dataset_id,
+         events=events,
+         config=config,
+     )
+-
+     trade = report.trades[0]
+-
+     assert trade.side == PositionSide.LONG
+     assert trade.quantity == Decimal("10")
+     assert trade.gross_pnl == Decimal("200")
+     assert trade.fees == Decimal("2.200")
+     assert trade.net_pnl == Decimal("197.800")
+-
+     assert report.ending_balance == Decimal("10197.800")
+     assert report.total_return == Decimal("0.01978")
+     assert report.winning_trades == 1
+     assert report.win_rate == Decimal("1")
++    assert report.gross_profit == Decimal("197.800")
++    assert report.gross_loss == Decimal("0")
++    assert report.profit_factor is None
++    assert report.equity_curve[0].balance == report.ending_balance
++    assert report.max_drawdown == Decimal("0")
+
+
+ def test_short_trade_profit_is_calculated_correctly() -> None:
+     dataset = create_dataset(["100", "100", "80"])
+-
+-    signal = create_signal(
+-        dataset=dataset,
+-        candle_index=0,
+-        direction=SignalDirection.SHORT,
+-    )
+-
++    signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.SHORT)
+     events = BacktestEngine().run(
+-        run_id="short-profit",
+-        dataset=dataset,
+-        signals=[signal],
+-        config=NO_COST_CONFIG,
++        run_id="short-profit", dataset=dataset, signals=[signal], config=NO_COST_CONFIG
+     )
+-
+     report = BacktestPerformanceAnalyzer().analyze(
+         run_id="short-profit",
+         dataset_id=dataset.dataset_id,
+         events=events,
+         config=NO_COST_CONFIG,
+     )
+-
+     trade = report.trades[0]
+-
+     assert trade.side == PositionSide.SHORT
+     assert trade.gross_pnl == Decimal("200")
+     assert trade.net_pnl == Decimal("200")
+@@ -180,56 +149,80 @@ def test_short_trade_profit_is_calculated_correctly() -> None:
+
+ def test_reversal_produces_separate_trade_outcomes() -> None:
+     dataset = create_dataset(["100", "100", "90", "80"])
+-
+-    long_signal = create_signal(
+-        dataset=dataset,
+-        candle_index=0,
+-        direction=SignalDirection.LONG,
+-    )
+-
+-    short_signal = create_signal(
+-        dataset=dataset,
+-        candle_index=1,
+-        direction=SignalDirection.SHORT,
+-    )
+-
++    long_signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.LONG)
++    short_signal = create_signal(dataset=dataset, candle_index=1, direction=SignalDirection.SHORT)
+     events = BacktestEngine().run(
+         run_id="reversal-performance",
+         dataset=dataset,
+         signals=[long_signal, short_signal],
+         config=NO_COST_CONFIG,
+     )
+-
+     report = BacktestPerformanceAnalyzer().analyze(
+         run_id="reversal-performance",
+         dataset_id=dataset.dataset_id,
+         events=events,
+         config=NO_COST_CONFIG,
+     )
+-
+     assert report.total_trades == 2
+     assert report.winning_trades == 1
+     assert report.losing_trades == 1
+     assert report.flat_trades == 0
+     assert report.win_rate == Decimal("0.5")
++    assert len(report.equity_curve) == 2
++    assert report.equity_curve[0].balance == Decimal("9900")
++    assert report.max_drawdown == Decimal("100")
++    assert report.max_drawdown_fraction == Decimal("0.01")
++    assert report.profit_factor == report.gross_profit / report.gross_loss
+
+
+-def test_analyzer_rejects_unordered_event_sequences() -> None:
+-    dataset = create_dataset(["100", "100", "120"])
+-
+-    signal = create_signal(
++def test_equity_curve_tracks_new_peaks_and_later_drawdown() -> None:
++    dataset = create_dataset(["100", "100", "120", "110", "90"])
++    long_signal = create_signal(
+         dataset=dataset,
+         candle_index=0,
+         direction=SignalDirection.LONG,
+     )
++    short_signal = create_signal(
++        dataset=dataset,
++        candle_index=1,
++        direction=SignalDirection.SHORT,
++    )
++    final_long_signal = create_signal(
++        dataset=dataset,
++        candle_index=2,
++        direction=SignalDirection.LONG,
++    )
+
+     events = BacktestEngine().run(
+-        run_id="unordered-events",
++        run_id="equity-drawdown",
+         dataset=dataset,
+-        signals=[signal],
++        signals=[long_signal, short_signal, final_long_signal],
++        config=NO_COST_CONFIG,
++    )
++    report = BacktestPerformanceAnalyzer().analyze(
++        run_id="equity-drawdown",
++        dataset_id=dataset.dataset_id,
++        events=events,
+         config=NO_COST_CONFIG,
+     )
+
++    assert report.total_trades == 3
++    assert len(report.equity_curve) == 3
++    assert report.equity_curve[-1].balance == report.ending_balance
++    assert report.peak_balance > report.starting_balance
++    assert report.max_drawdown == report.equity_curve[-1].drawdown
++    assert report.max_drawdown_fraction > Decimal("0")
++    assert report.gross_profit > Decimal("0")
++    assert report.gross_loss > Decimal("0")
++    assert report.profit_factor == report.gross_profit / report.gross_loss
++
++
++def test_analyzer_rejects_unordered_event_sequences() -> None:
++    dataset = create_dataset(["100", "100", "120"])
++    signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.LONG)
++    events = BacktestEngine().run(
++        run_id="unordered-events", dataset=dataset, signals=[signal], config=NO_COST_CONFIG
++    )
+     with pytest.raises(ValueError, match="continuous and ordered"):
+         BacktestPerformanceAnalyzer().analyze(
+             run_id="unordered-events",
+@@ -241,24 +234,11 @@ def test_analyzer_rejects_unordered_event_sequences() -> None:
+
+ def test_analyzer_rejects_mismatched_trade_sides() -> None:
+     dataset = create_dataset(["100", "100", "120"])
+-
+-    signal = create_signal(
+-        dataset=dataset,
+-        candle_index=0,
+-        direction=SignalDirection.LONG,
+-    )
+-
++    signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.LONG)
+     events = BacktestEngine().run(
+-        run_id="mismatched-sides",
+-        dataset=dataset,
+-        signals=[signal],
+-        config=NO_COST_CONFIG,
++        run_id="mismatched-sides", dataset=dataset, signals=[signal], config=NO_COST_CONFIG
+     )
+-
+-    invalid_close = events[1].model_copy(
+-        update={"side": PositionSide.SHORT},
+-    )
+-
++    invalid_close = events[1].model_copy(update={"side": PositionSide.SHORT})
+     with pytest.raises(ValueError, match="same position side"):
+         BacktestPerformanceAnalyzer().analyze(
+             run_id="mismatched-sides",
+@@ -270,20 +250,10 @@ def test_analyzer_rejects_mismatched_trade_sides() -> None:
+
+ def test_analyzer_rejects_an_unclosed_position() -> None:
+     dataset = create_dataset(["100", "100", "120"])
+-
+-    signal = create_signal(
+-        dataset=dataset,
+-        candle_index=0,
+-        direction=SignalDirection.LONG,
+-    )
+-
++    signal = create_signal(dataset=dataset, candle_index=0, direction=SignalDirection.LONG)
+     events = BacktestEngine().run(
+-        run_id="unclosed-position",
+-        dataset=dataset,
+-        signals=[signal],
+-        config=NO_COST_CONFIG,
++        run_id="unclosed-position", dataset=dataset, signals=[signal], config=NO_COST_CONFIG
+     )
+-
+     with pytest.raises(ValueError, match="unclosed position"):
+         BacktestPerformanceAnalyzer().analyze(
+             run_id="unclosed-position",
+diff --git a/tests/test_experiment_api.py b/tests/test_experiment_api.py
+index 11d9708..aab526e 100644
+--- a/tests/test_experiment_api.py
++++ b/tests/test_experiment_api.py
+@@ -193,6 +193,8 @@ def test_api_lists_experiments_idempotently(
+     assert "net_pnl" in summary
+     assert "total_return" in summary
+     assert "win_rate" in summary
++    assert "max_drawdown_fraction" in summary
++    assert "profit_factor" in summary
+     assert "result" not in summary
+
+
+diff --git a/tests/test_experiments.py b/tests/test_experiments.py
+index 50bc1c3..0c1fb5a 100644
+--- a/tests/test_experiments.py
++++ b/tests/test_experiments.py
+@@ -225,6 +225,10 @@ def test_experiment_summary_excludes_full_result() -> None:
+     assert summary.net_pnl == experiment.result.performance_report.net_pnl
+     assert summary.total_return == experiment.result.performance_report.total_return
+     assert summary.win_rate == experiment.result.performance_report.win_rate
++    assert (
++        summary.max_drawdown_fraction == experiment.result.performance_report.max_drawdown_fraction
++    )
++    assert summary.profit_factor == experiment.result.performance_report.profit_factor
+     assert "result" not in payload
+
+

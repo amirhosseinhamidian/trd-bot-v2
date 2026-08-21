@@ -221,6 +221,14 @@ def test_experiment_summary_excludes_full_result() -> None:
     assert summary.experiment_id == experiment.experiment_id
     assert summary.dataset_id == experiment.dataset_id
     assert summary.generated_signals == experiment.result.generated_signals
+    assert summary.total_trades == experiment.result.performance_report.total_trades
+    assert summary.net_pnl == experiment.result.performance_report.net_pnl
+    assert summary.total_return == experiment.result.performance_report.total_return
+    assert summary.win_rate == experiment.result.performance_report.win_rate
+    assert (
+        summary.max_drawdown_fraction == experiment.result.performance_report.max_drawdown_fraction
+    )
+    assert summary.profit_factor == experiment.result.performance_report.profit_factor
     assert "result" not in payload
 
 

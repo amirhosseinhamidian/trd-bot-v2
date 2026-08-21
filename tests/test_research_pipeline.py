@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from trd_bot.backtesting import BacktestConfig
 from trd_bot.domain.market_data import (
     OHLCVCandle,
     Timeframe,
@@ -105,6 +106,10 @@ def test_pipeline_runs_complete_research_workflow() -> None:
     assert result.evaluation_report.resolved_signals == 1
     assert result.summary.long_metrics.correct_signals == 1
     assert result.summary.overall_hit_rate == Decimal("1")
+    assert result.backtest_run_id.startswith("backtest-")
+    assert len(result.backtest_events) == 2
+    assert result.performance_report.total_trades == 1
+    assert result.performance_report.dataset_id == dataset.dataset_id
 
 
 def test_pipeline_handles_strategy_without_signals() -> None:
@@ -181,3 +186,50 @@ def test_pipeline_is_deterministic() -> None:
     assert first_result.signals == second_result.signals
     assert first_result.evaluation_report == second_result.evaluation_report
     assert first_result.summary == second_result.summary
+    assert first_result.backtest_run_id == second_result.backtest_run_id
+    assert first_result.backtest_events == second_result.backtest_events
+    assert first_result.performance_report == second_result.performance_report
+
+
+def test_pipeline_backtest_costs_change_performance_and_run_id() -> None:
+    dataset = create_dataset(
+        [
+            ("5", "5"),
+            ("4", "4"),
+            ("3", "3"),
+            ("4", "4"),
+            ("6", "6"),
+            ("7", "8"),
+        ]
+    )
+
+    strategy = EMACrossoverStrategy(
+        fast_period=2,
+        slow_period=3,
+    )
+
+    no_cost_result = ResearchPipeline().run(
+        dataset=dataset,
+        strategy=strategy,
+        backtest_config=BacktestConfig(
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0"),
+            slippage_rate=Decimal("0"),
+        ),
+    )
+
+    cost_result = ResearchPipeline().run(
+        dataset=dataset,
+        strategy=strategy,
+        backtest_config=BacktestConfig(
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.01"),
+            slippage_rate=Decimal("0"),
+        ),
+    )
+
+    assert no_cost_result.backtest_run_id != cost_result.backtest_run_id
+    assert cost_result.performance_report.total_fees > Decimal("0")
+    assert cost_result.performance_report.net_pnl < no_cost_result.performance_report.net_pnl
