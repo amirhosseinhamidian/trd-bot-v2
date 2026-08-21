@@ -7,6 +7,12 @@ from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from trd_bot.backtesting.benchmarks import (
+    BenchmarkComparison,
+    BenchmarkResult,
+    BuyAndHoldBenchmark,
+    PerformanceComparator,
+)
 from trd_bot.backtesting.models import BacktestConfig, BacktestEvent
 from trd_bot.backtesting.performance import (
     BacktestPerformanceAnalyzer,
@@ -84,6 +90,8 @@ class ResearchPipelineResult(BaseModel):
     backtest_config: BacktestConfig
     backtest_events: tuple[BacktestEvent, ...]
     performance_report: BacktestPerformanceReport
+    benchmark_result: BenchmarkResult
+    benchmark_comparison: BenchmarkComparison
 
     @model_validator(mode="after")
     def validate_result(self) -> Self:
@@ -108,6 +116,28 @@ class ResearchPipelineResult(BaseModel):
         if self.performance_report.starting_balance != self.backtest_config.starting_balance:
             raise ValueError("performance report balance does not match backtest config")
 
+        if self.benchmark_result.dataset_id != self.dataset_id:
+            raise ValueError("benchmark dataset does not match pipeline dataset")
+
+        if self.benchmark_result.config != self.backtest_config:
+            raise ValueError("benchmark config does not match backtest config")
+
+        if self.benchmark_comparison.dataset_id != self.dataset_id:
+            raise ValueError("benchmark comparison dataset does not match")
+
+        if self.benchmark_comparison.strategy_run_id != self.backtest_run_id:
+            raise ValueError("benchmark comparison strategy run does not match")
+
+        if self.benchmark_comparison.benchmark_run_id != self.benchmark_result.run_id:
+            raise ValueError("benchmark comparison benchmark run does not match")
+
+        if self.benchmark_comparison.strategy_return != self.performance_report.total_return:
+            raise ValueError("benchmark comparison strategy return does not match")
+
+        benchmark_return = self.benchmark_result.performance_report.total_return
+        if self.benchmark_comparison.benchmark_return != benchmark_return:
+            raise ValueError("benchmark comparison benchmark return does not match")
+
         return self
 
 
@@ -121,6 +151,8 @@ class ResearchPipeline:
         report_builder: StrategyReportBuilder | None = None,
         backtest_engine: BacktestEngine | None = None,
         performance_analyzer: BacktestPerformanceAnalyzer | None = None,
+        benchmark_runner: BuyAndHoldBenchmark | None = None,
+        performance_comparator: PerformanceComparator | None = None,
     ) -> None:
         if backtest_engine is None:
             from trd_bot.backtesting.engine import BacktestEngine
@@ -131,6 +163,8 @@ class ResearchPipeline:
         self._report_builder = report_builder or StrategyReportBuilder()
         self._backtest_engine = backtest_engine
         self._performance_analyzer = performance_analyzer or BacktestPerformanceAnalyzer()
+        self._benchmark_runner = benchmark_runner or BuyAndHoldBenchmark()
+        self._performance_comparator = performance_comparator or PerformanceComparator()
 
     def run(
         self,
@@ -173,6 +207,16 @@ class ResearchPipeline:
             config=effective_backtest_config,
         )
 
+        benchmark_result = self._benchmark_runner.run(
+            dataset=dataset,
+            config=effective_backtest_config,
+        )
+
+        benchmark_comparison = self._performance_comparator.compare(
+            strategy=performance_report,
+            benchmark=benchmark_result,
+        )
+
         return ResearchPipelineResult(
             dataset_id=dataset.dataset_id,
             strategy_name=strategy.name,
@@ -185,4 +229,6 @@ class ResearchPipeline:
             backtest_config=effective_backtest_config,
             backtest_events=backtest_events,
             performance_report=performance_report,
+            benchmark_result=benchmark_result,
+            benchmark_comparison=benchmark_comparison,
         )

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import hashlib
 import json
 from decimal import Decimal
 from enum import StrEnum
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -18,7 +20,9 @@ from trd_bot.backtesting.performance import (
     BacktestPerformanceAnalyzer,
     BacktestPerformanceReport,
 )
-from trd_bot.research.datasets import DatasetSnapshot
+
+if TYPE_CHECKING:
+    from trd_bot.research.datasets import DatasetSnapshot
 
 
 class BenchmarkType(StrEnum):

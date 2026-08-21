@@ -113,6 +113,11 @@ def test_research_api_runs_complete_pipeline() -> None:
     assert data["backtest_config"]["starting_balance"] == "10000"
     assert data["performance_report"]["total_trades"] == 1
     assert len(data["backtest_events"]) == 2
+    assert data["benchmark_result"]["benchmark_type"] == "buy_and_hold"
+    assert data["benchmark_result"]["dataset_id"] == data["dataset_id"]
+    assert data["benchmark_result"]["performance_report"]["total_trades"] == 1
+    assert data["benchmark_comparison"]["strategy_run_id"] == data["backtest_run_id"]
+    assert data["benchmark_comparison"]["benchmark_run_id"] == data["benchmark_result"]["run_id"]
 
 
 def test_research_api_rejects_missing_candle() -> None:

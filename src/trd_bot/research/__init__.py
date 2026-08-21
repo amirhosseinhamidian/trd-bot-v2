@@ -27,6 +27,14 @@ from trd_bot.research.reporting import (
     StrategyEvaluationSummary,
     StrategyReportBuilder,
 )
+from trd_bot.research.walk_forward import (
+    WalkForwardConfig,
+    WalkForwardFold,
+    WalkForwardMode,
+    WalkForwardPlan,
+    WalkForwardPlanner,
+    build_walk_forward_plan_id,
+)
 
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
@@ -46,6 +54,12 @@ __all__ = [
     "SignalOutcome",
     "StrategyEvaluationSummary",
     "StrategyReportBuilder",
+    "WalkForwardConfig",
+    "WalkForwardFold",
+    "WalkForwardMode",
+    "WalkForwardPlan",
+    "WalkForwardPlanner",
     "build_experiment_id",
     "build_research_backtest_run_id",
+    "build_walk_forward_plan_id",
 ]

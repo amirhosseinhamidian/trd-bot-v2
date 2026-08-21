@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -95,6 +95,13 @@ class ExperimentSummary(BaseModel):
     win_rate: Decimal | None = Field(default=None, ge=0, le=1)
     max_drawdown_fraction: Decimal = Field(ge=0)
     profit_factor: Decimal | None = Field(default=None, ge=0)
+    benchmark_type: Literal["buy_and_hold"]
+    benchmark_return: Decimal
+    excess_return: Decimal
+    benchmark_max_drawdown_fraction: Decimal = Field(ge=0)
+    max_drawdown_fraction_delta: Decimal
+    strategy_has_lower_drawdown: bool
+    comparison_outcome: Literal["strategy", "benchmark", "tie"]
 
     @classmethod
     def from_experiment(
@@ -116,6 +123,19 @@ class ExperimentSummary(BaseModel):
             win_rate=experiment.result.performance_report.win_rate,
             max_drawdown_fraction=(experiment.result.performance_report.max_drawdown_fraction),
             profit_factor=experiment.result.performance_report.profit_factor,
+            benchmark_type=experiment.result.benchmark_result.benchmark_type.value,
+            benchmark_return=(experiment.result.benchmark_result.performance_report.total_return),
+            excess_return=experiment.result.benchmark_comparison.return_delta,
+            benchmark_max_drawdown_fraction=(
+                experiment.result.benchmark_result.performance_report.max_drawdown_fraction
+            ),
+            max_drawdown_fraction_delta=(
+                experiment.result.benchmark_comparison.max_drawdown_fraction_delta
+            ),
+            strategy_has_lower_drawdown=(
+                experiment.result.benchmark_comparison.strategy_has_lower_drawdown
+            ),
+            comparison_outcome=experiment.result.benchmark_comparison.outcome.value,
         )
 
 

@@ -124,6 +124,8 @@ def test_api_creates_and_stores_experiment(
 
     assert experiment_id.startswith("experiment-")
     assert data["result"]["generated_signals"] == 1
+    assert data["result"]["benchmark_result"]["benchmark_type"] == "buy_and_hold"
+    assert "benchmark_comparison" in data["result"]
     assert registry.get(experiment_id) is not None
 
 
@@ -195,6 +197,13 @@ def test_api_lists_experiments_idempotently(
     assert "win_rate" in summary
     assert "max_drawdown_fraction" in summary
     assert "profit_factor" in summary
+    assert summary["benchmark_type"] == "buy_and_hold"
+    assert "benchmark_return" in summary
+    assert "excess_return" in summary
+    assert "benchmark_max_drawdown_fraction" in summary
+    assert "max_drawdown_fraction_delta" in summary
+    assert "strategy_has_lower_drawdown" in summary
+    assert "comparison_outcome" in summary
     assert "result" not in summary
 
 

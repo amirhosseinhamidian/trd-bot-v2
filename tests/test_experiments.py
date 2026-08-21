@@ -229,6 +229,25 @@ def test_experiment_summary_excludes_full_result() -> None:
         summary.max_drawdown_fraction == experiment.result.performance_report.max_drawdown_fraction
     )
     assert summary.profit_factor == experiment.result.performance_report.profit_factor
+    assert summary.benchmark_type == experiment.result.benchmark_result.benchmark_type
+    assert (
+        summary.benchmark_return
+        == experiment.result.benchmark_result.performance_report.total_return
+    )
+    assert summary.excess_return == experiment.result.benchmark_comparison.return_delta
+    assert (
+        summary.benchmark_max_drawdown_fraction
+        == experiment.result.benchmark_result.performance_report.max_drawdown_fraction
+    )
+    assert (
+        summary.max_drawdown_fraction_delta
+        == experiment.result.benchmark_comparison.max_drawdown_fraction_delta
+    )
+    assert (
+        summary.strategy_has_lower_drawdown
+        == experiment.result.benchmark_comparison.strategy_has_lower_drawdown
+    )
+    assert summary.comparison_outcome == experiment.result.benchmark_comparison.outcome
     assert "result" not in payload
 
 

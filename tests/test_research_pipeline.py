@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from trd_bot.backtesting import BacktestConfig
+from trd_bot.backtesting import BacktestConfig, BenchmarkType
 from trd_bot.domain.market_data import (
     OHLCVCandle,
     Timeframe,
@@ -110,6 +110,41 @@ def test_pipeline_runs_complete_research_workflow() -> None:
     assert len(result.backtest_events) == 2
     assert result.performance_report.total_trades == 1
     assert result.performance_report.dataset_id == dataset.dataset_id
+    assert result.benchmark_result.benchmark_type == BenchmarkType.BUY_AND_HOLD
+    assert result.benchmark_result.dataset_id == dataset.dataset_id
+    assert result.benchmark_result.config == result.backtest_config
+    assert result.benchmark_comparison.strategy_run_id == result.backtest_run_id
+    assert result.benchmark_comparison.benchmark_run_id == result.benchmark_result.run_id
+
+
+def test_pipeline_compares_strategy_with_buy_and_hold() -> None:
+    dataset = create_dataset(
+        [
+            ("5", "5"),
+            ("4", "4"),
+            ("3", "3"),
+            ("4", "4"),
+            ("6", "6"),
+            ("7", "8"),
+        ]
+    )
+
+    result = ResearchPipeline().run(
+        dataset=dataset,
+        strategy=EMACrossoverStrategy(fast_period=2, slow_period=3),
+    )
+
+    assert result.benchmark_result.performance_report.total_trades == 1
+    assert (
+        result.benchmark_comparison.return_delta
+        == result.performance_report.total_return
+        - result.benchmark_result.performance_report.total_return
+    )
+    assert (
+        result.benchmark_comparison.max_drawdown_fraction_delta
+        == result.performance_report.max_drawdown_fraction
+        - result.benchmark_result.performance_report.max_drawdown_fraction
+    )
 
 
 def test_pipeline_handles_strategy_without_signals() -> None:
@@ -189,6 +224,8 @@ def test_pipeline_is_deterministic() -> None:
     assert first_result.backtest_run_id == second_result.backtest_run_id
     assert first_result.backtest_events == second_result.backtest_events
     assert first_result.performance_report == second_result.performance_report
+    assert first_result.benchmark_result == second_result.benchmark_result
+    assert first_result.benchmark_comparison == second_result.benchmark_comparison
 
 
 def test_pipeline_backtest_costs_change_performance_and_run_id() -> None:
@@ -233,3 +270,5 @@ def test_pipeline_backtest_costs_change_performance_and_run_id() -> None:
     assert no_cost_result.backtest_run_id != cost_result.backtest_run_id
     assert cost_result.performance_report.total_fees > Decimal("0")
     assert cost_result.performance_report.net_pnl < no_cost_result.performance_report.net_pnl
+    assert no_cost_result.benchmark_result.run_id != cost_result.benchmark_result.run_id
+    assert cost_result.benchmark_result.performance_report.total_fees > Decimal("0")
