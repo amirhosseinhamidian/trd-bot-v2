@@ -6,7 +6,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from trd_bot.research.datasets import DatasetSnapshot
+from trd_bot.research.datasets import DatasetBuilder, DatasetSnapshot
 
 
 class WalkForwardMode(StrEnum):
@@ -129,6 +129,83 @@ class WalkForwardPlan(BaseModel):
         return self
 
 
+class WalkForwardDatasetSplit(BaseModel):
+    """Materialized train and test datasets for one walk-forward fold."""
+
+    model_config = ConfigDict(frozen=True)
+
+    split_id: str = Field(pattern=r"^walk-forward-split-[a-f0-9]{16}$")
+    source_dataset_id: str = Field(min_length=1)
+    plan_id: str = Field(pattern=r"^walk-forward-[a-f0-9]{16}$")
+    fold: WalkForwardFold
+    train_dataset: DatasetSnapshot
+    test_dataset: DatasetSnapshot
+
+    @model_validator(mode="after")
+    def validate_split(self) -> Self:
+        expected_split_id = build_walk_forward_split_id(
+            source_dataset_id=self.source_dataset_id,
+            plan_id=self.plan_id,
+            fold_number=self.fold.fold_number,
+            train_dataset_id=self.train_dataset.dataset_id,
+            test_dataset_id=self.test_dataset.dataset_id,
+        )
+        if self.split_id != expected_split_id:
+            raise ValueError("walk-forward split ID is inconsistent")
+
+        train_size = self.fold.train_end_index - self.fold.train_start_index
+        test_size = self.fold.test_end_index - self.fold.test_start_index
+        if self.train_dataset.candle_count != train_size:
+            raise ValueError("training dataset size does not match fold")
+        if self.test_dataset.candle_count != test_size:
+            raise ValueError("test dataset size does not match fold")
+
+        if self.train_dataset.start_time != self.fold.train_start_time:
+            raise ValueError("training dataset start time does not match fold")
+        if self.train_dataset.end_time != self.fold.train_end_time:
+            raise ValueError("training dataset end time does not match fold")
+        if self.test_dataset.start_time != self.fold.test_start_time:
+            raise ValueError("test dataset start time does not match fold")
+        if self.test_dataset.end_time != self.fold.test_end_time:
+            raise ValueError("test dataset end time does not match fold")
+
+        if self.train_dataset.end_time > self.test_dataset.start_time:
+            raise ValueError("training dataset cannot overlap test dataset")
+        if self.train_dataset.source != self.test_dataset.source:
+            raise ValueError("training and test datasets must use the same source")
+        if self.train_dataset.pair != self.test_dataset.pair:
+            raise ValueError("training and test datasets must use the same pair")
+        if self.train_dataset.timeframe != self.test_dataset.timeframe:
+            raise ValueError("training and test datasets must use the same timeframe")
+        return self
+
+
+class WalkForwardMaterialization(BaseModel):
+    """All materialized datasets produced from one walk-forward plan."""
+
+    model_config = ConfigDict(frozen=True)
+
+    source_dataset_id: str = Field(min_length=1)
+    plan: WalkForwardPlan
+    splits: tuple[WalkForwardDatasetSplit, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_materialization(self) -> Self:
+        if self.source_dataset_id != self.plan.dataset_id:
+            raise ValueError("source dataset does not match walk-forward plan")
+        if len(self.splits) != len(self.plan.folds):
+            raise ValueError("materialized split count does not match plan")
+
+        for fold, split in zip(self.plan.folds, self.splits, strict=True):
+            if split.source_dataset_id != self.source_dataset_id:
+                raise ValueError("split source dataset does not match materialization")
+            if split.plan_id != self.plan.plan_id:
+                raise ValueError("split plan ID does not match materialization")
+            if split.fold != fold:
+                raise ValueError("materialized split does not match plan fold")
+        return self
+
+
 def build_walk_forward_plan_id(
     *,
     dataset_id: str,
@@ -144,6 +221,29 @@ def build_walk_forward_plan_id(
     identity = "::".join([dataset_id, config_payload])
     digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
     return f"walk-forward-{digest[:16]}"
+
+
+def build_walk_forward_split_id(
+    *,
+    source_dataset_id: str,
+    plan_id: str,
+    fold_number: int,
+    train_dataset_id: str,
+    test_dataset_id: str,
+) -> str:
+    """Build a deterministic identifier for one materialized fold."""
+
+    identity = "::".join(
+        [
+            source_dataset_id,
+            plan_id,
+            str(fold_number),
+            train_dataset_id,
+            test_dataset_id,
+        ]
+    )
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
+    return f"walk-forward-split-{digest[:16]}"
 
 
 class WalkForwardPlanner:
@@ -200,4 +300,59 @@ class WalkForwardPlanner:
             candle_count=dataset.candle_count,
             config=config,
             folds=tuple(folds),
+        )
+
+
+class WalkForwardDatasetMaterializer:
+    """Create deterministic train and test datasets for every planned fold."""
+
+    def __init__(self, dataset_builder: DatasetBuilder | None = None) -> None:
+        self._dataset_builder = dataset_builder or DatasetBuilder()
+
+    def materialize(
+        self,
+        *,
+        dataset: DatasetSnapshot,
+        plan: WalkForwardPlan,
+    ) -> WalkForwardMaterialization:
+        if plan.dataset_id != dataset.dataset_id:
+            raise ValueError("walk-forward plan does not belong to dataset")
+        if plan.candle_count != dataset.candle_count:
+            raise ValueError("walk-forward plan candle count does not match dataset")
+
+        splits: list[WalkForwardDatasetSplit] = []
+
+        for fold in plan.folds:
+            train_dataset = self._dataset_builder.build(
+                name=f"walk-forward fold {fold.fold_number} train",
+                candles=dataset.candles[fold.train_start_index : fold.train_end_index],
+                created_at=dataset.created_at,
+            )
+            test_dataset = self._dataset_builder.build(
+                name=f"walk-forward fold {fold.fold_number} test",
+                candles=dataset.candles[fold.test_start_index : fold.test_end_index],
+                created_at=dataset.created_at,
+            )
+
+            splits.append(
+                WalkForwardDatasetSplit(
+                    split_id=build_walk_forward_split_id(
+                        source_dataset_id=dataset.dataset_id,
+                        plan_id=plan.plan_id,
+                        fold_number=fold.fold_number,
+                        train_dataset_id=train_dataset.dataset_id,
+                        test_dataset_id=test_dataset.dataset_id,
+                    ),
+                    source_dataset_id=dataset.dataset_id,
+                    plan_id=plan.plan_id,
+                    fold=fold,
+                    train_dataset=train_dataset,
+                    test_dataset=test_dataset,
+                )
+            )
+
+        return WalkForwardMaterialization(
+            source_dataset_id=dataset.dataset_id,
+            plan=plan,
+            splits=tuple(splits),
         )

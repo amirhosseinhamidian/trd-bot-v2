@@ -29,11 +29,15 @@ from trd_bot.research.reporting import (
 )
 from trd_bot.research.walk_forward import (
     WalkForwardConfig,
+    WalkForwardDatasetMaterializer,
+    WalkForwardDatasetSplit,
     WalkForwardFold,
+    WalkForwardMaterialization,
     WalkForwardMode,
     WalkForwardPlan,
     WalkForwardPlanner,
     build_walk_forward_plan_id,
+    build_walk_forward_split_id,
 )
 
 __all__ = [
@@ -55,11 +59,15 @@ __all__ = [
     "StrategyEvaluationSummary",
     "StrategyReportBuilder",
     "WalkForwardConfig",
+    "WalkForwardDatasetMaterializer",
+    "WalkForwardDatasetSplit",
     "WalkForwardFold",
+    "WalkForwardMaterialization",
     "WalkForwardMode",
     "WalkForwardPlan",
     "WalkForwardPlanner",
     "build_experiment_id",
     "build_research_backtest_run_id",
     "build_walk_forward_plan_id",
+    "build_walk_forward_split_id",
 ]

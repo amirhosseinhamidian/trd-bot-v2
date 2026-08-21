@@ -58,7 +58,12 @@ class DatasetBuilder:
         self,
         name: str,
         candles: Sequence[OHLCVCandle],
+        *,
+        created_at: datetime | None = None,
     ) -> DatasetSnapshot:
+        if created_at is not None and (created_at.tzinfo is None or created_at.utcoffset() is None):
+            raise ValueError("created time must include timezone information")
+
         report = self._quality_checker.check(candles)
 
         if not report.is_valid:
@@ -74,7 +79,7 @@ class DatasetBuilder:
             timeframe=candles[0].timeframe,
             start_time=candles[0].open_time,
             end_time=candles[-1].close_time,
-            created_at=datetime.now(UTC),
+            created_at=(created_at or datetime.now(UTC)).astimezone(UTC),
             candle_count=len(candles),
             checksum=checksum,
             candles=tuple(candles),
