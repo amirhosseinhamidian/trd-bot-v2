@@ -276,3 +276,109 @@ def test_api_reports_experiment_stage_before_walk_forward(
     assert data["walk_forward_run_count"] == 0
 
     assert data["research_stage"] == "experiments_available"
+
+
+def test_api_returns_empty_research_activity_feed(
+    repositories: RepositorySet,
+) -> None:
+    response = client.get("/api/v1/research/overview/activity")
+
+    assert response.status_code == 200
+
+    assert response.json() == {
+        "items": [],
+        "total": 0,
+        "limit": 20,
+        "offset": 0,
+        "count": 0,
+        "has_next": False,
+        "has_previous": False,
+    }
+
+
+def test_api_returns_newest_first_research_activity(
+    repositories: RepositorySet,
+) -> None:
+    payload = create_research_payload()
+
+    experiment_response = client.post(
+        ("/api/v1/research/experiments/ema-crossover"),
+        json=payload,
+    )
+
+    run_response = client.post(
+        ("/api/v1/research/walk-forward/runs/ema-crossover"),
+        json={
+            **payload,
+            "train_candles": 4,
+            "test_candles": 2,
+            "step_candles": 2,
+            "gap_candles": 0,
+            "mode": "rolling",
+        },
+    )
+
+    assert experiment_response.status_code == 200
+    assert run_response.status_code == 200
+
+    response = client.get("/api/v1/research/overview/activity")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 3
+    assert data["count"] == 3
+
+    assert [item["activity_type"] for item in data["items"]] == [
+        "walk_forward_run",
+        "experiment",
+        "dataset",
+    ]
+
+    assert "result" not in data["items"][0]
+    assert "candles" not in data["items"][2]
+
+
+def test_api_paginates_research_activity(
+    repositories: RepositorySet,
+) -> None:
+    payload = create_research_payload()
+
+    experiment_response = client.post(
+        ("/api/v1/research/experiments/ema-crossover"),
+        json=payload,
+    )
+
+    run_response = client.post(
+        ("/api/v1/research/walk-forward/runs/ema-crossover"),
+        json={
+            **payload,
+            "train_candles": 4,
+            "test_candles": 2,
+            "step_candles": 2,
+        },
+    )
+
+    assert experiment_response.status_code == 200
+    assert run_response.status_code == 200
+
+    response = client.get(
+        "/api/v1/research/overview/activity",
+        params={
+            "limit": 1,
+            "offset": 1,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 3
+    assert data["count"] == 1
+
+    assert data["items"][0]["activity_type"] == "experiment"
+
+    assert data["has_next"] is True
+    assert data["has_previous"] is True

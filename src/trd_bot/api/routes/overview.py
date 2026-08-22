@@ -1,8 +1,16 @@
 from enum import StrEnum
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+)
 
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
@@ -10,12 +18,19 @@ from trd_bot.api.dependencies import (
     get_experiment_registry,
     get_walk_forward_run_registry,
 )
+from trd_bot.api.pagination import (
+    Page,
+    PaginationParams,
+    build_page,
+)
 from trd_bot.research import (
     AcceptancePolicyPreset,
     AcceptancePolicyPresetCatalog,
     DatasetRepository,
     DatasetSummary,
     ExperimentRegistry,
+    ResearchActivityBuilder,
+    ResearchActivityItem,
     WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
@@ -48,6 +63,11 @@ AcceptancePolicyPresetCatalogDependency = Annotated[
     Depends(get_acceptance_policy_preset_catalog),
 ]
 
+PaginationParamsQuery = Annotated[
+    PaginationParams,
+    Query(),
+]
+
 
 class ResearchStage(StrEnum):
     """Highest completed stage in the historical research workflow."""
@@ -78,6 +98,7 @@ class ResearchOverview(BaseModel):
 
     latest_dataset: DatasetSummary | None
     latest_experiment: ExperimentSummary | None
+
     latest_walk_forward_run: WalkForwardRunSummary | None
 
 
@@ -156,6 +177,22 @@ def _research_stage(
     return ResearchStage.EMPTY
 
 
+def _tail_window(
+    *,
+    total: int,
+    window_size: int,
+) -> tuple[int, int]:
+    selected_size = min(
+        total,
+        window_size,
+    )
+
+    return (
+        selected_size,
+        total - selected_size,
+    )
+
+
 @router.get(
     "",
     response_model=ResearchOverview,
@@ -200,4 +237,85 @@ def get_research_overview(
                 total=walk_forward_run_count,
             )
         ),
+    )
+
+
+@router.get(
+    "/activity",
+    response_model=Page[ResearchActivityItem],
+)
+def get_research_activity(
+    datasets: DatasetRepositoryDependency,
+    experiments: ExperimentRegistryDependency,
+    walk_forward_runs: (WalkForwardRunRegistryDependency),
+    pagination: PaginationParamsQuery,
+) -> Page[ResearchActivityItem]:
+    """Return a newest-first paginated feed of persisted research resources."""
+
+    dataset_count = datasets.count()
+    experiment_count = experiments.count()
+
+    walk_forward_run_count = walk_forward_runs.count()
+
+    total = dataset_count + experiment_count + walk_forward_run_count
+
+    window_size = min(
+        total,
+        pagination.offset + pagination.limit,
+    )
+
+    dataset_limit, dataset_offset = _tail_window(
+        total=dataset_count,
+        window_size=window_size,
+    )
+
+    experiment_limit, experiment_offset = _tail_window(
+        total=experiment_count,
+        window_size=window_size,
+    )
+
+    run_limit, run_offset = _tail_window(
+        total=walk_forward_run_count,
+        window_size=window_size,
+    )
+
+    selected_datasets = (
+        datasets.list_page(
+            limit=dataset_limit,
+            offset=dataset_offset,
+        )
+        if dataset_limit
+        else ()
+    )
+
+    selected_experiments = (
+        experiments.list_page(
+            limit=experiment_limit,
+            offset=experiment_offset,
+        )
+        if experiment_limit
+        else ()
+    )
+
+    selected_runs = (
+        walk_forward_runs.list_page(
+            limit=run_limit,
+            offset=run_offset,
+        )
+        if run_limit
+        else ()
+    )
+
+    activity = ResearchActivityBuilder().build(
+        datasets=selected_datasets,
+        experiments=selected_experiments,
+        walk_forward_runs=selected_runs,
+    )
+
+    page_items = activity[pagination.offset : pagination.offset + pagination.limit]
+
+    return build_page(
+        page_items,
+        total=total,
+        pagination=pagination,
     )

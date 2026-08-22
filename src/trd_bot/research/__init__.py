@@ -6,6 +6,11 @@ from trd_bot.research.acceptance import (
     ExperimentAcceptancePolicy,
     ExperimentAcceptanceResult,
 )
+from trd_bot.research.activity import (
+    ResearchActivityBuilder,
+    ResearchActivityItem,
+    ResearchActivityType,
+)
 from trd_bot.research.comparisons import (
     ExperimentComparator,
     ExperimentComparisonEntry,
@@ -137,6 +142,9 @@ __all__ = [
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "PresetExperimentResearchReport",
+    "ResearchActivityBuilder",
+    "ResearchActivityItem",
+    "ResearchActivityType",
     "ResearchExperiment",
     "ResearchPipeline",
     "ResearchPipelineResult",
