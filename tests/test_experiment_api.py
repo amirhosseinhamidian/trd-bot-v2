@@ -375,3 +375,133 @@ def test_api_rejects_invalid_experiment_catalog_query(
     )
 
     assert response.status_code == 422
+
+
+def test_api_compares_stored_experiments_by_excess_return(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    experiment_ids = []
+
+    for fee_rate in ("0", "0.01"):
+        payload = create_request_payload()
+        payload["fee_rate"] = fee_rate
+
+        response = client.post(
+            "/api/v1/research/experiments/ema-crossover",
+            json=payload,
+        )
+
+        assert response.status_code == 200
+        experiment_ids.append(response.json()["experiment_id"])
+
+    response = client.post(
+        "/api/v1/research/experiments/compare",
+        json={
+            "experiment_ids": experiment_ids,
+            "metric": "excess_return",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["metric"] == "excess_return"
+    assert data["ranking_direction"] == "higher_is_better"
+    assert data["compared_experiments"] == 2
+    assert data["best_experiment_id"] == data["entries"][0]["experiment"]["experiment_id"]
+    assert Decimal(data["entries"][0]["metric_value"]) >= Decimal(
+        data["entries"][1]["metric_value"]
+    )
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_returns_missing_experiment_ids_from_comparison(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    stored_id = create_response.json()["experiment_id"]
+    missing_id = "experiment-0000000000000000"
+
+    response = client.post(
+        "/api/v1/research/experiments/compare",
+        json={
+            "experiment_ids": [
+                stored_id,
+                missing_id,
+            ],
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == {
+        "message": "experiments not found",
+        "experiment_ids": [missing_id],
+    }
+
+
+def test_api_rejects_comparison_with_different_horizons(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    experiment_ids = []
+
+    for horizon_candles in (1, 2):
+        payload = create_request_payload()
+        payload["horizon_candles"] = horizon_candles
+
+        response = client.post(
+            "/api/v1/research/experiments/ema-crossover",
+            json=payload,
+        )
+
+        assert response.status_code == 200
+        experiment_ids.append(response.json()["experiment_id"])
+
+    response = client.post(
+        "/api/v1/research/experiments/compare",
+        json={
+            "experiment_ids": experiment_ids,
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == ("experiments must use the same evaluation horizon")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "experiment_ids": [
+                "experiment-0000000000000001",
+            ],
+        },
+        {
+            "experiment_ids": [
+                "experiment-0000000000000001",
+                "experiment-0000000000000001",
+            ],
+        },
+        {
+            "experiment_ids": [
+                "experiment-0000000000000001",
+                "experiment-0000000000000002",
+            ],
+            "metric": "unsupported",
+        },
+    ],
+)
+def test_api_rejects_invalid_experiment_comparison_request(
+    registry: InMemoryExperimentRegistry,
+    payload: dict[str, object],
+) -> None:
+    response = client.post(
+        "/api/v1/research/experiments/compare",
+        json=payload,
+    )
+
+    assert response.status_code == 422

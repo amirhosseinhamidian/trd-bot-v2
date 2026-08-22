@@ -1,3 +1,10 @@
+from trd_bot.research.comparisons import (
+    ExperimentComparator,
+    ExperimentComparisonEntry,
+    ExperimentComparisonMetric,
+    ExperimentComparisonRequest,
+    ExperimentComparisonResult,
+)
 from trd_bot.research.datasets import (
     DatasetBuilder,
     DatasetCatalogQuery,
@@ -77,6 +84,11 @@ __all__ = [
     "DirectionMetrics",
     "ExperimentBuilder",
     "ExperimentCatalogQuery",
+    "ExperimentComparator",
+    "ExperimentComparisonEntry",
+    "ExperimentComparisonMetric",
+    "ExperimentComparisonRequest",
+    "ExperimentComparisonResult",
     "ExperimentParameter",
     "ExperimentRegistry",
     "ExperimentSortDirection",

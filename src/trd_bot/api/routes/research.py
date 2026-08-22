@@ -19,6 +19,9 @@ from trd_bot.research import (
     DatasetSnapshot,
     ExperimentBuilder,
     ExperimentCatalogQuery,
+    ExperimentComparator,
+    ExperimentComparisonRequest,
+    ExperimentComparisonResult,
     ExperimentParameter,
     ExperimentRegistry,
     InvalidDatasetError,
@@ -481,6 +484,50 @@ def list_experiments(
         total=registry.count_matching(query),
         pagination=pagination,
     )
+
+
+@router.post(
+    "/experiments/compare",
+    response_model=ExperimentComparisonResult,
+)
+def compare_experiments(
+    request: ExperimentComparisonRequest,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentComparisonResult:
+    """Compare stored experiments using historical research metrics."""
+
+    experiments: list[ResearchExperiment] = []
+    missing_ids: list[str] = []
+
+    for experiment_id in request.experiment_ids:
+        experiment = registry.get(experiment_id)
+
+        if experiment is None:
+            missing_ids.append(experiment_id)
+        else:
+            experiments.append(experiment)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "message": "experiments not found",
+                "experiment_ids": missing_ids,
+            },
+        )
+
+    summaries = tuple(ExperimentSummary.from_experiment(experiment) for experiment in experiments)
+
+    try:
+        return ExperimentComparator().compare(
+            experiments=summaries,
+            metric=request.metric,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
 
 
 @router.get(
