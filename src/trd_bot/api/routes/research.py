@@ -17,6 +17,12 @@ from trd_bot.research import (
     ResearchExperiment,
     ResearchPipeline,
     ResearchPipelineResult,
+    WalkForwardConfig,
+    WalkForwardDatasetMaterializer,
+    WalkForwardExecutionResult,
+    WalkForwardExecutor,
+    WalkForwardMode,
+    WalkForwardPlanner,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.strategies import EMACrossoverStrategy
@@ -59,6 +65,16 @@ class EMACrossoverResearchRequest(BaseModel):
     allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
     fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
     slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
+class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
+    """Request for an offline EMA walk-forward execution."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
 
 
 def _canonical_decimal(value: Decimal) -> str:
@@ -107,6 +123,63 @@ def _run_research_pipeline(
         ) from error
 
 
+def _run_walk_forward_pipeline(
+    request: EMACrossoverWalkForwardRequest,
+) -> WalkForwardExecutionResult:
+    try:
+        dataset = DatasetBuilder().build(
+            name=request.dataset_name,
+            candles=request.candles,
+        )
+        strategy = EMACrossoverStrategy(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+        )
+        backtest_config = BacktestConfig(
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+        plan = WalkForwardPlanner().plan(
+            dataset=dataset,
+            config=WalkForwardConfig(
+                train_candles=request.train_candles,
+                test_candles=request.test_candles,
+                step_candles=request.step_candles,
+                gap_candles=request.gap_candles,
+                mode=request.mode,
+            ),
+        )
+        materialization = WalkForwardDatasetMaterializer().materialize(
+            dataset=dataset,
+            plan=plan,
+        )
+
+        return WalkForwardExecutor().execute(
+            dataset=dataset,
+            materialization=materialization,
+            strategy=strategy,
+            horizon_candles=request.horizon_candles,
+            backtest_config=backtest_config,
+        )
+
+    except InvalidDatasetError as error:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "dataset failed quality checks",
+                "issues": [issue.model_dump(mode="json") for issue in error.report.issues],
+            },
+        ) from error
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+
 @router.post(
     "/ema-crossover",
     response_model=ResearchPipelineResult,
@@ -117,6 +190,18 @@ def run_ema_crossover_research(
     """Run the EMA research workflow without storing it."""
 
     return _run_research_pipeline(request)
+
+
+@router.post(
+    "/walk-forward/ema-crossover",
+    response_model=WalkForwardExecutionResult,
+)
+def run_ema_crossover_walk_forward(
+    request: EMACrossoverWalkForwardRequest,
+) -> WalkForwardExecutionResult:
+    """Run an EMA strategy on chronological out-of-sample folds."""
+
+    return _run_walk_forward_pipeline(request)
 
 
 @router.post(

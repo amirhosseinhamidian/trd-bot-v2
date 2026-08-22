@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import TYPE_CHECKING, Self
 
@@ -48,6 +49,7 @@ def build_research_backtest_run_id(
     strategy_name: str,
     strategy_version: str,
     config: BacktestConfig,
+    signal_ids: Sequence[str] = (),
 ) -> str:
     """Build a deterministic ID for one research backtest configuration."""
 
@@ -63,6 +65,7 @@ def build_research_backtest_run_id(
             strategy_name,
             strategy_version,
             config_payload,
+            "::".join(signal_ids),
         ]
     )
 
@@ -174,13 +177,40 @@ class ResearchPipeline:
         horizon_candles: int = 1,
         backtest_config: BacktestConfig | None = None,
     ) -> ResearchPipelineResult:
-        effective_backtest_config = backtest_config or DEFAULT_RESEARCH_BACKTEST_CONFIG
-
         signals = strategy.generate(dataset)
+
+        return self.run_with_signals(
+            dataset=dataset,
+            strategy_name=strategy.name,
+            strategy_version=strategy.version,
+            signals=signals,
+            horizon_candles=horizon_candles,
+            backtest_config=backtest_config,
+        )
+
+    def run_with_signals(
+        self,
+        *,
+        dataset: DatasetSnapshot,
+        strategy_name: str,
+        strategy_version: str,
+        signals: Sequence[StrategySignal],
+        horizon_candles: int = 1,
+        backtest_config: BacktestConfig | None = None,
+    ) -> ResearchPipelineResult:
+        """Run the research workflow with chronological precomputed signals."""
+
+        effective_backtest_config = backtest_config or DEFAULT_RESEARCH_BACKTEST_CONFIG
+        ordered_signals = tuple(signals)
+        self._validate_precomputed_signals(
+            signals=ordered_signals,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
+        )
 
         evaluation_report = self._signal_evaluator.evaluate(
             dataset=dataset,
-            signals=signals,
+            signals=ordered_signals,
             horizon_candles=horizon_candles,
         )
 
@@ -188,15 +218,16 @@ class ResearchPipeline:
 
         backtest_run_id = build_research_backtest_run_id(
             dataset_id=dataset.dataset_id,
-            strategy_name=strategy.name,
-            strategy_version=strategy.version,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
             config=effective_backtest_config,
+            signal_ids=tuple(signal.signal_id for signal in ordered_signals),
         )
 
         backtest_events = self._backtest_engine.run(
             run_id=backtest_run_id,
             dataset=dataset,
-            signals=signals,
+            signals=ordered_signals,
             config=effective_backtest_config,
         )
 
@@ -219,10 +250,10 @@ class ResearchPipeline:
 
         return ResearchPipelineResult(
             dataset_id=dataset.dataset_id,
-            strategy_name=strategy.name,
-            strategy_version=strategy.version,
-            generated_signals=len(signals),
-            signals=signals,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
+            generated_signals=len(ordered_signals),
+            signals=ordered_signals,
             evaluation_report=evaluation_report,
             summary=summary,
             backtest_run_id=backtest_run_id,
@@ -232,3 +263,31 @@ class ResearchPipeline:
             benchmark_result=benchmark_result,
             benchmark_comparison=benchmark_comparison,
         )
+
+    @staticmethod
+    def _validate_precomputed_signals(
+        *,
+        signals: tuple[StrategySignal, ...],
+        strategy_name: str,
+        strategy_version: str,
+    ) -> None:
+        if not strategy_name.strip():
+            raise ValueError("strategy name cannot be empty")
+        if not strategy_version.strip():
+            raise ValueError("strategy version cannot be empty")
+
+        signal_ids: set[str] = set()
+        previous_close_time = None
+
+        for signal in signals:
+            if signal.strategy_name != strategy_name:
+                raise ValueError("signal strategy name does not match")
+            if signal.strategy_version != strategy_version:
+                raise ValueError("signal strategy version does not match")
+            if signal.signal_id in signal_ids:
+                raise ValueError("precomputed signals cannot contain duplicates")
+            if previous_close_time is not None and signal.candle_close_time < previous_close_time:
+                raise ValueError("precomputed signals must be chronological")
+
+            signal_ids.add(signal.signal_id)
+            previous_close_time = signal.candle_close_time
