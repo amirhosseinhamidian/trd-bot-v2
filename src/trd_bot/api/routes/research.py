@@ -48,6 +48,8 @@ from trd_bot.research import (
     WalkForwardRunCatalogQuery,
     WalkForwardRunRegistry,
     WalkForwardRunSummary,
+    WalkForwardStabilityAnalyzer,
+    WalkForwardStabilityReport,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.strategies import EMACrossoverStrategy
@@ -396,6 +398,27 @@ def list_walk_forward_runs(
         total=registry.count_matching(query),
         pagination=pagination,
     )
+
+
+@router.get(
+    ("/walk-forward/runs/{execution_id}/stability"),
+    response_model=WalkForwardStabilityReport,
+)
+def get_walk_forward_stability_report(
+    execution_id: str,
+    registry: WalkForwardRunRegistryDependency,
+) -> WalkForwardStabilityReport:
+    """Return historical fold stability metrics for one stored run."""
+
+    run = registry.get(execution_id)
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="walk-forward run not found",
+        )
+
+    return WalkForwardStabilityAnalyzer().analyze(run)
 
 
 @router.get(

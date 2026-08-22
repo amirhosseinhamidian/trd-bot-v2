@@ -81,6 +81,12 @@ from trd_bot.research.walk_forward import (
     build_walk_forward_plan_id,
     build_walk_forward_split_id,
 )
+from trd_bot.research.walk_forward_reporting import (
+    HistoricalFoldReturnDirection,
+    WalkForwardFoldStatistics,
+    WalkForwardStabilityAnalyzer,
+    WalkForwardStabilityReport,
+)
 from trd_bot.research.walk_forward_runs import (
     InMemoryWalkForwardRunRegistry,
     WalkForwardResearchRun,
@@ -125,6 +131,7 @@ __all__ = [
     "ExperimentSortField",
     "HistoricalBenchmarkContext",
     "HistoricalDrawdownComparison",
+    "HistoricalFoldReturnDirection",
     "InMemoryDatasetRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
@@ -147,6 +154,7 @@ __all__ = [
     "WalkForwardExecutor",
     "WalkForwardFold",
     "WalkForwardFoldExecution",
+    "WalkForwardFoldStatistics",
     "WalkForwardMaterialization",
     "WalkForwardMode",
     "WalkForwardPlan",
@@ -158,6 +166,8 @@ __all__ = [
     "WalkForwardRunSortDirection",
     "WalkForwardRunSortField",
     "WalkForwardRunSummary",
+    "WalkForwardStabilityAnalyzer",
+    "WalkForwardStabilityReport",
     "build_experiment_id",
     "build_research_backtest_run_id",
     "build_walk_forward_execution_id",

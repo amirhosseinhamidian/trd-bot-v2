@@ -18,6 +18,7 @@ from trd_bot.research import (
     WalkForwardRunSortDirection,
     WalkForwardRunSortField,
     WalkForwardRunSummary,
+    WalkForwardStabilityAnalyzer,
 )
 from trd_bot.strategies import EMACrossoverStrategy
 
@@ -180,6 +181,91 @@ def test_run_summary_excludes_fold_details() -> None:
     assert summary.average_excess_return == run.result.summary.average_excess_return
     assert "result" not in payload
     assert "fold_results" not in payload
+
+
+def test_stability_report_contains_every_fold() -> None:
+    run = create_run()
+
+    report = WalkForwardStabilityAnalyzer().analyze(run)
+
+    assert report.execution_id == run.execution_id
+
+    assert report.total_folds == len(run.result.fold_results)
+
+    assert [fold.fold_number for fold in report.folds] == [
+        1,
+        2,
+        3,
+    ]
+
+    assert report.interpretation == "historical_research_only"
+
+
+def test_stability_return_outcome_counts_equal_total_folds() -> None:
+    report = WalkForwardStabilityAnalyzer().analyze(create_run())
+
+    assert (
+        report.positive_return_folds + report.negative_return_folds + report.flat_return_folds
+        == report.total_folds
+    )
+
+    assert report.positive_return_fraction == (
+        Decimal(report.positive_return_folds) / Decimal(report.total_folds)
+    )
+
+
+def test_stability_benchmark_outcome_counts_equal_total_folds() -> None:
+    report = WalkForwardStabilityAnalyzer().analyze(create_run())
+
+    assert (
+        report.outperforming_benchmark_folds
+        + report.underperforming_benchmark_folds
+        + report.benchmark_ties
+        == report.total_folds
+    )
+
+
+def test_stability_report_calculates_return_distribution() -> None:
+    run = create_run()
+
+    report = WalkForwardStabilityAnalyzer().analyze(run)
+
+    strategy_returns = tuple(
+        fold.result.performance_report.total_return for fold in run.result.fold_results
+    )
+
+    assert report.best_strategy_return == max(strategy_returns)
+
+    assert report.worst_strategy_return == min(strategy_returns)
+
+    assert report.strategy_return_range == (max(strategy_returns) - min(strategy_returns))
+
+    assert report.strategy_return_mean_absolute_deviation >= 0
+
+
+def test_stability_fold_metrics_match_pipeline_results() -> None:
+    run = create_run()
+
+    report = WalkForwardStabilityAnalyzer().analyze(run)
+
+    for fold_result, statistics in zip(
+        run.result.fold_results,
+        report.folds,
+        strict=True,
+    ):
+        performance = fold_result.result.performance_report
+
+        benchmark = fold_result.result.benchmark_result.performance_report
+
+        assert statistics.total_trades == performance.total_trades
+
+        assert statistics.strategy_return == performance.total_return
+
+        assert statistics.benchmark_return == benchmark.total_return
+
+        assert statistics.excess_return == (performance.total_return - benchmark.total_return)
+
+        assert statistics.max_drawdown_fraction == performance.max_drawdown_fraction
 
 
 def test_registry_filters_runs_and_counts_matches() -> None:

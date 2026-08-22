@@ -155,6 +155,42 @@ def test_api_returns_404_for_unknown_walk_forward_run(
     assert response.json()["detail"] == "walk-forward run not found"
 
 
+def test_api_returns_walk_forward_stability_report(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    created = create_run(create_request_payload())
+
+    execution_id = created["execution_id"]
+
+    assert isinstance(execution_id, str)
+
+    response = client.get(f"/api/v1/research/walk-forward/runs/{execution_id}/stability")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["execution_id"] == execution_id
+    assert data["total_folds"] == 3
+    assert len(data["folds"]) == 3
+
+    assert "strategy_return_mean_absolute_deviation" in data
+
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_returns_404_for_unknown_walk_forward_stability_report(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    response = client.get(
+        "/api/v1/research/walk-forward/runs/walk-forward-execution-0000000000000000/stability"
+    )
+
+    assert response.status_code == 404
+
+    assert response.json()["detail"] == ("walk-forward run not found")
+
+
 def test_api_lists_paginated_walk_forward_summaries(
     registry: InMemoryWalkForwardRunRegistry,
 ) -> None:
