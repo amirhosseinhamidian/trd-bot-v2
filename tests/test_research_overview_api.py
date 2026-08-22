@@ -382,3 +382,78 @@ def test_api_paginates_research_activity(
 
     assert data["has_next"] is True
     assert data["has_previous"] is True
+
+
+@pytest.mark.parametrize(
+    (
+        "activity_type",
+        "expected_resource_type",
+    ),
+    [
+        (
+            "dataset",
+            "dataset",
+        ),
+        (
+            "experiment",
+            "experiment",
+        ),
+        (
+            "walk_forward_run",
+            "walk_forward_run",
+        ),
+    ],
+)
+def test_api_filters_research_activity_by_type(
+    repositories: RepositorySet,
+    activity_type: str,
+    expected_resource_type: str,
+) -> None:
+    payload = create_research_payload()
+
+    experiment_response = client.post(
+        ("/api/v1/research/experiments/ema-crossover"),
+        json=payload,
+    )
+
+    run_response = client.post(
+        ("/api/v1/research/walk-forward/runs/ema-crossover"),
+        json={
+            **payload,
+            "train_candles": 4,
+            "test_candles": 2,
+            "step_candles": 2,
+        },
+    )
+
+    assert experiment_response.status_code == 200
+    assert run_response.status_code == 200
+
+    response = client.get(
+        ("/api/v1/research/overview/activity"),
+        params={
+            "activity_type": activity_type,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["count"] == 1
+
+    assert data["items"][0]["activity_type"] == expected_resource_type
+
+
+def test_api_rejects_unknown_research_activity_type(
+    repositories: RepositorySet,
+) -> None:
+    response = client.get(
+        ("/api/v1/research/overview/activity"),
+        params={
+            "activity_type": "unknown",
+        },
+    )
+
+    assert response.status_code == 422

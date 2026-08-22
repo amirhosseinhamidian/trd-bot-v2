@@ -31,6 +31,7 @@ from trd_bot.research import (
     ExperimentRegistry,
     ResearchActivityBuilder,
     ResearchActivityItem,
+    ResearchActivityType,
     WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
@@ -63,8 +64,15 @@ AcceptancePolicyPresetCatalogDependency = Annotated[
     Depends(get_acceptance_policy_preset_catalog),
 ]
 
-PaginationParamsQuery = Annotated[
-    PaginationParams,
+
+class ResearchActivityParams(PaginationParams):
+    """Type filter and pagination for the research activity feed."""
+
+    activity_type: ResearchActivityType | None = None
+
+
+ResearchActivityParamsQuery = Annotated[
+    ResearchActivityParams,
     Query(),
 ]
 
@@ -248,20 +256,45 @@ def get_research_activity(
     datasets: DatasetRepositoryDependency,
     experiments: ExperimentRegistryDependency,
     walk_forward_runs: (WalkForwardRunRegistryDependency),
-    pagination: PaginationParamsQuery,
+    params: ResearchActivityParamsQuery,
 ) -> Page[ResearchActivityItem]:
     """Return a newest-first paginated feed of persisted research resources."""
 
-    dataset_count = datasets.count()
-    experiment_count = experiments.count()
+    dataset_count = (
+        datasets.count()
+        if params.activity_type
+        in (
+            None,
+            ResearchActivityType.DATASET,
+        )
+        else 0
+    )
 
-    walk_forward_run_count = walk_forward_runs.count()
+    experiment_count = (
+        experiments.count()
+        if params.activity_type
+        in (
+            None,
+            ResearchActivityType.EXPERIMENT,
+        )
+        else 0
+    )
+
+    walk_forward_run_count = (
+        walk_forward_runs.count()
+        if params.activity_type
+        in (
+            None,
+            ResearchActivityType.WALK_FORWARD_RUN,
+        )
+        else 0
+    )
 
     total = dataset_count + experiment_count + walk_forward_run_count
 
     window_size = min(
         total,
-        pagination.offset + pagination.limit,
+        params.offset + params.limit,
     )
 
     dataset_limit, dataset_offset = _tail_window(
@@ -312,10 +345,13 @@ def get_research_activity(
         walk_forward_runs=selected_runs,
     )
 
-    page_items = activity[pagination.offset : pagination.offset + pagination.limit]
+    page_items = activity[params.offset : params.offset + params.limit]
 
     return build_page(
         page_items,
         total=total,
-        pagination=pagination,
+        pagination=PaginationParams(
+            limit=params.limit,
+            offset=params.offset,
+        ),
     )
