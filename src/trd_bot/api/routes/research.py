@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.dependencies import (
+    get_acceptance_policy_preset_catalog,
     get_dataset_repository,
     get_experiment_registry,
     get_walk_forward_run_registry,
@@ -14,6 +15,8 @@ from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import (
+    AcceptancePolicyPreset,
+    AcceptancePolicyPresetCatalog,
     DatasetBuilder,
     DatasetRepository,
     DatasetSnapshot,
@@ -30,6 +33,7 @@ from trd_bot.research import (
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
     InvalidDatasetError,
+    PresetExperimentResearchReport,
     ResearchExperiment,
     ResearchPipeline,
     ResearchPipelineResult,
@@ -66,6 +70,11 @@ DatasetRepositoryDependency = Annotated[
 WalkForwardRunRegistryDependency = Annotated[
     WalkForwardRunRegistry,
     Depends(get_walk_forward_run_registry),
+]
+
+AcceptancePolicyPresetCatalogDependency = Annotated[
+    AcceptancePolicyPresetCatalog,
+    Depends(get_acceptance_policy_preset_catalog),
 ]
 
 
@@ -582,6 +591,81 @@ def build_experiment_research_report(
     return ExperimentResearchReportBuilder().build(
         experiment=ExperimentSummary.from_experiment(experiment),
         policy=policy,
+    )
+
+
+@router.get(
+    "/acceptance-policies",
+    response_model=tuple[
+        AcceptancePolicyPreset,
+        ...,
+    ],
+)
+def list_acceptance_policy_presets(
+    catalog: AcceptancePolicyPresetCatalogDependency,
+) -> tuple[AcceptancePolicyPreset, ...]:
+    """List built-in versioned policies for historical research."""
+
+    return catalog.list_all()
+
+
+@router.get(
+    "/acceptance-policies/{preset_id}",
+    response_model=AcceptancePolicyPreset,
+)
+def get_acceptance_policy_preset(
+    preset_id: str,
+    catalog: AcceptancePolicyPresetCatalogDependency,
+) -> AcceptancePolicyPreset:
+    """Return one built-in historical policy preset."""
+
+    preset = catalog.get(preset_id)
+
+    if preset is None:
+        raise HTTPException(
+            status_code=404,
+            detail=("acceptance policy preset not found"),
+        )
+
+    return preset
+
+
+@router.post(
+    ("/experiments/{experiment_id}/report/presets/{preset_id}"),
+    response_model=PresetExperimentResearchReport,
+)
+def build_experiment_report_from_preset(
+    experiment_id: str,
+    preset_id: str,
+    registry: ExperimentRegistryDependency,
+    catalog: AcceptancePolicyPresetCatalogDependency,
+) -> PresetExperimentResearchReport:
+    """Build a historical report using one exact versioned policy preset."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    preset = catalog.get(preset_id)
+
+    if preset is None:
+        raise HTTPException(
+            status_code=404,
+            detail=("acceptance policy preset not found"),
+        )
+
+    report = ExperimentResearchReportBuilder().build(
+        experiment=ExperimentSummary.from_experiment(experiment),
+        policy=preset.policy,
+    )
+
+    return PresetExperimentResearchReport(
+        preset=preset,
+        report=report,
     )
 
 

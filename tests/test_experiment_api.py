@@ -5,9 +5,17 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from trd_bot.api.dependencies import get_dataset_repository, get_experiment_registry
+from trd_bot.api.dependencies import (
+    get_acceptance_policy_preset_catalog,
+    get_dataset_repository,
+    get_experiment_registry,
+)
 from trd_bot.main import app
-from trd_bot.research import InMemoryDatasetRepository, InMemoryExperimentRegistry
+from trd_bot.research import (
+    AcceptancePolicyPresetCatalog,
+    InMemoryDatasetRepository,
+    InMemoryExperimentRegistry,
+)
 
 client = TestClient(app)
 
@@ -16,6 +24,7 @@ client = TestClient(app)
 def registry() -> Iterator[InMemoryExperimentRegistry]:
     dataset_repository = InMemoryDatasetRepository()
     experiment_registry = InMemoryExperimentRegistry()
+    policy_catalog = AcceptancePolicyPresetCatalog()
 
     def override_registry() -> InMemoryExperimentRegistry:
         return experiment_registry
@@ -23,8 +32,14 @@ def registry() -> Iterator[InMemoryExperimentRegistry]:
     def override_datasets() -> InMemoryDatasetRepository:
         return dataset_repository
 
+    def override_policy_catalog() -> AcceptancePolicyPresetCatalog:
+        return policy_catalog
+
     app.dependency_overrides[get_experiment_registry] = override_registry
+
     app.dependency_overrides[get_dataset_repository] = override_datasets
+
+    app.dependency_overrides[get_acceptance_policy_preset_catalog] = override_policy_catalog
 
     try:
         yield experiment_registry
@@ -33,7 +48,14 @@ def registry() -> Iterator[InMemoryExperimentRegistry]:
             get_experiment_registry,
             None,
         )
-        app.dependency_overrides.pop(get_dataset_repository, None)
+        app.dependency_overrides.pop(
+            get_dataset_repository,
+            None,
+        )
+        app.dependency_overrides.pop(
+            get_acceptance_policy_preset_catalog,
+            None,
+        )
 
 
 def create_candle_payload(
@@ -680,3 +702,90 @@ def test_api_rejects_invalid_experiment_report_policy(
     )
 
     assert response.status_code == 422
+
+
+def test_api_lists_versioned_acceptance_policy_presets(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/acceptance-policies")
+
+    assert response.status_code == 200
+
+    assert [preset["preset_id"] for preset in response.json()] == [
+        "baseline-v1",
+        "drawdown-focused-v1",
+        "larger-sample-v1",
+    ]
+
+
+def test_api_returns_one_acceptance_policy_preset(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/acceptance-policies/larger-sample-v1")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["preset_id"] == ("larger-sample-v1")
+    assert data["version"] == 1
+
+    assert data["policy"]["minimum_total_trades"] == 50
+
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_returns_404_for_unknown_acceptance_policy_preset(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/acceptance-policies/unknown-v1")
+
+    assert response.status_code == 404
+
+    assert response.json()["detail"] == ("acceptance policy preset not found")
+
+
+def test_api_builds_experiment_report_from_versioned_preset(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        ("/api/v1/research/experiments/ema-crossover"),
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        f"/api/v1/research/experiments/{experiment_id}/report/presets/baseline-v1"
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["preset"]["preset_id"] == "baseline-v1"
+
+    assert data["report"]["experiment"]["experiment_id"] == experiment_id
+
+    assert data["report"]["acceptance"]["policy"] == data["preset"]["policy"]
+
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_returns_404_when_report_preset_does_not_exist(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        ("/api/v1/research/experiments/ema-crossover"),
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        f"/api/v1/research/experiments/{experiment_id}/report/presets/unknown-v1"
+    )
+
+    assert response.status_code == 404
+
+    assert response.json()["detail"] == ("acceptance policy preset not found")

@@ -53,6 +53,12 @@ from trd_bot.research.pipeline import (
     ResearchPipelineResult,
     build_research_backtest_run_id,
 )
+from trd_bot.research.policy_presets import (
+    AcceptancePolicyPreset,
+    AcceptancePolicyPresetCatalog,
+    PresetExperimentResearchReport,
+    default_acceptance_policy_presets,
+)
 from trd_bot.research.reporting import (
     DirectionMetrics,
     StrategyEvaluationSummary,
@@ -88,6 +94,8 @@ from trd_bot.research.walk_forward_runs import (
 
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
+    "AcceptancePolicyPreset",
+    "AcceptancePolicyPresetCatalog",
     "DatasetBuilder",
     "DatasetCatalogQuery",
     "DatasetRepository",
@@ -121,6 +129,7 @@ __all__ = [
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
+    "PresetExperimentResearchReport",
     "ResearchExperiment",
     "ResearchPipeline",
     "ResearchPipelineResult",
@@ -154,4 +163,5 @@ __all__ = [
     "build_walk_forward_execution_id",
     "build_walk_forward_plan_id",
     "build_walk_forward_split_id",
+    "default_acceptance_policy_presets",
 ]

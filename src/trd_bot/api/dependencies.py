@@ -10,11 +10,13 @@ from trd_bot.db import (
     get_database_session,
 )
 from trd_bot.research import (
+    AcceptancePolicyPresetCatalog,
     DatasetRepository,
     ExperimentRegistry,
     WalkForwardRunRegistry,
 )
 
+_acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
 DatabaseSessionDependency = Annotated[Session, Depends(get_database_session)]
 
 
@@ -40,3 +42,9 @@ def get_walk_forward_run_registry(
     """Return the request-scoped walk-forward run registry."""
 
     return SqlAlchemyWalkForwardRunRegistry(session)
+
+
+def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:
+    """Return the built-in read-only historical policy catalog."""
+
+    return _acceptance_policy_preset_catalog
