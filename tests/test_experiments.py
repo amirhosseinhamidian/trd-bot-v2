@@ -11,7 +11,10 @@ from trd_bot.domain.market_data import (
 from trd_bot.research import (
     DatasetBuilder,
     ExperimentBuilder,
+    ExperimentCatalogQuery,
     ExperimentParameter,
+    ExperimentSortDirection,
+    ExperimentSortField,
     InMemoryExperimentRegistry,
     ResearchPipeline,
     ResearchPipelineResult,
@@ -298,3 +301,69 @@ def test_registry_rejects_invalid_pagination(
             limit=limit,
             offset=offset,
         )
+
+
+def test_registry_filters_experiments_and_counts_matches() -> None:
+    first = ExperimentBuilder().build(
+        result=create_result(horizon_candles=1),
+        parameters=create_parameters(),
+        created_at=CREATED_AT,
+    )
+
+    second = ExperimentBuilder().build(
+        result=create_result(horizon_candles=2),
+        parameters=create_parameters(),
+        created_at=datetime(
+            2026,
+            8,
+            22,
+            20,
+            tzinfo=UTC,
+        ),
+    )
+
+    registry = InMemoryExperimentRegistry()
+
+    registry.save(first)
+    registry.save(second)
+
+    query = ExperimentCatalogQuery(
+        strategy_name=" ema-crossover ",
+        horizon_candles=2,
+    )
+
+    assert registry.count() == 2
+    assert registry.count_matching(query) == 1
+
+    assert registry.search_page(
+        query=query,
+        limit=10,
+        offset=0,
+    ) == (second,)
+
+
+def test_registry_sorts_experiments_by_horizon_descending() -> None:
+    experiments = tuple(
+        ExperimentBuilder().build(
+            result=create_result(horizon_candles=horizon),
+            parameters=create_parameters(),
+            created_at=CREATED_AT,
+        )
+        for horizon in (1, 2, 3)
+    )
+
+    registry = InMemoryExperimentRegistry()
+
+    for experiment in experiments:
+        registry.save(experiment)
+
+    query = ExperimentCatalogQuery(
+        sort_by=(ExperimentSortField.HORIZON_CANDLES),
+        sort_direction=(ExperimentSortDirection.DESCENDING),
+    )
+
+    assert registry.search_page(
+        query=query,
+        limit=10,
+        offset=0,
+    ) == tuple(reversed(experiments))

@@ -21,7 +21,10 @@ from trd_bot.research import (
     DatasetSnapshot,
     DatasetSortDirection,
     ExperimentBuilder,
+    ExperimentCatalogQuery,
     ExperimentParameter,
+    ExperimentSortDirection,
+    ExperimentSortField,
     ResearchExperiment,
     ResearchPipeline,
     WalkForwardConfig,
@@ -120,10 +123,15 @@ def create_experiment(
     *,
     created_at: datetime = CREATED_AT,
     parameter_value: str = "2",
+    horizon_candles: int = 1,
 ) -> ResearchExperiment:
     result = ResearchPipeline().run(
         dataset=dataset,
-        strategy=EMACrossoverStrategy(fast_period=2, slow_period=3),
+        strategy=EMACrossoverStrategy(
+            fast_period=2,
+            slow_period=3,
+        ),
+        horizon_candles=horizon_candles,
     )
     return ExperimentBuilder().build(
         result=result,
@@ -306,6 +314,45 @@ def test_experiment_rejects_conflicting_content(
         repository.save(experiment)
         with pytest.raises(ValueError, match="different content"):
             repository.save(conflicting)
+
+
+def test_experiment_search_filters_sorts_and_counts_matches(
+    session_factory: sessionmaker[Session],
+) -> None:
+    dataset = create_dataset()
+
+    experiments = tuple(
+        create_experiment(
+            dataset,
+            created_at=(CREATED_AT + timedelta(hours=horizon)),
+            horizon_candles=horizon,
+        )
+        for horizon in (1, 2, 3)
+    )
+
+    sorted_query = ExperimentCatalogQuery(
+        strategy_name="ema-crossover",
+        sort_by=(ExperimentSortField.HORIZON_CANDLES),
+        sort_direction=(ExperimentSortDirection.DESCENDING),
+    )
+
+    filtered_query = ExperimentCatalogQuery(horizon_candles=2)
+
+    with session_factory() as session:
+        repository = SqlAlchemyExperimentRegistry(session)
+
+        for experiment in experiments:
+            repository.save(experiment)
+
+        assert repository.count() == 3
+
+        assert repository.count_matching(filtered_query) == 1
+
+        assert repository.search_page(
+            query=sorted_query,
+            limit=10,
+            offset=0,
+        ) == tuple(reversed(experiments))
 
 
 def test_walk_forward_run_persists_and_paginates(

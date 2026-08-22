@@ -17,7 +17,12 @@ from trd_bot.research.datasets import (
     DatasetSortDirection,
     DatasetSortField,
 )
-from trd_bot.research.experiments import ResearchExperiment
+from trd_bot.research.experiments import (
+    ExperimentCatalogQuery,
+    ExperimentSortDirection,
+    ExperimentSortField,
+    ResearchExperiment,
+)
 from trd_bot.research.walk_forward_runs import WalkForwardResearchRun
 
 
@@ -250,20 +255,93 @@ class SqlAlchemyExperimentRegistry:
         value = self._session.scalar(select(func.count()).select_from(ResearchExperimentRow))
         return int(value or 0)
 
+    def count_matching(
+        self,
+        query: ExperimentCatalogQuery,
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(ResearchExperimentRow)
+            .where(*self._experiment_conditions(query))
+        )
+
+        value = self._session.scalar(statement)
+
+        return int(value or 0)
+
     def list_page(
         self,
         *,
         limit: int,
         offset: int,
     ) -> tuple[ResearchExperiment, ...]:
-        _validate_pagination(limit=limit, offset=offset)
+        return self.search_page(
+            query=ExperimentCatalogQuery(),
+            limit=limit,
+            offset=offset,
+        )
+
+    def search_page(
+        self,
+        *,
+        query: ExperimentCatalogQuery,
+        limit: int,
+        offset: int,
+    ) -> tuple[ResearchExperiment, ...]:
+        _validate_pagination(
+            limit=limit,
+            offset=offset,
+        )
+
+        sort_column: InstrumentedAttribute[Any]
+
+        if query.sort_by is ExperimentSortField.HORIZON_CANDLES:
+            sort_column = ResearchExperimentRow.horizon_candles
+
+        else:
+            sort_column = ResearchExperimentRow.created_at
+
+        if query.sort_direction is ExperimentSortDirection.DESCENDING:
+            ordering = (
+                sort_column.desc(),
+                ResearchExperimentRow.experiment_id.desc(),
+            )
+
+        else:
+            ordering = (
+                sort_column.asc(),
+                ResearchExperimentRow.experiment_id.asc(),
+            )
+
         rows = self._session.scalars(
             select(ResearchExperimentRow)
-            .order_by(ResearchExperimentRow.created_at, ResearchExperimentRow.experiment_id)
+            .where(*self._experiment_conditions(query))
+            .order_by(*ordering)
             .offset(offset)
             .limit(limit)
         ).all()
+
         return tuple(ResearchExperiment.model_validate_json(row.payload_json) for row in rows)
+
+    @staticmethod
+    def _experiment_conditions(
+        query: ExperimentCatalogQuery,
+    ) -> tuple[ColumnElement[bool], ...]:
+        conditions: list[ColumnElement[bool]] = []
+
+        if query.dataset_id is not None:
+            conditions.append(ResearchExperimentRow.dataset_id == query.dataset_id)
+
+        if query.strategy_name is not None:
+            conditions.append(ResearchExperimentRow.strategy_name == query.strategy_name)
+
+        if query.strategy_version is not None:
+            conditions.append(ResearchExperimentRow.strategy_version == query.strategy_version)
+
+        if query.horizon_candles is not None:
+            conditions.append(ResearchExperimentRow.horizon_candles == query.horizon_candles)
+
+        return tuple(conditions)
 
     @staticmethod
     def _same_experiment(

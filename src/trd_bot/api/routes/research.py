@@ -18,6 +18,7 @@ from trd_bot.research import (
     DatasetRepository,
     DatasetSnapshot,
     ExperimentBuilder,
+    ExperimentCatalogQuery,
     ExperimentParameter,
     ExperimentRegistry,
     InvalidDatasetError,
@@ -109,6 +110,39 @@ class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
     step_candles: int = Field(default=20, ge=1)
     gap_candles: int = Field(default=0, ge=0)
     mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class ExperimentCatalogParams(ExperimentCatalogQuery):
+    """Filters, ordering, and pagination for experiment lists."""
+
+    limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+    )
+
+    offset: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    def catalog_query(
+        self,
+    ) -> ExperimentCatalogQuery:
+        return ExperimentCatalogQuery.model_validate(
+            self.model_dump(
+                exclude={
+                    "limit",
+                    "offset",
+                }
+            )
+        )
+
+
+ExperimentCatalogParamsQuery = Annotated[
+    ExperimentCatalogParams,
+    Query(),
+]
 
 
 def _canonical_decimal(value: Decimal) -> str:
@@ -378,22 +412,34 @@ def create_ema_crossover_experiment(
     "/experiments",
     response_model=Page[ExperimentSummary],
 )
+@router.get(
+    "/experiments",
+    response_model=Page[ExperimentSummary],
+)
 def list_experiments(
     registry: ExperimentRegistryDependency,
-    pagination: PaginationQuery,
+    params: ExperimentCatalogParamsQuery,
 ) -> Page[ExperimentSummary]:
-    """List lightweight experiment summaries with pagination."""
+    """List filtered lightweight experiment summaries."""
 
-    experiments = registry.list_page(
-        limit=pagination.limit,
-        offset=pagination.offset,
+    query = params.catalog_query()
+
+    pagination = PaginationParams(
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+    experiments = registry.search_page(
+        query=query,
+        limit=params.limit,
+        offset=params.offset,
     )
 
     summaries = tuple(ExperimentSummary.from_experiment(experiment) for experiment in experiments)
 
     return build_page(
         summaries,
-        total=registry.count(),
+        total=registry.count_matching(query),
         pagination=pagination,
     )
 

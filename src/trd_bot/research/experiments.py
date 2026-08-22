@@ -2,6 +2,7 @@ import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
+from enum import StrEnum
 from typing import Literal, Protocol, Self
 
 from pydantic import (
@@ -139,6 +140,72 @@ class ExperimentSummary(BaseModel):
         )
 
 
+class ExperimentSortField(StrEnum):
+    """Supported experiment catalog sort fields."""
+
+    CREATED_AT = "created_at"
+    HORIZON_CANDLES = "horizon_candles"
+
+
+class ExperimentSortDirection(StrEnum):
+    """Supported experiment catalog sort directions."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
+
+class ExperimentCatalogQuery(BaseModel):
+    """Normalized filters and ordering for stored experiments."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    dataset_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    strategy_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    strategy_version: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=30,
+    )
+
+    horizon_candles: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+    sort_by: ExperimentSortField = ExperimentSortField.CREATED_AT
+
+    sort_direction: ExperimentSortDirection = ExperimentSortDirection.ASCENDING
+
+    @field_validator(
+        "dataset_id",
+        "strategy_name",
+        "strategy_version",
+        mode="before",
+    )
+    @classmethod
+    def normalize_text_filter(
+        cls,
+        value: object,
+    ) -> object:
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
+
+
 def build_experiment_id(
     *,
     dataset_id: str,
@@ -225,9 +292,22 @@ class ExperimentRegistry(Protocol):
 
     def count(self) -> int: ...
 
+    def count_matching(
+        self,
+        query: ExperimentCatalogQuery,
+    ) -> int: ...
+
     def list_page(
         self,
         *,
+        limit: int,
+        offset: int,
+    ) -> tuple[ResearchExperiment, ...]: ...
+
+    def search_page(
+        self,
+        *,
+        query: ExperimentCatalogQuery,
         limit: int,
         offset: int,
     ) -> tuple[ResearchExperiment, ...]: ...
@@ -283,6 +363,12 @@ class InMemoryExperimentRegistry:
 
         return len(self._experiments)
 
+    def count_matching(
+        self,
+        query: ExperimentCatalogQuery,
+    ) -> int:
+        return len(self._filter(query))
+
     def list_page(
         self,
         *,
@@ -291,15 +377,80 @@ class InMemoryExperimentRegistry:
     ) -> tuple[ResearchExperiment, ...]:
         """Return a validated slice of stored experiments."""
 
+        return self.search_page(
+            query=ExperimentCatalogQuery(),
+            limit=limit,
+            offset=offset,
+        )
+
+    def search_page(
+        self,
+        *,
+        query: ExperimentCatalogQuery,
+        limit: int,
+        offset: int,
+    ) -> tuple[ResearchExperiment, ...]:
+        """Return a filtered, ordered experiment slice."""
+
         if limit <= 0:
             raise ValueError("limit must be greater than zero")
 
         if offset < 0:
             raise ValueError("offset cannot be negative")
 
-        experiments = self.list_all()
+        experiments = self._sort(
+            self._filter(query),
+            query,
+        )
 
         return experiments[offset : offset + limit]
+
+    def _filter(
+        self,
+        query: ExperimentCatalogQuery,
+    ) -> tuple[ResearchExperiment, ...]:
+        return tuple(
+            experiment
+            for experiment in self._experiments.values()
+            if (query.dataset_id is None or experiment.dataset_id == query.dataset_id)
+            and (query.strategy_name is None or experiment.strategy_name == query.strategy_name)
+            and (
+                query.strategy_version is None
+                or experiment.strategy_version == query.strategy_version
+            )
+            and (
+                query.horizon_candles is None or experiment.horizon_candles == query.horizon_candles
+            )
+        )
+
+    @staticmethod
+    def _sort(
+        experiments: tuple[ResearchExperiment, ...],
+        query: ExperimentCatalogQuery,
+    ) -> tuple[ResearchExperiment, ...]:
+        reverse = query.sort_direction is ExperimentSortDirection.DESCENDING
+
+        if query.sort_by is ExperimentSortField.HORIZON_CANDLES:
+            ordered = sorted(
+                experiments,
+                key=lambda experiment: (
+                    experiment.horizon_candles,
+                    experiment.experiment_id,
+                ),
+                reverse=reverse,
+            )
+
+        else:
+            ordered = sorted(
+                experiments,
+                key=lambda experiment: (
+                    experiment.created_at,
+                    experiment.experiment_id,
+                ),
+                reverse=reverse,
+            )
+
+        return tuple(ordered)
 
     @staticmethod
     def _same_experiment(

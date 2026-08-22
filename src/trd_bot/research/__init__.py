@@ -17,8 +17,11 @@ from trd_bot.research.evaluation import (
 )
 from trd_bot.research.experiments import (
     ExperimentBuilder,
+    ExperimentCatalogQuery,
     ExperimentParameter,
     ExperimentRegistry,
+    ExperimentSortDirection,
+    ExperimentSortField,
     InMemoryExperimentRegistry,
     ResearchExperiment,
     build_experiment_id,
@@ -70,8 +73,11 @@ __all__ = [
     "DatasetSummary",
     "DirectionMetrics",
     "ExperimentBuilder",
+    "ExperimentCatalogQuery",
     "ExperimentParameter",
     "ExperimentRegistry",
+    "ExperimentSortDirection",
+    "ExperimentSortField",
     "InMemoryDatasetRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",

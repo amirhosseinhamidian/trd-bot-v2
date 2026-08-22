@@ -273,6 +273,69 @@ def test_api_paginates_experiment_summaries(
     assert all("result" not in item for item in data["items"])
 
 
+def test_api_filters_experiment_catalog(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    for horizon_candles in (1, 2, 3):
+        payload = create_request_payload()
+        payload["horizon_candles"] = horizon_candles
+
+        response = client.post(
+            "/api/v1/research/experiments/ema-crossover",
+            json=payload,
+        )
+
+        assert response.status_code == 200
+
+    response = client.get(
+        "/api/v1/research/experiments",
+        params={
+            "strategy_name": "ema-crossover",
+            "strategy_version": "1.0.0",
+            "horizon_candles": 2,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["count"] == 1
+    assert data["items"][0]["horizon_candles"] == 2
+
+
+def test_api_sorts_experiment_catalog_by_horizon_descending(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    for horizon_candles in (1, 2, 3):
+        payload = create_request_payload()
+        payload["horizon_candles"] = horizon_candles
+
+        response = client.post(
+            "/api/v1/research/experiments/ema-crossover",
+            json=payload,
+        )
+
+        assert response.status_code == 200
+
+    response = client.get(
+        "/api/v1/research/experiments",
+        params={
+            "sort_by": "horizon_candles",
+            "sort_direction": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert [item["horizon_candles"] for item in response.json()["items"]] == [
+        3,
+        2,
+        1,
+    ]
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -284,6 +347,27 @@ def test_api_paginates_experiment_summaries(
 def test_api_rejects_invalid_experiment_pagination(
     registry: InMemoryExperimentRegistry,
     params: dict[str, int],
+) -> None:
+    response = client.get(
+        "/api/v1/research/experiments",
+        params=params,
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"horizon_candles": 0},
+        {"sort_by": "unsupported"},
+        {"sort_direction": "sideways"},
+        {"strategy_name": " "},
+    ],
+)
+def test_api_rejects_invalid_experiment_catalog_query(
+    registry: InMemoryExperimentRegistry,
+    params: dict[str, int | str],
 ) -> None:
     response = client.get(
         "/api/v1/research/experiments",
