@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+from enum import StrEnum
 from typing import Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -98,6 +99,79 @@ class WalkForwardRunSummary(BaseModel):
         )
 
 
+class WalkForwardRunSortField(StrEnum):
+    """Supported walk-forward run catalog sort fields."""
+
+    CREATED_AT = "created_at"
+    HORIZON_CANDLES = "horizon_candles"
+
+
+class WalkForwardRunSortDirection(StrEnum):
+    """Supported walk-forward run catalog sort directions."""
+
+    ASCENDING = "asc"
+    DESCENDING = "desc"
+
+
+class WalkForwardRunCatalogQuery(BaseModel):
+    """Normalized filters and ordering for stored walk-forward runs."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    source_dataset_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    plan_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    strategy_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=100,
+    )
+
+    strategy_version: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=30,
+    )
+
+    horizon_candles: int | None = Field(
+        default=None,
+        ge=1,
+    )
+
+    sort_by: WalkForwardRunSortField = WalkForwardRunSortField.CREATED_AT
+
+    sort_direction: WalkForwardRunSortDirection = WalkForwardRunSortDirection.ASCENDING
+
+    @field_validator(
+        "source_dataset_id",
+        "plan_id",
+        "strategy_name",
+        "strategy_version",
+        mode="before",
+    )
+    @classmethod
+    def normalize_text_filter(
+        cls,
+        value: object,
+    ) -> object:
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
+
+
 class WalkForwardRunBuilder:
     """Build reproducible records around walk-forward results."""
 
@@ -119,15 +193,34 @@ class WalkForwardRunBuilder:
 class WalkForwardRunRegistry(Protocol):
     """Persistence contract for offline walk-forward research runs."""
 
-    def save(self, run: WalkForwardResearchRun) -> WalkForwardResearchRun: ...
+    def save(
+        self,
+        run: WalkForwardResearchRun,
+    ) -> WalkForwardResearchRun: ...
 
-    def get(self, execution_id: str) -> WalkForwardResearchRun | None: ...
+    def get(
+        self,
+        execution_id: str,
+    ) -> WalkForwardResearchRun | None: ...
 
     def count(self) -> int: ...
+
+    def count_matching(
+        self,
+        query: WalkForwardRunCatalogQuery,
+    ) -> int: ...
 
     def list_page(
         self,
         *,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardResearchRun, ...]: ...
+
+    def search_page(
+        self,
+        *,
+        query: WalkForwardRunCatalogQuery,
         limit: int,
         offset: int,
     ) -> tuple[WalkForwardResearchRun, ...]: ...
@@ -163,17 +256,94 @@ class InMemoryWalkForwardRunRegistry:
     def count(self) -> int:
         return len(self._runs)
 
+    def count_matching(
+        self,
+        query: WalkForwardRunCatalogQuery,
+    ) -> int:
+        return len(self._filter(query))
+
     def list_page(
         self,
         *,
         limit: int,
         offset: int,
     ) -> tuple[WalkForwardResearchRun, ...]:
+        return self.search_page(
+            query=WalkForwardRunCatalogQuery(),
+            limit=limit,
+            offset=offset,
+        )
+
+    def search_page(
+        self,
+        *,
+        query: WalkForwardRunCatalogQuery,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardResearchRun, ...]:
         if limit <= 0:
             raise ValueError("limit must be greater than zero")
+
         if offset < 0:
             raise ValueError("offset cannot be negative")
-        return self.list_all()[offset : offset + limit]
+
+        runs = self._sort(
+            self._filter(query),
+            query,
+        )
+
+        return runs[offset : offset + limit]
+
+    def _filter(
+        self,
+        query: WalkForwardRunCatalogQuery,
+    ) -> tuple[WalkForwardResearchRun, ...]:
+        return tuple(
+            run
+            for run in self._runs.values()
+            if (
+                query.source_dataset_id is None
+                or run.result.source_dataset_id == query.source_dataset_id
+            )
+            and (query.plan_id is None or run.result.plan_id == query.plan_id)
+            and (query.strategy_name is None or run.result.strategy_name == query.strategy_name)
+            and (
+                query.strategy_version is None
+                or run.result.strategy_version == query.strategy_version
+            )
+            and (
+                query.horizon_candles is None or run.result.horizon_candles == query.horizon_candles
+            )
+        )
+
+    @staticmethod
+    def _sort(
+        runs: tuple[WalkForwardResearchRun, ...],
+        query: WalkForwardRunCatalogQuery,
+    ) -> tuple[WalkForwardResearchRun, ...]:
+        reverse = query.sort_direction is WalkForwardRunSortDirection.DESCENDING
+
+        if query.sort_by is WalkForwardRunSortField.HORIZON_CANDLES:
+            ordered = sorted(
+                runs,
+                key=lambda run: (
+                    run.result.horizon_candles,
+                    run.execution_id,
+                ),
+                reverse=reverse,
+            )
+
+        else:
+            ordered = sorted(
+                runs,
+                key=lambda run: (
+                    run.created_at,
+                    run.execution_id,
+                ),
+                reverse=reverse,
+            )
+
+        return tuple(ordered)
 
     @staticmethod
     def _same_run(

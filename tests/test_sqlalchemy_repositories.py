@@ -33,6 +33,9 @@ from trd_bot.research import (
     WalkForwardPlanner,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunCatalogQuery,
+    WalkForwardRunSortDirection,
+    WalkForwardRunSortField,
 )
 from trd_bot.strategies import EMACrossoverStrategy
 
@@ -149,6 +152,7 @@ def create_walk_forward_run(
     created_at: datetime = CREATED_AT,
     fast_period: int = 2,
     slow_period: int = 3,
+    horizon_candles: int = 1,
 ) -> WalkForwardResearchRun:
     config = WalkForwardConfig(train_candles=4, test_candles=2, step_candles=2)
     plan = WalkForwardPlanner().plan(dataset=dataset, config=config)
@@ -167,6 +171,7 @@ def create_walk_forward_run(
             ExperimentParameter(name="fast_period", value=str(fast_period)),
             ExperimentParameter(name="slow_period", value=str(slow_period)),
         ),
+        horizon_candles=horizon_candles,
     )
     return WalkForwardRunBuilder().build(
         result=result,
@@ -265,6 +270,45 @@ def test_dataset_search_filters_sorts_and_counts_matches(
             third,
             first,
         )
+
+
+def test_walk_forward_search_filters_sorts_and_counts_matches(
+    session_factory: sessionmaker[Session],
+) -> None:
+    dataset = create_dataset()
+
+    runs = tuple(
+        create_walk_forward_run(
+            dataset,
+            created_at=(CREATED_AT + timedelta(hours=horizon)),
+            horizon_candles=horizon,
+        )
+        for horizon in (1, 2, 3)
+    )
+
+    sorted_query = WalkForwardRunCatalogQuery(
+        strategy_name="ema-crossover",
+        sort_by=(WalkForwardRunSortField.HORIZON_CANDLES),
+        sort_direction=(WalkForwardRunSortDirection.DESCENDING),
+    )
+
+    filtered_query = WalkForwardRunCatalogQuery(horizon_candles=2)
+
+    with session_factory() as session:
+        repository = SqlAlchemyWalkForwardRunRegistry(session)
+
+        for run in runs:
+            repository.save(run)
+
+        assert repository.count() == 3
+
+        assert repository.count_matching(filtered_query) == 1
+
+        assert repository.search_page(
+            query=sorted_query,
+            limit=10,
+            offset=0,
+        ) == tuple(reversed(runs))
 
 
 def test_experiment_persists_and_paginates(

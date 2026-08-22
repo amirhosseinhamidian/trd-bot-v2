@@ -178,6 +178,59 @@ def test_api_lists_paginated_walk_forward_summaries(
     assert all("average_excess_return" in item for item in data["items"])
 
 
+def test_api_filters_walk_forward_run_catalog(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    for horizon_candles in (1, 2, 3):
+        payload = create_request_payload()
+        payload["horizon_candles"] = horizon_candles
+
+        create_run(payload)
+
+    response = client.get(
+        "/api/v1/research/walk-forward/runs",
+        params={
+            "strategy_name": "ema-crossover",
+            "strategy_version": "1.0.0",
+            "horizon_candles": 2,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["count"] == 1
+    assert data["items"][0]["horizon_candles"] == 2
+
+
+def test_api_sorts_walk_forward_run_catalog_by_horizon_descending(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    for horizon_candles in (1, 2, 3):
+        payload = create_request_payload()
+        payload["horizon_candles"] = horizon_candles
+
+        create_run(payload)
+
+    response = client.get(
+        "/api/v1/research/walk-forward/runs",
+        params={
+            "sort_by": "horizon_candles",
+            "sort_direction": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert [item["horizon_candles"] for item in response.json()["items"]] == [
+        3,
+        2,
+        1,
+    ]
+
+
 @pytest.mark.parametrize(
     "params",
     [{"limit": 0}, {"limit": 101}, {"offset": -1}],
@@ -185,6 +238,27 @@ def test_api_lists_paginated_walk_forward_summaries(
 def test_api_rejects_invalid_walk_forward_pagination(
     registry: InMemoryWalkForwardRunRegistry,
     params: dict[str, int],
+) -> None:
+    response = client.get(
+        "/api/v1/research/walk-forward/runs",
+        params=params,
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"horizon_candles": 0},
+        {"sort_by": "unsupported"},
+        {"sort_direction": "sideways"},
+        {"plan_id": " "},
+    ],
+)
+def test_api_rejects_invalid_walk_forward_catalog_query(
+    registry: InMemoryWalkForwardRunRegistry,
+    params: dict[str, int | str],
 ) -> None:
     response = client.get(
         "/api/v1/research/walk-forward/runs",

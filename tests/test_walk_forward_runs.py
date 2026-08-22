@@ -14,6 +14,9 @@ from trd_bot.research import (
     WalkForwardPlanner,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunCatalogQuery,
+    WalkForwardRunSortDirection,
+    WalkForwardRunSortField,
     WalkForwardRunSummary,
 )
 from trd_bot.strategies import EMACrossoverStrategy
@@ -27,6 +30,7 @@ def create_run(
     fast_period: int = 2,
     slow_period: int = 3,
     created_at: datetime = CREATED_AT,
+    horizon_candles: int = 1,
 ) -> WalkForwardResearchRun:
     start = datetime(2026, 8, 1, 10, tzinfo=UTC)
     candles = []
@@ -79,6 +83,7 @@ def create_run(
             slow_period=slow_period,
         ),
         strategy_parameters=parameters,
+        horizon_candles=horizon_candles,
     )
     return WalkForwardRunBuilder().build(
         result=result,
@@ -175,6 +180,60 @@ def test_run_summary_excludes_fold_details() -> None:
     assert summary.average_excess_return == run.result.summary.average_excess_return
     assert "result" not in payload
     assert "fold_results" not in payload
+
+
+def test_registry_filters_runs_and_counts_matches() -> None:
+    first = create_run(horizon_candles=1)
+
+    second = create_run(
+        horizon_candles=2,
+        created_at=datetime(
+            2026,
+            8,
+            23,
+            10,
+            tzinfo=UTC,
+        ),
+    )
+
+    registry = InMemoryWalkForwardRunRegistry()
+
+    registry.save(first)
+    registry.save(second)
+
+    query = WalkForwardRunCatalogQuery(
+        strategy_name=" ema-crossover ",
+        horizon_candles=2,
+    )
+
+    assert registry.count() == 2
+    assert registry.count_matching(query) == 1
+
+    assert registry.search_page(
+        query=query,
+        limit=10,
+        offset=0,
+    ) == (second,)
+
+
+def test_registry_sorts_runs_by_horizon_descending() -> None:
+    runs = tuple(create_run(horizon_candles=horizon) for horizon in (1, 2, 3))
+
+    registry = InMemoryWalkForwardRunRegistry()
+
+    for run in runs:
+        registry.save(run)
+
+    query = WalkForwardRunCatalogQuery(
+        sort_by=(WalkForwardRunSortField.HORIZON_CANDLES),
+        sort_direction=(WalkForwardRunSortDirection.DESCENDING),
+    )
+
+    assert registry.search_page(
+        query=query,
+        limit=10,
+        offset=0,
+    ) == tuple(reversed(runs))
 
 
 def test_registry_paginates_runs() -> None:

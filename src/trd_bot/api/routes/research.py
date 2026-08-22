@@ -33,6 +33,7 @@ from trd_bot.research import (
     WalkForwardPlanner,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunCatalogQuery,
     WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
@@ -52,11 +53,6 @@ ExperimentRegistryDependency = Annotated[
 DatasetRepositoryDependency = Annotated[
     DatasetRepository,
     Depends(get_dataset_repository),
-]
-
-PaginationQuery = Annotated[
-    PaginationParams,
-    Query(),
 ]
 
 WalkForwardRunRegistryDependency = Annotated[
@@ -141,6 +137,39 @@ class ExperimentCatalogParams(ExperimentCatalogQuery):
 
 ExperimentCatalogParamsQuery = Annotated[
     ExperimentCatalogParams,
+    Query(),
+]
+
+
+class WalkForwardRunCatalogParams(WalkForwardRunCatalogQuery):
+    """Filters, ordering, and pagination for walk-forward lists."""
+
+    limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+    )
+
+    offset: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    def catalog_query(
+        self,
+    ) -> WalkForwardRunCatalogQuery:
+        return WalkForwardRunCatalogQuery.model_validate(
+            self.model_dump(
+                exclude={
+                    "limit",
+                    "offset",
+                }
+            )
+        )
+
+
+WalkForwardRunCatalogParamsQuery = Annotated[
+    WalkForwardRunCatalogParams,
     Query(),
 ]
 
@@ -326,18 +355,28 @@ def create_ema_crossover_walk_forward_run(
 )
 def list_walk_forward_runs(
     registry: WalkForwardRunRegistryDependency,
-    pagination: PaginationQuery,
+    params: WalkForwardRunCatalogParamsQuery,
 ) -> Page[WalkForwardRunSummary]:
-    """List lightweight stored walk-forward runs."""
+    """List filtered lightweight walk-forward runs."""
 
-    runs = registry.list_page(
-        limit=pagination.limit,
-        offset=pagination.offset,
+    query = params.catalog_query()
+
+    pagination = PaginationParams(
+        limit=params.limit,
+        offset=params.offset,
     )
+
+    runs = registry.search_page(
+        query=query,
+        limit=params.limit,
+        offset=params.offset,
+    )
+
     summaries = tuple(WalkForwardRunSummary.from_run(run) for run in runs)
+
     return build_page(
         summaries,
-        total=registry.count(),
+        total=registry.count_matching(query),
         pagination=pagination,
     )
 

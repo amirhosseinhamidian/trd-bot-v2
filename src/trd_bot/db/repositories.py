@@ -23,7 +23,12 @@ from trd_bot.research.experiments import (
     ExperimentSortField,
     ResearchExperiment,
 )
-from trd_bot.research.walk_forward_runs import WalkForwardResearchRun
+from trd_bot.research.walk_forward_runs import (
+    WalkForwardResearchRun,
+    WalkForwardRunCatalogQuery,
+    WalkForwardRunSortDirection,
+    WalkForwardRunSortField,
+)
 
 
 def _validate_pagination(*, limit: int, offset: int) -> None:
@@ -403,20 +408,96 @@ class SqlAlchemyWalkForwardRunRegistry:
         value = self._session.scalar(select(func.count()).select_from(WalkForwardRunRow))
         return int(value or 0)
 
+    def count_matching(
+        self,
+        query: WalkForwardRunCatalogQuery,
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(WalkForwardRunRow)
+            .where(*self._walk_forward_conditions(query))
+        )
+
+        value = self._session.scalar(statement)
+
+        return int(value or 0)
+
     def list_page(
         self,
         *,
         limit: int,
         offset: int,
     ) -> tuple[WalkForwardResearchRun, ...]:
-        _validate_pagination(limit=limit, offset=offset)
+        return self.search_page(
+            query=WalkForwardRunCatalogQuery(),
+            limit=limit,
+            offset=offset,
+        )
+
+    def search_page(
+        self,
+        *,
+        query: WalkForwardRunCatalogQuery,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardResearchRun, ...]:
+        _validate_pagination(
+            limit=limit,
+            offset=offset,
+        )
+
+        sort_column: InstrumentedAttribute[Any]
+
+        if query.sort_by is WalkForwardRunSortField.HORIZON_CANDLES:
+            sort_column = WalkForwardRunRow.horizon_candles
+
+        else:
+            sort_column = WalkForwardRunRow.created_at
+
+        if query.sort_direction is WalkForwardRunSortDirection.DESCENDING:
+            ordering = (
+                sort_column.desc(),
+                WalkForwardRunRow.execution_id.desc(),
+            )
+
+        else:
+            ordering = (
+                sort_column.asc(),
+                WalkForwardRunRow.execution_id.asc(),
+            )
+
         rows = self._session.scalars(
             select(WalkForwardRunRow)
-            .order_by(WalkForwardRunRow.created_at, WalkForwardRunRow.execution_id)
+            .where(*self._walk_forward_conditions(query))
+            .order_by(*ordering)
             .offset(offset)
             .limit(limit)
         ).all()
+
         return tuple(WalkForwardResearchRun.model_validate_json(row.payload_json) for row in rows)
+
+    @staticmethod
+    def _walk_forward_conditions(
+        query: WalkForwardRunCatalogQuery,
+    ) -> tuple[ColumnElement[bool], ...]:
+        conditions: list[ColumnElement[bool]] = []
+
+        if query.source_dataset_id is not None:
+            conditions.append(WalkForwardRunRow.source_dataset_id == query.source_dataset_id)
+
+        if query.plan_id is not None:
+            conditions.append(WalkForwardRunRow.plan_id == query.plan_id)
+
+        if query.strategy_name is not None:
+            conditions.append(WalkForwardRunRow.strategy_name == query.strategy_name)
+
+        if query.strategy_version is not None:
+            conditions.append(WalkForwardRunRow.strategy_version == query.strategy_version)
+
+        if query.horizon_candles is not None:
+            conditions.append(WalkForwardRunRow.horizon_candles == query.horizon_candles)
+
+        return tuple(conditions)
 
     @staticmethod
     def _same_run(

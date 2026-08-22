@@ -58,7 +58,10 @@ from trd_bot.research.walk_forward_runs import (
     InMemoryWalkForwardRunRegistry,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunCatalogQuery,
     WalkForwardRunRegistry,
+    WalkForwardRunSortDirection,
+    WalkForwardRunSortField,
     WalkForwardRunSummary,
 )
 
@@ -105,7 +108,10 @@ __all__ = [
     "WalkForwardPlanner",
     "WalkForwardResearchRun",
     "WalkForwardRunBuilder",
+    "WalkForwardRunCatalogQuery",
     "WalkForwardRunRegistry",
+    "WalkForwardRunSortDirection",
+    "WalkForwardRunSortField",
     "WalkForwardRunSummary",
     "build_experiment_id",
     "build_research_backtest_run_id",
