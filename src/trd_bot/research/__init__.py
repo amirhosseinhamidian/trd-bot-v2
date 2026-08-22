@@ -30,6 +30,12 @@ from trd_bot.research.evaluation import (
     SignalEvaluator,
     SignalOutcome,
 )
+from trd_bot.research.experiment_reports import (
+    ExperimentResearchReport,
+    ExperimentResearchReportBuilder,
+    HistoricalBenchmarkContext,
+    HistoricalDrawdownComparison,
+)
 from trd_bot.research.experiments import (
     ExperimentBuilder,
     ExperimentCatalogQuery,
@@ -105,8 +111,12 @@ __all__ = [
     "ExperimentComparisonResult",
     "ExperimentParameter",
     "ExperimentRegistry",
+    "ExperimentResearchReport",
+    "ExperimentResearchReportBuilder",
     "ExperimentSortDirection",
     "ExperimentSortField",
+    "HistoricalBenchmarkContext",
+    "HistoricalDrawdownComparison",
     "InMemoryDatasetRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",

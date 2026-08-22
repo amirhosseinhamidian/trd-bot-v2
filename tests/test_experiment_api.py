@@ -596,3 +596,87 @@ def test_api_rejects_invalid_experiment_acceptance_policy(
     )
 
     assert response.status_code == 422
+
+
+def test_api_builds_dashboard_ready_experiment_report(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        (f"/api/v1/research/experiments/{experiment_id}/report"),
+        json={
+            "minimum_total_trades": 1,
+            "minimum_excess_return": "-1",
+            "maximum_drawdown_fraction": "1",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["experiment"]["experiment_id"] == experiment_id
+    assert data["acceptance"]["outcome"] == "accepted"
+    assert data["benchmark_context"]["benchmark_type"] == "buy_and_hold"
+
+    assert "strategy_total_return" in data["benchmark_context"]
+    assert "benchmark_return" in data["benchmark_context"]
+
+    assert data["passed_checks"] == 3
+    assert data["failed_checks"] == 0
+
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_report_preserves_insufficient_data_outcome(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        (f"/api/v1/research/experiments/{experiment_id}/report"),
+        json={
+            "minimum_total_trades": 20,
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert response.json()["acceptance"]["outcome"] == "insufficient_data"
+
+
+def test_api_returns_404_for_unknown_experiment_report(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.post(
+        ("/api/v1/research/experiments/experiment-0000000000000000/report"),
+        json={},
+    )
+
+    assert response.status_code == 404
+
+    assert response.json()["detail"] == "experiment not found"
+
+
+def test_api_rejects_invalid_experiment_report_policy(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.post(
+        ("/api/v1/research/experiments/experiment-0000000000000000/report"),
+        json={
+            "maximum_drawdown_fraction": "1.01",
+        },
+    )
+
+    assert response.status_code == 422

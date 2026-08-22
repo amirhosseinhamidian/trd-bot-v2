@@ -27,6 +27,8 @@ from trd_bot.research import (
     ExperimentComparisonResult,
     ExperimentParameter,
     ExperimentRegistry,
+    ExperimentResearchReport,
+    ExperimentResearchReportBuilder,
     InvalidDatasetError,
     ResearchExperiment,
     ResearchPipeline,
@@ -553,6 +555,31 @@ def assess_experiment_acceptance(
         )
 
     return ExperimentAcceptanceEvaluator().evaluate(
+        experiment=ExperimentSummary.from_experiment(experiment),
+        policy=policy,
+    )
+
+
+@router.post(
+    "/experiments/{experiment_id}/report",
+    response_model=ExperimentResearchReport,
+)
+def build_experiment_research_report(
+    experiment_id: str,
+    policy: ExperimentAcceptancePolicy,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentResearchReport:
+    """Build a dashboard-ready report from stored historical results."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    return ExperimentResearchReportBuilder().build(
         experiment=ExperimentSummary.from_experiment(experiment),
         policy=policy,
     )
