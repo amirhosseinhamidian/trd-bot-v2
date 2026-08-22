@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Annotated
 
@@ -5,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.dependencies import (
+    get_dataset_repository,
     get_experiment_registry,
     get_walk_forward_run_registry,
 )
@@ -13,10 +15,11 @@ from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import (
     DatasetBuilder,
+    DatasetRepository,
+    DatasetSnapshot,
     ExperimentBuilder,
     ExperimentParameter,
-    InMemoryExperimentRegistry,
-    InMemoryWalkForwardRunRegistry,
+    ExperimentRegistry,
     InvalidDatasetError,
     ResearchExperiment,
     ResearchPipeline,
@@ -29,6 +32,7 @@ from trd_bot.research import (
     WalkForwardPlanner,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
 from trd_bot.research.experiments import ExperimentSummary
@@ -40,8 +44,13 @@ router = APIRouter(
 )
 
 ExperimentRegistryDependency = Annotated[
-    InMemoryExperimentRegistry,
+    ExperimentRegistry,
     Depends(get_experiment_registry),
+]
+
+DatasetRepositoryDependency = Annotated[
+    DatasetRepository,
+    Depends(get_dataset_repository),
 ]
 
 PaginationQuery = Annotated[
@@ -50,9 +59,22 @@ PaginationQuery = Annotated[
 ]
 
 WalkForwardRunRegistryDependency = Annotated[
-    InMemoryWalkForwardRunRegistry,
+    WalkForwardRunRegistry,
     Depends(get_walk_forward_run_registry),
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class _ResearchExecution:
+    dataset: DatasetSnapshot
+    result: ResearchPipelineResult
+
+
+@dataclass(frozen=True, slots=True)
+class _WalkForwardExecution:
+    dataset: DatasetSnapshot
+    config: WalkForwardConfig
+    result: WalkForwardExecutionResult
 
 
 class EMACrossoverResearchRequest(BaseModel):
@@ -116,7 +138,7 @@ def _build_ema_parameters(
 
 def _run_research_pipeline(
     request: EMACrossoverResearchRequest,
-) -> ResearchPipelineResult:
+) -> _ResearchExecution:
     try:
         dataset = DatasetBuilder().build(
             name=request.dataset_name,
@@ -128,15 +150,18 @@ def _run_research_pipeline(
             slow_period=request.slow_period,
         )
 
-        return ResearchPipeline().run(
+        return _ResearchExecution(
             dataset=dataset,
-            strategy=strategy,
-            horizon_candles=request.horizon_candles,
-            backtest_config=BacktestConfig(
-                starting_balance=request.starting_balance,
-                allocation_fraction=request.allocation_fraction,
-                fee_rate=request.fee_rate,
-                slippage_rate=request.slippage_rate,
+            result=ResearchPipeline().run(
+                dataset=dataset,
+                strategy=strategy,
+                horizon_candles=request.horizon_candles,
+                backtest_config=BacktestConfig(
+                    starting_balance=request.starting_balance,
+                    allocation_fraction=request.allocation_fraction,
+                    fee_rate=request.fee_rate,
+                    slippage_rate=request.slippage_rate,
+                ),
             ),
         )
 
@@ -158,7 +183,7 @@ def _run_research_pipeline(
 
 def _run_walk_forward_pipeline(
     request: EMACrossoverWalkForwardRequest,
-) -> WalkForwardExecutionResult:
+) -> _WalkForwardExecution:
     try:
         dataset = DatasetBuilder().build(
             name=request.dataset_name,
@@ -174,22 +199,27 @@ def _run_walk_forward_pipeline(
             fee_rate=request.fee_rate,
             slippage_rate=request.slippage_rate,
         )
+        walk_forward_config = _build_walk_forward_config(request)
         plan = WalkForwardPlanner().plan(
             dataset=dataset,
-            config=_build_walk_forward_config(request),
+            config=walk_forward_config,
         )
         materialization = WalkForwardDatasetMaterializer().materialize(
             dataset=dataset,
             plan=plan,
         )
 
-        return WalkForwardExecutor().execute(
+        return _WalkForwardExecution(
             dataset=dataset,
-            materialization=materialization,
-            strategy=strategy,
-            strategy_parameters=_build_ema_parameters(request),
-            horizon_candles=request.horizon_candles,
-            backtest_config=backtest_config,
+            config=walk_forward_config,
+            result=WalkForwardExecutor().execute(
+                dataset=dataset,
+                materialization=materialization,
+                strategy=strategy,
+                strategy_parameters=_build_ema_parameters(request),
+                horizon_candles=request.horizon_candles,
+                backtest_config=backtest_config,
+            ),
         )
 
     except InvalidDatasetError as error:
@@ -217,7 +247,7 @@ def run_ema_crossover_research(
 ) -> ResearchPipelineResult:
     """Run the EMA research workflow without storing it."""
 
-    return _run_research_pipeline(request)
+    return _run_research_pipeline(request).result
 
 
 @router.post(
@@ -229,7 +259,7 @@ def run_ema_crossover_walk_forward(
 ) -> WalkForwardExecutionResult:
     """Run an EMA strategy on chronological out-of-sample folds."""
 
-    return _run_walk_forward_pipeline(request)
+    return _run_walk_forward_pipeline(request).result
 
 
 @router.post(
@@ -239,16 +269,18 @@ def run_ema_crossover_walk_forward(
 def create_ema_crossover_walk_forward_run(
     request: EMACrossoverWalkForwardRequest,
     registry: WalkForwardRunRegistryDependency,
+    datasets: DatasetRepositoryDependency,
 ) -> WalkForwardResearchRun:
     """Run and store an offline EMA walk-forward execution."""
 
-    result = _run_walk_forward_pipeline(request)
+    execution = _run_walk_forward_pipeline(request)
     run = WalkForwardRunBuilder().build(
-        result=result,
-        walk_forward_config=_build_walk_forward_config(request),
+        result=execution.result,
+        walk_forward_config=execution.config,
     )
 
     try:
+        datasets.save(execution.dataset)
         return registry.save(run)
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
@@ -299,13 +331,14 @@ def get_walk_forward_run(
 def create_ema_crossover_experiment(
     request: EMACrossoverResearchRequest,
     registry: ExperimentRegistryDependency,
+    datasets: DatasetRepositoryDependency,
 ) -> ResearchExperiment:
     """Run and store an EMA research experiment."""
 
-    result = _run_research_pipeline(request)
+    execution = _run_research_pipeline(request)
 
     experiment = ExperimentBuilder().build(
-        result=result,
+        result=execution.result,
         parameters=(
             ExperimentParameter(
                 name="fast_period",
@@ -334,7 +367,11 @@ def create_ema_crossover_experiment(
         ),
     )
 
-    return registry.save(experiment)
+    try:
+        datasets.save(execution.dataset)
+        return registry.save(experiment)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 @router.get(

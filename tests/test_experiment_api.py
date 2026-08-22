@@ -5,21 +5,26 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from trd_bot.api.dependencies import get_experiment_registry
+from trd_bot.api.dependencies import get_dataset_repository, get_experiment_registry
 from trd_bot.main import app
-from trd_bot.research import InMemoryExperimentRegistry
+from trd_bot.research import InMemoryDatasetRepository, InMemoryExperimentRegistry
 
 client = TestClient(app)
 
 
 @pytest.fixture
 def registry() -> Iterator[InMemoryExperimentRegistry]:
+    dataset_repository = InMemoryDatasetRepository()
     experiment_registry = InMemoryExperimentRegistry()
 
     def override_registry() -> InMemoryExperimentRegistry:
         return experiment_registry
 
+    def override_datasets() -> InMemoryDatasetRepository:
+        return dataset_repository
+
     app.dependency_overrides[get_experiment_registry] = override_registry
+    app.dependency_overrides[get_dataset_repository] = override_datasets
 
     try:
         yield experiment_registry
@@ -28,6 +33,7 @@ def registry() -> Iterator[InMemoryExperimentRegistry]:
             get_experiment_registry,
             None,
         )
+        app.dependency_overrides.pop(get_dataset_repository, None)
 
 
 def create_candle_payload(

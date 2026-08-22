@@ -2,7 +2,7 @@ import hashlib
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal, Self
+from typing import Literal, Protocol, Self
 
 from pydantic import (
     BaseModel,
@@ -214,6 +214,23 @@ class ExperimentBuilder:
             parameters=ordered_parameters,
             result=result,
         )
+
+
+class ExperimentRegistry(Protocol):
+    """Persistence contract for standard research experiments."""
+
+    def save(self, experiment: ResearchExperiment) -> ResearchExperiment: ...
+
+    def get(self, experiment_id: str) -> ResearchExperiment | None: ...
+
+    def count(self) -> int: ...
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[ResearchExperiment, ...]: ...
 
 
 class InMemoryExperimentRegistry:

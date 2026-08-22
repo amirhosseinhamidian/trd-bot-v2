@@ -5,25 +5,34 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from trd_bot.api.dependencies import get_walk_forward_run_registry
+from trd_bot.api.dependencies import (
+    get_dataset_repository,
+    get_walk_forward_run_registry,
+)
 from trd_bot.main import app
-from trd_bot.research import InMemoryWalkForwardRunRegistry
+from trd_bot.research import InMemoryDatasetRepository, InMemoryWalkForwardRunRegistry
 
 client = TestClient(app)
 
 
 @pytest.fixture
 def registry() -> Iterator[InMemoryWalkForwardRunRegistry]:
+    dataset_repository = InMemoryDatasetRepository()
     run_registry = InMemoryWalkForwardRunRegistry()
 
     def override_registry() -> InMemoryWalkForwardRunRegistry:
         return run_registry
 
+    def override_datasets() -> InMemoryDatasetRepository:
+        return dataset_repository
+
     app.dependency_overrides[get_walk_forward_run_registry] = override_registry
+    app.dependency_overrides[get_dataset_repository] = override_datasets
     try:
         yield run_registry
     finally:
         app.dependency_overrides.pop(get_walk_forward_run_registry, None)
+        app.dependency_overrides.pop(get_dataset_repository, None)
 
 
 def create_candle_payload(index: int) -> dict[str, object]:

@@ -2,6 +2,7 @@ import hashlib
 import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,6 +35,40 @@ class DatasetSnapshot(BaseModel):
     candles: tuple[OHLCVCandle, ...]
 
 
+class DatasetSummary(BaseModel):
+    """Lightweight dataset metadata for catalog and dashboard lists."""
+
+    model_config = ConfigDict(frozen=True)
+
+    dataset_id: str
+    schema_version: int = Field(ge=1)
+    name: str = Field(min_length=1, max_length=100)
+    source: str
+    pair: TradingPair
+    timeframe: Timeframe
+    start_time: datetime
+    end_time: datetime
+    created_at: datetime
+    candle_count: int = Field(gt=0)
+    checksum: str = Field(min_length=64, max_length=64)
+
+    @classmethod
+    def from_dataset(cls, dataset: DatasetSnapshot) -> Self:
+        return cls(
+            dataset_id=dataset.dataset_id,
+            schema_version=dataset.schema_version,
+            name=dataset.name,
+            source=dataset.source,
+            pair=dataset.pair,
+            timeframe=dataset.timeframe,
+            start_time=dataset.start_time,
+            end_time=dataset.end_time,
+            created_at=dataset.created_at,
+            candle_count=dataset.candle_count,
+            checksum=dataset.checksum,
+        )
+
+
 class InvalidDatasetError(ValueError):
     """Raised when market data fails quality validation."""
 
@@ -43,6 +78,73 @@ class InvalidDatasetError(ValueError):
         issue_codes = ", ".join(issue.code.value for issue in report.issues)
 
         super().__init__(f"Dataset failed quality checks: {issue_codes}")
+
+
+class DatasetRepository(Protocol):
+    """Persistence contract for immutable dataset snapshots."""
+
+    def save(self, dataset: DatasetSnapshot) -> DatasetSnapshot: ...
+
+    def get(self, dataset_id: str) -> DatasetSnapshot | None: ...
+
+    def count(self) -> int: ...
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[DatasetSnapshot, ...]: ...
+
+
+class InMemoryDatasetRepository:
+    """Store immutable dataset snapshots in memory."""
+
+    def __init__(self) -> None:
+        self._datasets: dict[str, DatasetSnapshot] = {}
+
+    def save(self, dataset: DatasetSnapshot) -> DatasetSnapshot:
+        existing = self._datasets.get(dataset.dataset_id)
+        if existing is not None:
+            if not self._same_dataset(first=existing, second=dataset):
+                raise ValueError("dataset ID already exists with different content")
+            return existing
+
+        self._datasets[dataset.dataset_id] = dataset
+        return dataset
+
+    def get(self, dataset_id: str) -> DatasetSnapshot | None:
+        return self._datasets.get(dataset_id)
+
+    def count(self) -> int:
+        return len(self._datasets)
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[DatasetSnapshot, ...]:
+        if limit <= 0:
+            raise ValueError("limit must be greater than zero")
+        if offset < 0:
+            raise ValueError("offset cannot be negative")
+
+        datasets = tuple(
+            sorted(
+                self._datasets.values(),
+                key=lambda dataset: (dataset.created_at, dataset.dataset_id),
+            )
+        )
+        return datasets[offset : offset + limit]
+
+    @staticmethod
+    def _same_dataset(
+        *,
+        first: DatasetSnapshot,
+        second: DatasetSnapshot,
+    ) -> bool:
+        return first.checksum == second.checksum and first.candles == second.candles
 
 
 class DatasetBuilder:

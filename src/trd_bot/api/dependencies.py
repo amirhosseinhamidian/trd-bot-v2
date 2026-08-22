@@ -1,19 +1,42 @@
+from typing import Annotated
+
+from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from trd_bot.db import (
+    SqlAlchemyDatasetRepository,
+    SqlAlchemyExperimentRegistry,
+    SqlAlchemyWalkForwardRunRegistry,
+    get_database_session,
+)
 from trd_bot.research import (
-    InMemoryExperimentRegistry,
-    InMemoryWalkForwardRunRegistry,
+    DatasetRepository,
+    ExperimentRegistry,
+    WalkForwardRunRegistry,
 )
 
-_experiment_registry = InMemoryExperimentRegistry()
-_walk_forward_run_registry = InMemoryWalkForwardRunRegistry()
+DatabaseSessionDependency = Annotated[Session, Depends(get_database_session)]
 
 
-def get_experiment_registry() -> InMemoryExperimentRegistry:
-    """Return the application experiment registry."""
+def get_dataset_repository(
+    session: DatabaseSessionDependency,
+) -> DatasetRepository:
+    """Return the request-scoped dataset repository."""
 
-    return _experiment_registry
+    return SqlAlchemyDatasetRepository(session)
 
 
-def get_walk_forward_run_registry() -> InMemoryWalkForwardRunRegistry:
-    """Return the application walk-forward run registry."""
+def get_experiment_registry(
+    session: DatabaseSessionDependency,
+) -> ExperimentRegistry:
+    """Return the request-scoped experiment registry."""
 
-    return _walk_forward_run_registry
+    return SqlAlchemyExperimentRegistry(session)
+
+
+def get_walk_forward_run_registry(
+    session: DatabaseSessionDependency,
+) -> WalkForwardRunRegistry:
+    """Return the request-scoped walk-forward run registry."""
+
+    return SqlAlchemyWalkForwardRunRegistry(session)

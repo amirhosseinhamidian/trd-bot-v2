@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Self
+from typing import Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -114,6 +114,23 @@ class WalkForwardRunBuilder:
             walk_forward_config=walk_forward_config,
             result=result,
         )
+
+
+class WalkForwardRunRegistry(Protocol):
+    """Persistence contract for offline walk-forward research runs."""
+
+    def save(self, run: WalkForwardResearchRun) -> WalkForwardResearchRun: ...
+
+    def get(self, execution_id: str) -> WalkForwardResearchRun | None: ...
+
+    def count(self) -> int: ...
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardResearchRun, ...]: ...
 
 
 class InMemoryWalkForwardRunRegistry:

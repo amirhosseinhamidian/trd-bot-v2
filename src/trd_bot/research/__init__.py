@@ -1,6 +1,9 @@
 from trd_bot.research.datasets import (
     DatasetBuilder,
+    DatasetRepository,
     DatasetSnapshot,
+    DatasetSummary,
+    InMemoryDatasetRepository,
     InvalidDatasetError,
 )
 from trd_bot.research.evaluation import (
@@ -12,6 +15,7 @@ from trd_bot.research.evaluation import (
 from trd_bot.research.experiments import (
     ExperimentBuilder,
     ExperimentParameter,
+    ExperimentRegistry,
     InMemoryExperimentRegistry,
     ResearchExperiment,
     build_experiment_id,
@@ -48,16 +52,21 @@ from trd_bot.research.walk_forward_runs import (
     InMemoryWalkForwardRunRegistry,
     WalkForwardResearchRun,
     WalkForwardRunBuilder,
+    WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
 
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
     "DatasetBuilder",
+    "DatasetRepository",
     "DatasetSnapshot",
+    "DatasetSummary",
     "DirectionMetrics",
     "ExperimentBuilder",
     "ExperimentParameter",
+    "ExperimentRegistry",
+    "InMemoryDatasetRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
@@ -84,6 +93,7 @@ __all__ = [
     "WalkForwardPlanner",
     "WalkForwardResearchRun",
     "WalkForwardRunBuilder",
+    "WalkForwardRunRegistry",
     "WalkForwardRunSummary",
     "build_experiment_id",
     "build_research_backtest_run_id",
