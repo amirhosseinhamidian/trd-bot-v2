@@ -244,8 +244,10 @@ def test_execution_is_deterministic() -> None:
         plan_id=datasets.plan.plan_id,
         strategy_name=first.strategy_name,
         strategy_version=first.strategy_version,
+        strategy_parameters=first.strategy_parameters,
         horizon_candles=first.horizon_candles,
         backtest_config=first.backtest_config,
+        fold_run_ids=tuple(fold.result.backtest_run_id for fold in first.fold_results),
     )
 
 

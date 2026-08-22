@@ -4,7 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from trd_bot.api.dependencies import get_experiment_registry
+from trd_bot.api.dependencies import (
+    get_experiment_registry,
+    get_walk_forward_run_registry,
+)
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
@@ -13,6 +16,7 @@ from trd_bot.research import (
     ExperimentBuilder,
     ExperimentParameter,
     InMemoryExperimentRegistry,
+    InMemoryWalkForwardRunRegistry,
     InvalidDatasetError,
     ResearchExperiment,
     ResearchPipeline,
@@ -23,6 +27,9 @@ from trd_bot.research import (
     WalkForwardExecutor,
     WalkForwardMode,
     WalkForwardPlanner,
+    WalkForwardResearchRun,
+    WalkForwardRunBuilder,
+    WalkForwardRunSummary,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.strategies import EMACrossoverStrategy
@@ -40,6 +47,11 @@ ExperimentRegistryDependency = Annotated[
 PaginationQuery = Annotated[
     PaginationParams,
     Query(),
+]
+
+WalkForwardRunRegistryDependency = Annotated[
+    InMemoryWalkForwardRunRegistry,
+    Depends(get_walk_forward_run_registry),
 ]
 
 
@@ -79,6 +91,27 @@ class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
 
 def _canonical_decimal(value: Decimal) -> str:
     return format(value.normalize(), "f")
+
+
+def _build_walk_forward_config(
+    request: EMACrossoverWalkForwardRequest,
+) -> WalkForwardConfig:
+    return WalkForwardConfig(
+        train_candles=request.train_candles,
+        test_candles=request.test_candles,
+        step_candles=request.step_candles,
+        gap_candles=request.gap_candles,
+        mode=request.mode,
+    )
+
+
+def _build_ema_parameters(
+    request: EMACrossoverResearchRequest,
+) -> tuple[ExperimentParameter, ...]:
+    return (
+        ExperimentParameter(name="fast_period", value=str(request.fast_period)),
+        ExperimentParameter(name="slow_period", value=str(request.slow_period)),
+    )
 
 
 def _run_research_pipeline(
@@ -143,13 +176,7 @@ def _run_walk_forward_pipeline(
         )
         plan = WalkForwardPlanner().plan(
             dataset=dataset,
-            config=WalkForwardConfig(
-                train_candles=request.train_candles,
-                test_candles=request.test_candles,
-                step_candles=request.step_candles,
-                gap_candles=request.gap_candles,
-                mode=request.mode,
-            ),
+            config=_build_walk_forward_config(request),
         )
         materialization = WalkForwardDatasetMaterializer().materialize(
             dataset=dataset,
@@ -160,6 +187,7 @@ def _run_walk_forward_pipeline(
             dataset=dataset,
             materialization=materialization,
             strategy=strategy,
+            strategy_parameters=_build_ema_parameters(request),
             horizon_candles=request.horizon_candles,
             backtest_config=backtest_config,
         )
@@ -202,6 +230,66 @@ def run_ema_crossover_walk_forward(
     """Run an EMA strategy on chronological out-of-sample folds."""
 
     return _run_walk_forward_pipeline(request)
+
+
+@router.post(
+    "/walk-forward/runs/ema-crossover",
+    response_model=WalkForwardResearchRun,
+)
+def create_ema_crossover_walk_forward_run(
+    request: EMACrossoverWalkForwardRequest,
+    registry: WalkForwardRunRegistryDependency,
+) -> WalkForwardResearchRun:
+    """Run and store an offline EMA walk-forward execution."""
+
+    result = _run_walk_forward_pipeline(request)
+    run = WalkForwardRunBuilder().build(
+        result=result,
+        walk_forward_config=_build_walk_forward_config(request),
+    )
+
+    try:
+        return registry.save(run)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@router.get(
+    "/walk-forward/runs",
+    response_model=Page[WalkForwardRunSummary],
+)
+def list_walk_forward_runs(
+    registry: WalkForwardRunRegistryDependency,
+    pagination: PaginationQuery,
+) -> Page[WalkForwardRunSummary]:
+    """List lightweight stored walk-forward runs."""
+
+    runs = registry.list_page(
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
+    summaries = tuple(WalkForwardRunSummary.from_run(run) for run in runs)
+    return build_page(
+        summaries,
+        total=registry.count(),
+        pagination=pagination,
+    )
+
+
+@router.get(
+    "/walk-forward/runs/{execution_id}",
+    response_model=WalkForwardResearchRun,
+)
+def get_walk_forward_run(
+    execution_id: str,
+    registry: WalkForwardRunRegistryDependency,
+) -> WalkForwardResearchRun:
+    """Return one stored walk-forward run."""
+
+    run = registry.get(execution_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="walk-forward run not found")
+    return run
 
 
 @router.post(

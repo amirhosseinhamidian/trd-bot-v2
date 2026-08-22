@@ -25,6 +25,17 @@ There is intentionally no live-execution mode or exchange-account integration.
 - Python 3.12+
 - Git
 
+## Database migrations
+
+The local development database uses SQLite by default. Apply all schema
+migrations before starting API development:
+
+```bash
+alembic upgrade head
+```
+
+The default database file is `trd_bot.db` and is excluded from Git.
+
 ## Project structure
 
 ```text

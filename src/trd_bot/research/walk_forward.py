@@ -1,5 +1,6 @@
 import hashlib
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -10,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from trd_bot.backtesting.benchmarks import ComparisonOutcome
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.research.datasets import DatasetBuilder, DatasetSnapshot
+from trd_bot.research.experiments import ExperimentParameter
 from trd_bot.research.pipeline import (
     DEFAULT_RESEARCH_BACKTEST_CONFIG,
     ResearchPipeline,
@@ -272,6 +274,7 @@ class WalkForwardExecutionResult(BaseModel):
     plan_id: str = Field(pattern=r"^walk-forward-[a-f0-9]{16}$")
     strategy_name: str = Field(min_length=1, max_length=100)
     strategy_version: str = Field(min_length=1, max_length=30)
+    strategy_parameters: tuple[ExperimentParameter, ...] = ()
     horizon_candles: int = Field(ge=1)
     backtest_config: BacktestConfig
     fold_results: tuple[WalkForwardFoldExecution, ...] = Field(min_length=1)
@@ -283,13 +286,29 @@ class WalkForwardExecutionResult(BaseModel):
             plan_id=self.plan_id,
             strategy_name=self.strategy_name,
             strategy_version=self.strategy_version,
+            strategy_parameters=self.strategy_parameters,
             horizon_candles=self.horizon_candles,
             backtest_config=self.backtest_config,
+            fold_run_ids=tuple(
+                fold_result.result.backtest_run_id for fold_result in self.fold_results
+            ),
         )
         if self.execution_id != expected_id:
             raise ValueError("walk-forward execution ID is inconsistent")
         if len(self.fold_results) != self.summary.total_folds:
             raise ValueError("fold result count does not match summary")
+
+        ordered_parameters = tuple(
+            sorted(
+                self.strategy_parameters,
+                key=lambda parameter: (parameter.name, parameter.value),
+            )
+        )
+        if self.strategy_parameters != ordered_parameters:
+            raise ValueError("strategy parameters must be ordered")
+        parameter_names = [parameter.name for parameter in self.strategy_parameters]
+        if len(parameter_names) != len(set(parameter_names)):
+            raise ValueError("strategy parameter names must be unique")
 
         for expected_number, fold_result in enumerate(self.fold_results, start=1):
             if fold_result.fold_number != expected_number:
@@ -348,8 +367,10 @@ def build_walk_forward_execution_id(
     plan_id: str,
     strategy_name: str,
     strategy_version: str,
+    strategy_parameters: Sequence[ExperimentParameter],
     horizon_candles: int,
     backtest_config: BacktestConfig,
+    fold_run_ids: Sequence[str],
 ) -> str:
     """Build a deterministic identifier for one walk-forward execution."""
 
@@ -358,13 +379,22 @@ def build_walk_forward_execution_id(
         sort_keys=True,
         separators=(",", ":"),
     )
+    ordered_parameters = sorted(
+        strategy_parameters,
+        key=lambda parameter: (parameter.name, parameter.value),
+    )
+    parameter_identity = "::".join(
+        f"{parameter.name}={parameter.value}" for parameter in ordered_parameters
+    )
     identity = "::".join(
         [
             plan_id,
             strategy_name,
             strategy_version,
+            parameter_identity,
             str(horizon_candles),
             config_payload,
+            "::".join(fold_run_ids),
         ]
     )
     digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()
@@ -501,6 +531,7 @@ class WalkForwardExecutor:
         dataset: DatasetSnapshot,
         materialization: WalkForwardMaterialization,
         strategy: BaseStrategy,
+        strategy_parameters: Sequence[ExperimentParameter] = (),
         horizon_candles: int = 1,
         backtest_config: BacktestConfig | None = None,
     ) -> WalkForwardExecutionResult:
@@ -510,6 +541,12 @@ class WalkForwardExecutor:
             raise ValueError("horizon candles must be greater than zero")
 
         effective_config = backtest_config or DEFAULT_RESEARCH_BACKTEST_CONFIG
+        ordered_parameters = tuple(
+            sorted(
+                strategy_parameters,
+                key=lambda parameter: (parameter.name, parameter.value),
+            )
+        )
         fold_results: list[WalkForwardFoldExecution] = []
 
         for split in materialization.splits:
@@ -541,13 +578,18 @@ class WalkForwardExecutor:
                 plan_id=materialization.plan.plan_id,
                 strategy_name=strategy.name,
                 strategy_version=strategy.version,
+                strategy_parameters=ordered_parameters,
                 horizon_candles=horizon_candles,
                 backtest_config=effective_config,
+                fold_run_ids=tuple(
+                    fold_result.result.backtest_run_id for fold_result in completed_folds
+                ),
             ),
             source_dataset_id=dataset.dataset_id,
             plan_id=materialization.plan.plan_id,
             strategy_name=strategy.name,
             strategy_version=strategy.version,
+            strategy_parameters=ordered_parameters,
             horizon_candles=horizon_candles,
             backtest_config=effective_config,
             fold_results=completed_folds,

@@ -9,8 +9,10 @@ description = "Research, backtesting, paper portfolio, and position monitoring p
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.19.1,<1.20",
     "fastapi>=0.115,<1",
     "pydantic-settings>=2.8,<3",
+    "sqlalchemy>=2.0.52,<2.1",
     "uvicorn[standard]>=0.34,<1",
 ]
 

@@ -44,6 +44,12 @@ from trd_bot.research.walk_forward import (
     build_walk_forward_plan_id,
     build_walk_forward_split_id,
 )
+from trd_bot.research.walk_forward_runs import (
+    InMemoryWalkForwardRunRegistry,
+    WalkForwardResearchRun,
+    WalkForwardRunBuilder,
+    WalkForwardRunSummary,
+)
 
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
@@ -53,6 +59,7 @@ __all__ = [
     "ExperimentBuilder",
     "ExperimentParameter",
     "InMemoryExperimentRegistry",
+    "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "ResearchExperiment",
     "ResearchPipeline",
@@ -75,6 +82,9 @@ __all__ = [
     "WalkForwardMode",
     "WalkForwardPlan",
     "WalkForwardPlanner",
+    "WalkForwardResearchRun",
+    "WalkForwardRunBuilder",
+    "WalkForwardRunSummary",
     "build_experiment_id",
     "build_research_backtest_run_id",
     "build_walk_forward_execution_id",

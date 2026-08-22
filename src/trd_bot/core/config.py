@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: Literal["development", "test", "production"] = "development"
     debug: bool = False
+    database_url: str = "sqlite+pysqlite:///./trd_bot.db"
 
 
 @lru_cache
