@@ -1,5 +1,6 @@
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Self
 
 from fastapi import (
     APIRouter,
@@ -10,6 +11,8 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
+    model_validator,
 )
 
 from trd_bot.api.dependencies import (
@@ -26,12 +29,15 @@ from trd_bot.api.pagination import (
 from trd_bot.research import (
     AcceptancePolicyPreset,
     AcceptancePolicyPresetCatalog,
+    DatasetCatalogQuery,
     DatasetRepository,
     DatasetSummary,
+    ExperimentCatalogQuery,
     ExperimentRegistry,
     ResearchActivityBuilder,
     ResearchActivityItem,
     ResearchActivityType,
+    WalkForwardRunCatalogQuery,
     WalkForwardRunRegistry,
     WalkForwardRunSummary,
 )
@@ -66,9 +72,33 @@ AcceptancePolicyPresetCatalogDependency = Annotated[
 
 
 class ResearchActivityParams(PaginationParams):
-    """Type filter and pagination for the research activity feed."""
+    """Filters and pagination for the research activity feed."""
 
     activity_type: ResearchActivityType | None = None
+    from_time: datetime | None = None
+    to_time: datetime | None = None
+
+    @field_validator("from_time", "to_time")
+    @classmethod
+    def time_must_be_timezone_aware(
+        cls,
+        value: datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("activity time must include timezone information")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_time_range(self) -> Self:
+        if (
+            self.from_time is not None
+            and self.to_time is not None
+            and self.to_time < self.from_time
+        ):
+            raise ValueError("to_time must be on or after from_time")
+        return self
 
 
 ResearchActivityParamsQuery = Annotated[
@@ -255,83 +285,77 @@ def get_research_overview(
 def get_research_activity(
     datasets: DatasetRepositoryDependency,
     experiments: ExperimentRegistryDependency,
-    walk_forward_runs: (WalkForwardRunRegistryDependency),
+    walk_forward_runs: WalkForwardRunRegistryDependency,
     params: ResearchActivityParamsQuery,
 ) -> Page[ResearchActivityItem]:
     """Return a newest-first paginated feed of persisted research resources."""
 
+    dataset_query = DatasetCatalogQuery(
+        created_at_from=params.from_time,
+        created_at_to=params.to_time,
+    )
+    experiment_query = ExperimentCatalogQuery(
+        created_at_from=params.from_time,
+        created_at_to=params.to_time,
+    )
+    walk_forward_query = WalkForwardRunCatalogQuery(
+        created_at_from=params.from_time,
+        created_at_to=params.to_time,
+    )
+
     dataset_count = (
-        datasets.count()
-        if params.activity_type
-        in (
-            None,
-            ResearchActivityType.DATASET,
-        )
+        datasets.count_matching(dataset_query)
+        if params.activity_type in (None, ResearchActivityType.DATASET)
         else 0
     )
-
     experiment_count = (
-        experiments.count()
-        if params.activity_type
-        in (
-            None,
-            ResearchActivityType.EXPERIMENT,
-        )
+        experiments.count_matching(experiment_query)
+        if params.activity_type in (None, ResearchActivityType.EXPERIMENT)
         else 0
     )
-
     walk_forward_run_count = (
-        walk_forward_runs.count()
-        if params.activity_type
-        in (
-            None,
-            ResearchActivityType.WALK_FORWARD_RUN,
-        )
+        walk_forward_runs.count_matching(walk_forward_query)
+        if params.activity_type in (None, ResearchActivityType.WALK_FORWARD_RUN)
         else 0
     )
 
     total = dataset_count + experiment_count + walk_forward_run_count
-
-    window_size = min(
-        total,
-        params.offset + params.limit,
-    )
+    window_size = min(total, params.offset + params.limit)
 
     dataset_limit, dataset_offset = _tail_window(
         total=dataset_count,
         window_size=window_size,
     )
-
     experiment_limit, experiment_offset = _tail_window(
         total=experiment_count,
         window_size=window_size,
     )
-
     run_limit, run_offset = _tail_window(
         total=walk_forward_run_count,
         window_size=window_size,
     )
 
     selected_datasets = (
-        datasets.list_page(
+        datasets.search_page(
+            query=dataset_query,
             limit=dataset_limit,
             offset=dataset_offset,
         )
         if dataset_limit
         else ()
     )
-
     selected_experiments = (
-        experiments.list_page(
+        experiments.search_page(
+            query=experiment_query,
             limit=experiment_limit,
             offset=experiment_offset,
         )
         if experiment_limit
         else ()
     )
-
     selected_runs = (
-        walk_forward_runs.list_page(
+        walk_forward_runs.search_page(
+            query=walk_forward_query,
             limit=run_limit,
             offset=run_offset,
         )
@@ -344,7 +368,6 @@ def get_research_activity(
         experiments=selected_experiments,
         walk_forward_runs=selected_runs,
     )
-
     page_items = activity[params.offset : params.offset + params.limit]
 
     return build_page(

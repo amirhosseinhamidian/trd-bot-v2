@@ -207,6 +207,11 @@ class SqlAlchemyDatasetRepository:
         if query.timeframe is not None:
             conditions.append(DatasetSnapshotRow.timeframe == query.timeframe.value)
 
+        if query.created_at_from is not None:
+            conditions.append(DatasetSnapshotRow.created_at >= query.created_at_from)
+        if query.created_at_to is not None:
+            conditions.append(DatasetSnapshotRow.created_at <= query.created_at_to)
+
         return tuple(conditions)
 
     @staticmethod
@@ -345,6 +350,11 @@ class SqlAlchemyExperimentRegistry:
 
         if query.horizon_candles is not None:
             conditions.append(ResearchExperimentRow.horizon_candles == query.horizon_candles)
+
+        if query.created_at_from is not None:
+            conditions.append(ResearchExperimentRow.created_at >= query.created_at_from)
+        if query.created_at_to is not None:
+            conditions.append(ResearchExperimentRow.created_at <= query.created_at_to)
 
         return tuple(conditions)
 
@@ -496,6 +506,11 @@ class SqlAlchemyWalkForwardRunRegistry:
 
         if query.horizon_candles is not None:
             conditions.append(WalkForwardRunRow.horizon_candles == query.horizon_candles)
+
+        if query.created_at_from is not None:
+            conditions.append(WalkForwardRunRow.created_at >= query.created_at_from)
+        if query.created_at_to is not None:
+            conditions.append(WalkForwardRunRow.created_at <= query.created_at_to)
 
         return tuple(conditions)
 

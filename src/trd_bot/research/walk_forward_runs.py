@@ -149,6 +149,8 @@ class WalkForwardRunCatalogQuery(BaseModel):
         default=None,
         ge=1,
     )
+    created_at_from: datetime | None = None
+    created_at_to: datetime | None = None
 
     sort_by: WalkForwardRunSortField = WalkForwardRunSortField.CREATED_AT
 
@@ -170,6 +172,28 @@ class WalkForwardRunCatalogQuery(BaseModel):
             return value.strip()
 
         return value
+
+    @field_validator("created_at_from", "created_at_to")
+    @classmethod
+    def created_time_must_be_timezone_aware(
+        cls,
+        value: datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("created time must include timezone information")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_created_time_range(self) -> Self:
+        if (
+            self.created_at_from is not None
+            and self.created_at_to is not None
+            and self.created_at_to < self.created_at_from
+        ):
+            raise ValueError("created_at_to must be on or after created_at_from")
+        return self
 
 
 class WalkForwardRunBuilder:
@@ -314,6 +338,8 @@ class InMemoryWalkForwardRunRegistry:
             and (
                 query.horizon_candles is None or run.result.horizon_candles == query.horizon_candles
             )
+            and (query.created_at_from is None or run.created_at >= query.created_at_from)
+            and (query.created_at_to is None or run.created_at <= query.created_at_to)
         )
 
     @staticmethod

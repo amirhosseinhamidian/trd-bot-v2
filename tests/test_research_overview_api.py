@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -453,6 +453,108 @@ def test_api_rejects_unknown_research_activity_type(
         ("/api/v1/research/overview/activity"),
         params={
             "activity_type": "unknown",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_api_filters_research_activity_by_time_range(
+    repositories: RepositorySet,
+) -> None:
+    from_time = datetime.now(UTC) - timedelta(seconds=1)
+    payload = create_research_payload()
+
+    experiment_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=payload,
+    )
+    run_response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover",
+        json={
+            **payload,
+            "train_candles": 4,
+            "test_candles": 2,
+            "step_candles": 2,
+        },
+    )
+    to_time = datetime.now(UTC) + timedelta(seconds=1)
+
+    assert experiment_response.status_code == 200
+    assert run_response.status_code == 200
+
+    response = client.get(
+        "/api/v1/research/overview/activity",
+        params={
+            "from_time": from_time.isoformat(),
+            "to_time": to_time.isoformat(),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total"] == 3
+    assert [item["activity_type"] for item in data["items"]] == [
+        "walk_forward_run",
+        "experiment",
+        "dataset",
+    ]
+
+
+def test_api_returns_empty_activity_for_future_time_range(
+    repositories: RepositorySet,
+) -> None:
+    response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_research_payload(),
+    )
+    assert response.status_code == 200
+
+    future = datetime.now(UTC) + timedelta(days=1)
+
+    activity_response = client.get(
+        "/api/v1/research/overview/activity",
+        params={"from_time": future.isoformat()},
+    )
+
+    assert activity_response.status_code == 200
+    assert activity_response.json()["total"] == 0
+    assert activity_response.json()["items"] == []
+
+
+def test_api_combines_activity_type_and_time_filters(
+    repositories: RepositorySet,
+) -> None:
+    from_time = datetime.now(UTC) - timedelta(seconds=1)
+
+    response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_research_payload(),
+    )
+    assert response.status_code == 200
+
+    activity_response = client.get(
+        "/api/v1/research/overview/activity",
+        params={
+            "activity_type": "experiment",
+            "from_time": from_time.isoformat(),
+        },
+    )
+
+    assert activity_response.status_code == 200
+    data = activity_response.json()
+    assert data["total"] == 1
+    assert data["items"][0]["activity_type"] == "experiment"
+
+
+def test_api_rejects_reversed_activity_time_range(
+    repositories: RepositorySet,
+) -> None:
+    response = client.get(
+        "/api/v1/research/overview/activity",
+        params={
+            "from_time": "2026-08-23T10:00:00Z",
+            "to_time": "2026-08-22T10:00:00Z",
         },
     )
 

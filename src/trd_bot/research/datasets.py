@@ -5,7 +5,13 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data.quality import (
@@ -91,22 +97,21 @@ class DatasetCatalogQuery(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     source: str | None = Field(default=None, min_length=1, max_length=50)
-
     base_asset: str | None = Field(
         default=None,
         min_length=2,
         max_length=15,
         pattern=r"^[A-Z0-9]+$",
     )
-
     quote_asset: str | None = Field(
         default=None,
         min_length=2,
         max_length=15,
         pattern=r"^[A-Z0-9]+$",
     )
-
     timeframe: Timeframe | None = None
+    created_at_from: datetime | None = None
+    created_at_to: datetime | None = None
     sort_by: DatasetSortField = DatasetSortField.CREATED_AT
     sort_direction: DatasetSortDirection = DatasetSortDirection.ASCENDING
 
@@ -115,7 +120,6 @@ class DatasetCatalogQuery(BaseModel):
     def normalize_source(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip()
-
         return value
 
     @field_validator("base_asset", "quote_asset", mode="before")
@@ -123,8 +127,29 @@ class DatasetCatalogQuery(BaseModel):
     def normalize_asset(cls, value: object) -> object:
         if isinstance(value, str):
             return value.strip().upper()
-
         return value
+
+    @field_validator("created_at_from", "created_at_to")
+    @classmethod
+    def created_time_must_be_timezone_aware(
+        cls,
+        value: datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("created time must include timezone information")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_created_time_range(self) -> Self:
+        if (
+            self.created_at_from is not None
+            and self.created_at_to is not None
+            and self.created_at_to < self.created_at_from
+        ):
+            raise ValueError("created_at_to must be on or after created_at_from")
+        return self
 
 
 class InvalidDatasetError(ValueError):
@@ -239,6 +264,8 @@ class InMemoryDatasetRepository:
             and (query.base_asset is None or dataset.pair.base_asset == query.base_asset)
             and (query.quote_asset is None or dataset.pair.quote_asset == query.quote_asset)
             and (query.timeframe is None or dataset.timeframe == query.timeframe)
+            and (query.created_at_from is None or dataset.created_at >= query.created_at_from)
+            and (query.created_at_to is None or dataset.created_at <= query.created_at_to)
         )
 
     @staticmethod

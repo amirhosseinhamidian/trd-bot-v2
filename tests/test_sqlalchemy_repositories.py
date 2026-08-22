@@ -451,6 +451,80 @@ def test_walk_forward_run_rejects_conflicting_content(
             repository.save(conflicting)
 
 
+def test_sqlalchemy_repositories_filter_by_created_at_range(
+    session_factory: sessionmaker[Session],
+) -> None:
+    range_start = CREATED_AT + timedelta(minutes=30)
+    range_end = CREATED_AT + timedelta(hours=1, minutes=30)
+
+    first_dataset = create_dataset()
+    second_dataset = create_dataset(
+        created_at=CREATED_AT + timedelta(hours=1),
+        start_day=2,
+    )
+
+    first_experiment = create_experiment(first_dataset)
+    second_experiment = create_experiment(
+        first_dataset,
+        created_at=CREATED_AT + timedelta(hours=1),
+        horizon_candles=2,
+    )
+
+    first_run = create_walk_forward_run(first_dataset)
+    second_run = create_walk_forward_run(
+        first_dataset,
+        created_at=CREATED_AT + timedelta(hours=1),
+        fast_period=3,
+        slow_period=4,
+    )
+
+    with session_factory() as session:
+        dataset_repository = SqlAlchemyDatasetRepository(session)
+        experiment_repository = SqlAlchemyExperimentRegistry(session)
+        run_repository = SqlAlchemyWalkForwardRunRegistry(session)
+
+        dataset_repository.save(first_dataset)
+        dataset_repository.save(second_dataset)
+        experiment_repository.save(first_experiment)
+        experiment_repository.save(second_experiment)
+        run_repository.save(first_run)
+        run_repository.save(second_run)
+
+        dataset_query = DatasetCatalogQuery(
+            created_at_from=range_start,
+            created_at_to=range_end,
+        )
+        experiment_query = ExperimentCatalogQuery(
+            created_at_from=range_start,
+            created_at_to=range_end,
+        )
+        run_query = WalkForwardRunCatalogQuery(
+            created_at_from=range_start,
+            created_at_to=range_end,
+        )
+
+        assert dataset_repository.count_matching(dataset_query) == 1
+        assert dataset_repository.search_page(
+            query=dataset_query,
+            limit=10,
+            offset=0,
+        ) == (second_dataset,)
+
+        assert experiment_repository.count_matching(experiment_query) == 1
+        assert experiment_repository.search_page(
+            query=experiment_query,
+            limit=10,
+            offset=0,
+        ) == (second_experiment,)
+
+        assert run_repository.count_matching(run_query) == 1
+        assert run_repository.search_page(
+            query=run_query,
+            limit=10,
+            offset=0,
+        ) == (second_run,)
+
+
 @pytest.mark.parametrize(("limit", "offset"), [(0, 0), (1, -1)])
 def test_sqlalchemy_repositories_reject_invalid_pagination(
     session_factory: sessionmaker[Session],
