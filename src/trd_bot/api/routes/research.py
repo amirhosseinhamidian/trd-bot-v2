@@ -17,6 +17,9 @@ from trd_bot.research import (
     DatasetBuilder,
     DatasetRepository,
     DatasetSnapshot,
+    ExperimentAcceptanceEvaluator,
+    ExperimentAcceptancePolicy,
+    ExperimentAcceptanceResult,
     ExperimentBuilder,
     ExperimentCatalogQuery,
     ExperimentComparator,
@@ -528,6 +531,31 @@ def compare_experiments(
             status_code=422,
             detail=str(error),
         ) from error
+
+
+@router.post(
+    "/experiments/{experiment_id}/acceptance",
+    response_model=ExperimentAcceptanceResult,
+)
+def assess_experiment_acceptance(
+    experiment_id: str,
+    policy: ExperimentAcceptancePolicy,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentAcceptanceResult:
+    """Assess one experiment against explicit historical thresholds."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    return ExperimentAcceptanceEvaluator().evaluate(
+        experiment=ExperimentSummary.from_experiment(experiment),
+        policy=policy,
+    )
 
 
 @router.get(

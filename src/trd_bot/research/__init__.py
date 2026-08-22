@@ -1,3 +1,11 @@
+from trd_bot.research.acceptance import (
+    ExperimentAcceptanceCheck,
+    ExperimentAcceptanceCheckName,
+    ExperimentAcceptanceEvaluator,
+    ExperimentAcceptanceOutcome,
+    ExperimentAcceptancePolicy,
+    ExperimentAcceptanceResult,
+)
 from trd_bot.research.comparisons import (
     ExperimentComparator,
     ExperimentComparisonEntry,
@@ -82,6 +90,12 @@ __all__ = [
     "DatasetSortField",
     "DatasetSummary",
     "DirectionMetrics",
+    "ExperimentAcceptanceCheck",
+    "ExperimentAcceptanceCheckName",
+    "ExperimentAcceptanceEvaluator",
+    "ExperimentAcceptanceOutcome",
+    "ExperimentAcceptancePolicy",
+    "ExperimentAcceptanceResult",
     "ExperimentBuilder",
     "ExperimentCatalogQuery",
     "ExperimentComparator",

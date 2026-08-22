@@ -505,3 +505,94 @@ def test_api_rejects_invalid_experiment_comparison_request(
     )
 
     assert response.status_code == 422
+
+
+def test_api_assesses_stored_experiment_acceptance(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        (f"/api/v1/research/experiments/{experiment_id}/acceptance"),
+        json={
+            "minimum_total_trades": 1,
+            "minimum_excess_return": "-1",
+            "maximum_drawdown_fraction": "1",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["experiment_id"] == experiment_id
+    assert data["outcome"] == "accepted"
+    assert len(data["checks"]) == 3
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_marks_experiment_with_few_trades_as_insufficient_data(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        (f"/api/v1/research/experiments/{experiment_id}/acceptance"),
+        json={
+            "minimum_total_trades": 20,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["outcome"] == "insufficient_data"
+
+
+def test_api_returns_404_when_assessed_experiment_does_not_exist(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.post(
+        ("/api/v1/research/experiments/experiment-0000000000000000/acceptance"),
+        json={},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "experiment not found"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "minimum_total_trades": 0,
+        },
+        {
+            "maximum_drawdown_fraction": "-0.01",
+        },
+        {
+            "maximum_drawdown_fraction": "1.01",
+        },
+        {
+            "unknown_threshold": "1",
+        },
+    ],
+)
+def test_api_rejects_invalid_experiment_acceptance_policy(
+    registry: InMemoryExperimentRegistry,
+    payload: dict[str, object],
+) -> None:
+    response = client.post(
+        ("/api/v1/research/experiments/experiment-0000000000000000/acceptance"),
+        json=payload,
+    )
+
+    assert response.status_code == 422
