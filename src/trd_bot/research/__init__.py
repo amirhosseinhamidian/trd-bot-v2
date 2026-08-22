@@ -52,6 +52,7 @@ from trd_bot.research.experiments import (
     ResearchExperiment,
     build_experiment_id,
 )
+from trd_bot.research.exports import ExperimentReportCsvExporter
 from trd_bot.research.pipeline import (
     DEFAULT_RESEARCH_BACKTEST_CONFIG,
     ResearchPipeline,
@@ -130,6 +131,7 @@ __all__ = [
     "ExperimentComparisonResult",
     "ExperimentParameter",
     "ExperimentRegistry",
+    "ExperimentReportCsvExporter",
     "ExperimentResearchReport",
     "ExperimentResearchReportBuilder",
     "ExperimentSortDirection",

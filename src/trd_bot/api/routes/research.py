@@ -2,7 +2,13 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.dependencies import (
@@ -30,6 +36,7 @@ from trd_bot.research import (
     ExperimentComparisonResult,
     ExperimentParameter,
     ExperimentRegistry,
+    ExperimentReportCsvExporter,
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
     InvalidDatasetError,
@@ -689,6 +696,57 @@ def build_experiment_report_from_preset(
     return PresetExperimentResearchReport(
         preset=preset,
         report=report,
+    )
+
+
+@router.get(
+    "/experiments/{experiment_id}/report/presets/{preset_id}/export.csv",
+    response_class=Response,
+)
+def export_experiment_report_csv(
+    experiment_id: str,
+    preset_id: str,
+    registry: ExperimentRegistryDependency,
+    catalog: AcceptancePolicyPresetCatalogDependency,
+) -> Response:
+    """Download one versioned historical experiment report as CSV."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    preset = catalog.get(preset_id)
+
+    if preset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="acceptance policy preset not found",
+        )
+
+    report = ExperimentResearchReportBuilder().build(
+        experiment=ExperimentSummary.from_experiment(experiment),
+        policy=preset.policy,
+    )
+
+    csv_content = ExperimentReportCsvExporter().export(
+        PresetExperimentResearchReport(
+            preset=preset,
+            report=report,
+        )
+    )
+
+    filename = f"{experiment_id}-{preset_id}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": (f'attachment; filename="{filename}"'),
+        },
     )
 
 

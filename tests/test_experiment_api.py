@@ -1,6 +1,8 @@
+import csv
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from decimal import Decimal
+from io import StringIO
 
 import pytest
 from fastapi.testclient import TestClient
@@ -784,6 +786,87 @@ def test_api_returns_404_when_report_preset_does_not_exist(
 
     response = client.post(
         f"/api/v1/research/experiments/{experiment_id}/report/presets/unknown-v1"
+    )
+
+    assert response.status_code == 404
+
+    assert response.json()["detail"] == ("acceptance policy preset not found")
+
+
+def test_api_exports_versioned_experiment_report_as_csv(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/report/presets/baseline-v1/export.csv"
+    )
+
+    assert response.status_code == 200
+
+    assert response.headers["content-type"].startswith("text/csv")
+
+    assert response.headers["content-disposition"] == (
+        f'attachment; filename="{experiment_id}-baseline-v1.csv"'
+    )
+
+    rows = list(csv.reader(StringIO(response.text)))
+
+    assert rows[0] == [
+        "section",
+        "metric",
+        "value",
+    ]
+
+    assert [
+        "metadata",
+        "experiment_id",
+        experiment_id,
+    ] in rows
+
+    assert [
+        "policy_preset",
+        "preset_id",
+        "baseline-v1",
+    ] in rows
+
+    assert [
+        "metadata",
+        "interpretation",
+        "historical_research_only",
+    ] in rows
+
+
+def test_api_returns_404_for_unknown_experiment_csv_export(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get(
+        "/api/v1/research/experiments/"
+        "experiment-0000000000000000/"
+        "report/presets/baseline-v1/export.csv"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == ("experiment not found")
+
+
+def test_api_returns_404_for_unknown_csv_export_preset(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/report/presets/unknown-v1/export.csv"
     )
 
     assert response.status_code == 404
