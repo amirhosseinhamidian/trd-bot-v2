@@ -36,6 +36,17 @@ def test_settings_load_database_url_from_environment(
     assert Settings().database_url == database_url
 
 
+def test_settings_load_cors_origins_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "TRD_BOT_CORS_ALLOWED_ORIGINS",
+        '["https://research.example.test"]',
+    )
+
+    assert Settings().cors_allowed_origins == ("https://research.example.test",)
+
+
 def test_database_engine_rejects_empty_url() -> None:
     with pytest.raises(ValueError, match="cannot be empty"):
         create_database_engine("  ")

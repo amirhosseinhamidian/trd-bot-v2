@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     debug: bool = False
     database_url: str = "sqlite+pysqlite:///./trd_bot.db"
 
+    cors_allowed_origins: tuple[str, ...] = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    )
+
 
 @lru_cache
 def get_settings() -> Settings:

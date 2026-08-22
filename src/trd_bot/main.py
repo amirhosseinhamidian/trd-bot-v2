@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from trd_bot.api.routes.datasets import router as datasets_router
 from trd_bot.api.routes.health import router as health_router
@@ -17,6 +18,17 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         debug=settings.debug,
         description=("Research and paper-analysis platform for crypto market data."),
+    )
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_allowed_origins),
+        allow_credentials=False,
+        allow_methods=["GET"],
+        allow_headers=[
+            "Accept",
+            "Content-Type",
+        ],
     )
 
     application.include_router(
