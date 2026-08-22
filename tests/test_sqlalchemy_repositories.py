@@ -17,7 +17,9 @@ from trd_bot.db import (
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.research import (
     DatasetBuilder,
+    DatasetCatalogQuery,
     DatasetSnapshot,
+    DatasetSortDirection,
     ExperimentBuilder,
     ExperimentParameter,
     ResearchExperiment,
@@ -47,21 +49,55 @@ def session_factory(tmp_path: Path) -> Iterator[sessionmaker[Session]]:
         engine.dispose()
 
 
-def create_dataset(*, created_at: datetime = CREATED_AT) -> DatasetSnapshot:
-    start = datetime(2026, 8, 1, 10, tzinfo=UTC)
-    prices = ("5", "4", "3", "4", "6", "5", "3", "4", "6", "8")
+def create_dataset(
+    *,
+    created_at: datetime = CREATED_AT,
+    start_day: int = 1,
+    source: str = "test-exchange",
+    pair: TradingPair = PAIR,
+    timeframe: Timeframe = Timeframe.HOUR_1,
+) -> DatasetSnapshot:
+    start = datetime(
+        2026,
+        8,
+        start_day,
+        10,
+        tzinfo=UTC,
+    )
+
+    interval = {
+        Timeframe.MINUTES_15: timedelta(minutes=15),
+        Timeframe.HOUR_1: timedelta(hours=1),
+        Timeframe.HOURS_4: timedelta(hours=4),
+        Timeframe.DAY_1: timedelta(days=1),
+    }[timeframe]
+
+    prices = (
+        "5",
+        "4",
+        "3",
+        "4",
+        "6",
+        "5",
+        "3",
+        "4",
+        "6",
+        "8",
+    )
+
     candles = []
 
     for index, price_text in enumerate(prices):
         price = Decimal(price_text)
-        open_time = start + timedelta(hours=index)
+        open_time = start + interval * index
+
         candles.append(
             OHLCVCandle(
-                source="test-exchange",
-                pair=PAIR,
-                timeframe=Timeframe.HOUR_1,
+                source=source,
+                pair=pair,
+                timeframe=timeframe,
                 open_time=open_time,
-                close_time=open_time + timedelta(hours=1),
+                close_time=open_time + interval,
                 received_at=CREATED_AT,
                 open_price=price,
                 high_price=price + Decimal("1"),
@@ -170,6 +206,57 @@ def test_dataset_rejects_conflicting_content(
         repository.save(dataset)
         with pytest.raises(ValueError, match="different content"):
             repository.save(conflicting)
+
+
+def test_dataset_search_filters_sorts_and_counts_matches(
+    session_factory: sessionmaker[Session],
+) -> None:
+    first = create_dataset()
+
+    second = create_dataset(
+        created_at=CREATED_AT + timedelta(hours=1),
+        start_day=2,
+        source="historical-archive",
+        pair=TradingPair(
+            base_asset="ETH",
+            quote_asset="USDT",
+        ),
+        timeframe=Timeframe.HOURS_4,
+    )
+
+    third = create_dataset(
+        created_at=CREATED_AT + timedelta(hours=2),
+        start_day=3,
+        pair=TradingPair(
+            base_asset="BTC",
+            quote_asset="USDC",
+        ),
+    )
+
+    query = DatasetCatalogQuery(
+        source="test-exchange",
+        base_asset="btc",
+        sort_direction=(DatasetSortDirection.DESCENDING),
+    )
+
+    with session_factory() as session:
+        repository = SqlAlchemyDatasetRepository(session)
+
+        repository.save(first)
+        repository.save(second)
+        repository.save(third)
+
+        assert repository.count() == 3
+        assert repository.count_matching(query) == 2
+
+        assert repository.search_page(
+            query=query,
+            limit=10,
+            offset=0,
+        ) == (
+            third,
+            first,
+        )
 
 
 def test_experiment_persists_and_paginates(

@@ -1,7 +1,10 @@
 from trd_bot.research.datasets import (
     DatasetBuilder,
+    DatasetCatalogQuery,
     DatasetRepository,
     DatasetSnapshot,
+    DatasetSortDirection,
+    DatasetSortField,
     DatasetSummary,
     InMemoryDatasetRepository,
     InvalidDatasetError,
@@ -59,8 +62,11 @@ from trd_bot.research.walk_forward_runs import (
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
     "DatasetBuilder",
+    "DatasetCatalogQuery",
     "DatasetRepository",
     "DatasetSnapshot",
+    "DatasetSortDirection",
+    "DatasetSortField",
     "DatasetSummary",
     "DirectionMetrics",
     "ExperimentBuilder",

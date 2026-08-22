@@ -1,15 +1,22 @@
 from collections.abc import Callable
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import InstrumentedAttribute, Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from trd_bot.db.models import (
     DatasetSnapshotRow,
     ResearchExperimentRow,
     WalkForwardRunRow,
 )
-from trd_bot.research.datasets import DatasetSnapshot
+from trd_bot.research.datasets import (
+    DatasetCatalogQuery,
+    DatasetSnapshot,
+    DatasetSortDirection,
+    DatasetSortField,
+)
 from trd_bot.research.experiments import ResearchExperiment
 from trd_bot.research.walk_forward_runs import WalkForwardResearchRun
 
@@ -49,9 +56,11 @@ class SqlAlchemyDatasetRepository:
 
     def save(self, dataset: DatasetSnapshot) -> DatasetSnapshot:
         existing = self.get(dataset.dataset_id)
+
         if existing is not None:
             if not self._same_dataset(existing, dataset):
                 raise ValueError("dataset ID already exists with different content")
+
             return existing
 
         self._session.add(
@@ -70,23 +79,47 @@ class SqlAlchemyDatasetRepository:
                 payload_json=dataset.model_dump_json(),
             )
         )
+
         return _commit_or_resolve(
             session=self._session,
             model=dataset,
             identity=dataset.dataset_id,
-            conflict_message="dataset ID already exists with different content",
+            conflict_message=("dataset ID already exists with different content"),
             get_existing=self.get,
             same_content=self._same_dataset,
         )
 
-    def get(self, dataset_id: str) -> DatasetSnapshot | None:
-        row = self._session.get(DatasetSnapshotRow, dataset_id)
+    def get(
+        self,
+        dataset_id: str,
+    ) -> DatasetSnapshot | None:
+        row = self._session.get(
+            DatasetSnapshotRow,
+            dataset_id,
+        )
+
         if row is None:
             return None
+
         return DatasetSnapshot.model_validate_json(row.payload_json)
 
     def count(self) -> int:
         value = self._session.scalar(select(func.count()).select_from(DatasetSnapshotRow))
+
+        return int(value or 0)
+
+    def count_matching(
+        self,
+        query: DatasetCatalogQuery,
+    ) -> int:
+        statement = (
+            select(func.count())
+            .select_from(DatasetSnapshotRow)
+            .where(*self._dataset_conditions(query))
+        )
+
+        value = self._session.scalar(statement)
+
         return int(value or 0)
 
     def list_page(
@@ -95,17 +128,82 @@ class SqlAlchemyDatasetRepository:
         limit: int,
         offset: int,
     ) -> tuple[DatasetSnapshot, ...]:
-        _validate_pagination(limit=limit, offset=offset)
+        return self.search_page(
+            query=DatasetCatalogQuery(),
+            limit=limit,
+            offset=offset,
+        )
+
+    def search_page(
+        self,
+        *,
+        query: DatasetCatalogQuery,
+        limit: int,
+        offset: int,
+    ) -> tuple[DatasetSnapshot, ...]:
+        _validate_pagination(
+            limit=limit,
+            offset=offset,
+        )
+
+        sort_column: InstrumentedAttribute[Any]
+
+        if query.sort_by is DatasetSortField.START_TIME:
+            sort_column = DatasetSnapshotRow.start_time
+
+        elif query.sort_by is DatasetSortField.CANDLE_COUNT:
+            sort_column = DatasetSnapshotRow.candle_count
+
+        else:
+            sort_column = DatasetSnapshotRow.created_at
+
+        if query.sort_direction is DatasetSortDirection.DESCENDING:
+            ordering = (
+                sort_column.desc(),
+                DatasetSnapshotRow.dataset_id.desc(),
+            )
+
+        else:
+            ordering = (
+                sort_column.asc(),
+                DatasetSnapshotRow.dataset_id.asc(),
+            )
+
         rows = self._session.scalars(
             select(DatasetSnapshotRow)
-            .order_by(DatasetSnapshotRow.created_at, DatasetSnapshotRow.dataset_id)
+            .where(*self._dataset_conditions(query))
+            .order_by(*ordering)
             .offset(offset)
             .limit(limit)
         ).all()
+
         return tuple(DatasetSnapshot.model_validate_json(row.payload_json) for row in rows)
 
     @staticmethod
-    def _same_dataset(first: DatasetSnapshot, second: DatasetSnapshot) -> bool:
+    def _dataset_conditions(
+        query: DatasetCatalogQuery,
+    ) -> tuple[ColumnElement[bool], ...]:
+        conditions: list[ColumnElement[bool]] = []
+
+        if query.source is not None:
+            conditions.append(DatasetSnapshotRow.source == query.source)
+
+        if query.base_asset is not None:
+            conditions.append(DatasetSnapshotRow.base_asset == query.base_asset)
+
+        if query.quote_asset is not None:
+            conditions.append(DatasetSnapshotRow.quote_asset == query.quote_asset)
+
+        if query.timeframe is not None:
+            conditions.append(DatasetSnapshotRow.timeframe == query.timeframe.value)
+
+        return tuple(conditions)
+
+    @staticmethod
+    def _same_dataset(
+        first: DatasetSnapshot,
+        second: DatasetSnapshot,
+    ) -> bool:
         return first.checksum == second.checksum and first.candles == second.candles
 
 

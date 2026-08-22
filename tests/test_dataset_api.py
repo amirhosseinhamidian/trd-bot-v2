@@ -30,21 +30,42 @@ def repository() -> Iterator[InMemoryDatasetRepository]:
         app.dependency_overrides.pop(get_dataset_repository, None)
 
 
-def create_dataset(*, day: int, created_at: datetime) -> DatasetSnapshot:
-    start = datetime(2026, 8, day, 10, tzinfo=UTC)
+def create_dataset(
+    *,
+    day: int,
+    created_at: datetime,
+    source: str = "test-exchange",
+    pair: TradingPair = PAIR,
+    timeframe: Timeframe = Timeframe.HOUR_1,
+) -> DatasetSnapshot:
+    start = datetime(
+        2026,
+        8,
+        day,
+        10,
+        tzinfo=UTC,
+    )
+
+    interval = {
+        Timeframe.MINUTES_15: timedelta(minutes=15),
+        Timeframe.HOUR_1: timedelta(hours=1),
+        Timeframe.HOURS_4: timedelta(hours=4),
+        Timeframe.DAY_1: timedelta(days=1),
+    }[timeframe]
+
     candles = []
 
     for index, price_text in enumerate(("5", "6", "7")):
         price = Decimal(price_text) + Decimal(day)
-        open_time = start + timedelta(hours=index)
+        open_time = start + interval * index
 
         candles.append(
             OHLCVCandle(
-                source="test-exchange",
-                pair=PAIR,
-                timeframe=Timeframe.HOUR_1,
+                source=source,
+                pair=pair,
+                timeframe=timeframe,
                 open_time=open_time,
-                close_time=open_time + timedelta(hours=1),
+                close_time=open_time + interval,
                 received_at=CREATED_AT,
                 open_price=price,
                 high_price=price + Decimal("1"),
@@ -157,6 +178,133 @@ def test_api_paginates_dataset_catalog(
     ]
 
 
+def test_api_filters_dataset_catalog(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    repository.save(
+        create_dataset(
+            day=1,
+            created_at=CREATED_AT,
+        )
+    )
+
+    repository.save(
+        create_dataset(
+            day=2,
+            created_at=CREATED_AT + timedelta(hours=1),
+            source="historical-archive",
+            pair=TradingPair(
+                base_asset="ETH",
+                quote_asset="USDT",
+            ),
+            timeframe=Timeframe.HOURS_4,
+        )
+    )
+
+    repository.save(
+        create_dataset(
+            day=3,
+            created_at=CREATED_AT + timedelta(hours=2),
+            pair=TradingPair(
+                base_asset="BTC",
+                quote_asset="USDC",
+            ),
+        )
+    )
+
+    response = client.get(
+        "/api/v1/research/datasets",
+        params={
+            "source": "test-exchange",
+            "base_asset": "btc",
+            "quote_asset": "usdt",
+            "timeframe": "1h",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["count"] == 1
+    assert data["items"][0]["pair"]["base_asset"] == "BTC"
+    assert data["items"][0]["pair"]["quote_asset"] == "USDT"
+
+
+def test_api_sorts_dataset_catalog_descending(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    for index, day in enumerate((1, 2, 3)):
+        repository.save(
+            create_dataset(
+                day=day,
+                created_at=(CREATED_AT + timedelta(hours=index)),
+            )
+        )
+
+    response = client.get(
+        "/api/v1/research/datasets",
+        params={
+            "sort_by": "created_at",
+            "sort_direction": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+
+    assert [item["name"] for item in response.json()["items"]] == [
+        "Historical dataset 3",
+        "Historical dataset 2",
+        "Historical dataset 1",
+    ]
+
+
+def test_filtered_total_is_calculated_before_pagination(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    repository.save(
+        create_dataset(
+            day=1,
+            created_at=CREATED_AT,
+        )
+    )
+
+    repository.save(
+        create_dataset(
+            day=2,
+            created_at=CREATED_AT + timedelta(hours=1),
+        )
+    )
+
+    repository.save(
+        create_dataset(
+            day=3,
+            created_at=CREATED_AT + timedelta(hours=2),
+            pair=TradingPair(
+                base_asset="ETH",
+                quote_asset="USDT",
+            ),
+        )
+    )
+
+    response = client.get(
+        "/api/v1/research/datasets",
+        params={
+            "base_asset": "BTC",
+            "limit": 1,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 2
+    assert data["count"] == 1
+    assert data["has_next"] is True
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -168,6 +316,27 @@ def test_api_paginates_dataset_catalog(
 def test_api_rejects_invalid_dataset_pagination(
     repository: InMemoryDatasetRepository,
     params: dict[str, int],
+) -> None:
+    response = client.get(
+        "/api/v1/research/datasets",
+        params=params,
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"timeframe": "2h"},
+        {"sort_by": "unsupported"},
+        {"sort_direction": "sideways"},
+        {"base_asset": "$"},
+    ],
+)
+def test_api_rejects_invalid_dataset_catalog_query(
+    repository: InMemoryDatasetRepository,
+    params: dict[str, str],
 ) -> None:
     response = client.get(
         "/api/v1/research/datasets",
