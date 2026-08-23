@@ -1,13 +1,7 @@
 export type ResearchStage =
-  | "empty"
-  | "data_available"
-  | "experiments_available"
-  | "walk_forward_available";
+  "empty" | "data_available" | "experiments_available" | "walk_forward_available";
 
-export type ResearchActivityType =
-  | "dataset"
-  | "experiment"
-  | "walk_forward_run";
+export type ResearchActivityType = "dataset" | "experiment" | "walk_forward_run";
 
 export interface TradingPair {
   base_asset: string;
@@ -55,10 +49,7 @@ export interface ExperimentSummary {
   benchmark_max_drawdown_fraction: string;
   max_drawdown_fraction_delta: string;
   strategy_has_lower_drawdown: boolean;
-  comparison_outcome:
-    | "strategy"
-    | "benchmark"
-    | "tie";
+  comparison_outcome: "strategy" | "benchmark" | "tie";
 }
 
 export interface WalkForwardRunSummary {
@@ -102,12 +93,10 @@ export interface ResearchOverview {
   walk_forward_run_count: number;
   acceptance_policy_preset_count: number;
   research_stage: ResearchStage;
-  acceptance_policy_presets:
-    AcceptancePolicyPreset[];
+  acceptance_policy_presets: AcceptancePolicyPreset[];
   latest_dataset: DatasetSummary | null;
   latest_experiment: ExperimentSummary | null;
-  latest_walk_forward_run:
-    WalkForwardRunSummary | null;
+  latest_walk_forward_run: WalkForwardRunSummary | null;
 }
 
 export interface ResearchActivityItem {

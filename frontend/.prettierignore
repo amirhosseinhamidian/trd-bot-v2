@@ -1,0 +1,14 @@
+.next/
+node_modules/
+out/
+dist/
+coverage/
+
+package-lock.json
+
+public/
+src/app/fonts/
+
+*.ttf
+*.woff
+*.woff2
