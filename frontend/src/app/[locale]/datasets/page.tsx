@@ -17,6 +17,8 @@ export default async function DatasetsPage({ params }: DatasetsPageProps) {
   }
 
   const initialPage = await getDatasets({
+    sortBy: 'created_at',
+    sortDirection: 'desc',
     limit: 12,
     offset: 0,
   });

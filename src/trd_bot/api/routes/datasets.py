@@ -5,6 +5,7 @@ from pydantic import Field
 
 from trd_bot.api.dependencies import get_dataset_repository
 from trd_bot.api.pagination import Page, PaginationParams, build_page
+from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import (
     DatasetCatalogQuery,
     DatasetRepository,
@@ -20,6 +21,11 @@ router = APIRouter(
 DatasetRepositoryDependency = Annotated[
     DatasetRepository,
     Depends(get_dataset_repository),
+]
+
+PaginationQuery = Annotated[
+    PaginationParams,
+    Query(),
 ]
 
 
@@ -52,6 +58,21 @@ DatasetCatalogParamsQuery = Annotated[
     DatasetCatalogParams,
     Query(),
 ]
+
+
+def _get_dataset_or_404(
+    dataset_id: str,
+    repository: DatasetRepository,
+) -> DatasetSnapshot:
+    dataset = repository.get(dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    return dataset
 
 
 @router.get(
@@ -87,6 +108,49 @@ def list_datasets(
 
 
 @router.get(
+    "/{dataset_id}/summary",
+    response_model=DatasetSummary,
+)
+def get_dataset_summary(
+    dataset_id: str,
+    repository: DatasetRepositoryDependency,
+) -> DatasetSummary:
+    """Return lightweight metadata for one historical dataset."""
+
+    dataset = _get_dataset_or_404(
+        dataset_id=dataset_id,
+        repository=repository,
+    )
+
+    return DatasetSummary.from_dataset(dataset)
+
+
+@router.get(
+    "/{dataset_id}/candles",
+    response_model=Page[OHLCVCandle],
+)
+def list_dataset_candles(
+    dataset_id: str,
+    repository: DatasetRepositoryDependency,
+    pagination: PaginationQuery,
+) -> Page[OHLCVCandle]:
+    """Return one chronological page of stored historical candles."""
+
+    dataset = _get_dataset_or_404(
+        dataset_id=dataset_id,
+        repository=repository,
+    )
+
+    candles = dataset.candles[pagination.offset : pagination.offset + pagination.limit]
+
+    return build_page(
+        candles,
+        total=len(dataset.candles),
+        pagination=pagination,
+    )
+
+
+@router.get(
     "/{dataset_id}",
     response_model=DatasetSnapshot,
 )
@@ -94,14 +158,9 @@ def get_dataset(
     dataset_id: str,
     repository: DatasetRepositoryDependency,
 ) -> DatasetSnapshot:
-    """Return one stored historical dataset including its candles."""
+    """Return one stored historical dataset including all candles."""
 
-    dataset = repository.get(dataset_id)
-
-    if dataset is None:
-        raise HTTPException(
-            status_code=404,
-            detail="dataset not found",
-        )
-
-    return dataset
+    return _get_dataset_or_404(
+        dataset_id=dataset_id,
+        repository=repository,
+    )

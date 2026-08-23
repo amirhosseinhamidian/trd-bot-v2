@@ -39,7 +39,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       key: 'experiments',
       label: copy.navigation.experiments,
       href: `/${locale}/experiments`,
-      enabled: false,
+      enabled: true,
     },
     {
       key: 'datasets',

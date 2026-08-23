@@ -29,3 +29,13 @@ export { Skeleton } from '@/components/ui/skeleton';
 
 export { Spinner } from '@/components/ui/spinner';
 export type { SpinnerProps, SpinnerSize } from '@/components/ui/spinner';
+
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+export type { TableProps } from '@/components/ui/table';

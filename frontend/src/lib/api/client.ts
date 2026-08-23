@@ -1,5 +1,13 @@
 import type {
+  DatasetSnapshot,
+  DatasetSortDirection,
+  DatasetSortField,
   DatasetSummary,
+  DatasetTimeframe,
+  ExperimentSortDirection,
+  ExperimentSortField,
+  ExperimentSummary,
+  OHLCVCandle,
   Page,
   ResearchActivityItem,
   ResearchActivityType,
@@ -56,6 +64,32 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 export interface DatasetFilters {
+  source?: string;
+  baseAsset?: string;
+  quoteAsset?: string;
+  timeframe?: DatasetTimeframe;
+  createdAtFrom?: string;
+  createdAtTo?: string;
+  sortBy?: DatasetSortField;
+  sortDirection?: DatasetSortDirection;
+  limit?: number;
+  offset?: number;
+}
+
+export interface DatasetCandleFilters {
+  limit?: number;
+  offset?: number;
+}
+
+export interface ExperimentFilters {
+  datasetId?: string;
+  strategyName?: string;
+  strategyVersion?: string;
+  horizonCandles?: number;
+  createdAtFrom?: string;
+  createdAtTo?: string;
+  sortBy?: ExperimentSortField;
+  sortDirection?: ExperimentSortDirection;
   limit?: number;
   offset?: number;
 }
@@ -77,8 +111,101 @@ export async function getDatasets(filters: DatasetFilters = {}): Promise<Page<Da
 
   params.set('limit', String(filters.limit ?? 12));
   params.set('offset', String(filters.offset ?? 0));
+  params.set('sort_by', filters.sortBy ?? 'created_at');
+  params.set('sort_direction', filters.sortDirection ?? 'desc');
+
+  if (filters.source) {
+    params.set('source', filters.source);
+  }
+
+  if (filters.baseAsset) {
+    params.set('base_asset', filters.baseAsset);
+  }
+
+  if (filters.quoteAsset) {
+    params.set('quote_asset', filters.quoteAsset);
+  }
+
+  if (filters.timeframe) {
+    params.set('timeframe', filters.timeframe);
+  }
+
+  if (filters.createdAtFrom) {
+    params.set('created_at_from', filters.createdAtFrom);
+  }
+
+  if (filters.createdAtTo) {
+    params.set('created_at_to', filters.createdAtTo);
+  }
 
   return getJson<Page<DatasetSummary>>(`/api/v1/research/datasets?${params.toString()}`);
+}
+
+export async function getDatasetSummary(datasetId: string): Promise<DatasetSummary> {
+  return getJson<DatasetSummary>(
+    `/api/v1/research/datasets/${encodeURIComponent(datasetId)}/summary`,
+  );
+}
+
+export async function getDatasetCandles(
+  datasetId: string,
+  filters: DatasetCandleFilters = {},
+): Promise<Page<OHLCVCandle>> {
+  const params = new URLSearchParams();
+
+  params.set('limit', String(filters.limit ?? 25));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<OHLCVCandle>>(
+    `/api/v1/research/datasets/${encodeURIComponent(datasetId)}/candles?${params.toString()}`,
+  );
+}
+
+export async function getDataset(datasetId: string): Promise<DatasetSnapshot> {
+  return getJson<DatasetSnapshot>(`/api/v1/research/datasets/${encodeURIComponent(datasetId)}`);
+}
+
+export async function getExperiments(
+  filters: ExperimentFilters = {},
+): Promise<Page<ExperimentSummary>> {
+  const params = new URLSearchParams();
+
+  params.set('limit', String(filters.limit ?? 12));
+  params.set('offset', String(filters.offset ?? 0));
+  params.set('sort_by', filters.sortBy ?? 'created_at');
+  params.set('sort_direction', filters.sortDirection ?? 'desc');
+
+  if (filters.datasetId) {
+    params.set('dataset_id', filters.datasetId);
+  }
+
+  if (filters.strategyName) {
+    params.set('strategy_name', filters.strategyName);
+  }
+
+  if (filters.strategyVersion) {
+    params.set('strategy_version', filters.strategyVersion);
+  }
+
+  if (filters.horizonCandles !== undefined) {
+    params.set('horizon_candles', String(filters.horizonCandles));
+  }
+
+  if (filters.createdAtFrom) {
+    params.set('created_at_from', filters.createdAtFrom);
+  }
+
+  if (filters.createdAtTo) {
+    params.set('created_at_to', filters.createdAtTo);
+  }
+
+  return getJson<Page<ExperimentSummary>>(`/api/v1/research/experiments?${params.toString()}`);
+}
+
+export async function getExperimentSummary(experimentId: string): Promise<ExperimentSummary> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+
+  return getJson<ExperimentSummary>(`/api/v1/research/experiments/${encodedExperimentId}/summary`);
 }
 
 export async function getResearchActivity(

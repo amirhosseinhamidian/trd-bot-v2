@@ -175,6 +175,50 @@ def test_api_returns_stored_experiment(
     assert response.json()["experiment_id"] == experiment_id
 
 
+def test_api_returns_stored_experiment_summary(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(f"/api/v1/research/experiments/{experiment_id}/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["experiment_id"] == experiment_id
+    assert data["strategy_name"] == "ema-crossover"
+    assert data["strategy_version"] == "1.0.0"
+    assert data["horizon_candles"] == 1
+    assert data["generated_signals"] == 1
+    assert data["total_trades"] == 1
+    assert data["benchmark_type"] == "buy_and_hold"
+    assert data["comparison_outcome"] in {
+        "strategy",
+        "benchmark",
+        "tie",
+    }
+
+    # Summary must remain lightweight.
+    assert "result" not in data
+
+
+def test_api_returns_404_for_unknown_experiment_summary(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/experiments/experiment-0000000000000000/summary")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "experiment not found"
+
+
 def test_api_returns_404_for_unknown_experiment(
     registry: InMemoryExperimentRegistry,
 ) -> None:

@@ -12,12 +12,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
   EmptyState,
   Pagination,
   Spinner,
 } from '@/components/ui';
-import { getDatasets } from '@/lib/api/client';
+import { getDatasets, type DatasetFilters } from '@/lib/api/client';
 import type { DatasetSummary, Page } from '@/lib/api/types';
+import DatasetFilterPanel, {
+  DEFAULT_DATASET_FILTERS,
+  type DatasetFilterValues,
+} from '@/components/dashboard/dataset-filter-panel';
+import Link from 'next/link';
 
 const PAGE_SIZE = 12;
 
@@ -55,16 +61,42 @@ function formatNumber(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
+function toCreatedAtFrom(value: string): string | undefined {
+  return value ? `${value}T00:00:00.000Z` : undefined;
+}
+
+function toCreatedAtTo(value: string): string | undefined {
+  return value ? `${value}T23:59:59.999Z` : undefined;
+}
+
+function buildDatasetFilters(filters: DatasetFilterValues): DatasetFilters {
+  return {
+    source: filters.source.trim() || undefined,
+    baseAsset: filters.baseAsset.trim() || undefined,
+    quoteAsset: filters.quoteAsset.trim() || undefined,
+    timeframe: filters.timeframe === 'all' ? undefined : filters.timeframe,
+    createdAtFrom: toCreatedAtFrom(filters.createdAtFrom),
+    createdAtTo: toCreatedAtTo(filters.createdAtTo),
+    sortBy: filters.sortBy,
+    sortDirection: filters.sortDirection,
+  };
+}
+
 export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogProps) {
   const copy = getDatasetsCopy(locale);
 
   const [page, setPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [appliedFilters, setAppliedFilters] =
+    useState<DatasetFilterValues>(DEFAULT_DATASET_FILTERS);
 
   const requestSequence = useRef(0);
 
-  async function loadDatasets(offset: number): Promise<void> {
+  async function loadDatasets(
+    offset: number,
+    filters: DatasetFilterValues = appliedFilters,
+  ): Promise<void> {
     const requestId = ++requestSequence.current;
 
     setIsLoading(true);
@@ -72,6 +104,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
 
     try {
       const result = await getDatasets({
+        ...buildDatasetFilters(filters),
         limit: PAGE_SIZE,
         offset,
       });
@@ -88,6 +121,11 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
         setIsLoading(false);
       }
     }
+  }
+
+  function applyFilters(filters: DatasetFilterValues): void {
+    setAppliedFilters(filters);
+    void loadDatasets(0, filters);
   }
 
   return (
@@ -113,6 +151,8 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           {copy.description}
         </p>
       </section>
+
+      <DatasetFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
 
       <section className="relative min-h-64">
         {isLoading ? (
@@ -210,6 +250,14 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
                     </div>
                   </dl>
                 </CardContent>
+                <CardFooter>
+                  <Link
+                    href={`/${locale}/datasets/${encodeURIComponent(dataset.dataset_id)}`}
+                    className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/40 hover:text-cyan-300"
+                  >
+                    {copy.viewDetails}
+                  </Link>
+                </CardFooter>
               </Card>
             ))}
           </div>

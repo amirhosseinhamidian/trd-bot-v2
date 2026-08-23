@@ -751,6 +751,27 @@ def export_experiment_report_csv(
 
 
 @router.get(
+    "/experiments/{experiment_id}/summary",
+    response_model=ExperimentSummary,
+)
+def get_experiment_summary(
+    experiment_id: str,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentSummary:
+    """Return a lightweight historical summary for one stored experiment."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    return ExperimentSummary.from_experiment(experiment)
+
+
+@router.get(
     "/experiments/{experiment_id}",
     response_model=ResearchExperiment,
 )

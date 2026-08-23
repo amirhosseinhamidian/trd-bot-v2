@@ -344,3 +344,126 @@ def test_api_rejects_invalid_dataset_catalog_query(
     )
 
     assert response.status_code == 422
+
+
+def test_api_returns_lightweight_dataset_summary(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    dataset = create_dataset(
+        day=1,
+        created_at=CREATED_AT,
+    )
+    repository.save(dataset)
+
+    response = client.get(f"/api/v1/research/datasets/{dataset.dataset_id}/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["dataset_id"] == dataset.dataset_id
+    assert data["name"] == dataset.name
+    assert data["candle_count"] == dataset.candle_count
+    assert data["checksum"] == dataset.checksum
+    assert "candles" not in data
+
+
+def test_api_paginates_dataset_candles(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    dataset = create_dataset(
+        day=1,
+        created_at=CREATED_AT,
+    )
+    repository.save(dataset)
+
+    response = client.get(
+        f"/api/v1/research/datasets/{dataset.dataset_id}/candles",
+        params={
+            "limit": 2,
+            "offset": 1,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 3
+    assert data["limit"] == 2
+    assert data["offset"] == 1
+    assert data["count"] == 2
+    assert data["has_previous"] is True
+    assert data["has_next"] is False
+
+    assert [item["open_price"] for item in data["items"]] == [
+        "7",
+        "8",
+    ]
+
+
+def test_api_preserves_chronological_candle_order(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    dataset = create_dataset(
+        day=1,
+        created_at=CREATED_AT,
+    )
+    repository.save(dataset)
+
+    response = client.get(
+        f"/api/v1/research/datasets/{dataset.dataset_id}/candles",
+        params={
+            "limit": 3,
+            "offset": 0,
+        },
+    )
+
+    assert response.status_code == 200
+
+    open_times = [item["open_time"] for item in response.json()["items"]]
+
+    assert open_times == sorted(open_times)
+
+
+@pytest.mark.parametrize(
+    "path_suffix",
+    [
+        "summary",
+        "candles",
+    ],
+)
+def test_api_returns_404_for_unknown_dataset_resource(
+    repository: InMemoryDatasetRepository,
+    path_suffix: str,
+) -> None:
+    response = client.get(f"/api/v1/research/datasets/dataset-0000000000000000/{path_suffix}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "dataset not found"
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"limit": 0},
+        {"limit": 101},
+        {"offset": -1},
+    ],
+)
+def test_api_rejects_invalid_candle_pagination(
+    repository: InMemoryDatasetRepository,
+    params: dict[str, int],
+) -> None:
+    dataset = create_dataset(
+        day=1,
+        created_at=CREATED_AT,
+    )
+    repository.save(dataset)
+
+    response = client.get(
+        f"/api/v1/research/datasets/{dataset.dataset_id}/candles",
+        params=params,
+    )
+
+    assert response.status_code == 422

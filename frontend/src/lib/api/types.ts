@@ -1,7 +1,17 @@
 export type ResearchStage =
-  "empty" | "data_available" | "experiments_available" | "walk_forward_available";
+  'empty' | 'data_available' | 'experiments_available' | 'walk_forward_available';
 
-export type ResearchActivityType = "dataset" | "experiment" | "walk_forward_run";
+export type ResearchActivityType = 'dataset' | 'experiment' | 'walk_forward_run';
+
+export type DatasetTimeframe = '15m' | '1h' | '4h' | '1d';
+
+export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
+
+export type DatasetSortDirection = 'asc' | 'desc';
+
+export type ExperimentSortField = 'created_at' | 'horizon_candles';
+
+export type ExperimentSortDirection = 'asc' | 'desc';
 
 export interface TradingPair {
   base_asset: string;
@@ -15,12 +25,31 @@ export interface DatasetSummary {
   name: string;
   source: string;
   pair: TradingPair;
-  timeframe: string;
+  timeframe: DatasetTimeframe;
   start_time: string;
   end_time: string;
   created_at: string;
   candle_count: number;
   checksum: string;
+}
+
+export interface OHLCVCandle {
+  source: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  open_time: string;
+  close_time: string;
+  received_at: string;
+  open_price: string;
+  high_price: string;
+  low_price: string;
+  close_price: string;
+  volume: string;
+  is_closed: boolean;
+}
+
+export interface DatasetSnapshot extends DatasetSummary {
+  candles: OHLCVCandle[];
 }
 
 export interface ExperimentParameter {
@@ -43,13 +72,13 @@ export interface ExperimentSummary {
   win_rate: string | null;
   max_drawdown_fraction: string;
   profit_factor: string | null;
-  benchmark_type: "buy_and_hold";
+  benchmark_type: 'buy_and_hold';
   benchmark_return: string;
   excess_return: string;
   benchmark_max_drawdown_fraction: string;
   max_drawdown_fraction_delta: string;
   strategy_has_lower_drawdown: boolean;
-  comparison_outcome: "strategy" | "benchmark" | "tie";
+  comparison_outcome: 'strategy' | 'benchmark' | 'tie';
 }
 
 export interface WalkForwardRunSummary {
@@ -84,7 +113,7 @@ export interface AcceptancePolicyPreset {
   version: number;
   description: string;
   policy: AcceptancePolicy;
-  interpretation: "historical_research_only";
+  interpretation: 'historical_research_only';
 }
 
 export interface ResearchOverview {
