@@ -9,7 +9,6 @@ import SignalFilterPanel, {
 import { getSignalsCopy } from '@/components/dashboard/signals-copy';
 import {
   Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
@@ -19,6 +18,7 @@ import {
   Pagination,
   Spinner,
   BadgeVariant,
+  ErrorState,
 } from '@/components/ui';
 import { getExperimentSignals, type ExperimentSignalFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page, SignalDirection, StrategySignal } from '@/lib/api/types';
@@ -194,7 +194,7 @@ export default function SignalCatalog({
         onApply={applyFilters}
       />
 
-      <section className="relative min-h-64">
+      <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
             <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
@@ -207,16 +207,11 @@ export default function SignalCatalog({
             description={copy.emptyExperimentsDescription}
           />
         ) : hasError ? (
-          <EmptyState
+          <ErrorState
             title={copy.errorTitle}
             description={copy.errorDescription}
-            className="border-red-400/20 bg-red-400/5"
-            icon={<span className="font-bold text-red-300">!</span>}
-            action={
-              <Button size="sm" variant="danger" onClick={() => void loadSignals(page.offset)}>
-                {copy.retry}
-              </Button>
-            }
+            retryLabel={copy.retry}
+            onRetry={() => void loadSignals(page.offset)}
           />
         ) : page.items.length === 0 ? (
           <EmptyState title={copy.emptySignalsTitle} description={copy.emptySignalsDescription} />
@@ -331,7 +326,7 @@ export default function SignalCatalog({
         )}
       </section>
 
-      {experiments.length > 0 ? (
+      {experiments.length > 0 && !hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
           <Pagination
             total={page.total}

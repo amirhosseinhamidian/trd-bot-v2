@@ -2,6 +2,8 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 
 export type WalkForwardDetailCopy = {
   back: string;
+  notFoundTitle: string;
+  notFoundDescription: string;
   eyebrow: string;
   historicalOnly: string;
   disclaimer: string;
@@ -68,6 +70,9 @@ export type WalkForwardDetailCopy = {
 const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
   fa: {
     back: 'بازگشت به Walk-forward',
+    notFoundTitle: 'اجرای Walk-forward پیدا نشد',
+    notFoundDescription:
+      'ممکن است شناسه اجرا نامعتبر باشد یا این اجرای تاریخی دیگر در پایگاه داده موجود نباشد.',
     eyebrow: 'جزئیات اعتبارسنجی خارج از نمونه',
     historicalOnly: 'فقط پژوهش تاریخی',
     disclaimer:
@@ -133,6 +138,9 @@ const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
   },
   en: {
     back: 'Back to walk-forward',
+    notFoundTitle: 'Walk-forward run not found',
+    notFoundDescription:
+      'The execution identifier may be invalid, or the historical run may no longer exist.',
     eyebrow: 'Out-of-sample validation details',
     historicalOnly: 'Historical research only',
     disclaimer:

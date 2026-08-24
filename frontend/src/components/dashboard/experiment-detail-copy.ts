@@ -3,6 +3,9 @@ export type ExperimentDetailLocale = 'fa' | 'en';
 export const experimentDetailCopy = {
   fa: {
     back: 'بازگشت به آزمایش‌ها',
+    notFoundTitle: 'آزمایش موردنظر پیدا نشد',
+    notFoundDescription:
+      'ممکن است شناسه آزمایش نامعتبر باشد یا این آزمایش دیگر در پایگاه داده موجود نباشد.',
     eyebrow: 'جزئیات آزمایش',
     historicalOnly: 'فقط پژوهش تاریخی',
     strategyInformation: 'اطلاعات استراتژی',
@@ -56,6 +59,9 @@ export const experimentDetailCopy = {
   },
   en: {
     back: 'Back to experiments',
+    notFoundTitle: 'Experiment not found',
+    notFoundDescription:
+      'The experiment identifier may be invalid, or the experiment may no longer exist.',
     eyebrow: 'Experiment details',
     historicalOnly: 'Historical research only',
     strategyInformation: 'Strategy information',
