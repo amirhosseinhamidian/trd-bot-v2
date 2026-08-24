@@ -53,6 +53,11 @@ from trd_bot.research.experiments import (
     build_experiment_id,
 )
 from trd_bot.research.exports import ExperimentReportCsvExporter
+from trd_bot.research.performance_series import (
+    ExperimentPerformanceSeries,
+    ExperimentPerformanceSeriesBuilder,
+    HistoricalPerformanceSeries,
+)
 from trd_bot.research.pipeline import (
     DEFAULT_RESEARCH_BACKTEST_CONFIG,
     ResearchPipeline,
@@ -69,6 +74,11 @@ from trd_bot.research.reporting import (
     DirectionMetrics,
     StrategyEvaluationSummary,
     StrategyReportBuilder,
+)
+from trd_bot.research.signal_catalog import (
+    ExperimentSignalCatalog,
+    ExperimentSignalCatalogQuery,
+    ExperimentSignalSortDirection,
 )
 from trd_bot.research.walk_forward import (
     WalkForwardConfig,
@@ -130,15 +140,21 @@ __all__ = [
     "ExperimentComparisonRequest",
     "ExperimentComparisonResult",
     "ExperimentParameter",
+    "ExperimentPerformanceSeries",
+    "ExperimentPerformanceSeriesBuilder",
     "ExperimentRegistry",
     "ExperimentReportCsvExporter",
     "ExperimentResearchReport",
     "ExperimentResearchReportBuilder",
+    "ExperimentSignalCatalog",
+    "ExperimentSignalCatalogQuery",
+    "ExperimentSignalSortDirection",
     "ExperimentSortDirection",
     "ExperimentSortField",
     "HistoricalBenchmarkContext",
     "HistoricalDrawdownComparison",
     "HistoricalFoldReturnDirection",
+    "HistoricalPerformanceSeries",
     "InMemoryDatasetRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",

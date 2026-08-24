@@ -15,6 +15,7 @@ from trd_bot.api.dependencies import (
 from trd_bot.main import app
 from trd_bot.research import (
     AcceptancePolicyPresetCatalog,
+    ExperimentPerformanceSeriesBuilder,
     InMemoryDatasetRepository,
     InMemoryExperimentRegistry,
 )
@@ -916,3 +917,247 @@ def test_api_returns_404_for_unknown_csv_export_preset(
     assert response.status_code == 404
 
     assert response.json()["detail"] == ("acceptance policy preset not found")
+
+
+def test_api_lists_historical_signals_for_stored_experiment(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    created_experiment = create_response.json()
+    experiment_id = created_experiment["experiment_id"]
+    expected_signal = created_experiment["result"]["signals"][0]
+
+    response = client.get(f"/api/v1/research/experiments/{experiment_id}/signals")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["total"] == 1
+    assert data["count"] == 1
+    assert data["limit"] == 20
+    assert data["offset"] == 0
+    assert data["has_next"] is False
+    assert data["has_previous"] is False
+
+    signal = data["items"][0]
+
+    assert signal["signal_id"] == expected_signal["signal_id"]
+    assert signal["dataset_id"] == created_experiment["dataset_id"]
+    assert signal["strategy_name"] == created_experiment["strategy_name"]
+    assert signal["strategy_version"] == created_experiment["strategy_version"]
+    assert signal["direction"] in {
+        "long",
+        "short",
+        "neutral",
+    }
+
+
+def test_api_filters_historical_signals_by_direction(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    created_experiment = create_response.json()
+    experiment_id = created_experiment["experiment_id"]
+    signal_direction = created_experiment["result"]["signals"][0]["direction"]
+
+    matching_response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals",
+        params={
+            "direction": signal_direction,
+        },
+    )
+
+    assert matching_response.status_code == 200
+    assert matching_response.json()["total"] == 1
+
+    non_matching_direction = "short" if signal_direction != "short" else "long"
+
+    non_matching_response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals",
+        params={
+            "direction": non_matching_direction,
+        },
+    )
+
+    assert non_matching_response.status_code == 200
+    assert non_matching_response.json()["total"] == 0
+    assert non_matching_response.json()["items"] == []
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "limit": 0,
+        },
+        {
+            "limit": 101,
+        },
+        {
+            "offset": -1,
+        },
+        {
+            "direction": "unsupported",
+        },
+        {
+            "sort_direction": "sideways",
+        },
+    ],
+)
+def test_api_rejects_invalid_experiment_signal_query(
+    registry: InMemoryExperimentRegistry,
+    params: dict[str, int | str],
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals",
+        params=params,
+    )
+
+    assert response.status_code == 422
+
+
+def test_api_rejects_invalid_experiment_signal_time_range(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals",
+        params={
+            "candle_close_time_from": "2026-08-22T00:00:00Z",
+            "candle_close_time_to": "2026-08-21T00:00:00Z",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_api_returns_404_for_unknown_experiment_signals(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/experiments/experiment-0000000000000000/signals")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "experiment not found"
+
+
+def test_performance_series_builder_preserves_stored_reports(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    created_experiment = create_response.json()
+    experiment_id = created_experiment["experiment_id"]
+
+    experiment = registry.get(experiment_id)
+
+    assert experiment is not None
+
+    series = ExperimentPerformanceSeriesBuilder().build(experiment)
+
+    strategy_report = experiment.result.performance_report
+    benchmark_report = experiment.result.benchmark_result.performance_report
+
+    assert series.experiment_id == experiment_id
+    assert series.dataset_id == experiment.dataset_id
+    assert series.strategy.starting_balance == str(strategy_report.starting_balance)
+    assert series.strategy.ending_balance == str(strategy_report.ending_balance)
+    assert series.strategy.points == strategy_report.equity_curve
+    assert series.benchmark.points == benchmark_report.equity_curve
+    assert series.interpretation == "historical_research_only"
+
+
+def test_api_returns_historical_experiment_performance_series(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+
+    created_experiment = create_response.json()
+    experiment_id = created_experiment["experiment_id"]
+
+    response = client.get(f"/api/v1/research/experiments/{experiment_id}/performance-series")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["experiment_id"] == experiment_id
+    assert data["dataset_id"] == created_experiment["dataset_id"]
+    assert data["benchmark_type"] == "buy_and_hold"
+    assert data["interpretation"] == "historical_research_only"
+
+    strategy_report = created_experiment["result"]["performance_report"]
+    benchmark_report = created_experiment["result"]["benchmark_result"]["performance_report"]
+
+    assert Decimal(data["strategy"]["starting_balance"]) == Decimal(
+        strategy_report["starting_balance"]
+    )
+
+    assert Decimal(data["strategy"]["ending_balance"]) == Decimal(strategy_report["ending_balance"])
+
+    assert Decimal(data["strategy"]["total_return"]) == Decimal(strategy_report["total_return"])
+
+    assert Decimal(data["benchmark"]["starting_balance"]) == Decimal(
+        benchmark_report["starting_balance"]
+    )
+
+    assert Decimal(data["benchmark"]["ending_balance"]) == Decimal(
+        benchmark_report["ending_balance"]
+    )
+    assert data["strategy"]["ending_balance"] == str(strategy_report["ending_balance"])
+    assert data["strategy"]["total_return"] == str(strategy_report["total_return"])
+    assert data["strategy"]["points"] == strategy_report["equity_curve"]
+
+    assert data["benchmark"]["starting_balance"] == str(benchmark_report["starting_balance"])
+    assert data["benchmark"]["ending_balance"] == str(benchmark_report["ending_balance"])
+    assert data["benchmark"]["points"] == benchmark_report["equity_curve"]
+
+
+def test_api_returns_404_for_unknown_experiment_performance_series(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get(
+        "/api/v1/research/experiments/experiment-0000000000000000/performance-series"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "experiment not found"
