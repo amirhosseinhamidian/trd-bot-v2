@@ -332,3 +332,55 @@ export interface MonitoringSummary {
   active_recommendations: ArchitectureRecommendation[];
   interpretation: 'capacity_planning_only';
 }
+
+export type SignalDirection = 'long' | 'short' | 'neutral';
+
+export type ExperimentSignalSortDirection = 'asc' | 'desc';
+
+export interface StrategyFeature {
+  name: string;
+  value: string;
+}
+
+export interface StrategySignal {
+  signal_id: string;
+  strategy_name: string;
+  strategy_version: string;
+  dataset_id: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  candle_open_time: string;
+  candle_close_time: string;
+  generated_at: string;
+  direction: SignalDirection;
+  score: string;
+  reason: string;
+  features: StrategyFeature[];
+}
+
+export interface HistoricalEquityPoint {
+  trade_number: number;
+  timestamp: string;
+  balance: string;
+  peak_balance: string;
+  drawdown: string;
+  drawdown_fraction: string;
+}
+
+export interface HistoricalPerformanceSeries {
+  run_id: string;
+  starting_balance: string;
+  ending_balance: string;
+  total_return: string;
+  max_drawdown_fraction: string;
+  points: HistoricalEquityPoint[];
+}
+
+export interface ExperimentPerformanceSeries {
+  experiment_id: string;
+  dataset_id: string;
+  benchmark_type: 'buy_and_hold';
+  strategy: HistoricalPerformanceSeries;
+  benchmark: HistoricalPerformanceSeries;
+  interpretation: 'historical_research_only';
+}

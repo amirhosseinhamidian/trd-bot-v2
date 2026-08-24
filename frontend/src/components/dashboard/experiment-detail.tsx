@@ -6,13 +6,19 @@ import {
 } from '@/components/dashboard/experiment-detail-copy';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { AcceptancePolicyPreset, ExperimentSummary } from '@/lib/api/types';
+import type {
+  AcceptancePolicyPreset,
+  ExperimentPerformanceSeries,
+  ExperimentSummary,
+} from '@/lib/api/types';
 import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
+import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
 
 type ExperimentDetailProps = {
   experiment: ExperimentSummary;
   locale: ExperimentDetailLocale;
   acceptancePolicyPresets: AcceptancePolicyPreset[];
+  performanceSeries: ExperimentPerformanceSeries;
 };
 
 type MetricProps = {
@@ -111,6 +117,7 @@ export function ExperimentDetail({
   acceptancePolicyPresets,
   experiment,
   locale,
+  performanceSeries,
 }: ExperimentDetailProps) {
   const copy = experimentDetailCopy[locale];
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
@@ -220,6 +227,8 @@ export function ExperimentDetail({
           </dl>
         </CardContent>
       </Card>
+
+      <ExperimentPerformanceCharts locale={locale} performanceSeries={performanceSeries} />
 
       <Card>
         <CardHeader>

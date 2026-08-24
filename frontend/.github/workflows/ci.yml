@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend quality and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Check formatting
+        run: python -m ruff format --check .
+
+      - name: Run Ruff
+        run: python -m ruff check .
+
+      - name: Run mypy
+        run: python -m mypy
+
+      - name: Run backend unit tests
+        run: python -m pytest -m "not integration"
+
+  postgresql:
+    name: PostgreSQL migrations and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: trd_bot_test
+          POSTGRES_USER: trd_bot
+          POSTGRES_PASSWORD: trd_bot_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U trd_bot -d trd_bot_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TRD_BOT_ENVIRONMENT: test
+      TRD_BOT_DEBUG: 'false'
+      TRD_BOT_DATABASE_URL: postgresql+psycopg://trd_bot:trd_bot_test_password@127.0.0.1:5432/trd_bot_test
+      TRD_BOT_TEST_DATABASE_URL: postgresql+psycopg://trd_bot:trd_bot_test_password@127.0.0.1:5432/trd_bot_test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Upgrade PostgreSQL schema
+        run: python -m alembic upgrade head
+
+      - name: Check pending migrations
+        run: python -m alembic check
+
+      - name: Run PostgreSQL integration tests
+        run: python -m pytest -m integration -v
+
+  frontend:
+    name: Frontend quality, tests, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      NEXT_PUBLIC_API_BASE_URL: http://127.0.0.1:8000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run frontend tests
+        run: npm run test
+
+      - name: Build frontend
+        run: npm run build

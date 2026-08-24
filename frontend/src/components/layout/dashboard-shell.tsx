@@ -63,7 +63,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       key: 'signals',
       label: copy.navigation.signals,
       href: `/${locale}/signals`,
-      enabled: false,
+      enabled: true,
     },
   ];
 

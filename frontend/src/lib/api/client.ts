@@ -10,6 +10,7 @@ import type {
   ExperimentSummary,
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
+  ExperimentPerformanceSeries,
   MonitoringSummary,
   OHLCVCandle,
   Page,
@@ -21,6 +22,9 @@ import type {
   WalkForwardRunSortField,
   WalkForwardRunSummary,
   WalkForwardStabilityReport,
+  ExperimentSignalSortDirection,
+  SignalDirection,
+  StrategySignal,
 } from '@/lib/api/types';
 
 const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
@@ -173,6 +177,15 @@ export interface ResearchActivityFilters {
   activityType?: ResearchActivityType;
   fromTime?: string;
   toTime?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ExperimentSignalFilters {
+  direction?: SignalDirection;
+  candleCloseTimeFrom?: string;
+  candleCloseTimeTo?: string;
+  sortDirection?: ExperimentSignalSortDirection;
   limit?: number;
   offset?: number;
 }
@@ -354,6 +367,44 @@ export async function getExperimentSummary(experimentId: string): Promise<Experi
   const encodedExperimentId = encodeURIComponent(experimentId);
 
   return getJson<ExperimentSummary>(`/api/v1/research/experiments/${encodedExperimentId}/summary`);
+}
+
+export async function getExperimentPerformanceSeries(
+  experimentId: string,
+): Promise<ExperimentPerformanceSeries> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+
+  return getJson<ExperimentPerformanceSeries>(
+    `/api/v1/research/experiments/${encodedExperimentId}/performance-series`,
+  );
+}
+
+export async function getExperimentSignals(
+  experimentId: string,
+  filters: ExperimentSignalFilters = {},
+): Promise<Page<StrategySignal>> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+  const params = new URLSearchParams();
+
+  params.set('limit', String(filters.limit ?? 20));
+  params.set('offset', String(filters.offset ?? 0));
+  params.set('sort_direction', filters.sortDirection ?? 'desc');
+
+  if (filters.direction) {
+    params.set('direction', filters.direction);
+  }
+
+  if (filters.candleCloseTimeFrom) {
+    params.set('candle_close_time_from', filters.candleCloseTimeFrom);
+  }
+
+  if (filters.candleCloseTimeTo) {
+    params.set('candle_close_time_to', filters.candleCloseTimeTo);
+  }
+
+  return getJson<Page<StrategySignal>>(
+    `/api/v1/research/experiments/${encodedExperimentId}/signals?${params.toString()}`,
+  );
 }
 
 export async function getAcceptancePolicyPresets(): Promise<AcceptancePolicyPreset[]> {

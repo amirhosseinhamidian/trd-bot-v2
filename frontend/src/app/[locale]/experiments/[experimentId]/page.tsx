@@ -6,6 +6,7 @@ import {
   ApiRequestError,
   getAcceptancePolicyPresets,
   getExperimentSummary,
+  getExperimentPerformanceSeries,
 } from '@/lib/api/client';
 
 type ExperimentDetailPageProps = {
@@ -24,9 +25,10 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
   const normalizedLocale = normalizeLocale(locale);
 
   try {
-    const [experiment, acceptancePolicyPresets] = await Promise.all([
+    const [experiment, acceptancePolicyPresets, performanceSeries] = await Promise.all([
       getExperimentSummary(experimentId),
       getAcceptancePolicyPresets(),
+      getExperimentPerformanceSeries(experimentId),
     ]);
 
     return (
@@ -34,6 +36,7 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
         experiment={experiment}
         locale={normalizedLocale}
         acceptancePolicyPresets={acceptancePolicyPresets}
+        performanceSeries={performanceSeries}
       />
     );
   } catch (error) {
