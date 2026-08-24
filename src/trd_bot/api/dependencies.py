@@ -4,10 +4,16 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from trd_bot.db import (
+    SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemySystemMetricRepository,
     SqlAlchemyWalkForwardRunRegistry,
     get_database_session,
+)
+from trd_bot.monitoring import (
+    ArchitectureRecommendationRepository,
+    SystemMetricRepository,
 )
 from trd_bot.research import (
     AcceptancePolicyPresetCatalog,
@@ -48,3 +54,19 @@ def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:
     """Return the built-in read-only historical policy catalog."""
 
     return _acceptance_policy_preset_catalog
+
+
+def get_system_metric_repository(
+    session: DatabaseSessionDependency,
+) -> SystemMetricRepository:
+    """Return the request-scoped metric repository."""
+
+    return SqlAlchemySystemMetricRepository(session)
+
+
+def get_architecture_recommendation_repository(
+    session: DatabaseSessionDependency,
+) -> ArchitectureRecommendationRepository:
+    """Return the request-scoped recommendation repository."""
+
+    return SqlAlchemyArchitectureRecommendationRepository(session)

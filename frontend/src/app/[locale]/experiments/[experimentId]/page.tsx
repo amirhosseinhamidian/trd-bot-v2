@@ -1,8 +1,12 @@
+/* eslint-disable react-hooks/error-boundaries */
 import { notFound } from 'next/navigation';
-
 import { ExperimentDetail } from '@/components/dashboard/experiment-detail';
 import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
-import { ApiRequestError, getExperimentSummary } from '@/lib/api/client';
+import {
+  ApiRequestError,
+  getAcceptancePolicyPresets,
+  getExperimentSummary,
+} from '@/lib/api/client';
 
 type ExperimentDetailPageProps = {
   params: Promise<{
@@ -20,9 +24,18 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
   const normalizedLocale = normalizeLocale(locale);
 
   try {
-    const experiment = await getExperimentSummary(experimentId);
+    const [experiment, acceptancePolicyPresets] = await Promise.all([
+      getExperimentSummary(experimentId),
+      getAcceptancePolicyPresets(),
+    ]);
 
-    return <ExperimentDetail experiment={experiment} locale={normalizedLocale} />;
+    return (
+      <ExperimentDetail
+        experiment={experiment}
+        locale={normalizedLocale}
+        acceptancePolicyPresets={acceptancePolicyPresets}
+      />
+    );
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
       notFound();

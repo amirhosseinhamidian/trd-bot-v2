@@ -144,6 +144,60 @@ def test_api_returns_stored_walk_forward_run(
     assert response.json()["execution_id"] == created["execution_id"]
 
 
+def test_api_returns_stored_walk_forward_run_summary(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    created = create_run(create_request_payload())
+
+    execution_id = created["execution_id"]
+
+    assert isinstance(execution_id, str)
+
+    response = client.get(f"/api/v1/research/walk-forward/runs/{execution_id}/summary")
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data["execution_id"] == execution_id
+    assert data["strategy_name"] == "ema-crossover"
+    assert data["strategy_version"] == "1.0.0"
+    assert data["horizon_candles"] == 1
+    assert data["total_folds"] == 3
+    assert data["walk_forward_config"] == {
+        "train_candles": 4,
+        "test_candles": 2,
+        "step_candles": 2,
+        "gap_candles": 0,
+        "mode": "rolling",
+    }
+    assert data["strategy_parameters"] == [
+        {
+            "name": "fast_period",
+            "value": "2",
+        },
+        {
+            "name": "slow_period",
+            "value": "3",
+        },
+    ]
+
+    # Summary must remain lightweight.
+    assert "result" not in data
+    assert "fold_results" not in data
+
+
+def test_api_returns_404_for_unknown_walk_forward_run_summary(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    response = client.get(
+        "/api/v1/research/walk-forward/runs/walk-forward-execution-0000000000000000/summary"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == ("walk-forward run not found")
+
+
 def test_api_returns_404_for_unknown_walk_forward_run(
     registry: InMemoryWalkForwardRunRegistry,
 ) -> None:

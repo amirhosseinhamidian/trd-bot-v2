@@ -13,6 +13,12 @@ export type ExperimentSortField = 'created_at' | 'horizon_candles';
 
 export type ExperimentSortDirection = 'asc' | 'desc';
 
+export type WalkForwardRunSortField = 'created_at' | 'horizon_candles';
+
+export type WalkForwardRunSortDirection = 'asc' | 'desc';
+
+export type WalkForwardMode = 'rolling' | 'expanding';
+
 export interface TradingPair {
   base_asset: string;
   quote_asset: string;
@@ -81,6 +87,47 @@ export interface ExperimentSummary {
   comparison_outcome: 'strategy' | 'benchmark' | 'tie';
 }
 
+export type ExperimentComparisonMetric = 'excess_return' | 'total_return' | 'max_drawdown_fraction';
+
+export type ExperimentComparisonRankingDirection = 'higher_is_better' | 'lower_is_better';
+
+export interface ExperimentComparisonRequest {
+  experiment_ids: string[];
+  metric: ExperimentComparisonMetric;
+}
+
+export interface ExperimentComparisonEntry {
+  position: number;
+  metric_value: string;
+  experiment: ExperimentSummary;
+}
+
+export interface ExperimentComparisonResult {
+  dataset_id: string;
+  horizon_candles: number;
+  metric: ExperimentComparisonMetric;
+  ranking_direction: ExperimentComparisonRankingDirection;
+  compared_experiments: number;
+  best_experiment_id: string;
+  entries: ExperimentComparisonEntry[];
+  interpretation: 'historical_research_only';
+}
+
+export interface WalkForwardConfig {
+  train_candles: number;
+  test_candles: number;
+  step_candles: number;
+  gap_candles: number;
+  mode: WalkForwardMode;
+}
+
+export interface BacktestConfig {
+  starting_balance: string;
+  allocation_fraction: string;
+  fee_rate: string;
+  slippage_rate: string;
+}
+
 export interface WalkForwardRunSummary {
   execution_id: string;
   created_at: string;
@@ -89,6 +136,9 @@ export interface WalkForwardRunSummary {
   strategy_name: string;
   strategy_version: string;
   horizon_candles: number;
+  strategy_parameters: ExperimentParameter[];
+  walk_forward_config: WalkForwardConfig;
+  backtest_config: BacktestConfig;
   total_folds: number;
   total_signals: number;
   folds_with_trades: number;
@@ -99,6 +149,42 @@ export interface WalkForwardRunSummary {
   average_benchmark_return: string;
   average_excess_return: string;
   worst_max_drawdown_fraction: string;
+}
+
+export type HistoricalFoldReturnDirection = 'positive' | 'negative' | 'flat';
+
+export interface WalkForwardFoldStatistics {
+  fold_number: number;
+  total_trades: number;
+  strategy_return: string;
+  benchmark_return: string;
+  excess_return: string;
+  max_drawdown_fraction: string;
+  benchmark_max_drawdown_fraction: string;
+  return_direction: HistoricalFoldReturnDirection;
+}
+
+export interface WalkForwardStabilityReport {
+  execution_id: string;
+  total_folds: number;
+  positive_return_folds: number;
+  negative_return_folds: number;
+  flat_return_folds: number;
+  positive_return_fraction: string;
+  outperforming_benchmark_folds: number;
+  underperforming_benchmark_folds: number;
+  benchmark_ties: number;
+  average_strategy_return: string;
+  median_strategy_return: string;
+  best_strategy_return: string;
+  worst_strategy_return: string;
+  strategy_return_range: string;
+  strategy_return_mean_absolute_deviation: string;
+  average_excess_return: string;
+  median_excess_return: string;
+  worst_max_drawdown_fraction: string;
+  folds: WalkForwardFoldStatistics[];
+  interpretation: 'historical_research_only';
 }
 
 export interface AcceptancePolicy {
@@ -113,6 +199,55 @@ export interface AcceptancePolicyPreset {
   version: number;
   description: string;
   policy: AcceptancePolicy;
+  interpretation: 'historical_research_only';
+}
+
+export type ExperimentAcceptanceOutcome = 'accepted' | 'rejected' | 'insufficient_data';
+
+export type ExperimentAcceptanceCheckName =
+  'minimum_total_trades' | 'minimum_excess_return' | 'maximum_drawdown_fraction';
+
+export type ExperimentAcceptanceComparison = 'greater_than_or_equal' | 'less_than_or_equal';
+
+export interface ExperimentAcceptanceCheck {
+  name: ExperimentAcceptanceCheckName;
+  passed: boolean;
+  actual_value: string;
+  threshold_value: string;
+  comparison: ExperimentAcceptanceComparison;
+}
+
+export interface ExperimentAcceptanceResult {
+  experiment_id: string;
+  outcome: ExperimentAcceptanceOutcome;
+  policy: AcceptancePolicy;
+  checks: ExperimentAcceptanceCheck[];
+  interpretation: 'historical_research_only';
+}
+
+export interface HistoricalBenchmarkContext {
+  benchmark_type: 'buy_and_hold';
+  strategy_total_return: string;
+  benchmark_return: string;
+  excess_return: string;
+  comparison_outcome: 'strategy' | 'benchmark' | 'tie';
+  strategy_max_drawdown_fraction: string;
+  benchmark_max_drawdown_fraction: string;
+  drawdown_comparison: 'lower' | 'equal' | 'higher';
+}
+
+export interface ExperimentResearchReport {
+  experiment: ExperimentSummary;
+  benchmark_context: HistoricalBenchmarkContext;
+  acceptance: ExperimentAcceptanceResult;
+  passed_checks: number;
+  failed_checks: number;
+  interpretation: 'historical_research_only';
+}
+
+export interface PresetExperimentResearchReport {
+  preset: AcceptancePolicyPreset;
+  report: ExperimentResearchReport;
   interpretation: 'historical_research_only';
 }
 
@@ -147,4 +282,53 @@ export interface Page<T> {
   count: number;
   has_next: boolean;
   has_previous: boolean;
+}
+
+export type MonitoringOverallStatus = 'healthy' | 'warning' | 'critical';
+
+export type SystemMetricName =
+  | 'api_request_latency_p95'
+  | 'api_error_rate'
+  | 'api_repeated_read_ratio'
+  | 'database_query_latency_p95'
+  | 'database_pool_utilization'
+  | 'database_cpu_utilization'
+  | 'database_disk_utilization'
+  | 'job_queue_wait_p95'
+  | 'backtest_failure_rate'
+  | 'market_data_lag'
+  | 'invalid_candle_ratio'
+  | 'candle_storage_share'
+  | 'time_series_query_latency_p95'
+  | 'analytical_query_latency_p95'
+  | 'analytical_database_resource_share';
+
+export type ArchitectureCandidate = 'postgresql_tuning' | 'redis' | 'timescaledb' | 'clickhouse';
+
+export type RecommendationSeverity = 'info' | 'warning' | 'critical';
+
+export type RecommendationStatus = 'active' | 'resolved' | 'dismissed';
+
+export interface SystemMetricSample {
+  sample_id: string;
+  metric_name: SystemMetricName;
+  source: string;
+  value: string;
+  unit: string;
+  recorded_at: string;
+}
+
+export interface ArchitectureRecommendation {
+  recommendation_id: string;
+  candidate: ArchitectureCandidate;
+  severity: RecommendationSeverity;
+  status: RecommendationStatus;
+  title: string;
+}
+
+export interface MonitoringSummary {
+  overall_status: MonitoringOverallStatus;
+  latest_metrics: SystemMetricSample[];
+  active_recommendations: ArchitectureRecommendation[];
+  interpretation: 'capacity_planning_only';
 }

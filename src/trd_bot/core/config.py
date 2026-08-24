@@ -18,7 +18,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     environment: Literal["development", "test", "production"] = "development"
     debug: bool = False
-    database_url: str = "sqlite+pysqlite:///./trd_bot.db"
+
+    database_url: str = "postgresql+psycopg://trd_bot:trd_bot_dev_password@127.0.0.1:5432/trd_bot"
+
+    test_database_url: str | None = None
 
     cors_allowed_origins: tuple[str, ...] = (
         "http://localhost:3000",

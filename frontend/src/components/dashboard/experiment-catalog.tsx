@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
@@ -19,9 +20,12 @@ import {
   EmptyState,
   Pagination,
   Spinner,
+  Checkbox,
 } from '@/components/ui';
 import { getExperiments, type ExperimentFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page } from '@/lib/api/types';
+import ExperimentComparisonPanel from '@/components/dashboard/experiment-comparison-panel';
+import { getExperimentComparisonCopy } from '@/components/dashboard/experiment-comparison-copy';
 
 const PAGE_SIZE = 12;
 
@@ -116,8 +120,46 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
   );
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [selectedExperiments, setSelectedExperiments] = useState<ExperimentSummary[]>([]);
 
   const requestSequence = useRef(0);
+
+  const comparisonCopy = getExperimentComparisonCopy(locale);
+
+  function isExperimentSelected(experimentId: string): boolean {
+    return selectedExperiments.some((experiment) => experiment.experiment_id === experimentId);
+  }
+
+  function isExperimentCompatible(experiment: ExperimentSummary): boolean {
+    if (selectedExperiments.length === 0) {
+      return true;
+    }
+
+    const reference = selectedExperiments[0];
+
+    return (
+      experiment.dataset_id === reference.dataset_id &&
+      experiment.horizon_candles === reference.horizon_candles
+    );
+  }
+
+  function toggleExperiment(experiment: ExperimentSummary): void {
+    const isSelected = isExperimentSelected(experiment.experiment_id);
+
+    if (isSelected) {
+      setSelectedExperiments((current) =>
+        current.filter((item) => item.experiment_id !== experiment.experiment_id),
+      );
+
+      return;
+    }
+
+    if (selectedExperiments.length >= 10 || !isExperimentCompatible(experiment)) {
+      return;
+    }
+
+    setSelectedExperiments((current) => [...current, experiment]);
+  }
 
   async function loadExperiments(
     offset: number,
@@ -183,7 +225,17 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
       </section>
 
       <ExperimentFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
-
+      <ExperimentComparisonPanel
+        key={
+          selectedExperiments
+            .map((experiment) => experiment.experiment_id)
+            .sort()
+            .join(':') || 'empty-selection'
+        }
+        locale={locale}
+        selectedExperiments={selectedExperiments}
+        onClearSelection={() => setSelectedExperiments([])}
+      />
       <section className="relative min-h-64">
         {isLoading ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
@@ -215,6 +267,12 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
                     ? 'warning'
                     : 'neutral';
 
+              const isSelected = isExperimentSelected(experiment.experiment_id);
+
+              const isCompatible = isSelected || isExperimentCompatible(experiment);
+
+              const hasReachedLimit = !isSelected && selectedExperiments.length >= 10;
+
               const metrics = [
                 {
                   label: copy.fields.totalReturn,
@@ -243,7 +301,14 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
               ];
 
               return (
-                <Card key={experiment.experiment_id} className="overflow-hidden">
+                <Card
+                  key={experiment.experiment_id}
+                  className={[
+                    'overflow-hidden',
+                    isSelected ? 'border-cyan-400/40 bg-cyan-400/5' : '',
+                    !isCompatible || hasReachedLimit ? 'opacity-60' : '',
+                  ].join(' ')}
+                >
                   <CardHeader className="border-b border-slate-800">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
@@ -257,9 +322,25 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
                         </CardDescription>
                       </div>
 
-                      <Badge variant={outcomeVariant}>
-                        {copy.outcomes[experiment.comparison_outcome]}
-                      </Badge>
+                      <div className="flex flex-col items-end gap-3">
+                        <Badge variant={outcomeVariant}>
+                          {copy.outcomes[experiment.comparison_outcome]}
+                        </Badge>
+
+                        <Checkbox
+                          label={comparisonCopy.selectExperiment}
+                          checked={isSelected}
+                          disabled={!isCompatible || hasReachedLimit}
+                          description={
+                            !isCompatible
+                              ? comparisonCopy.incompatibleExperiment
+                              : hasReachedLimit
+                                ? comparisonCopy.limitReached
+                                : undefined
+                          }
+                          onChange={() => toggleExperiment(experiment)}
+                        />
+                      </div>
                     </div>
                   </CardHeader>
 
@@ -333,6 +414,17 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
                       <p className="mt-4 text-xs text-slate-500">
                         {copy.fields.createdAt}: {formatDate(experiment.created_at, locale)}
                       </p>
+                    </div>
+                    <div className="flex border-t border-slate-800 pt-4">
+                      <Link
+                        href={`/${locale}/experiments/${encodeURIComponent(
+                          experiment.experiment_id,
+                        )}`}
+                        className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-800 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
+                      >
+                        <span>{copy.viewDetails}</span>
+                        <span aria-hidden="true">{locale === 'fa' ? '←' : '→'}</span>
+                      </Link>
                     </div>
                   </CardContent>
                 </Card>

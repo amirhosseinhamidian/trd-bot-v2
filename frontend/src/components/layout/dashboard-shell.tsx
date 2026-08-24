@@ -48,10 +48,16 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       enabled: true,
     },
     {
+      key: 'monitoring',
+      label: copy.navigation.monitoring,
+      href: `/${locale}/monitoring`,
+      enabled: true,
+    },
+    {
       key: 'walk-forward',
       label: copy.navigation.walkForward,
       href: `/${locale}/walk-forward`,
-      enabled: false,
+      enabled: true,
     },
     {
       key: 'signals',

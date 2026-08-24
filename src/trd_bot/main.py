@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from trd_bot.api.routes.datasets import router as datasets_router
 from trd_bot.api.routes.health import router as health_router
+from trd_bot.api.routes.monitoring import (
+    router as monitoring_router,
+)
 from trd_bot.api.routes.overview import router as overview_router
 from trd_bot.api.routes.research import router as research_router
 from trd_bot.core.config import get_settings
@@ -48,6 +51,11 @@ def create_app() -> FastAPI:
 
     application.include_router(
         research_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        monitoring_router,
         prefix="/api/v1",
     )
 

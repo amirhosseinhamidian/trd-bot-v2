@@ -1,4 +1,5 @@
 import type {
+  AcceptancePolicyPreset,
   DatasetSnapshot,
   DatasetSortDirection,
   DatasetSortField,
@@ -7,11 +8,19 @@ import type {
   ExperimentSortDirection,
   ExperimentSortField,
   ExperimentSummary,
+  ExperimentComparisonMetric,
+  ExperimentComparisonResult,
+  MonitoringSummary,
   OHLCVCandle,
   Page,
+  PresetExperimentResearchReport,
   ResearchActivityItem,
   ResearchActivityType,
   ResearchOverview,
+  WalkForwardRunSortDirection,
+  WalkForwardRunSortField,
+  WalkForwardRunSummary,
+  WalkForwardStabilityReport,
 } from '@/lib/api/types';
 
 const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
@@ -63,6 +72,58 @@ async function getJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function getBlob(path: string, accept: string): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers: {
+      Accept: accept,
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const payload = await parseErrorPayload(response);
+
+    throw new ApiRequestError(
+      `API request failed with status ${response.status}`,
+      response.status,
+      payload,
+    );
+  }
+
+  return response.blob();
+}
+
+async function postJson<T>(path: string, body?: unknown): Promise<T> {
+  const hasBody = body !== undefined;
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(hasBody
+        ? {
+            'Content-Type': 'application/json',
+          }
+        : {}),
+    },
+    body: hasBody ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const payload = await parseErrorPayload(response);
+
+    throw new ApiRequestError(
+      `API request failed with status ${response.status}`,
+      response.status,
+      payload,
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export interface DatasetFilters {
   source?: string;
   baseAsset?: string;
@@ -90,6 +151,20 @@ export interface ExperimentFilters {
   createdAtTo?: string;
   sortBy?: ExperimentSortField;
   sortDirection?: ExperimentSortDirection;
+  limit?: number;
+  offset?: number;
+}
+
+export interface WalkForwardRunFilters {
+  sourceDatasetId?: string;
+  planId?: string;
+  strategyName?: string;
+  strategyVersion?: string;
+  horizonCandles?: number;
+  createdAtFrom?: string;
+  createdAtTo?: string;
+  sortBy?: WalkForwardRunSortField;
+  sortDirection?: WalkForwardRunSortDirection;
   limit?: number;
   offset?: number;
 }
@@ -202,10 +277,112 @@ export async function getExperiments(
   return getJson<Page<ExperimentSummary>>(`/api/v1/research/experiments?${params.toString()}`);
 }
 
+export async function compareExperiments(
+  experimentIds: string[],
+  metric: ExperimentComparisonMetric,
+): Promise<ExperimentComparisonResult> {
+  return postJson<ExperimentComparisonResult>('/api/v1/research/experiments/compare', {
+    experiment_ids: experimentIds,
+    metric,
+  });
+}
+
+export async function getWalkForwardRuns(
+  filters: WalkForwardRunFilters = {},
+): Promise<Page<WalkForwardRunSummary>> {
+  const params = new URLSearchParams();
+
+  params.set('limit', String(filters.limit ?? 12));
+  params.set('offset', String(filters.offset ?? 0));
+  params.set('sort_by', filters.sortBy ?? 'created_at');
+  params.set('sort_direction', filters.sortDirection ?? 'desc');
+
+  if (filters.sourceDatasetId) {
+    params.set('source_dataset_id', filters.sourceDatasetId);
+  }
+
+  if (filters.planId) {
+    params.set('plan_id', filters.planId);
+  }
+
+  if (filters.strategyName) {
+    params.set('strategy_name', filters.strategyName);
+  }
+
+  if (filters.strategyVersion) {
+    params.set('strategy_version', filters.strategyVersion);
+  }
+
+  if (filters.horizonCandles !== undefined) {
+    params.set('horizon_candles', String(filters.horizonCandles));
+  }
+
+  if (filters.createdAtFrom) {
+    params.set('created_at_from', filters.createdAtFrom);
+  }
+
+  if (filters.createdAtTo) {
+    params.set('created_at_to', filters.createdAtTo);
+  }
+
+  return getJson<Page<WalkForwardRunSummary>>(
+    `/api/v1/research/walk-forward/runs?${params.toString()}`,
+  );
+}
+
+export async function getWalkForwardRunSummary(
+  executionId: string,
+): Promise<WalkForwardRunSummary> {
+  const encodedExecutionId = encodeURIComponent(executionId);
+
+  return getJson<WalkForwardRunSummary>(
+    `/api/v1/research/walk-forward/runs/${encodedExecutionId}/summary`,
+  );
+}
+
+export async function getWalkForwardStabilityReport(
+  executionId: string,
+): Promise<WalkForwardStabilityReport> {
+  const encodedExecutionId = encodeURIComponent(executionId);
+
+  return getJson<WalkForwardStabilityReport>(
+    `/api/v1/research/walk-forward/runs/${encodedExecutionId}/stability`,
+  );
+}
+
 export async function getExperimentSummary(experimentId: string): Promise<ExperimentSummary> {
   const encodedExperimentId = encodeURIComponent(experimentId);
 
   return getJson<ExperimentSummary>(`/api/v1/research/experiments/${encodedExperimentId}/summary`);
+}
+
+export async function getAcceptancePolicyPresets(): Promise<AcceptancePolicyPreset[]> {
+  return getJson<AcceptancePolicyPreset[]>('/api/v1/research/acceptance-policies');
+}
+
+export async function getExperimentReportByPreset(
+  experimentId: string,
+  presetId: string,
+): Promise<PresetExperimentResearchReport> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+  const encodedPresetId = encodeURIComponent(presetId);
+
+  return postJson<PresetExperimentResearchReport>(
+    `/api/v1/research/experiments/${encodedExperimentId}/report/presets/${encodedPresetId}`,
+  );
+}
+
+export async function getExperimentReportCsv(
+  experimentId: string,
+  presetId: string,
+): Promise<Blob> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+  const encodedPresetId = encodeURIComponent(presetId);
+
+  return getBlob(
+    `/api/v1/research/experiments/${encodedExperimentId}/report/presets/${encodedPresetId}/export.csv`,
+    'text/csv',
+  );
 }
 
 export async function getResearchActivity(
@@ -231,4 +408,8 @@ export async function getResearchActivity(
   return getJson<Page<ResearchActivityItem>>(
     `/api/v1/research/overview/activity?${params.toString()}`,
   );
+}
+
+export async function getMonitoringSummary(): Promise<MonitoringSummary> {
+  return getJson<MonitoringSummary>('/api/v1/monitoring/summary');
 }

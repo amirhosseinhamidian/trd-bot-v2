@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -25,17 +25,28 @@ NO_COST_CONFIG = BacktestConfig(
 
 def create_dataset(prices: list[str]) -> DatasetSnapshot:
     candles = []
+
+    start_time = datetime(
+        2026,
+        8,
+        21,
+        10,
+        tzinfo=UTC,
+    )
+
     for index, price_text in enumerate(prices):
         price = Decimal(price_text)
-        hour = 10 + index
+        open_time = start_time + timedelta(hours=index)
+        close_time = open_time + timedelta(hours=1)
+
         candles.append(
             OHLCVCandle(
                 source="test-exchange",
                 pair=PAIR,
                 timeframe=Timeframe.HOUR_1,
-                open_time=datetime(2026, 8, 21, hour, tzinfo=UTC),
-                close_time=datetime(2026, 8, 21, hour + 1, tzinfo=UTC),
-                received_at=datetime(2026, 8, 21, 20, tzinfo=UTC),
+                open_time=open_time,
+                close_time=close_time,
+                received_at=close_time + timedelta(minutes=1),
                 open_price=price,
                 high_price=price + Decimal("1"),
                 low_price=price - Decimal("1"),
@@ -44,7 +55,11 @@ def create_dataset(prices: list[str]) -> DatasetSnapshot:
                 is_closed=True,
             )
         )
-    return DatasetBuilder().build(name="Backtest performance dataset", candles=candles)
+
+    return DatasetBuilder().build(
+        name="Backtest performance dataset",
+        candles=candles,
+    )
 
 
 def create_signal(
@@ -215,6 +230,61 @@ def test_equity_curve_tracks_new_peaks_and_later_drawdown() -> None:
     assert report.gross_profit > Decimal("0")
     assert report.gross_loss > Decimal("0")
     assert report.profit_factor == report.gross_profit / report.gross_loss
+
+
+def test_many_fractional_trades_keep_aggregate_pnl_consistent() -> None:
+    prices = [
+        str(
+            Decimal("50000")
+            + Decimal(index) * Decimal("3.125")
+            + Decimal(index % 7) * Decimal("41.75")
+        )
+        for index in range(120)
+    ]
+
+    dataset = create_dataset(prices)
+
+    signals = [
+        create_signal(
+            dataset=dataset,
+            candle_index=index,
+            direction=(SignalDirection.LONG if index % 2 == 0 else SignalDirection.SHORT),
+        )
+        for index in range(len(prices) - 1)
+    ]
+
+    config = BacktestConfig(
+        starting_balance=Decimal("10000"),
+        allocation_fraction=Decimal("0.10"),
+        fee_rate=Decimal("0.001"),
+        slippage_rate=Decimal("0.0005"),
+    )
+
+    events = BacktestEngine().run(
+        run_id="fractional-aggregate-regression",
+        dataset=dataset,
+        signals=signals,
+        config=config,
+    )
+
+    report = BacktestPerformanceAnalyzer().analyze(
+        run_id="fractional-aggregate-regression",
+        dataset_id=dataset.dataset_id,
+        events=events,
+        config=config,
+    )
+
+    assert report.total_trades > 50
+
+    assert report.net_pnl == (report.gross_pnl - report.total_fees)
+
+    assert report.net_pnl == (report.gross_profit - report.gross_loss)
+
+    assert report.ending_balance == (report.starting_balance + report.net_pnl)
+
+    assert report.equity_curve[-1].balance == (report.ending_balance)
+
+    assert all(trade.net_pnl.same_quantum(Decimal("0.00000001")) for trade in report.trades)
 
 
 def test_analyzer_rejects_unordered_event_sequences() -> None:

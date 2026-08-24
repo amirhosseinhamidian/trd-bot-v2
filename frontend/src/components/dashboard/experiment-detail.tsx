@@ -6,11 +6,13 @@ import {
 } from '@/components/dashboard/experiment-detail-copy';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { ExperimentSummary } from '@/lib/api/types';
+import type { AcceptancePolicyPreset, ExperimentSummary } from '@/lib/api/types';
+import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
 
 type ExperimentDetailProps = {
   experiment: ExperimentSummary;
   locale: ExperimentDetailLocale;
+  acceptancePolicyPresets: AcceptancePolicyPreset[];
 };
 
 type MetricProps = {
@@ -105,7 +107,11 @@ function comparisonPresentation(
   };
 }
 
-export function ExperimentDetail({ experiment, locale }: ExperimentDetailProps) {
+export function ExperimentDetail({
+  acceptancePolicyPresets,
+  experiment,
+  locale,
+}: ExperimentDetailProps) {
   const copy = experimentDetailCopy[locale];
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const comparison = comparisonPresentation(experiment.comparison_outcome, locale);
@@ -281,6 +287,11 @@ export function ExperimentDetail({ experiment, locale }: ExperimentDetailProps) 
           )}
         </CardContent>
       </Card>
+      <ExperimentAcceptancePanel
+        experimentId={experiment.experiment_id}
+        locale={locale}
+        presets={acceptancePolicyPresets}
+      />
     </main>
   );
 }

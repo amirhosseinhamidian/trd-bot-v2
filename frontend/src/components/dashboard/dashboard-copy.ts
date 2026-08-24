@@ -13,6 +13,7 @@ export type DashboardCopy = {
     signals: string;
     settings: string;
     comingSoon: string;
+    monitoring: string;
   };
   header: {
     researchMode: string;
@@ -89,6 +90,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       signals: 'سیگنال‌های پژوهشی',
       settings: 'تنظیمات',
       comingSoon: 'به‌زودی',
+      monitoring: 'پایش سیستم',
     },
     header: {
       researchMode: 'حالت پژوهشی — بدون اجرای معامله واقعی',
@@ -164,6 +166,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       signals: 'Research signals',
       settings: 'Settings',
       comingSoon: 'Coming soon',
+      monitoring: 'System monitoring',
     },
     header: {
       researchMode: 'Research mode — no live trade execution',

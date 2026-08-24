@@ -408,6 +408,27 @@ def list_walk_forward_runs(
 
 
 @router.get(
+    "/walk-forward/runs/{execution_id}/summary",
+    response_model=WalkForwardRunSummary,
+)
+def get_walk_forward_run_summary(
+    execution_id: str,
+    registry: WalkForwardRunRegistryDependency,
+) -> WalkForwardRunSummary:
+    """Return a lightweight summary for one stored walk-forward run."""
+
+    run = registry.get(execution_id)
+
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail="walk-forward run not found",
+        )
+
+    return WalkForwardRunSummary.from_run(run)
+
+
+@router.get(
     ("/walk-forward/runs/{execution_id}/stability"),
     response_model=WalkForwardStabilityReport,
 )

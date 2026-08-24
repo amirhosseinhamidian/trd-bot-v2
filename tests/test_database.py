@@ -65,8 +65,10 @@ def test_session_factory_executes_sqlite_query() -> None:
 
 def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
+        "architecture_recommendations",
         "dataset_snapshots",
         "research_experiments",
+        "system_metric_samples",
         "walk_forward_runs",
     }
 
@@ -138,8 +140,10 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         table_names = set(inspect(engine).get_table_names())
         assert {
             "alembic_version",
+            "architecture_recommendations",
             "dataset_snapshots",
             "research_experiments",
+            "system_metric_samples",
             "walk_forward_runs",
         }.issubset(table_names)
         command.check(config)
@@ -154,6 +158,8 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "dataset_snapshots" not in downgraded_tables
         assert "research_experiments" not in downgraded_tables
         assert "walk_forward_runs" not in downgraded_tables
+        assert "architecture_recommendations" not in downgraded_tables
+        assert "system_metric_samples" not in downgraded_tables
     finally:
         downgraded_engine.dispose()
 

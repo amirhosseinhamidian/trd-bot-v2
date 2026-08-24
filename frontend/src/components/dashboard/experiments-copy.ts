@@ -15,6 +15,7 @@ export type ExperimentsCopy = {
   previous: string;
   next: string;
   page: string;
+  viewDetails: string;
   filters: {
     title: string;
     description: string;
@@ -80,6 +81,7 @@ const copies: Record<DashboardLocale, ExperimentsCopy> = {
     previous: 'قبلی',
     next: 'بعدی',
     page: 'صفحه',
+    viewDetails: 'مشاهده جزئیات',
     filters: {
       title: 'فیلتر و مرتب‌سازی',
       description: 'آزمایش‌های ذخیره‌شده را بر اساس Dataset، Strategy و زمان ایجاد محدود کنید.',
@@ -142,6 +144,7 @@ const copies: Record<DashboardLocale, ExperimentsCopy> = {
     previous: 'Previous',
     next: 'Next',
     page: 'Page',
+    viewDetails: 'View details',
     filters: {
       title: 'Filter and sort',
       description: 'Narrow stored experiments by dataset, strategy, and creation time.',

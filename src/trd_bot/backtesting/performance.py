@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_EVEN, Decimal
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -13,6 +13,17 @@ from trd_bot.backtesting.models import (
     PositionSide,
 )
 from trd_bot.domain.market_data import TradingPair
+
+MONEY_QUANTUM = Decimal("0.00000001")
+
+
+def quantize_money(value: Decimal) -> Decimal:
+    """Normalize simulated monetary values to eight decimal places."""
+
+    return value.quantize(
+        MONEY_QUANTUM,
+        rounding=ROUND_HALF_EVEN,
+    )
 
 
 class ClosedBacktestTrade(BaseModel):
@@ -205,9 +216,20 @@ class BacktestPerformanceAnalyzer:
         if opened_event is not None:
             raise ValueError("backtest events contain an unclosed position")
 
-        gross_pnl = sum((trade.gross_pnl for trade in trades), start=Decimal("0"))
-        total_fees = sum((trade.fees for trade in trades), start=Decimal("0"))
-        net_pnl = gross_pnl - total_fees
+        gross_pnl = sum(
+            (trade.gross_pnl for trade in trades),
+            start=Decimal("0"),
+        )
+
+        total_fees = sum(
+            (trade.fees for trade in trades),
+            start=Decimal("0"),
+        )
+
+        net_pnl = sum(
+            (trade.net_pnl for trade in trades),
+            start=Decimal("0"),
+        )
         gross_profit = sum(
             (trade.net_pnl for trade in trades if trade.net_pnl > 0),
             start=Decimal("0"),
@@ -317,13 +339,19 @@ class BacktestPerformanceAnalyzer:
             raise ValueError("closed trade requires an exit reason")
 
         if opened_event.side == PositionSide.LONG:
-            gross_pnl = (closed_event.price - opened_event.price) * opened_event.quantity
+            raw_gross_pnl = (closed_event.price - opened_event.price) * opened_event.quantity
         else:
-            gross_pnl = (opened_event.price - closed_event.price) * opened_event.quantity
+            raw_gross_pnl = (opened_event.price - closed_event.price) * opened_event.quantity
 
-        entry_fee = opened_event.price * opened_event.quantity * fee_rate
-        exit_fee = closed_event.price * closed_event.quantity * fee_rate
-        fees = entry_fee + exit_fee
+        raw_entry_fee = opened_event.price * opened_event.quantity * fee_rate
+
+        raw_exit_fee = closed_event.price * closed_event.quantity * fee_rate
+
+        gross_pnl = quantize_money(raw_gross_pnl)
+
+        fees = quantize_money(raw_entry_fee + raw_exit_fee)
+
+        net_pnl = quantize_money(gross_pnl - fees)
 
         return ClosedBacktestTrade(
             trade_number=trade_number,
@@ -336,6 +364,6 @@ class BacktestPerformanceAnalyzer:
             quantity=opened_event.quantity,
             gross_pnl=gross_pnl,
             fees=fees,
-            net_pnl=gross_pnl - fees,
+            net_pnl=net_pnl,
             exit_reason=closed_event.exit_reason,
         )

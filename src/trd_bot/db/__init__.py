@@ -1,8 +1,14 @@
 from trd_bot.db.base import DatabaseBase
 from trd_bot.db.models import (
+    ArchitectureRecommendationRow,
     DatasetSnapshotRow,
     ResearchExperimentRow,
+    SystemMetricSampleRow,
     WalkForwardRunRow,
+)
+from trd_bot.db.monitoring_repositories import (
+    SqlAlchemyArchitectureRecommendationRepository,
+    SqlAlchemySystemMetricRepository,
 )
 from trd_bot.db.repositories import (
     SqlAlchemyDatasetRepository,
@@ -18,12 +24,16 @@ from trd_bot.db.session import (
 )
 
 __all__ = [
+    "ArchitectureRecommendationRow",
     "DatabaseBase",
     "DatasetSnapshotRow",
     "ResearchExperimentRow",
+    "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentRegistry",
+    "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardRunRegistry",
+    "SystemMetricSampleRow",
     "WalkForwardRunRow",
     "create_database_engine",
     "create_session_factory",

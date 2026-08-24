@@ -39,3 +39,6 @@ export {
   TableRow,
 } from '@/components/ui/table';
 export type { TableProps } from '@/components/ui/table';
+
+export { Checkbox } from '@/components/ui/checkbox';
+export type { CheckboxProps } from '@/components/ui/checkbox';
