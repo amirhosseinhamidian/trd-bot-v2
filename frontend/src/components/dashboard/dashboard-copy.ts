@@ -69,6 +69,11 @@ export type DashboardCopy = {
     title: string;
     description: string;
   };
+  notFound: {
+    title: string;
+    description: string;
+    back: string;
+  };
   error: {
     title: string;
     description: string;
@@ -147,6 +152,11 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       title: 'در حال دریافت اطلاعات پژوهش',
       description: 'داده‌های داشبورد از Backend دریافت می‌شوند.',
     },
+    notFound: {
+      title: 'صفحه موردنظر پیدا نشد',
+      description: 'ممکن است نشانی صفحه اشتباه باشد یا این بخش دیگر در دسترس نباشد.',
+      back: 'بازگشت به نمای کلی',
+    },
     error: {
       title: 'دریافت اطلاعات ناموفق بود',
       description: 'اتصال Backend و مقدار NEXT_PUBLIC_API_BASE_URL را بررسی و دوباره تلاش کنید.',
@@ -221,6 +231,11 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     loading: {
       title: 'Loading research information',
       description: 'Dashboard data is being retrieved from the backend.',
+    },
+    notFound: {
+      title: 'Page not found',
+      description: 'The address may be incorrect, or this page may no longer be available.',
+      back: 'Back to overview',
     },
     error: {
       title: 'Unable to load information',

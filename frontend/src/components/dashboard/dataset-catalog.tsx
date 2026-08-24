@@ -6,7 +6,6 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getDatasetsCopy } from '@/components/dashboard/datasets-copy';
 import {
   Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
@@ -16,6 +15,7 @@ import {
   EmptyState,
   Pagination,
   Spinner,
+  ErrorState,
 } from '@/components/ui';
 import { getDatasets, type DatasetFilters } from '@/lib/api/client';
 import type { DatasetSummary, Page } from '@/lib/api/types';
@@ -154,7 +154,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
 
       <DatasetFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
 
-      <section className="relative min-h-64">
+      <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
             <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
@@ -162,16 +162,11 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
         ) : null}
 
         {hasError ? (
-          <EmptyState
+          <ErrorState
             title={copy.errorTitle}
             description={copy.errorDescription}
-            className="border-red-400/20 bg-red-400/5"
-            icon={<span className="font-bold text-red-300">!</span>}
-            action={
-              <Button size="sm" variant="danger" onClick={() => void loadDatasets(page.offset)}>
-                {copy.retry}
-              </Button>
-            }
+            retryLabel={copy.retry}
+            onRetry={() => void loadDatasets(page.offset)}
           />
         ) : page.items.length === 0 ? (
           <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
@@ -264,18 +259,20 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
         )}
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
-        <Pagination
-          total={page.total}
-          limit={page.limit}
-          offset={page.offset}
-          isLoading={isLoading}
-          pageLabel={copy.page}
-          previousLabel={copy.previous}
-          nextLabel={copy.next}
-          onOffsetChange={(offset) => void loadDatasets(offset)}
-        />
-      </section>
+      {!hasError && page.total > 0 ? (
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+          <Pagination
+            total={page.total}
+            limit={page.limit}
+            offset={page.offset}
+            isLoading={isLoading}
+            pageLabel={copy.page}
+            previousLabel={copy.previous}
+            nextLabel={copy.next}
+            onOffsetChange={(offset) => void loadDatasets(offset)}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

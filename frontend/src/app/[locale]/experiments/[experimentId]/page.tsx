@@ -1,12 +1,11 @@
-/* eslint-disable react-hooks/error-boundaries */
 import { notFound } from 'next/navigation';
+
 import { ExperimentDetail } from '@/components/dashboard/experiment-detail';
-import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
 import {
   ApiRequestError,
   getAcceptancePolicyPresets,
-  getExperimentSummary,
   getExperimentPerformanceSeries,
+  getExperimentSummary,
 } from '@/lib/api/client';
 
 type ExperimentDetailPageProps = {
@@ -16,29 +15,13 @@ type ExperimentDetailPageProps = {
   }>;
 };
 
-function normalizeLocale(locale: string): ExperimentDetailLocale {
-  return locale === 'fa' ? 'fa' : 'en';
-}
-
-export default async function ExperimentDetailPage({ params }: ExperimentDetailPageProps) {
-  const { experimentId, locale } = await params;
-  const normalizedLocale = normalizeLocale(locale);
-
+async function loadExperimentDetail(experimentId: string) {
   try {
-    const [experiment, acceptancePolicyPresets, performanceSeries] = await Promise.all([
+    return await Promise.all([
       getExperimentSummary(experimentId),
       getAcceptancePolicyPresets(),
       getExperimentPerformanceSeries(experimentId),
     ]);
-
-    return (
-      <ExperimentDetail
-        experiment={experiment}
-        locale={normalizedLocale}
-        acceptancePolicyPresets={acceptancePolicyPresets}
-        performanceSeries={performanceSeries}
-      />
-    );
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
       notFound();
@@ -46,4 +29,24 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
 
     throw error;
   }
+}
+
+export default async function ExperimentDetailPage({ params }: ExperimentDetailPageProps) {
+  const { experimentId, locale } = await params;
+
+  if (locale !== 'fa' && locale !== 'en') {
+    notFound();
+  }
+
+  const [experiment, acceptancePolicyPresets, performanceSeries] =
+    await loadExperimentDetail(experimentId);
+
+  return (
+    <ExperimentDetail
+      experiment={experiment}
+      locale={locale}
+      acceptancePolicyPresets={acceptancePolicyPresets}
+      performanceSeries={performanceSeries}
+    />
+  );
 }
