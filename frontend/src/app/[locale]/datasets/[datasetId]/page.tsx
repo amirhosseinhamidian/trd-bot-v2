@@ -10,25 +10,15 @@ type DatasetDetailPageProps = {
   }>;
 };
 
-export default async function DatasetDetailPage({ params }: DatasetDetailPageProps) {
-  const { locale, datasetId } = await params;
-
-  if (locale !== 'fa' && locale !== 'en') {
-    notFound();
-  }
-
+async function loadDatasetDetail(datasetId: string) {
   try {
-    const [dataset, initialCandlesPage] = await Promise.all([
+    return await Promise.all([
       getDatasetSummary(datasetId),
       getDatasetCandles(datasetId, {
         limit: 25,
         offset: 0,
       }),
     ]);
-
-    return (
-      <DatasetDetail locale={locale} dataset={dataset} initialCandlesPage={initialCandlesPage} />
-    );
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
       notFound();
@@ -36,4 +26,18 @@ export default async function DatasetDetailPage({ params }: DatasetDetailPagePro
 
     throw error;
   }
+}
+
+export default async function DatasetDetailPage({ params }: DatasetDetailPageProps) {
+  const { locale, datasetId } = await params;
+
+  if (locale !== 'fa' && locale !== 'en') {
+    notFound();
+  }
+
+  const [dataset, initialCandlesPage] = await loadDatasetDetail(datasetId);
+
+  return (
+    <DatasetDetail locale={locale} dataset={dataset} initialCandlesPage={initialCandlesPage} />
+  );
 }

@@ -8,19 +8,6 @@ type OverviewDashboardProps = {
   activityPage: Page<ResearchActivityItem>;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
-}
-
 function formatNumber(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }

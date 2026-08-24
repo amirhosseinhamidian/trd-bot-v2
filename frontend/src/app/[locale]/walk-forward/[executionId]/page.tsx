@@ -14,20 +14,12 @@ type WalkForwardDetailPageProps = {
   }>;
 };
 
-export default async function WalkForwardDetailPage({ params }: WalkForwardDetailPageProps) {
-  const { executionId, locale } = await params;
-
-  if (locale !== 'fa' && locale !== 'en') {
-    notFound();
-  }
-
+async function loadWalkForwardDetail(executionId: string) {
   try {
-    const [run, stability] = await Promise.all([
+    return await Promise.all([
       getWalkForwardRunSummary(executionId),
       getWalkForwardStabilityReport(executionId),
     ]);
-
-    return <WalkForwardDetail locale={locale} run={run} stability={stability} />;
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
       notFound();
@@ -35,4 +27,16 @@ export default async function WalkForwardDetailPage({ params }: WalkForwardDetai
 
     throw error;
   }
+}
+
+export default async function WalkForwardDetailPage({ params }: WalkForwardDetailPageProps) {
+  const { executionId, locale } = await params;
+
+  if (locale !== 'fa' && locale !== 'en') {
+    notFound();
+  }
+
+  const [run, stability] = await loadWalkForwardDetail(executionId);
+
+  return <WalkForwardDetail locale={locale} run={run} stability={stability} />;
 }
