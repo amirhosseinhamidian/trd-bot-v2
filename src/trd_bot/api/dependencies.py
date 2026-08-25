@@ -3,9 +3,14 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from trd_bot.api.background_jobs import (
+    ExperimentExecutionTask,
+    run_experiment_execution_job,
+)
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemySystemMetricRepository,
     SqlAlchemyWalkForwardRunRegistry,
@@ -18,6 +23,7 @@ from trd_bot.monitoring import (
 from trd_bot.research import (
     AcceptancePolicyPresetCatalog,
     DatasetRepository,
+    ExperimentExecutionRepository,
     ExperimentRegistry,
     WalkForwardRunRegistry,
 )
@@ -40,6 +46,14 @@ def get_experiment_registry(
     """Return the request-scoped experiment registry."""
 
     return SqlAlchemyExperimentRegistry(session)
+
+
+def get_experiment_execution_repository(
+    session: DatabaseSessionDependency,
+) -> ExperimentExecutionRepository:
+    """Return the request-scoped experiment execution repository."""
+
+    return SqlAlchemyExperimentExecutionRepository(session)
 
 
 def get_walk_forward_run_registry(
@@ -70,3 +84,9 @@ def get_architecture_recommendation_repository(
     """Return the request-scoped recommendation repository."""
 
     return SqlAlchemyArchitectureRecommendationRepository(session)
+
+
+def get_experiment_execution_task() -> ExperimentExecutionTask:
+    """Return the production experiment background task."""
+
+    return run_experiment_execution_job

@@ -56,6 +56,7 @@ export const experimentDetailCopy = {
     tie: 'نتیجه برابر بوده',
     disclaimer:
       'این نتایج فقط حاصل شبیه‌سازی روی داده‌های تاریخی هستند و نباید به‌عنوان توصیه مالی یا تضمین عملکرد آینده تفسیر شوند.',
+    runAgain: 'اجرای مجدد با همین پارامترها',
   },
   en: {
     back: 'Back to experiments',
@@ -110,5 +111,6 @@ export const experimentDetailCopy = {
     tie: 'Results were equal',
     disclaimer:
       'These results come only from historical simulations and must not be interpreted as financial advice or a guarantee of future performance.',
+    runAgain: 'Run again with these parameters',
   },
 } as const;

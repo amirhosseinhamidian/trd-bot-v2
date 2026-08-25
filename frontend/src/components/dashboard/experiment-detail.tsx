@@ -13,6 +13,7 @@ import type {
 } from '@/lib/api/types';
 import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
 import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
+import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
 
 type ExperimentDetailProps = {
   experiment: ExperimentSummary;
@@ -122,6 +123,7 @@ export function ExperimentDetail({
   const copy = experimentDetailCopy[locale];
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const comparison = comparisonPresentation(experiment.comparison_outcome, locale);
+  const rerunHref = buildExperimentRerunHref(experiment, locale);
 
   return (
     <main dir={direction} className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -145,7 +147,16 @@ export function ExperimentDetail({
           </p>
         </div>
 
-        <Badge variant="info">{copy.historicalOnly}</Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <Badge variant="info">{copy.historicalOnly}</Badge>
+
+          <Link
+            href={rerunHref}
+            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-400/15 hover:text-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+          >
+            {copy.runAgain}
+          </Link>
+        </div>
       </div>
 
       <Card className="border-amber-400/20 bg-amber-400/5">

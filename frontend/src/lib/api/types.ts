@@ -45,6 +45,7 @@ export interface DatasetImportCandle {
   open_time: string;
   close_time: string;
   open_price: string;
+
   high_price: string;
   low_price: string;
   close_price: string;
@@ -58,6 +59,50 @@ export interface DatasetImportRequest {
   pair: TradingPair;
   timeframe: DatasetTimeframe;
   candles: DatasetImportCandle[];
+}
+
+export interface StoredDatasetEMACrossoverRequest {
+  dataset_id: string;
+  fast_period: number;
+  slow_period: number;
+  horizon_candles: number;
+  starting_balance: string;
+  allocation_fraction: string;
+  fee_rate: string;
+  slippage_rate: string;
+}
+
+export type ExperimentExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface ExperimentExecutionParameters {
+  fast_period: number;
+  slow_period: number;
+  horizon_candles: number;
+  starting_balance: string;
+  allocation_fraction: string;
+  fee_rate: string;
+  slippage_rate: string;
+}
+
+export interface ExperimentExecution {
+  execution_id: string;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: ExperimentExecutionStatus;
+  progress_percent: number;
+  dataset_id: string;
+  strategy_name: string;
+  strategy_version: string;
+  parameters: ExperimentExecutionParameters;
+  experiment_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+}
+
+export interface CreatedResearchExperiment {
+  experiment_id: string;
 }
 
 export interface OHLCVCandle {

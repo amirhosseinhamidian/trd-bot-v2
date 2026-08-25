@@ -78,6 +78,76 @@ def create_request_payload(
     }
 
 
+def create_stored_dataset_payload() -> dict[str, object]:
+    candles = []
+
+    for index in range(10):
+        candle = create_candle_payload(index)
+
+        candles.append(
+            {
+                "open_time": candle["open_time"],
+                "close_time": candle["close_time"],
+                "open_price": candle["open_price"],
+                "high_price": candle["high_price"],
+                "low_price": candle["low_price"],
+                "close_price": candle["close_price"],
+                "volume": candle["volume"],
+                "is_closed": candle["is_closed"],
+            }
+        )
+
+    return {
+        "name": "Stored walk-forward dataset",
+        "source": "test-exchange",
+        "pair": {
+            "base_asset": "BTC",
+            "quote_asset": "USDT",
+            "market_type": "spot",
+        },
+        "timeframe": "1h",
+        "candles": candles,
+    }
+
+
+def create_stored_dataset() -> str:
+    response = client.post(
+        "/api/v1/research/datasets",
+        json=create_stored_dataset_payload(),
+    )
+
+    assert response.status_code == 201
+
+    dataset_id = response.json()["dataset_id"]
+
+    assert isinstance(dataset_id, str)
+
+    return dataset_id
+
+
+def create_stored_dataset_walk_forward_payload(
+    dataset_id: str,
+    *,
+    fast_period: int = 2,
+    slow_period: int = 3,
+) -> dict[str, object]:
+    return {
+        "dataset_id": dataset_id,
+        "fast_period": fast_period,
+        "slow_period": slow_period,
+        "horizon_candles": 1,
+        "train_candles": 4,
+        "test_candles": 2,
+        "step_candles": 2,
+        "gap_candles": 0,
+        "mode": "rolling",
+        "starting_balance": "10000",
+        "allocation_fraction": "0.10",
+        "fee_rate": "0.001",
+        "slippage_rate": "0.0005",
+    }
+
+
 def create_run(payload: dict[str, object]) -> dict[str, object]:
     response = client.post(
         "/api/v1/research/walk-forward/runs/ema-crossover",
@@ -356,3 +426,123 @@ def test_api_rejects_invalid_walk_forward_catalog_query(
     )
 
     assert response.status_code == 422
+
+
+def test_api_creates_walk_forward_run_from_stored_dataset(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    dataset_id = create_stored_dataset()
+
+    response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=create_stored_dataset_walk_forward_payload(dataset_id),
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+    execution_id = data["execution_id"]
+
+    assert isinstance(execution_id, str)
+    assert execution_id.startswith("walk-forward-execution-")
+    assert data["result"]["source_dataset_id"] == dataset_id
+
+    assert data["walk_forward_config"] == {
+        "train_candles": 4,
+        "test_candles": 2,
+        "step_candles": 2,
+        "gap_candles": 0,
+        "mode": "rolling",
+    }
+
+    assert data["result"]["strategy_parameters"] == [
+        {
+            "name": "fast_period",
+            "value": "2",
+        },
+        {
+            "name": "slow_period",
+            "value": "3",
+        },
+    ]
+
+    assert registry.get(execution_id) is not None
+
+
+def test_api_returns_not_found_for_unknown_stored_walk_forward_dataset(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=create_stored_dataset_walk_forward_payload(
+            "dataset-does-not-exist",
+        ),
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "dataset not found"
+    assert registry.count() == 0
+
+
+def test_api_rejects_overlapping_walk_forward_test_windows(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    dataset_id = create_stored_dataset()
+
+    payload = create_stored_dataset_walk_forward_payload(dataset_id)
+    payload["test_candles"] = 3
+    payload["step_candles"] = 2
+
+    response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert "step candles must be at least test candles" in str(response.json()["detail"])
+
+    assert registry.count() == 0
+
+
+def test_api_rejects_walk_forward_windows_larger_than_dataset(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    dataset_id = create_stored_dataset()
+
+    payload = create_stored_dataset_walk_forward_payload(dataset_id)
+    payload["train_candles"] = 9
+    payload["test_candles"] = 2
+
+    response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert registry.count() == 0
+
+
+def test_api_saves_identical_stored_dataset_walk_forward_idempotently(
+    registry: InMemoryWalkForwardRunRegistry,
+) -> None:
+    dataset_id = create_stored_dataset()
+    payload = create_stored_dataset_walk_forward_payload(dataset_id)
+
+    first_response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=payload,
+    )
+
+    second_response = client.post(
+        "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+        json=payload,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+    first = first_response.json()
+    second = second_response.json()
+
+    assert first["execution_id"] == second["execution_id"]
+    assert registry.count() == 1

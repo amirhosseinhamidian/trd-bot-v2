@@ -49,6 +49,97 @@ class ResearchExperimentRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class ExperimentExecutionRow(DatabaseBase):
+    """Persistent lifecycle state of one historical experiment execution."""
+
+    __tablename__ = "experiment_executions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'succeeded', 'failed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "progress_percent >= 0 AND progress_percent <= 100",
+            name="progress_percent_range",
+        ),
+        CheckConstraint(
+            "updated_at >= created_at",
+            name="updated_after_created",
+        ),
+        CheckConstraint(
+            "started_at IS NULL OR started_at >= created_at",
+            name="started_after_created",
+        ),
+        CheckConstraint(
+            ("finished_at IS NULL OR (started_at IS NOT NULL AND finished_at >= started_at)"),
+            name="finished_after_started",
+        ),
+        Index(
+            "ix_experiment_executions_status_updated_at",
+            "status",
+            "updated_at",
+        ),
+        Index(
+            "ix_experiment_executions_dataset_created_at",
+            "dataset_id",
+            "created_at",
+        ),
+    )
+
+    execution_id: Mapped[str] = mapped_column(
+        String(100),
+        primary_key=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+    )
+
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(30),
+        index=True,
+    )
+
+    progress_percent: Mapped[int] = mapped_column(Integer)
+
+    dataset_id: Mapped[str] = mapped_column(
+        String(100),
+        index=True,
+    )
+
+    strategy_name: Mapped[str] = mapped_column(
+        String(100),
+        index=True,
+    )
+
+    strategy_version: Mapped[str] = mapped_column(String(30))
+
+    experiment_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class WalkForwardRunRow(DatabaseBase):
     """Serialized result of one offline walk-forward research run."""
 

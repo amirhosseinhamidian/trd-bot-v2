@@ -35,6 +35,18 @@ from trd_bot.research.evaluation import (
     SignalEvaluator,
     SignalOutcome,
 )
+from trd_bot.research.experiment_execution_runner import (
+    ExperimentExecutionRunner,
+)
+from trd_bot.research.experiment_executions import (
+    EMACrossoverExecutionParameters,
+    ExperimentExecution,
+    ExperimentExecutionBuilder,
+    ExperimentExecutionRepository,
+    ExperimentExecutionStateMachine,
+    ExperimentExecutionStatus,
+    InMemoryExperimentExecutionRepository,
+)
 from trd_bot.research.experiment_reports import (
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
@@ -126,6 +138,7 @@ __all__ = [
     "DatasetSortField",
     "DatasetSummary",
     "DirectionMetrics",
+    "EMACrossoverExecutionParameters",
     "ExperimentAcceptanceCheck",
     "ExperimentAcceptanceCheckName",
     "ExperimentAcceptanceEvaluator",
@@ -139,6 +152,12 @@ __all__ = [
     "ExperimentComparisonMetric",
     "ExperimentComparisonRequest",
     "ExperimentComparisonResult",
+    "ExperimentExecution",
+    "ExperimentExecutionBuilder",
+    "ExperimentExecutionRepository",
+    "ExperimentExecutionRunner",
+    "ExperimentExecutionStateMachine",
+    "ExperimentExecutionStatus",
     "ExperimentParameter",
     "ExperimentPerformanceSeries",
     "ExperimentPerformanceSeriesBuilder",
@@ -156,6 +175,7 @@ __all__ = [
     "HistoricalFoldReturnDirection",
     "HistoricalPerformanceSeries",
     "InMemoryDatasetRepository",
+    "InMemoryExperimentExecutionRepository",
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",

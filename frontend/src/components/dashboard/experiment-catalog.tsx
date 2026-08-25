@@ -26,12 +26,16 @@ import { getExperiments, type ExperimentFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page } from '@/lib/api/types';
 import ExperimentComparisonPanel from '@/components/dashboard/experiment-comparison-panel';
 import { getExperimentComparisonCopy } from '@/components/dashboard/experiment-comparison-copy';
+import ExperimentRunForm from '@/components/dashboard/experiment-run-form';
+import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
 
 const PAGE_SIZE = 12;
 
 type ExperimentCatalogProps = {
   initialPage: Page<ExperimentSummary>;
   locale: DashboardLocale;
+  initialRunValues?: ExperimentRunInitialValues;
+  initialExecutionId?: string;
 };
 
 function formatDate(value: string, locale: DashboardLocale): string {
@@ -111,7 +115,12 @@ function buildExperimentFilters(filters: ExperimentFilterValues): ExperimentFilt
   };
 }
 
-export default function ExperimentCatalog({ initialPage, locale }: ExperimentCatalogProps) {
+export default function ExperimentCatalog({
+  initialPage,
+  locale,
+  initialRunValues,
+  initialExecutionId,
+}: ExperimentCatalogProps) {
   const copy = getExperimentsCopy(locale);
 
   const [page, setPage] = useState(initialPage);
@@ -121,6 +130,7 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [selectedExperiments, setSelectedExperiments] = useState<ExperimentSummary[]>([]);
+  const [filterResetVersion, setFilterResetVersion] = useState(0);
 
   const requestSequence = useRef(0);
 
@@ -196,6 +206,14 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
     void loadExperiments(0, filters);
   }
 
+  async function handleExperimentCreated(): Promise<void> {
+    setAppliedFilters(DEFAULT_EXPERIMENT_FILTERS);
+    setSelectedExperiments([]);
+    setFilterResetVersion((currentVersion) => currentVersion + 1);
+
+    await loadExperiments(0, DEFAULT_EXPERIMENT_FILTERS);
+  }
+
   return (
     <div className="space-y-8">
       <section>
@@ -223,8 +241,18 @@ export default function ExperimentCatalog({ initialPage, locale }: ExperimentCat
           {copy.description}
         </p>
       </section>
-
-      <ExperimentFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
+      <ExperimentRunForm
+        locale={locale}
+        initialValues={initialRunValues}
+        initialExecutionId={initialExecutionId}
+        onCreated={handleExperimentCreated}
+      />
+      <ExperimentFilterPanel
+        key={filterResetVersion}
+        locale={locale}
+        isLoading={isLoading}
+        onApply={applyFilters}
+      />
       <ExperimentComparisonPanel
         key={
           selectedExperiments

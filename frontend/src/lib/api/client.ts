@@ -26,6 +26,9 @@ import type {
   ExperimentSignalSortDirection,
   SignalDirection,
   StrategySignal,
+  CreatedResearchExperiment,
+  StoredDatasetEMACrossoverRequest,
+  ExperimentExecution,
 } from '@/lib/api/types';
 
 const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
@@ -256,6 +259,30 @@ export async function getDatasetCandles(
 
 export async function getDataset(datasetId: string): Promise<DatasetSnapshot> {
   return getJson<DatasetSnapshot>(`/api/v1/research/datasets/${encodeURIComponent(datasetId)}`);
+}
+
+export async function createEmaCrossoverExperimentExecution(
+  request: StoredDatasetEMACrossoverRequest,
+): Promise<ExperimentExecution> {
+  return postJson<ExperimentExecution>(
+    '/api/v1/research/experiment-executions/ema-crossover',
+    request,
+  );
+}
+
+export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {
+  return getJson<ExperimentExecution>(
+    `/api/v1/research/experiment-executions/${encodeURIComponent(executionId)}`,
+  );
+}
+
+export async function createEmaCrossoverExperimentFromDataset(
+  request: StoredDatasetEMACrossoverRequest,
+): Promise<CreatedResearchExperiment> {
+  return postJson<CreatedResearchExperiment>(
+    '/api/v1/research/experiments/ema-crossover/from-dataset',
+    request,
+  );
 }
 
 export async function getExperiments(
