@@ -65,6 +65,15 @@ const INITIAL_VALUES: FormValues = {
 
 const POLLING_INTERVAL_MS = 1000;
 
+function fetchAvailableDatasets() {
+  return getDatasets({
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+    limit: 100,
+    offset: 0,
+  });
+}
+
 function buildInitialFormValues(initialValues?: ExperimentRunInitialValues): FormValues {
   const mergedValues: FormValues = {
     ...INITIAL_VALUES,
@@ -120,7 +129,7 @@ export default function ExperimentRunForm({
   const [values, setValues] = useState<FormValues>(() => buildInitialFormValues(initialValues));
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
   const [hasDatasetError, setHasDatasetError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(() => Boolean(initialExecutionId));
   const [formError, setFormError] = useState<string | null>(null);
   const [createdExperimentId, setCreatedExperimentId] = useState<string | null>(null);
   const [execution, setExecution] = useState<ExperimentExecution | null>(null);
@@ -137,13 +146,7 @@ export default function ExperimentRunForm({
     setHasDatasetError(false);
 
     try {
-      const result = await getDatasets({
-        sortBy: 'created_at',
-        sortDirection: 'desc',
-        limit: 100,
-        offset: 0,
-      });
-
+      const result = await fetchAvailableDatasets();
       setDatasets(result.items);
     } catch {
       setHasDatasetError(true);
@@ -153,8 +156,32 @@ export default function ExperimentRunForm({
   }, []);
 
   useEffect(() => {
-    void loadDatasets();
-  }, [loadDatasets]);
+    let isActive = true;
+
+    void fetchAvailableDatasets()
+      .then((result) => {
+        if (!isActive) {
+          return;
+        }
+
+        setDatasets(result.items);
+        setHasDatasetError(false);
+      })
+      .catch(() => {
+        if (isActive) {
+          setHasDatasetError(true);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingDatasets(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const stopPolling = useCallback((): void => {
     pollingControllerRef.current?.abort();
@@ -253,7 +280,10 @@ export default function ExperimentRunForm({
   }
 
   const pollExecution = useCallback(
-    async (executionId: string, signal: AbortSignal): Promise<void> => {
+    async function pollExperimentExecution(
+      executionId: string,
+      signal: AbortSignal,
+    ): Promise<void> {
       try {
         const currentExecution = await getExperimentExecution(executionId);
 
@@ -294,7 +324,7 @@ export default function ExperimentRunForm({
         }
 
         pollingTimeoutRef.current = window.setTimeout(() => {
-          void pollExecution(executionId, signal);
+          void pollExperimentExecution(executionId, signal);
         }, POLLING_INTERVAL_MS);
       } catch {
         if (signal.aborted) {
@@ -317,9 +347,6 @@ export default function ExperimentRunForm({
     const pollingController = new AbortController();
 
     pollingControllerRef.current = pollingController;
-    setIsSubmitting(true);
-    setFormError(null);
-    setCreatedExperimentId(null);
 
     void pollExecution(initialExecutionId, pollingController.signal);
 
