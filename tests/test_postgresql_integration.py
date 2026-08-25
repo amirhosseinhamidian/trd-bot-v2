@@ -71,6 +71,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "experiment_executions",
             "research_experiments",
             "system_metric_samples",
+            "walk_forward_executions",
             "walk_forward_runs",
         }.issubset(table_names)
     finally:

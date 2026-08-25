@@ -8,6 +8,7 @@ from trd_bot.db.models import (
     ExperimentExecutionRow,
     ResearchExperimentRow,
     SystemMetricSampleRow,
+    WalkForwardExecutionRow,
     WalkForwardRunRow,
 )
 from trd_bot.db.monitoring_repositories import (
@@ -26,6 +27,9 @@ from trd_bot.db.session import (
     get_database_session,
     get_session_factory,
 )
+from trd_bot.db.walk_forward_execution_repositories import (
+    SqlAlchemyWalkForwardExecutionRepository,
+)
 
 __all__ = [
     "ArchitectureRecommendationRow",
@@ -38,8 +42,10 @@ __all__ = [
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemySystemMetricRepository",
+    "SqlAlchemyWalkForwardExecutionRepository",
     "SqlAlchemyWalkForwardRunRegistry",
     "SystemMetricSampleRow",
+    "WalkForwardExecutionRow",
     "WalkForwardRunRow",
     "create_database_engine",
     "create_session_factory",

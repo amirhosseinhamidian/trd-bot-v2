@@ -70,6 +70,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "experiment_executions",
         "research_experiments",
         "system_metric_samples",
+        "walk_forward_executions",
         "walk_forward_runs",
     }
 
@@ -145,6 +146,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "dataset_snapshots",
             "research_experiments",
             "system_metric_samples",
+            "walk_forward_executions",
             "walk_forward_runs",
         }.issubset(table_names)
         command.check(config)
@@ -161,6 +163,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "walk_forward_runs" not in downgraded_tables
         assert "architecture_recommendations" not in downgraded_tables
         assert "system_metric_samples" not in downgraded_tables
+        assert "walk_forward_executions" not in downgraded_tables
     finally:
         downgraded_engine.dispose()
 
