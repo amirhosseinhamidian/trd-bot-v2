@@ -331,12 +331,12 @@ export default function ExperimentRunForm({
           return;
         }
 
-        setFormError(copy.errors.executionStatusFailed);
+        setFormError(copy.errors.statusUnavailable);
         setIsSubmitting(false);
         pollingControllerRef.current = null;
       }
     },
-    [copy.errors.executionFailed, copy.errors.executionStatusFailed, locale, onCreated, push],
+    [copy.errors.executionFailed, copy.errors.statusUnavailable, locale, onCreated, push],
   );
 
   useEffect(() => {
