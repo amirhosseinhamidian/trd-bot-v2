@@ -467,3 +467,144 @@ def test_api_rejects_invalid_candle_pagination(
     )
 
     assert response.status_code == 422
+
+
+def dataset_import_payload(
+    *,
+    candle_offsets: tuple[int, ...] = (0, 1, 2),
+    is_closed: bool = True,
+) -> dict[str, object]:
+    start_time = datetime(
+        2026,
+        8,
+        20,
+        10,
+        tzinfo=UTC,
+    )
+
+    candles: list[dict[str, object]] = []
+
+    for index, offset in enumerate(candle_offsets):
+        open_time = start_time + timedelta(hours=offset)
+        price = Decimal("100") + Decimal(index)
+
+        candles.append(
+            {
+                "open_time": open_time.isoformat(),
+                "close_time": (open_time + timedelta(hours=1)).isoformat(),
+                "open_price": str(price),
+                "high_price": str(price + Decimal("2")),
+                "low_price": str(price - Decimal("2")),
+                "close_price": str(price + Decimal("1")),
+                "volume": "1500",
+                "is_closed": is_closed,
+            }
+        )
+
+    return {
+        "name": "Imported historical BTC dataset",
+        "source": "manual-import",
+        "pair": {
+            "base_asset": "BTC",
+            "quote_asset": "USDT",
+            "market_type": "spot",
+        },
+        "timeframe": "1h",
+        "candles": candles,
+    }
+
+
+def test_api_imports_historical_dataset(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    response = client.post(
+        "/api/v1/research/datasets",
+        json=dataset_import_payload(),
+    )
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert data["name"] == "Imported historical BTC dataset"
+    assert data["source"] == "manual-import"
+    assert data["pair"] == {
+        "base_asset": "BTC",
+        "quote_asset": "USDT",
+        "market_type": "spot",
+    }
+    assert data["timeframe"] == "1h"
+    assert data["candle_count"] == 3
+    assert "candles" not in data
+
+    stored_dataset = repository.get(data["dataset_id"])
+
+    assert stored_dataset is not None
+    assert stored_dataset.candle_count == 3
+
+
+def test_api_import_is_idempotent_for_same_candles(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    payload = dataset_import_payload()
+
+    first_response = client.post(
+        "/api/v1/research/datasets",
+        json=payload,
+    )
+
+    second_response = client.post(
+        "/api/v1/research/datasets",
+        json=payload,
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    assert first_response.json()["dataset_id"] == second_response.json()["dataset_id"]
+
+    assert repository.count() == 1
+    stored_dataset = repository.get(first_response.json()["dataset_id"])
+
+    assert stored_dataset is not None
+    assert stored_dataset.candle_count == 3
+
+
+def test_api_rejects_dataset_with_missing_candle(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    response = client.post(
+        "/api/v1/research/datasets",
+        json=dataset_import_payload(
+            candle_offsets=(0, 2),
+        ),
+    )
+
+    assert response.status_code == 422
+
+    detail = response.json()["detail"]
+
+    assert detail["message"] == "dataset failed quality checks"
+    assert detail["candles_checked"] == 2
+
+    assert any(issue["code"] == "missing_candle" for issue in detail["issues"])
+
+    assert repository.count() == 0
+
+
+def test_api_rejects_unclosed_historical_candles(
+    repository: InMemoryDatasetRepository,
+) -> None:
+    response = client.post(
+        "/api/v1/research/datasets",
+        json=dataset_import_payload(
+            is_closed=False,
+        ),
+    )
+
+    assert response.status_code == 422
+
+    issue_codes = {issue["code"] for issue in response.json()["detail"]["issues"]}
+
+    assert "open_candle" in issue_codes
+    assert repository.count() == 0

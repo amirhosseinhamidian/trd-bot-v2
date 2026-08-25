@@ -1,5 +1,6 @@
 import type {
   AcceptancePolicyPreset,
+  DatasetImportRequest,
   DatasetSnapshot,
   DatasetSortDirection,
   DatasetSortField,
@@ -227,6 +228,10 @@ export async function getDatasets(filters: DatasetFilters = {}): Promise<Page<Da
   }
 
   return getJson<Page<DatasetSummary>>(`/api/v1/research/datasets?${params.toString()}`);
+}
+
+export async function createDataset(request: DatasetImportRequest): Promise<DatasetSummary> {
+  return postJson<DatasetSummary>('/api/v1/research/datasets', request);
 }
 
 export async function getDatasetSummary(datasetId: string): Promise<DatasetSummary> {

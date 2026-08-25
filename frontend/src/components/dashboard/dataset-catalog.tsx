@@ -24,6 +24,7 @@ import DatasetFilterPanel, {
   type DatasetFilterValues,
 } from '@/components/dashboard/dataset-filter-panel';
 import Link from 'next/link';
+import DatasetImportForm from './dataset-import-form';
 
 const PAGE_SIZE = 12;
 
@@ -90,6 +91,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
   const [hasError, setHasError] = useState(false);
   const [appliedFilters, setAppliedFilters] =
     useState<DatasetFilterValues>(DEFAULT_DATASET_FILTERS);
+  const [filterResetVersion, setFilterResetVersion] = useState(0);
 
   const requestSequence = useRef(0);
 
@@ -128,6 +130,13 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
     void loadDatasets(0, filters);
   }
 
+  async function handleDatasetImported(): Promise<void> {
+    setAppliedFilters(DEFAULT_DATASET_FILTERS);
+    setFilterResetVersion((currentVersion) => currentVersion + 1);
+
+    await loadDatasets(0, DEFAULT_DATASET_FILTERS);
+  }
+
   return (
     <div className="space-y-8">
       <section>
@@ -151,8 +160,13 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           {copy.description}
         </p>
       </section>
-
-      <DatasetFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
+      <DatasetImportForm locale={locale} onImported={handleDatasetImported} />
+      <DatasetFilterPanel
+        key={filterResetVersion}
+        locale={locale}
+        isLoading={isLoading}
+        onApply={applyFilters}
+      />
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (

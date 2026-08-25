@@ -5,6 +5,8 @@ export type ResearchActivityType = 'dataset' | 'experiment' | 'walk_forward_run'
 
 export type DatasetTimeframe = '15m' | '1h' | '4h' | '1d';
 
+export type MarketType = 'spot';
+
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
 
 export type DatasetSortDirection = 'asc' | 'desc';
@@ -22,7 +24,7 @@ export type WalkForwardMode = 'rolling' | 'expanding';
 export interface TradingPair {
   base_asset: string;
   quote_asset: string;
-  market_type: string;
+  market_type: MarketType;
 }
 
 export interface DatasetSummary {
@@ -37,6 +39,25 @@ export interface DatasetSummary {
   created_at: string;
   candle_count: number;
   checksum: string;
+}
+
+export interface DatasetImportCandle {
+  open_time: string;
+  close_time: string;
+  open_price: string;
+  high_price: string;
+  low_price: string;
+  close_price: string;
+  volume: string;
+  is_closed?: boolean;
+}
+
+export interface DatasetImportRequest {
+  name: string;
+  source: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  candles: DatasetImportCandle[];
 }
 
 export interface OHLCVCandle {
