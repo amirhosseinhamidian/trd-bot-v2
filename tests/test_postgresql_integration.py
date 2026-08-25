@@ -66,8 +66,11 @@ def test_postgresql_connection_and_migrations() -> None:
 
         assert {
             "alembic_version",
+            "architecture_recommendations",
             "dataset_snapshots",
+            "experiment_executions",
             "research_experiments",
+            "system_metric_samples",
             "walk_forward_runs",
         }.issubset(table_names)
     finally:

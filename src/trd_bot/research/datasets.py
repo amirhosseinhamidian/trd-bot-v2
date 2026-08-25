@@ -41,6 +41,34 @@ class DatasetSnapshot(BaseModel):
     checksum: str = Field(min_length=64, max_length=64)
     candles: tuple[OHLCVCandle, ...]
 
+    def has_same_content(
+        self,
+        other: Self,
+    ) -> bool:
+        """Compare immutable market content while ignoring ingestion metadata."""
+
+        if self.checksum != other.checksum:
+            return False
+
+        if len(self.candles) != len(other.candles):
+            return False
+
+        return all(
+            first_candle.model_dump(
+                mode="json",
+                exclude={"received_at"},
+            )
+            == second_candle.model_dump(
+                mode="json",
+                exclude={"received_at"},
+            )
+            for first_candle, second_candle in zip(
+                self.candles,
+                other.candles,
+                strict=True,
+            )
+        )
+
 
 class DatasetSummary(BaseModel):
     """Lightweight dataset metadata for catalog and dashboard lists."""
@@ -313,7 +341,7 @@ class InMemoryDatasetRepository:
         first: DatasetSnapshot,
         second: DatasetSnapshot,
     ) -> bool:
-        return first.checksum == second.checksum and first.candles == second.candles
+        return first.has_same_content(second)
 
 
 class DatasetBuilder:

@@ -219,7 +219,7 @@ class SqlAlchemyDatasetRepository:
         first: DatasetSnapshot,
         second: DatasetSnapshot,
     ) -> bool:
-        return first.checksum == second.checksum and first.candles == second.candles
+        return first.has_same_content(second)
 
 
 class SqlAlchemyExperimentRegistry:

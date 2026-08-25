@@ -5,6 +5,8 @@ export type ResearchActivityType = 'dataset' | 'experiment' | 'walk_forward_run'
 
 export type DatasetTimeframe = '15m' | '1h' | '4h' | '1d';
 
+export type MarketType = 'spot';
+
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
 
 export type DatasetSortDirection = 'asc' | 'desc';
@@ -22,7 +24,7 @@ export type WalkForwardMode = 'rolling' | 'expanding';
 export interface TradingPair {
   base_asset: string;
   quote_asset: string;
-  market_type: string;
+  market_type: MarketType;
 }
 
 export interface DatasetSummary {
@@ -37,6 +39,70 @@ export interface DatasetSummary {
   created_at: string;
   candle_count: number;
   checksum: string;
+}
+
+export interface DatasetImportCandle {
+  open_time: string;
+  close_time: string;
+  open_price: string;
+
+  high_price: string;
+  low_price: string;
+  close_price: string;
+  volume: string;
+  is_closed?: boolean;
+}
+
+export interface DatasetImportRequest {
+  name: string;
+  source: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  candles: DatasetImportCandle[];
+}
+
+export interface StoredDatasetEMACrossoverRequest {
+  dataset_id: string;
+  fast_period: number;
+  slow_period: number;
+  horizon_candles: number;
+  starting_balance: string;
+  allocation_fraction: string;
+  fee_rate: string;
+  slippage_rate: string;
+}
+
+export type ExperimentExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface ExperimentExecutionParameters {
+  fast_period: number;
+  slow_period: number;
+  horizon_candles: number;
+  starting_balance: string;
+  allocation_fraction: string;
+  fee_rate: string;
+  slippage_rate: string;
+}
+
+export interface ExperimentExecution {
+  execution_id: string;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: ExperimentExecutionStatus;
+  progress_percent: number;
+  dataset_id: string;
+  strategy_name: string;
+  strategy_version: string;
+  parameters: ExperimentExecutionParameters;
+  experiment_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+}
+
+export interface CreatedResearchExperiment {
+  experiment_id: string;
 }
 
 export interface OHLCVCandle {

@@ -1,7 +1,11 @@
 from trd_bot.db.base import DatabaseBase
+from trd_bot.db.experiment_execution_repositories import (
+    SqlAlchemyExperimentExecutionRepository,
+)
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     DatasetSnapshotRow,
+    ExperimentExecutionRow,
     ResearchExperimentRow,
     SystemMetricSampleRow,
     WalkForwardRunRow,
@@ -27,9 +31,11 @@ __all__ = [
     "ArchitectureRecommendationRow",
     "DatabaseBase",
     "DatasetSnapshotRow",
+    "ExperimentExecutionRow",
     "ResearchExperimentRow",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyDatasetRepository",
+    "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardRunRegistry",

@@ -1,22 +1,121 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getExperimentPerformanceSeries, getExperimentSignals } from '@/lib/api/client';
-import type { ExperimentPerformanceSeries, Page, StrategySignal } from '@/lib/api/types';
+import {
+  createDataset,
+  getExperimentPerformanceSeries,
+  getExperimentSignals,
+} from '@/lib/api/client';
+import type {
+  DatasetImportRequest,
+  DatasetSummary,
+  ExperimentPerformanceSeries,
+  Page,
+  StrategySignal,
+} from '@/lib/api/types';
 
-function jsonResponse(payload: unknown): Response {
+function jsonResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
-    status: 200,
+    status,
     headers: {
       'Content-Type': 'application/json',
     },
   });
 }
 
+const datasetImportRequest: DatasetImportRequest = {
+  name: 'Imported historical BTC dataset',
+  source: 'manual-import',
+  pair: {
+    base_asset: 'BTC',
+    quote_asset: 'USDT',
+    market_type: 'spot',
+  },
+  timeframe: '1h',
+  candles: [
+    {
+      open_time: '2026-08-20T10:00:00.000Z',
+      close_time: '2026-08-20T11:00:00.000Z',
+      open_price: '100',
+      high_price: '102',
+      low_price: '99',
+      close_price: '101',
+      volume: '1500',
+      is_closed: true,
+    },
+  ],
+};
+
+const importedDataset: DatasetSummary = {
+  dataset_id: 'dataset-1234567890abcdef',
+  schema_version: 1,
+  name: datasetImportRequest.name,
+  source: datasetImportRequest.source,
+  pair: datasetImportRequest.pair,
+  timeframe: datasetImportRequest.timeframe,
+  start_time: '2026-08-20T10:00:00.000Z',
+  end_time: '2026-08-20T11:00:00.000Z',
+  created_at: '2026-08-24T12:00:00.000Z',
+  candle_count: 1,
+  checksum: 'a'.repeat(64),
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('research API client', () => {
+  it('creates a historical dataset with a JSON request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(importedDataset, 201));
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await createDataset(datasetImportRequest);
+
+    expect(result).toEqual(importedDataset);
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+
+    expect(requestUrl).toContain('/api/v1/research/datasets');
+
+    expect(requestInit).toMatchObject({
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    expect(JSON.parse(String(requestInit.body))).toEqual(datasetImportRequest);
+  });
+
+  it('preserves dataset validation error details', async () => {
+    const errorPayload = {
+      detail: {
+        message: 'dataset failed quality checks',
+        candles_checked: 1,
+        issues: [
+          {
+            code: 'open_candle',
+            message: 'An unclosed candle was detected.',
+            timestamp: '2026-08-20T10:00:00.000Z',
+          },
+        ],
+      },
+    };
+
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(errorPayload, 422));
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(createDataset(datasetImportRequest)).rejects.toMatchObject({
+      name: 'ApiRequestError',
+      status: 422,
+      payload: errorPayload,
+    });
+  });
+
   it('builds experiment signal query parameters', async () => {
     const page: Page<StrategySignal> = {
       items: [],

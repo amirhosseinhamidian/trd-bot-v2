@@ -1,0 +1,136 @@
+import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+
+const copies = {
+  en: {
+    eyebrow: 'Historical backtest',
+    title: 'Run an EMA crossover experiment',
+    description:
+      'Select a stored historical dataset and configure the research parameters. This operation does not place real orders.',
+    historicalOnly: 'Historical research only',
+    fields: {
+      dataset: 'Dataset',
+      datasetPlaceholder: 'Select a historical dataset',
+      strategy: 'Strategy',
+      fastPeriod: 'Fast EMA period',
+      slowPeriod: 'Slow EMA period',
+      horizonCandles: 'Evaluation horizon',
+      startingBalance: 'Starting balance',
+      allocationFraction: 'Allocation fraction',
+      feeRate: 'Fee rate',
+      slippageRate: 'Slippage rate',
+    },
+    strategy: {
+      emaCrossover: 'EMA crossover',
+    },
+    selectedDataset: {
+      title: 'Selected dataset',
+      pair: 'Trading pair',
+      timeframe: 'Timeframe',
+      candles: 'Candles',
+      source: 'Source',
+    },
+    actions: {
+      run: 'Run historical backtest',
+      queued: 'Backtest queued...',
+      running: 'Running backtest...',
+      retryDatasets: 'Retry loading datasets',
+      viewResult: 'View experiment result',
+    },
+    states: {
+      loadingDatasets: 'Loading historical datasets...',
+      noDatasets: 'No historical dataset is available. Import a dataset first.',
+      datasetLoadError: 'Historical datasets could not be loaded.',
+      queued: 'The historical backtest is waiting to start.',
+      running: 'The historical backtest is running.',
+      progress: 'Execution progress',
+      success: 'The historical experiment was created successfully.',
+    },
+    errors: {
+      datasetRequired: 'Select a historical dataset.',
+      invalidFastPeriod: 'Fast EMA period must be an integer greater than or equal to 2.',
+      invalidSlowPeriod: 'Slow EMA period must be an integer greater than or equal to 3.',
+      slowMustBeGreater: 'Slow EMA period must be greater than the fast EMA period.',
+      invalidHorizon: 'Evaluation horizon must be a positive integer.',
+      invalidStartingBalance: 'Starting balance must be greater than zero.',
+      invalidAllocation: 'Allocation fraction must be greater than 0 and at most 1.',
+      invalidFee: 'Fee rate must be greater than or equal to 0 and less than 1.',
+      invalidSlippage: 'Slippage rate must be greater than or equal to 0 and less than 1.',
+      insufficientCandles:
+        'The selected dataset does not contain enough candles for these parameters.',
+      datasetNotFound: 'The selected dataset no longer exists.',
+      validationFailed: 'The backtest parameters or dataset were rejected.',
+      generic: 'The historical backtest could not be completed. Please try again.',
+      executionFailed:
+        'The historical backtest failed. You can review the parameters and try again.',
+      statusUnavailable: 'The backtest status could not be refreshed. Please try again.',
+      missingResult: 'The backtest completed without a result identifier.',
+    },
+  },
+  fa: {
+    eyebrow: 'بک‌تست تاریخی',
+    title: 'اجرای آزمایش تقاطع EMA',
+    description:
+      'یک دیتاست تاریخی ذخیره‌شده را انتخاب و پارامترهای پژوهش را تنظیم کنید. این عملیات هیچ سفارش واقعی ثبت نمی‌کند.',
+    historicalOnly: 'فقط پژوهش تاریخی',
+    fields: {
+      dataset: 'دیتاست',
+      datasetPlaceholder: 'یک دیتاست تاریخی انتخاب کنید',
+      strategy: 'استراتژی',
+      fastPeriod: 'دوره EMA سریع',
+      slowPeriod: 'دوره EMA آهسته',
+      horizonCandles: 'افق ارزیابی',
+      startingBalance: 'موجودی اولیه شبیه‌سازی',
+      allocationFraction: 'سهم تخصیص',
+      feeRate: 'نرخ کارمزد شبیه‌سازی',
+      slippageRate: 'نرخ لغزش قیمت شبیه‌سازی',
+    },
+    strategy: {
+      emaCrossover: 'تقاطع EMA',
+    },
+    selectedDataset: {
+      title: 'دیتاست انتخاب‌شده',
+      pair: 'جفت بازار',
+      timeframe: 'تایم‌فریم',
+      candles: 'تعداد کندل',
+      source: 'منبع',
+    },
+    actions: {
+      run: 'اجرای بک‌تست تاریخی',
+      queued: 'بک‌تست در صف اجراست...',
+      running: 'در حال اجرای بک‌تست...',
+      retryDatasets: 'تلاش مجدد برای دریافت دیتاست‌ها',
+      viewResult: 'مشاهده نتیجه آزمایش',
+    },
+    states: {
+      loadingDatasets: 'در حال دریافت دیتاست‌های تاریخی...',
+      noDatasets: 'هنوز دیتاست تاریخی ثبت نشده است. ابتدا یک دیتاست وارد کنید.',
+      datasetLoadError: 'دریافت دیتاست‌های تاریخی امکان‌پذیر نبود.',
+      queued: 'بک‌تست تاریخی در صف اجرا قرار گرفته است.',
+      running: 'بک‌تست تاریخی در حال اجراست.',
+      progress: 'پیشرفت اجرا',
+      success: 'آزمایش تاریخی با موفقیت ایجاد شد.',
+    },
+    errors: {
+      datasetRequired: 'یک دیتاست تاریخی انتخاب کنید.',
+      invalidFastPeriod: 'دوره EMA سریع باید عدد صحیح و حداقل ۲ باشد.',
+      invalidSlowPeriod: 'دوره EMA آهسته باید عدد صحیح و حداقل ۳ باشد.',
+      slowMustBeGreater: 'دوره EMA آهسته باید از دوره EMA سریع بزرگ‌تر باشد.',
+      invalidHorizon: 'افق ارزیابی باید یک عدد صحیح مثبت باشد.',
+      invalidStartingBalance: 'موجودی اولیه باید بزرگ‌تر از صفر باشد.',
+      invalidAllocation: 'سهم تخصیص باید بزرگ‌تر از صفر و حداکثر برابر ۱ باشد.',
+      invalidFee: 'نرخ کارمزد باید حداقل صفر و کوچک‌تر از ۱ باشد.',
+      invalidSlippage: 'نرخ لغزش قیمت باید حداقل صفر و کوچک‌تر از ۱ باشد.',
+      insufficientCandles: 'تعداد کندل‌های دیتاست برای این پارامترها کافی نیست.',
+      datasetNotFound: 'دیتاست انتخاب‌شده دیگر وجود ندارد.',
+      validationFailed: 'پارامترها یا دیتاست توسط Backend رد شدند.',
+      generic: 'اجرای بک‌تست تاریخی انجام نشد. دوباره تلاش کنید.',
+      executionFailed: 'اجرای بک‌تست تاریخی ناموفق بود. پارامترها را بررسی و دوباره تلاش کنید.',
+      statusUnavailable: 'دریافت وضعیت بک‌تست امکان‌پذیر نبود. دوباره تلاش کنید.',
+      missingResult: 'اجرای بک‌تست کامل شد اما شناسه نتیجه دریافت نشد.',
+    },
+  },
+} as const;
+
+export function getExperimentRunCopy(locale: DashboardLocale) {
+  return copies[locale];
+}

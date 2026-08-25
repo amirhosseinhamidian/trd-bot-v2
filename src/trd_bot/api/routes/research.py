@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
@@ -11,9 +12,12 @@ from fastapi import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
+from trd_bot.api.background_jobs import ExperimentExecutionTask
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
     get_dataset_repository,
+    get_experiment_execution_repository,
+    get_experiment_execution_task,
     get_experiment_registry,
     get_walk_forward_run_registry,
 )
@@ -26,6 +30,7 @@ from trd_bot.research import (
     DatasetBuilder,
     DatasetRepository,
     DatasetSnapshot,
+    EMACrossoverExecutionParameters,
     ExperimentAcceptanceEvaluator,
     ExperimentAcceptancePolicy,
     ExperimentAcceptanceResult,
@@ -34,6 +39,9 @@ from trd_bot.research import (
     ExperimentComparator,
     ExperimentComparisonRequest,
     ExperimentComparisonResult,
+    ExperimentExecution,
+    ExperimentExecutionBuilder,
+    ExperimentExecutionRepository,
     ExperimentParameter,
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
@@ -91,6 +99,16 @@ AcceptancePolicyPresetCatalogDependency = Annotated[
     Depends(get_acceptance_policy_preset_catalog),
 ]
 
+ExperimentExecutionRepositoryDependency = Annotated[
+    ExperimentExecutionRepository,
+    Depends(get_experiment_execution_repository),
+]
+
+ExperimentExecutionTaskDependency = Annotated[
+    ExperimentExecutionTask,
+    Depends(get_experiment_execution_task),
+]
+
 
 @dataclass(frozen=True, slots=True)
 class _ResearchExecution:
@@ -129,8 +147,40 @@ class EMACrossoverResearchRequest(BaseModel):
     slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
 
 
+class StoredDatasetEMACrossoverResearchRequest(BaseModel):
+    """Request for running EMA research against an already stored dataset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+
+    fast_period: int = Field(default=9, ge=2)
+    slow_period: int = Field(default=21, ge=3)
+    horizon_candles: int = Field(default=1, ge=1)
+
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
 class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
     """Request for an offline EMA walk-forward execution."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetEMACrossoverWalkForwardRequest(
+    StoredDatasetEMACrossoverResearchRequest,
+):
+    """Request for walk-forward analysis against a stored dataset."""
 
     train_candles: int = Field(default=100, ge=2)
     test_candles: int = Field(default=20, ge=1)
@@ -168,6 +218,29 @@ class ExperimentCatalogParams(ExperimentCatalogQuery):
 
 ExperimentCatalogParamsQuery = Annotated[
     ExperimentCatalogParams,
+    Query(),
+]
+
+
+class ExperimentExecutionCatalogParams(BaseModel):
+    """Pagination parameters for experiment execution lists."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+    )
+
+    offset: int = Field(
+        default=0,
+        ge=0,
+    )
+
+
+ExperimentExecutionCatalogParamsQuery = Annotated[
+    ExperimentExecutionCatalogParams,
     Query(),
 ]
 
@@ -240,24 +313,87 @@ def _canonical_decimal(value: Decimal) -> str:
     return format(value.normalize(), "f")
 
 
+def _build_execution_parameters(
+    request: StoredDatasetEMACrossoverResearchRequest,
+) -> EMACrossoverExecutionParameters:
+    try:
+        return EMACrossoverExecutionParameters(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+            horizon_candles=request.horizon_candles,
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="invalid EMA execution parameters",
+        ) from error
+
+
 def _build_walk_forward_config(
-    request: EMACrossoverWalkForwardRequest,
+    request: (EMACrossoverWalkForwardRequest | StoredDatasetEMACrossoverWalkForwardRequest),
 ) -> WalkForwardConfig:
-    return WalkForwardConfig(
-        train_candles=request.train_candles,
-        test_candles=request.test_candles,
-        step_candles=request.step_candles,
-        gap_candles=request.gap_candles,
-        mode=request.mode,
-    )
+    try:
+        return WalkForwardConfig(
+            train_candles=request.train_candles,
+            test_candles=request.test_candles,
+            step_candles=request.step_candles,
+            gap_candles=request.gap_candles,
+            mode=request.mode,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
 
 
 def _build_ema_parameters(
-    request: EMACrossoverResearchRequest,
+    request: (EMACrossoverResearchRequest | StoredDatasetEMACrossoverResearchRequest),
 ) -> tuple[ExperimentParameter, ...]:
     return (
-        ExperimentParameter(name="fast_period", value=str(request.fast_period)),
-        ExperimentParameter(name="slow_period", value=str(request.slow_period)),
+        ExperimentParameter(
+            name="fast_period",
+            value=str(request.fast_period),
+        ),
+        ExperimentParameter(
+            name="slow_period",
+            value=str(request.slow_period),
+        ),
+    )
+
+
+def _build_experiment_parameters(
+    request: EMACrossoverResearchRequest | StoredDatasetEMACrossoverResearchRequest,
+) -> tuple[ExperimentParameter, ...]:
+    return (
+        ExperimentParameter(
+            name="fast_period",
+            value=str(request.fast_period),
+        ),
+        ExperimentParameter(
+            name="slow_period",
+            value=str(request.slow_period),
+        ),
+        ExperimentParameter(
+            name="starting_balance",
+            value=_canonical_decimal(request.starting_balance),
+        ),
+        ExperimentParameter(
+            name="allocation_fraction",
+            value=_canonical_decimal(request.allocation_fraction),
+        ),
+        ExperimentParameter(
+            name="fee_rate",
+            value=_canonical_decimal(request.fee_rate),
+        ),
+        ExperimentParameter(
+            name="slippage_rate",
+            value=_canonical_decimal(request.slippage_rate),
+        ),
     )
 
 
@@ -298,6 +434,48 @@ def _run_research_pipeline(
                 "issues": [issue.model_dump(mode="json") for issue in error.report.issues],
             },
         ) from error
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+
+def _run_stored_dataset_research_pipeline(
+    request: StoredDatasetEMACrossoverResearchRequest,
+    datasets: DatasetRepository,
+) -> _ResearchExecution:
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    try:
+        strategy = EMACrossoverStrategy(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+        )
+
+        result = ResearchPipeline().run(
+            dataset=dataset,
+            strategy=strategy,
+            horizon_candles=request.horizon_candles,
+            backtest_config=BacktestConfig(
+                starting_balance=request.starting_balance,
+                allocation_fraction=request.allocation_fraction,
+                fee_rate=request.fee_rate,
+                slippage_rate=request.slippage_rate,
+            ),
+        )
+
+        return _ResearchExecution(
+            dataset=dataset,
+            result=result,
+        )
 
     except ValueError as error:
         raise HTTPException(
@@ -363,6 +541,65 @@ def _run_walk_forward_pipeline(
         ) from error
 
 
+def _run_stored_dataset_walk_forward_pipeline(
+    request: StoredDatasetEMACrossoverWalkForwardRequest,
+    datasets: DatasetRepository,
+) -> _WalkForwardExecution:
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    try:
+        strategy = EMACrossoverStrategy(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+        )
+
+        backtest_config = BacktestConfig(
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+
+        walk_forward_config = _build_walk_forward_config(request)
+
+        plan = WalkForwardPlanner().plan(
+            dataset=dataset,
+            config=walk_forward_config,
+        )
+
+        materialization = WalkForwardDatasetMaterializer().materialize(
+            dataset=dataset,
+            plan=plan,
+        )
+
+        result = WalkForwardExecutor().execute(
+            dataset=dataset,
+            materialization=materialization,
+            strategy=strategy,
+            strategy_parameters=_build_ema_parameters(request),
+            horizon_candles=request.horizon_candles,
+            backtest_config=backtest_config,
+        )
+
+        return _WalkForwardExecution(
+            dataset=dataset,
+            config=walk_forward_config,
+            result=result,
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+
 @router.post(
     "/ema-crossover",
     response_model=ResearchPipelineResult,
@@ -409,6 +646,36 @@ def create_ema_crossover_walk_forward_run(
         return registry.save(run)
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@router.post(
+    "/walk-forward/runs/ema-crossover/from-dataset",
+    response_model=WalkForwardResearchRun,
+)
+def create_ema_crossover_walk_forward_run_from_dataset(
+    request: StoredDatasetEMACrossoverWalkForwardRequest,
+    registry: WalkForwardRunRegistryDependency,
+    datasets: DatasetRepositoryDependency,
+) -> WalkForwardResearchRun:
+    """Run and store walk-forward analysis for a stored dataset."""
+
+    execution = _run_stored_dataset_walk_forward_pipeline(
+        request=request,
+        datasets=datasets,
+    )
+
+    run = WalkForwardRunBuilder().build(
+        result=execution.result,
+        walk_forward_config=execution.config,
+    )
+
+    try:
+        return registry.save(run)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail=str(error),
+        ) from error
 
 
 @router.get(
@@ -502,6 +769,97 @@ def get_walk_forward_run(
 
 
 @router.post(
+    "/experiment-executions/ema-crossover",
+    response_model=ExperimentExecution,
+    status_code=202,
+)
+def create_ema_crossover_experiment_execution(
+    request: StoredDatasetEMACrossoverResearchRequest,
+    background_tasks: BackgroundTasks,
+    executions: ExperimentExecutionRepositoryDependency,
+    datasets: DatasetRepositoryDependency,
+    execution_task: ExperimentExecutionTaskDependency,
+) -> ExperimentExecution:
+    """Queue a historical EMA experiment execution."""
+
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    execution = ExperimentExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=_build_execution_parameters(request),
+    )
+
+    try:
+        stored_execution = executions.save(execution)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="experiment execution could not be stored",
+        ) from error
+
+    background_tasks.add_task(
+        execution_task,
+        stored_execution.execution_id,
+    )
+
+    return stored_execution
+
+
+@router.get(
+    "/experiment-executions",
+    response_model=Page[ExperimentExecution],
+)
+def list_experiment_executions(
+    executions: ExperimentExecutionRepositoryDependency,
+    params: ExperimentExecutionCatalogParamsQuery,
+) -> Page[ExperimentExecution]:
+    """List persisted experiment executions."""
+
+    pagination = PaginationParams(
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+    items = executions.list_page(
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+    return build_page(
+        items,
+        total=executions.count(),
+        pagination=pagination,
+    )
+
+
+@router.get(
+    "/experiment-executions/{execution_id}",
+    response_model=ExperimentExecution,
+)
+def get_experiment_execution(
+    execution_id: str,
+    executions: ExperimentExecutionRepositoryDependency,
+) -> ExperimentExecution:
+    """Return one persisted experiment execution."""
+
+    execution = executions.get(execution_id)
+
+    if execution is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment execution not found",
+        )
+
+    return execution
+
+
+@router.post(
     "/experiments/ema-crossover",
     response_model=ResearchExperiment,
 )
@@ -516,32 +874,7 @@ def create_ema_crossover_experiment(
 
     experiment = ExperimentBuilder().build(
         result=execution.result,
-        parameters=(
-            ExperimentParameter(
-                name="fast_period",
-                value=str(request.fast_period),
-            ),
-            ExperimentParameter(
-                name="slow_period",
-                value=str(request.slow_period),
-            ),
-            ExperimentParameter(
-                name="starting_balance",
-                value=_canonical_decimal(request.starting_balance),
-            ),
-            ExperimentParameter(
-                name="allocation_fraction",
-                value=_canonical_decimal(request.allocation_fraction),
-            ),
-            ExperimentParameter(
-                name="fee_rate",
-                value=_canonical_decimal(request.fee_rate),
-            ),
-            ExperimentParameter(
-                name="slippage_rate",
-                value=_canonical_decimal(request.slippage_rate),
-            ),
-        ),
+        parameters=_build_experiment_parameters(request),
     )
 
     try:
@@ -549,6 +882,36 @@ def create_ema_crossover_experiment(
         return registry.save(experiment)
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@router.post(
+    "/experiments/ema-crossover/from-dataset",
+    response_model=ResearchExperiment,
+)
+def create_ema_crossover_experiment_from_dataset(
+    request: StoredDatasetEMACrossoverResearchRequest,
+    registry: ExperimentRegistryDependency,
+    datasets: DatasetRepositoryDependency,
+) -> ResearchExperiment:
+    """Run and store EMA research using an already persisted dataset."""
+
+    execution = _run_stored_dataset_research_pipeline(
+        request=request,
+        datasets=datasets,
+    )
+
+    experiment = ExperimentBuilder().build(
+        result=execution.result,
+        parameters=_build_experiment_parameters(request),
+    )
+
+    try:
+        return registry.save(experiment)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail=str(error),
+        ) from error
 
 
 @router.get(

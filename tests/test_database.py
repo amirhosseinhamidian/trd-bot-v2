@@ -67,6 +67,7 @@ def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
         "architecture_recommendations",
         "dataset_snapshots",
+        "experiment_executions",
         "research_experiments",
         "system_metric_samples",
         "walk_forward_runs",
