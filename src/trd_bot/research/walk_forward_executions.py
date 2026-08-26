@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Self
+from typing import Protocol, Self
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -350,3 +350,77 @@ class WalkForwardExecutionStateMachine:
                 "walk-forward execution must be "
                 f"{expected_status.value} but is {execution.status.value}"
             )
+
+
+class WalkForwardExecutionRepository(Protocol):
+    """Persistence contract for walk-forward execution lifecycle state."""
+
+    def save(
+        self,
+        execution: WalkForwardExecution,
+    ) -> WalkForwardExecution:
+        """Insert or update an execution."""
+
+    def get(
+        self,
+        execution_id: str,
+    ) -> WalkForwardExecution | None:
+        """Return an execution by ID."""
+
+    def count(self) -> int:
+        """Return the number of stored executions."""
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardExecution, ...]:
+        """Return executions ordered from newest to oldest."""
+
+
+class InMemoryWalkForwardExecutionRepository:
+    """Store walk-forward execution lifecycle state in memory."""
+
+    def __init__(self) -> None:
+        self._executions: dict[str, WalkForwardExecution] = {}
+
+    def save(
+        self,
+        execution: WalkForwardExecution,
+    ) -> WalkForwardExecution:
+        self._executions[execution.execution_id] = execution
+
+        return execution
+
+    def get(
+        self,
+        execution_id: str,
+    ) -> WalkForwardExecution | None:
+        return self._executions.get(execution_id)
+
+    def count(self) -> int:
+        return len(self._executions)
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+    ) -> tuple[WalkForwardExecution, ...]:
+        if limit <= 0:
+            raise ValueError("limit must be greater than zero")
+
+        if offset < 0:
+            raise ValueError("offset cannot be negative")
+
+        executions = sorted(
+            self._executions.values(),
+            key=lambda execution: (
+                execution.created_at,
+                execution.execution_id,
+            ),
+            reverse=True,
+        )
+
+        return tuple(executions[offset : offset + limit])

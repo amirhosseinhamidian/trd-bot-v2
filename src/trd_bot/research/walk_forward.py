@@ -1,6 +1,6 @@
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -26,6 +26,9 @@ class WalkForwardMode(StrEnum):
 
     ROLLING = "rolling"
     EXPANDING = "expanding"
+
+
+FoldCompletedCallback = Callable[[int, int], None]
 
 
 class WalkForwardConfig(BaseModel):
@@ -534,6 +537,7 @@ class WalkForwardExecutor:
         strategy_parameters: Sequence[ExperimentParameter] = (),
         horizon_candles: int = 1,
         backtest_config: BacktestConfig | None = None,
+        on_fold_completed: FoldCompletedCallback | None = None,
     ) -> WalkForwardExecutionResult:
         if materialization.source_dataset_id != dataset.dataset_id:
             raise ValueError("walk-forward materialization does not belong to dataset")
@@ -571,6 +575,12 @@ class WalkForwardExecutor:
                     result=result,
                 )
             )
+
+            if on_fold_completed is not None:
+                on_fold_completed(
+                    len(fold_results),
+                    len(materialization.splits),
+                )
 
         completed_folds = tuple(fold_results)
         return WalkForwardExecutionResult(

@@ -1,0 +1,626 @@
+diff --git a/src/trd_bot/research/walk_forward.py b/src/trd_bot/research/walk_forward.py
+index 4be0477..68a1eab 100644
+--- a/src/trd_bot/research/walk_forward.py
++++ b/src/trd_bot/research/walk_forward.py
+@@ -1,6 +1,6 @@
+ import hashlib
+ import json
+-from collections.abc import Sequence
++from collections.abc import Callable, Sequence
+ from datetime import UTC, datetime
+ from decimal import Decimal
+ from enum import StrEnum
+@@ -28,6 +28,9 @@ class WalkForwardMode(StrEnum):
+     EXPANDING = "expanding"
+ 
+ 
++FoldCompletedCallback = Callable[[int, int], None]
++
++
+ class WalkForwardConfig(BaseModel):
+     """Configuration for chronological train and test folds."""
+ 
+@@ -532,6 +535,7 @@ class WalkForwardExecutor:
+         strategy_parameters: Sequence[ExperimentParameter] = (),
+         horizon_candles: int = 1,
+         backtest_config: BacktestConfig | None = None,
++        on_fold_completed: FoldCompletedCallback | None = None,
+     ) -> WalkForwardExecutionResult:
+         if materialization.source_dataset_id != dataset.dataset_id:
+             raise ValueError("walk-forward materialization does not belong to dataset")
+@@ -570,6 +574,12 @@ class WalkForwardExecutor:
+                     result=result,
+                 )
+             )
++
++            if on_fold_completed is not None:
++                on_fold_completed(
++                    len(fold_results),
++                    len(materialization.splits),
++                )
+ 
+         completed_folds = tuple(fold_results)
+         return WalkForwardExecutionResult(
+diff --git a/src/trd_bot/research/walk_forward_executions.py b/src/trd_bot/research/walk_forward_executions.py
+index 130084d..2a18716 100644
+--- a/src/trd_bot/research/walk_forward_executions.py
++++ b/src/trd_bot/research/walk_forward_executions.py
+@@ -1,6 +1,6 @@
+ from datetime import UTC, datetime
+ from enum import StrEnum
+-from typing import Self
++from typing import Protocol, Self
+ from uuid import uuid4
+ 
+ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+@@ -248,3 +248,77 @@ class WalkForwardExecutionStateMachine:
+                 "walk-forward execution must be "
+                 f"{expected_status.value} but is {execution.status.value}"
+             )
++
++
++class WalkForwardExecutionRepository(Protocol):
++    """Persistence contract for walk-forward execution lifecycle state."""
++
++    def save(
++        self,
++        execution: WalkForwardExecution,
++    ) -> WalkForwardExecution:
++        """Insert or update an execution."""
++
++    def get(
++        self,
++        execution_id: str,
++    ) -> WalkForwardExecution | None:
++        """Return an execution by ID."""
++
++    def count(self) -> int:
++        """Return the number of stored executions."""
++
++    def list_page(
++        self,
++        *,
++        limit: int,
++        offset: int,
++    ) -> tuple[WalkForwardExecution, ...]:
++        """Return executions ordered from newest to oldest."""
++
++
++class InMemoryWalkForwardExecutionRepository:
++    """Store walk-forward execution lifecycle state in memory."""
++
++    def __init__(self) -> None:
++        self._executions: dict[str, WalkForwardExecution] = {}
++
++    def save(
++        self,
++        execution: WalkForwardExecution,
++    ) -> WalkForwardExecution:
++        self._executions[execution.execution_id] = execution
++
++        return execution
++
++    def get(
++        self,
++        execution_id: str,
++    ) -> WalkForwardExecution | None:
++        return self._executions.get(execution_id)
++
++    def count(self) -> int:
++        return len(self._executions)
++
++    def list_page(
++        self,
++        *,
++        limit: int,
++        offset: int,
++    ) -> tuple[WalkForwardExecution, ...]:
++        if limit <= 0:
++            raise ValueError("limit must be greater than zero")
++
++        if offset < 0:
++            raise ValueError("offset cannot be negative")
++
++        executions = sorted(
++            self._executions.values(),
++            key=lambda execution: (
++                execution.created_at,
++                execution.execution_id,
++            ),
++            reverse=True,
++        )
++
++        return tuple(executions[offset : offset + limit])
+diff --git a/src/trd_bot/research/walk_forward_execution_runner.py b/src/trd_bot/research/walk_forward_execution_runner.py
+new file mode 100644
+index 0000000..f024b95
+--- /dev/null
++++ b/src/trd_bot/research/walk_forward_execution_runner.py
+@@ -0,0 +1,165 @@
++from trd_bot.backtesting.models import BacktestConfig
++from trd_bot.research.datasets import DatasetRepository
++from trd_bot.research.experiments import ExperimentParameter
++from trd_bot.research.walk_forward import (
++    WalkForwardDatasetMaterializer,
++    WalkForwardExecutor,
++    WalkForwardPlanner,
++)
++from trd_bot.research.walk_forward_executions import (
++    WalkForwardExecution,
++    WalkForwardExecutionRepository,
++    WalkForwardExecutionStateMachine,
++    WalkForwardExecutionStatus,
++)
++from trd_bot.research.walk_forward_runs import (
++    WalkForwardRunBuilder,
++    WalkForwardRunRegistry,
++)
++from trd_bot.strategies import EMACrossoverStrategy
++
++
++class WalkForwardExecutionRunner:
++    """Execute one queued walk-forward job and persist fold progress."""
++
++    def __init__(
++        self,
++        *,
++        executions: WalkForwardExecutionRepository,
++        datasets: DatasetRepository,
++        runs: WalkForwardRunRegistry,
++        planner: WalkForwardPlanner | None = None,
++        materializer: WalkForwardDatasetMaterializer | None = None,
++        executor: WalkForwardExecutor | None = None,
++        state_machine: WalkForwardExecutionStateMachine | None = None,
++    ) -> None:
++        self._executions = executions
++        self._datasets = datasets
++        self._runs = runs
++        self._planner = planner or WalkForwardPlanner()
++        self._materializer = materializer or WalkForwardDatasetMaterializer()
++        self._executor = executor or WalkForwardExecutor()
++        self._state_machine = state_machine or WalkForwardExecutionStateMachine()
++
++    def run(
++        self,
++        execution_id: str,
++    ) -> WalkForwardExecution:
++        execution = self._executions.get(execution_id)
++
++        if execution is None:
++            raise ValueError("walk-forward execution not found")
++
++        if execution.status is not WalkForwardExecutionStatus.QUEUED:
++            return execution
++
++        running = self._state_machine.start(execution)
++        running = self._executions.save(running)
++
++        dataset = self._datasets.get(running.dataset_id)
++
++        if dataset is None:
++            return self._fail(
++                running,
++                error_code="dataset_not_found",
++                error_message=(
++                    "The historical dataset required for this walk-forward execution "
++                    "is no longer available."
++                ),
++            )
++
++        try:
++            plan = self._planner.plan(
++                dataset=dataset,
++                config=running.walk_forward_config,
++            )
++
++            if len(plan.folds) != running.total_folds:
++                raise ValueError("walk-forward fold count changed after the job was queued")
++
++            materialization = self._materializer.materialize(
++                dataset=dataset,
++                plan=plan,
++            )
++
++            parameters = running.parameters
++            strategy = EMACrossoverStrategy(
++                fast_period=parameters.fast_period,
++                slow_period=parameters.slow_period,
++            )
++
++            def save_fold_progress(
++                completed_folds: int,
++                total_folds: int,
++            ) -> None:
++                nonlocal running
++
++                if total_folds != running.total_folds:
++                    raise ValueError("walk-forward executor reported an unexpected fold count")
++
++                progressed = self._state_machine.update_completed_folds(
++                    running,
++                    completed_folds=completed_folds,
++                )
++
++                running = self._executions.save(progressed)
++
++            result = self._executor.execute(
++                dataset=dataset,
++                materialization=materialization,
++                strategy=strategy,
++                strategy_parameters=(
++                    ExperimentParameter(
++                        name="fast_period",
++                        value=str(parameters.fast_period),
++                    ),
++                    ExperimentParameter(
++                        name="slow_period",
++                        value=str(parameters.slow_period),
++                    ),
++                ),
++                horizon_candles=parameters.horizon_candles,
++                backtest_config=BacktestConfig(
++                    starting_balance=parameters.starting_balance,
++                    allocation_fraction=parameters.allocation_fraction,
++                    fee_rate=parameters.fee_rate,
++                    slippage_rate=parameters.slippage_rate,
++                ),
++                on_fold_completed=save_fold_progress,
++            )
++
++            run = WalkForwardRunBuilder().build(
++                result=result,
++                walk_forward_config=running.walk_forward_config,
++            )
++
++            stored_run = self._runs.save(run)
++
++            succeeded = self._state_machine.succeed(
++                running,
++                walk_forward_run_id=stored_run.execution_id,
++            )
++
++            return self._executions.save(succeeded)
++
++        except Exception:
++            return self._fail(
++                running,
++                error_code="execution_failed",
++                error_message=("The walk-forward execution could not be completed."),
++            )
++
++    def _fail(
++        self,
++        execution: WalkForwardExecution,
++        *,
++        error_code: str,
++        error_message: str,
++    ) -> WalkForwardExecution:
++        failed = self._state_machine.fail(
++            execution,
++            error_code=error_code,
++            error_message=error_message,
++        )
++
++        return self._executions.save(failed)
+diff --git a/tests/test_walk_forward_execution.py b/tests/test_walk_forward_execution.py
+index f7f27dd..bc915dd 100644
+--- a/tests/test_walk_forward_execution.py
++++ b/tests/test_walk_forward_execution.py
+@@ -143,6 +143,30 @@ def test_executor_runs_every_test_fold_through_research_pipeline() -> None:
+         assert fold_result.result.performance_report.total_trades == 1
+ 
+ 
++def test_executor_reports_each_completed_fold() -> None:
++    dataset = create_dataset(10)
++    datasets = materialize(dataset)
++    progress_events: list[tuple[int, int]] = []
++
++    WalkForwardExecutor().execute(
++        dataset=dataset,
++        materialization=datasets,
++        strategy=LastCandleLongStrategy(),
++        on_fold_completed=lambda completed, total: progress_events.append(
++            (
++                completed,
++                total,
++            )
++        ),
++    )
++
++    assert progress_events == [
++        (1, 3),
++        (2, 3),
++        (3, 3),
++    ]
++
++
+ def test_executor_never_exposes_future_test_candles_to_strategy() -> None:
+     dataset = create_dataset(10)
+     datasets = materialize(dataset)
+diff --git a/tests/test_walk_forward_execution_runner.py b/tests/test_walk_forward_execution_runner.py
+new file mode 100644
+index 0000000..607a16f
+--- /dev/null
++++ b/tests/test_walk_forward_execution_runner.py
+@@ -0,0 +1,281 @@
++from datetime import UTC, datetime, timedelta
++from decimal import Decimal
++
++import pytest
++
++from trd_bot.domain.market_data import OHLCVCandle
++from trd_bot.research.datasets import (
++    DatasetBuilder,
++    DatasetSnapshot,
++    InMemoryDatasetRepository,
++)
++from trd_bot.research.experiment_executions import (
++    EMACrossoverExecutionParameters,
++)
++from trd_bot.research.walk_forward import (
++    WalkForwardConfig,
++    WalkForwardExecutionResult,
++    WalkForwardExecutor,
++    WalkForwardPlanner,
++)
++from trd_bot.research.walk_forward_execution_runner import (
++    WalkForwardExecutionRunner,
++)
++from trd_bot.research.walk_forward_executions import (
++    InMemoryWalkForwardExecutionRepository,
++    WalkForwardExecution,
++    WalkForwardExecutionBuilder,
++    WalkForwardExecutionStatus,
++)
++from trd_bot.research.walk_forward_runs import (
++    InMemoryWalkForwardRunRegistry,
++)
++
++
++class RecordingExecutionRepository(InMemoryWalkForwardExecutionRepository):
++    def __init__(self) -> None:
++        super().__init__()
++        self.saved: list[WalkForwardExecution] = []
++
++    def save(
++        self,
++        execution: WalkForwardExecution,
++    ) -> WalkForwardExecution:
++        self.saved.append(execution)
++        return super().save(execution)
++
++
++class FailingWalkForwardExecutor(WalkForwardExecutor):
++    def execute(self, **kwargs: object) -> WalkForwardExecutionResult:
++        callback = kwargs["on_fold_completed"]
++
++        assert callable(callback)
++        callback(1, 3)
++
++        raise RuntimeError("simulated fold failure")
++
++
++def build_parameters() -> EMACrossoverExecutionParameters:
++    return EMACrossoverExecutionParameters(
++        fast_period=2,
++        slow_period=3,
++        horizon_candles=1,
++        starting_balance=Decimal("10000"),
++        allocation_fraction=Decimal("0.10"),
++        fee_rate=Decimal("0.001"),
++        slippage_rate=Decimal("0.0005"),
++    )
++
++
++def build_walk_forward_config() -> WalkForwardConfig:
++    return WalkForwardConfig(
++        train_candles=4,
++        test_candles=2,
++        step_candles=2,
++        gap_candles=0,
++    )
++
++
++def build_dataset() -> DatasetSnapshot:
++    start_time = datetime(2026, 8, 25, tzinfo=UTC)
++    candles: list[OHLCVCandle] = []
++
++    for index in range(10):
++        open_time = start_time + timedelta(hours=index)
++        close_time = open_time + timedelta(hours=1)
++        price = Decimal("100") + Decimal(index)
++
++        candles.append(
++            OHLCVCandle.model_validate(
++                {
++                    "source": "walk-forward-runner-test",
++                    "pair": {
++                        "base_asset": "BTC",
++                        "quote_asset": "USDT",
++                        "market_type": "spot",
++                    },
++                    "timeframe": "1h",
++                    "open_time": open_time,
++                    "close_time": close_time,
++                    "received_at": close_time,
++                    "open_price": price,
++                    "high_price": price + Decimal("1"),
++                    "low_price": price - Decimal("1"),
++                    "close_price": price + Decimal("0.5"),
++                    "volume": Decimal("1000"),
++                    "is_closed": True,
++                }
++            )
++        )
++
++    return DatasetBuilder().build(
++        name="Walk-forward runner dataset",
++        candles=candles,
++    )
++
++
++def build_queued_execution(
++    dataset: DatasetSnapshot,
++) -> WalkForwardExecution:
++    config = build_walk_forward_config()
++    plan = WalkForwardPlanner().plan(
++        dataset=dataset,
++        config=config,
++    )
++
++    return WalkForwardExecutionBuilder().build(
++        dataset_id=dataset.dataset_id,
++        parameters=build_parameters(),
++        walk_forward_config=config,
++        total_folds=len(plan.folds),
++    )
++
++
++def test_runs_queued_walk_forward_execution_to_success() -> None:
++    dataset_repository = InMemoryDatasetRepository()
++    execution_repository = RecordingExecutionRepository()
++    run_registry = InMemoryWalkForwardRunRegistry()
++    dataset = build_dataset()
++
++    dataset_repository.save(dataset)
++
++    queued = build_queued_execution(dataset)
++    execution_repository.save(queued)
++
++    runner = WalkForwardExecutionRunner(
++        executions=execution_repository,
++        datasets=dataset_repository,
++        runs=run_registry,
++    )
++
++    completed = runner.run(queued.execution_id)
++
++    assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
++    assert completed.completed_folds == 3
++    assert completed.progress_percent == 100
++    assert completed.started_at is not None
++    assert completed.finished_at is not None
++    assert completed.walk_forward_run_id is not None
++    assert completed.error_code is None
++    assert completed.error_message is None
++
++    stored_execution = execution_repository.get(queued.execution_id)
++    stored_run = run_registry.get(completed.walk_forward_run_id)
++
++    assert stored_execution == completed
++    assert stored_run is not None
++    assert stored_run.result.source_dataset_id == dataset.dataset_id
++
++    running_states = [
++        execution
++        for execution in execution_repository.saved
++        if execution.status is WalkForwardExecutionStatus.RUNNING
++    ]
++
++    assert [execution.completed_folds for execution in running_states] == [
++        0,
++        1,
++        2,
++        3,
++    ]
++    assert [execution.progress_percent for execution in running_states] == [
++        0,
++        33,
++        66,
++        99,
++    ]
++
++
++def test_marks_walk_forward_execution_failed_when_dataset_is_missing() -> None:
++    execution_repository = InMemoryWalkForwardExecutionRepository()
++    queued = WalkForwardExecutionBuilder().build(
++        dataset_id="dataset-0000000000000000",
++        parameters=build_parameters(),
++        walk_forward_config=build_walk_forward_config(),
++        total_folds=3,
++    )
++
++    execution_repository.save(queued)
++
++    runner = WalkForwardExecutionRunner(
++        executions=execution_repository,
++        datasets=InMemoryDatasetRepository(),
++        runs=InMemoryWalkForwardRunRegistry(),
++    )
++
++    completed = runner.run(queued.execution_id)
++
++    assert completed.status is WalkForwardExecutionStatus.FAILED
++    assert completed.completed_folds == 0
++    assert completed.progress_percent == 0
++    assert completed.walk_forward_run_id is None
++    assert completed.error_code == "dataset_not_found"
++    assert completed.error_message == (
++        "The historical dataset required for this walk-forward execution "
++        "is no longer available."
++    )
++
++
++def test_preserves_completed_fold_progress_when_execution_fails() -> None:
++    dataset_repository = InMemoryDatasetRepository()
++    execution_repository = InMemoryWalkForwardExecutionRepository()
++    dataset = build_dataset()
++
++    dataset_repository.save(dataset)
++
++    queued = build_queued_execution(dataset)
++    execution_repository.save(queued)
++
++    runner = WalkForwardExecutionRunner(
++        executions=execution_repository,
++        datasets=dataset_repository,
++        runs=InMemoryWalkForwardRunRegistry(),
++        executor=FailingWalkForwardExecutor(),
++    )
++
++    completed = runner.run(queued.execution_id)
++
++    assert completed.status is WalkForwardExecutionStatus.FAILED
++    assert completed.completed_folds == 1
++    assert completed.progress_percent == 33
++    assert completed.error_code == "execution_failed"
++    assert completed.error_message == "The walk-forward execution could not be completed."
++
++
++def test_returns_existing_completed_execution_without_rerunning() -> None:
++    dataset_repository = InMemoryDatasetRepository()
++    execution_repository = InMemoryWalkForwardExecutionRepository()
++    run_registry = InMemoryWalkForwardRunRegistry()
++    dataset = build_dataset()
++
++    dataset_repository.save(dataset)
++
++    queued = build_queued_execution(dataset)
++    execution_repository.save(queued)
++
++    runner = WalkForwardExecutionRunner(
++        executions=execution_repository,
++        datasets=dataset_repository,
++        runs=run_registry,
++    )
++
++    first_result = runner.run(queued.execution_id)
++    second_result = runner.run(queued.execution_id)
++
++    assert first_result.status is WalkForwardExecutionStatus.SUCCEEDED
++    assert second_result == first_result
++    assert run_registry.count() == 1
++
++
++def test_rejects_unknown_walk_forward_execution() -> None:
++    runner = WalkForwardExecutionRunner(
++        executions=InMemoryWalkForwardExecutionRepository(),
++        datasets=InMemoryDatasetRepository(),
++        runs=InMemoryWalkForwardRunRegistry(),
++    )
++
++    with pytest.raises(
++        ValueError,
++        match="walk-forward execution not found",
++    ):
++        runner.run("walk-forward-job-0000000000000000")
