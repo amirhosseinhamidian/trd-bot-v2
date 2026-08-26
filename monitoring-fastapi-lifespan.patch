@@ -1,0 +1,342 @@
+diff --git a/src/trd_bot/api/monitoring_lifecycle.py b/src/trd_bot/api/monitoring_lifecycle.py
+new file mode 100644
+index 0000000..f91aa72
+--- /dev/null
++++ b/src/trd_bot/api/monitoring_lifecycle.py
+@@ -0,0 +1,141 @@
++import asyncio
++import logging
++from collections.abc import AsyncIterator, Callable
++from contextlib import AbstractAsyncContextManager, asynccontextmanager
++from typing import Protocol
++
++from fastapi import FastAPI
++
++from trd_bot.core.config import Settings
++from trd_bot.db.monitoring_collector_runner import SqlAlchemyMonitoringCollectorRunner
++from trd_bot.db.monitoring_instrumentation import SqlAlchemyQueryTimingInstrumentation
++from trd_bot.db.session import get_database_engine, get_session_factory
++from trd_bot.monitoring import MonitoringObservationRecorder, PeriodicMonitoringCollector
++
++LOGGER = logging.getLogger(__name__)
++
++
++class QueryInstrumentation(Protocol):
++    """Lifecycle contract for database query instrumentation."""
++
++    def install(self) -> None: ...
++
++    def uninstall(self) -> None: ...
++
++
++class PeriodicCollector(Protocol):
++    """Lifecycle contract for one stoppable periodic collector."""
++
++    async def run(self, stop_event: asyncio.Event) -> None: ...
++
++
++class MonitoringRuntimeProtocol(Protocol):
++    """Startup and shutdown contract used by the FastAPI lifespan."""
++
++    async def start(self) -> None: ...
++
++    async def stop(self) -> None: ...
++
++
++class MonitoringRuntime:
++    """Own instrumentation and the periodic collector task for one process."""
++
++    def __init__(
++        self,
++        *,
++        instrumentation: QueryInstrumentation,
++        periodic_collector: PeriodicCollector,
++    ) -> None:
++        self._instrumentation = instrumentation
++        self._periodic_collector = periodic_collector
++        self._stop_event = asyncio.Event()
++        self._task: asyncio.Task[None] | None = None
++
++    async def start(self) -> None:
++        """Install instrumentation and start one collector task."""
++
++        if self._task is not None:
++            return
++
++        self._instrumentation.install()
++        self._task = asyncio.create_task(
++            self._periodic_collector.run(self._stop_event),
++            name="monitoring-collector",
++        )
++
++    async def stop(self) -> None:
++        """Stop the collector and always remove query instrumentation."""
++
++        if self._task is None:
++            return
++
++        self._stop_event.set()
++
++        try:
++            await self._task
++        finally:
++            self._instrumentation.uninstall()
++            self._task = None
++
++
++def create_monitoring_runtime(
++    settings: Settings,
++    recorder: MonitoringObservationRecorder,
++) -> MonitoringRuntime:
++    """Build the production monitoring runtime from process-wide dependencies."""
++
++    instrumentation = SqlAlchemyQueryTimingInstrumentation(
++        engine=get_database_engine(),
++        recorder=recorder,
++    )
++    collector_runner = SqlAlchemyMonitoringCollectorRunner(
++        session_factory=get_session_factory(),
++        observation_provider=recorder.drain,
++        window_seconds=settings.monitoring_collector_window_seconds,
++    )
++
++    def run_once_safely() -> None:
++        try:
++            collector_runner.run_once()
++        except Exception:
++            LOGGER.exception("monitoring collector cycle failed")
++
++    return MonitoringRuntime(
++        instrumentation=instrumentation,
++        periodic_collector=PeriodicMonitoringCollector(
++            run_once=run_once_safely,
++            interval_seconds=settings.monitoring_collector_interval_seconds,
++        ),
++    )
++
++
++RuntimeFactory = Callable[
++    [Settings, MonitoringObservationRecorder],
++    MonitoringRuntimeProtocol,
++]
++Lifespan = Callable[[FastAPI], AbstractAsyncContextManager[None]]
++
++
++def build_monitoring_lifespan(
++    *,
++    settings: Settings,
++    recorder: MonitoringObservationRecorder,
++    runtime_factory: RuntimeFactory = create_monitoring_runtime,
++) -> Lifespan:
++    """Build an optional monitoring lifespan controlled by application settings."""
++
++    @asynccontextmanager
++    async def lifespan(_application: FastAPI) -> AsyncIterator[None]:
++        runtime: MonitoringRuntimeProtocol | None = None
++
++        if settings.monitoring_collector_enabled:
++            runtime = runtime_factory(settings, recorder)
++            await runtime.start()
++
++        try:
++            yield
++        finally:
++            if runtime is not None:
++                await runtime.stop()
++
++    return lifespan
+diff --git a/src/trd_bot/core/config.py b/src/trd_bot/core/config.py
+index ef09270..4db1fdd 100644
+--- a/src/trd_bot/core/config.py
++++ b/src/trd_bot/core/config.py
+@@ -1,6 +1,7 @@
+ from functools import lru_cache
+ from typing import Literal
+ 
++from pydantic import Field
+ from pydantic_settings import BaseSettings, SettingsConfigDict
+ 
+ 
+@@ -23,6 +24,18 @@ class Settings(BaseSettings):
+ 
+     test_database_url: str | None = None
+ 
++    monitoring_collector_enabled: bool = False
++    monitoring_collector_interval_seconds: int = Field(
++        default=300,
++        ge=5,
++        le=86_400,
++    )
++    monitoring_collector_window_seconds: int = Field(
++        default=300,
++        ge=1,
++        le=86_400,
++    )
++
+     cors_allowed_origins: tuple[str, ...] = (
+         "http://localhost:3000",
+         "http://127.0.0.1:3000",
+diff --git a/src/trd_bot/main.py b/src/trd_bot/main.py
+index d958b04..8b40589 100644
+--- a/src/trd_bot/main.py
++++ b/src/trd_bot/main.py
+@@ -1,6 +1,8 @@
+ from fastapi import FastAPI
+ from fastapi.middleware.cors import CORSMiddleware
+ 
++from trd_bot.api.monitoring_lifecycle import build_monitoring_lifespan
++from trd_bot.api.monitoring_middleware import ApiMetricsMiddleware
+ from trd_bot.api.routes.datasets import router as datasets_router
+ from trd_bot.api.routes.health import router as health_router
+ from trd_bot.api.routes.monitoring import (
+@@ -9,20 +11,32 @@ from trd_bot.api.routes.monitoring import (
+ from trd_bot.api.routes.overview import router as overview_router
+ from trd_bot.api.routes.research import router as research_router
+ from trd_bot.core.config import get_settings
++from trd_bot.monitoring import MonitoringObservationRecorder
+ 
+ 
+ def create_app() -> FastAPI:
+     """Create and configure the FastAPI application."""
+ 
+     settings = get_settings()
++    monitoring_recorder = MonitoringObservationRecorder()
+ 
+     application = FastAPI(
+         title=settings.app_name,
+         version=settings.app_version,
+         debug=settings.debug,
+         description=("Research and paper-analysis platform for crypto market data."),
++        lifespan=build_monitoring_lifespan(
++            settings=settings,
++            recorder=monitoring_recorder,
++        ),
+     )
+ 
++    if settings.monitoring_collector_enabled:
++        application.add_middleware(
++            ApiMetricsMiddleware,
++            recorder=monitoring_recorder,
++        )
++
+     application.add_middleware(
+         CORSMiddleware,
+         allow_origins=list(settings.cors_allowed_origins),
+diff --git a/tests/test_monitoring_lifecycle.py b/tests/test_monitoring_lifecycle.py
+new file mode 100644
+index 0000000..9382054
+--- /dev/null
++++ b/tests/test_monitoring_lifecycle.py
+@@ -0,0 +1,112 @@
++import asyncio
++
++from fastapi import FastAPI
++
++from trd_bot.api.monitoring_lifecycle import MonitoringRuntime, build_monitoring_lifespan
++from trd_bot.core.config import Settings
++from trd_bot.monitoring import MonitoringObservationRecorder
++
++
++class FakeInstrumentation:
++    def __init__(self) -> None:
++        self.installed = False
++        self.uninstalled = False
++
++    def install(self) -> None:
++        self.installed = True
++
++    def uninstall(self) -> None:
++        self.uninstalled = True
++
++
++class FakePeriodicCollector:
++    def __init__(self) -> None:
++        self.started = asyncio.Event()
++        self.stopped = False
++
++    async def run(self, stop_event: asyncio.Event) -> None:
++        self.started.set()
++        await stop_event.wait()
++        self.stopped = True
++
++
++class FakeRuntime:
++    def __init__(self) -> None:
++        self.start_count = 0
++        self.stop_count = 0
++
++    async def start(self) -> None:
++        self.start_count += 1
++
++    async def stop(self) -> None:
++        self.stop_count += 1
++
++
++def test_monitoring_runtime_installs_and_cleans_up_resources() -> None:
++    async def scenario() -> tuple[FakeInstrumentation, FakePeriodicCollector]:
++        instrumentation = FakeInstrumentation()
++        periodic = FakePeriodicCollector()
++        runtime = MonitoringRuntime(
++            instrumentation=instrumentation,
++            periodic_collector=periodic,
++        )
++
++        await runtime.start()
++        await runtime.start()
++        await periodic.started.wait()
++        await runtime.stop()
++
++        return instrumentation, periodic
++
++    instrumentation, periodic = asyncio.run(scenario())
++
++    assert instrumentation.installed is True
++    assert instrumentation.uninstalled is True
++    assert periodic.stopped is True
++
++
++def test_enabled_lifespan_starts_and_stops_runtime() -> None:
++    async def scenario() -> FakeRuntime:
++        runtime = FakeRuntime()
++        lifespan = build_monitoring_lifespan(
++            settings=Settings(monitoring_collector_enabled=True),
++            recorder=MonitoringObservationRecorder(),
++            runtime_factory=lambda _settings, _recorder: runtime,
++        )
++
++        async with lifespan(FastAPI()):
++            assert runtime.start_count == 1
++            assert runtime.stop_count == 0
++
++        return runtime
++
++    runtime = asyncio.run(scenario())
++
++    assert runtime.start_count == 1
++    assert runtime.stop_count == 1
++
++
++def test_disabled_lifespan_does_not_build_runtime() -> None:
++    async def scenario() -> int:
++        factory_calls = 0
++
++        def runtime_factory(
++            _settings: Settings,
++            _recorder: MonitoringObservationRecorder,
++        ) -> FakeRuntime:
++            nonlocal factory_calls
++            factory_calls += 1
++            return FakeRuntime()
++
++        lifespan = build_monitoring_lifespan(
++            settings=Settings(monitoring_collector_enabled=False),
++            recorder=MonitoringObservationRecorder(),
++            runtime_factory=runtime_factory,
++        )
++
++        async with lifespan(FastAPI()):
++            pass
++
++        return factory_calls
++
++    assert asyncio.run(scenario()) == 0

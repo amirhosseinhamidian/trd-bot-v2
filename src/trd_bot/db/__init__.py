@@ -6,7 +6,10 @@ from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
+    PortfolioTimelineEventRow,
     ResearchExperimentRow,
+    SimulatedPortfolioRow,
+    SimulatedPositionRow,
     SystemMetricSampleRow,
     WalkForwardExecutionRow,
     WalkForwardRunRow,
@@ -27,6 +30,9 @@ from trd_bot.db.session import (
     get_database_session,
     get_session_factory,
 )
+from trd_bot.db.simulated_portfolio_repositories import (
+    SqlAlchemySimulatedPortfolioRepository,
+)
 from trd_bot.db.walk_forward_execution_repositories import (
     SqlAlchemyWalkForwardExecutionRepository,
 )
@@ -36,11 +42,15 @@ __all__ = [
     "DatabaseBase",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
+    "PortfolioTimelineEventRow",
     "ResearchExperimentRow",
+    "SimulatedPortfolioRow",
+    "SimulatedPositionRow",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
+    "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardExecutionRepository",
     "SqlAlchemyWalkForwardRunRegistry",

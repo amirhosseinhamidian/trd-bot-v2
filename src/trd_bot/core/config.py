@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,18 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://trd_bot:trd_bot_dev_password@127.0.0.1:5432/trd_bot"
 
     test_database_url: str | None = None
+
+    monitoring_collector_enabled: bool = False
+    monitoring_collector_interval_seconds: int = Field(
+        default=300,
+        ge=5,
+        le=86_400,
+    )
+    monitoring_collector_window_seconds: int = Field(
+        default=300,
+        ge=1,
+        le=86_400,
+    )
 
     cors_allowed_origins: tuple[str, ...] = (
         "http://localhost:3000",

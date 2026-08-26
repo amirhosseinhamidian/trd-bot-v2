@@ -60,6 +60,12 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       enabled: true,
     },
     {
+      key: 'portfolios',
+      label: copy.navigation.portfolios,
+      href: `/${locale}/portfolios`,
+      enabled: true,
+    },
+    {
       key: 'signals',
       label: copy.navigation.signals,
       href: `/${locale}/signals`,
