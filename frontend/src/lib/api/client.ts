@@ -287,9 +287,7 @@ export async function createEmaCrossoverWalkForwardExecution(
   );
 }
 
-export async function getWalkForwardExecution(
-  executionId: string,
-): Promise<WalkForwardExecution> {
+export async function getWalkForwardExecution(executionId: string): Promise<WalkForwardExecution> {
   return getJson<WalkForwardExecution>(
     `/api/v1/research/walk-forward-executions/${encodeURIComponent(executionId)}`,
   );

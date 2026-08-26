@@ -72,8 +72,7 @@ export interface StoredDatasetEMACrossoverRequest {
   slippage_rate: string;
 }
 
-export interface StoredDatasetEMACrossoverWalkForwardRequest
-  extends StoredDatasetEMACrossoverRequest {
+export interface StoredDatasetEMACrossoverWalkForwardRequest extends StoredDatasetEMACrossoverRequest {
   train_candles: number;
   test_candles: number;
   step_candles: number;

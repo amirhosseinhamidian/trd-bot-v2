@@ -283,18 +283,13 @@ describe('WalkForwardRunForm', () => {
     });
 
     render(
-      <WalkForwardRunForm
-        locale="en"
-        initialExecutionId="walk-forward-job-1234567890abcdef"
-      />,
+      <WalkForwardRunForm locale="en" initialExecutionId="walk-forward-job-1234567890abcdef" />,
     );
 
     await screen.findByLabelText('Dataset');
 
     await waitFor(() => {
-      expect(apiMocks.getExecution).toHaveBeenCalledWith(
-        'walk-forward-job-1234567890abcdef',
-      );
+      expect(apiMocks.getExecution).toHaveBeenCalledWith('walk-forward-job-1234567890abcdef');
     });
 
     expect(apiMocks.createExecution).not.toHaveBeenCalled();

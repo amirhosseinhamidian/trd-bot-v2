@@ -14,10 +14,7 @@ describe('walk-forward run parameters', () => {
   it('accepts the first execution ID from an array', () => {
     expect(
       parseWalkForwardExecutionId({
-        execution: [
-          'walk-forward-job-1234567890abcdef',
-          'walk-forward-job-fedcba0987654321',
-        ],
+        execution: ['walk-forward-job-1234567890abcdef', 'walk-forward-job-fedcba0987654321'],
       }),
     ).toBe('walk-forward-job-1234567890abcdef');
   });

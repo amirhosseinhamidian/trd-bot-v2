@@ -83,9 +83,7 @@ describe('walk-forward execution client', () => {
 
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 
-    expect(url).toBe(
-      `${API_BASE_URL}/api/v1/research/walk-forward-executions/ema-crossover`,
-    );
+    expect(url).toBe(`${API_BASE_URL}/api/v1/research/walk-forward-executions/ema-crossover`);
 
     expect(options).toEqual(
       expect.objectContaining({
@@ -115,9 +113,9 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(
-      getWalkForwardExecution('walk-forward-job-1234567890abcdef'),
-    ).resolves.toEqual(execution);
+    await expect(getWalkForwardExecution('walk-forward-job-1234567890abcdef')).resolves.toEqual(
+      execution,
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/research/walk-forward-executions/walk-forward-job-1234567890abcdef`,
