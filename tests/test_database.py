@@ -68,7 +68,10 @@ def test_database_metadata_contains_research_tables() -> None:
         "architecture_recommendations",
         "dataset_snapshots",
         "experiment_executions",
+        "portfolio_timeline_events",
         "research_experiments",
+        "simulated_portfolios",
+        "simulated_positions",
         "system_metric_samples",
         "walk_forward_executions",
         "walk_forward_runs",
@@ -144,7 +147,10 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "alembic_version",
             "architecture_recommendations",
             "dataset_snapshots",
+            "portfolio_timeline_events",
             "research_experiments",
+            "simulated_portfolios",
+            "simulated_positions",
             "system_metric_samples",
             "walk_forward_executions",
             "walk_forward_runs",
@@ -164,6 +170,9 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "architecture_recommendations" not in downgraded_tables
         assert "system_metric_samples" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables
+        assert "simulated_portfolios" not in downgraded_tables
+        assert "simulated_positions" not in downgraded_tables
+        assert "portfolio_timeline_events" not in downgraded_tables
     finally:
         downgraded_engine.dispose()
 

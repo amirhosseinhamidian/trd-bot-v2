@@ -15,10 +15,14 @@ import type {
   MonitoringSummary,
   OHLCVCandle,
   Page,
+  PortfolioTimelineEvent,
   PresetExperimentResearchReport,
   ResearchActivityItem,
   ResearchActivityType,
   ResearchOverview,
+  SimulatedPortfolio,
+  SimulatedPortfolioSummary,
+  SimulatedPosition,
   WalkForwardRunSortDirection,
   WalkForwardRunSortField,
   WalkForwardRunSummary,
@@ -512,4 +516,67 @@ export async function getResearchActivity(
 
 export async function getMonitoringSummary(): Promise<MonitoringSummary> {
   return getJson<MonitoringSummary>('/api/v1/monitoring/summary');
+}
+
+export interface SimulatedPortfolioFilters {
+  limit?: number;
+  offset?: number;
+}
+
+export interface SimulatedPortfolioResourceFilters {
+  limit?: number;
+  offset?: number;
+}
+
+export async function getSimulatedPortfolios(
+  filters: SimulatedPortfolioFilters = {},
+): Promise<Page<SimulatedPortfolioSummary>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 12));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<SimulatedPortfolioSummary>>(
+    `/api/v1/research/portfolios?${params.toString()}`,
+  );
+}
+
+export async function getSimulatedPortfolio(portfolioId: string): Promise<SimulatedPortfolio> {
+  return getJson<SimulatedPortfolio>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}`,
+  );
+}
+
+export async function getSimulatedPortfolioPositions(
+  portfolioId: string,
+  filters: SimulatedPortfolioResourceFilters = {},
+): Promise<Page<SimulatedPosition>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 20));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<SimulatedPosition>>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/positions?${params.toString()}`,
+  );
+}
+
+export async function getSimulatedPosition(
+  portfolioId: string,
+  positionId: string,
+): Promise<SimulatedPosition> {
+  return getJson<SimulatedPosition>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`,
+  );
+}
+
+export async function getSimulatedPortfolioTimeline(
+  portfolioId: string,
+  filters: SimulatedPortfolioResourceFilters = {},
+): Promise<Page<PortfolioTimelineEvent>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 20));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<PortfolioTimelineEvent>>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/timeline?${params.toString()}`,
+  );
 }

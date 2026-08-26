@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
     SqlAlchemyWalkForwardExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
@@ -23,6 +24,7 @@ from trd_bot.monitoring import (
     ArchitectureRecommendationRepository,
     SystemMetricRepository,
 )
+from trd_bot.paper import SimulatedPortfolioRepository
 from trd_bot.research import (
     AcceptancePolicyPresetCatalog,
     DatasetRepository,
@@ -76,6 +78,14 @@ def get_walk_forward_run_registry(
     """Return the request-scoped walk-forward run registry."""
 
     return SqlAlchemyWalkForwardRunRegistry(session)
+
+
+def get_simulated_portfolio_repository(
+    session: DatabaseSessionDependency,
+) -> SimulatedPortfolioRepository:
+    """Return the request-scoped offline portfolio repository."""
+
+    return SqlAlchemySimulatedPortfolioRepository(session)
 
 
 def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:

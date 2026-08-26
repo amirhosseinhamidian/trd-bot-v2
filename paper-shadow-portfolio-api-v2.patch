@@ -1,0 +1,802 @@
+diff --git a/src/trd_bot/api/dependencies.py b/src/trd_bot/api/dependencies.py
+index 2080d3c..93dff7e 100644
+--- a/src/trd_bot/api/dependencies.py
++++ b/src/trd_bot/api/dependencies.py
+@@ -14,6 +14,7 @@ from trd_bot.db import (
+     SqlAlchemyDatasetRepository,
+     SqlAlchemyExperimentExecutionRepository,
+     SqlAlchemyExperimentRegistry,
++    SqlAlchemySimulatedPortfolioRepository,
+     SqlAlchemySystemMetricRepository,
+     SqlAlchemyWalkForwardExecutionRepository,
+     SqlAlchemyWalkForwardRunRegistry,
+@@ -23,6 +24,7 @@ from trd_bot.monitoring import (
+     ArchitectureRecommendationRepository,
+     SystemMetricRepository,
+ )
++from trd_bot.paper import SimulatedPortfolioRepository
+ from trd_bot.research import (
+     AcceptancePolicyPresetCatalog,
+     DatasetRepository,
+@@ -78,6 +80,14 @@ def get_walk_forward_run_registry(
+     return SqlAlchemyWalkForwardRunRegistry(session)
+ 
+ 
++def get_simulated_portfolio_repository(
++    session: DatabaseSessionDependency,
++) -> SimulatedPortfolioRepository:
++    """Return the request-scoped offline portfolio repository."""
++
++    return SqlAlchemySimulatedPortfolioRepository(session)
++
++
+ def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:
+     """Return the built-in read-only historical policy catalog."""
+ 
+diff --git a/src/trd_bot/api/routes/portfolios.py b/src/trd_bot/api/routes/portfolios.py
+new file mode 100644
+index 0000000..d84d3af
+--- /dev/null
++++ b/src/trd_bot/api/routes/portfolios.py
+@@ -0,0 +1,250 @@
++from datetime import UTC, datetime
++from decimal import Decimal
++from typing import Annotated, Self
++
++from fastapi import APIRouter, Depends, HTTPException, Query, status
++from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
++
++from trd_bot.api.dependencies import (
++    get_dataset_repository,
++    get_simulated_portfolio_repository,
++)
++from trd_bot.api.pagination import Page, PaginationParams, build_page
++from trd_bot.paper import (
++    PortfolioStatus,
++    PortfolioTimelineEvent,
++    SimulatedPortfolio,
++    SimulatedPortfolioLedger,
++    SimulatedPortfolioRepository,
++    SimulatedPosition,
++    SimulationMode,
++)
++from trd_bot.research import DatasetRepository
++
++router = APIRouter(
++    prefix="/research/portfolios",
++    tags=["Offline simulated portfolios"],
++)
++
++DatasetRepositoryDependency = Annotated[
++    DatasetRepository,
++    Depends(get_dataset_repository),
++]
++PortfolioRepositoryDependency = Annotated[
++    SimulatedPortfolioRepository,
++    Depends(get_simulated_portfolio_repository),
++]
++PaginationQuery = Annotated[
++    PaginationParams,
++    Query(),
++]
++
++
++class SimulatedPortfolioCreateRequest(BaseModel):
++    """Configuration for an empty historical-simulation portfolio."""
++
++    model_config = ConfigDict(frozen=True, extra="forbid")
++
++    dataset_id: str = Field(min_length=1, max_length=100)
++    mode: SimulationMode = SimulationMode.PAPER
++    starting_cash: Decimal = Field(default=Decimal("10000"), gt=0)
++    fee_rate: Decimal = Field(default=Decimal("0"), ge=0, lt=1)
++
++    @field_validator("dataset_id")
++    @classmethod
++    def normalize_dataset_id(cls, value: str) -> str:
++        normalized = value.strip()
++        if not normalized:
++            raise ValueError("dataset ID cannot be empty")
++        return normalized
++
++
++class SimulatedPortfolioSummary(BaseModel):
++    """Lightweight portfolio catalog item without aggregate payloads."""
++
++    model_config = ConfigDict(frozen=True)
++
++    portfolio_id: str
++    mode: SimulationMode
++    status: PortfolioStatus
++    dataset_id: str
++    created_at: datetime
++    updated_at: datetime
++    starting_cash: Decimal
++    cash: Decimal
++    equity: Decimal
++    fees_paid: Decimal
++    realized_pnl: Decimal
++    unrealized_pnl: Decimal
++    position_count: int = Field(ge=0)
++    event_count: int = Field(ge=1)
++
++    @classmethod
++    def from_portfolio(cls, portfolio: SimulatedPortfolio) -> Self:
++        return cls(
++            portfolio_id=portfolio.portfolio_id,
++            mode=portfolio.mode,
++            status=portfolio.status,
++            dataset_id=portfolio.dataset_id,
++            created_at=portfolio.created_at,
++            updated_at=portfolio.updated_at,
++            starting_cash=portfolio.starting_cash,
++            cash=portfolio.cash,
++            equity=portfolio.equity,
++            fees_paid=portfolio.fees_paid,
++            realized_pnl=portfolio.realized_pnl,
++            unrealized_pnl=portfolio.unrealized_pnl,
++            position_count=len(portfolio.positions),
++            event_count=len(portfolio.timeline),
++        )
++
++    @model_validator(mode="after")
++    def validate_counts(self) -> Self:
++        if self.status is PortfolioStatus.COMPLETED and self.event_count < 2:
++            raise ValueError("completed portfolio summary requires lifecycle events")
++        return self
++
++
++def _get_portfolio_or_404(
++    portfolio_id: str,
++    repository: SimulatedPortfolioRepository,
++) -> SimulatedPortfolio:
++    portfolio = repository.get(portfolio_id)
++    if portfolio is None:
++        raise HTTPException(
++            status_code=status.HTTP_404_NOT_FOUND,
++            detail="simulated portfolio not found",
++        )
++    return portfolio
++
++
++@router.post(
++    "",
++    response_model=SimulatedPortfolio,
++    status_code=status.HTTP_201_CREATED,
++)
++def create_simulated_portfolio(
++    request: SimulatedPortfolioCreateRequest,
++    datasets: DatasetRepositoryDependency,
++    portfolios: PortfolioRepositoryDependency,
++) -> SimulatedPortfolio:
++    """Create an offline portfolio bound to an existing historical dataset."""
++
++    if datasets.get(request.dataset_id) is None:
++        raise HTTPException(
++            status_code=status.HTTP_404_NOT_FOUND,
++            detail="dataset not found",
++        )
++
++    portfolio = SimulatedPortfolioLedger().create(
++        mode=request.mode,
++        dataset_id=request.dataset_id,
++        starting_cash=request.starting_cash,
++        fee_rate=request.fee_rate,
++        created_at=datetime.now(UTC),
++    )
++    return portfolios.save(portfolio)
++
++
++@router.get(
++    "",
++    response_model=Page[SimulatedPortfolioSummary],
++)
++def list_simulated_portfolios(
++    portfolios: PortfolioRepositoryDependency,
++    pagination: PaginationQuery,
++) -> Page[SimulatedPortfolioSummary]:
++    """List lightweight offline portfolio summaries newest first."""
++
++    items = portfolios.list_page(
++        limit=pagination.limit,
++        offset=pagination.offset,
++    )
++    summaries = tuple(SimulatedPortfolioSummary.from_portfolio(item) for item in items)
++    return build_page(
++        summaries,
++        total=portfolios.count(),
++        pagination=pagination,
++    )
++
++
++@router.get(
++    "/{portfolio_id}/positions",
++    response_model=Page[SimulatedPosition],
++)
++def list_simulated_positions(
++    portfolio_id: str,
++    portfolios: PortfolioRepositoryDependency,
++    pagination: PaginationQuery,
++) -> Page[SimulatedPosition]:
++    """List positions recorded by one historical simulation."""
++
++    _get_portfolio_or_404(portfolio_id, portfolios)
++    positions = portfolios.list_positions(
++        portfolio_id=portfolio_id,
++        limit=pagination.limit,
++        offset=pagination.offset,
++    )
++    return build_page(
++        positions,
++        total=portfolios.count_positions(portfolio_id),
++        pagination=pagination,
++    )
++
++
++@router.get(
++    "/{portfolio_id}/positions/{position_id}",
++    response_model=SimulatedPosition,
++)
++def get_simulated_position(
++    portfolio_id: str,
++    position_id: str,
++    portfolios: PortfolioRepositoryDependency,
++) -> SimulatedPosition:
++    """Return one position from the requested simulated portfolio."""
++
++    _get_portfolio_or_404(portfolio_id, portfolios)
++    position = portfolios.get_position(position_id)
++    if position is None or position.portfolio_id != portfolio_id:
++        raise HTTPException(
++            status_code=status.HTTP_404_NOT_FOUND,
++            detail="simulated position not found",
++        )
++    return position
++
++
++@router.get(
++    "/{portfolio_id}/timeline",
++    response_model=Page[PortfolioTimelineEvent],
++)
++def list_portfolio_timeline(
++    portfolio_id: str,
++    portfolios: PortfolioRepositoryDependency,
++    pagination: PaginationQuery,
++) -> Page[PortfolioTimelineEvent]:
++    """List the ordered audit timeline of one historical simulation."""
++
++    _get_portfolio_or_404(portfolio_id, portfolios)
++    events = portfolios.list_timeline(
++        portfolio_id=portfolio_id,
++        limit=pagination.limit,
++        offset=pagination.offset,
++    )
++    return build_page(
++        events,
++        total=portfolios.count_timeline(portfolio_id),
++        pagination=pagination,
++    )
++
++
++@router.get(
++    "/{portfolio_id}",
++    response_model=SimulatedPortfolio,
++)
++def get_simulated_portfolio(
++    portfolio_id: str,
++    portfolios: PortfolioRepositoryDependency,
++) -> SimulatedPortfolio:
++    """Return one complete offline portfolio aggregate."""
++
++    return _get_portfolio_or_404(portfolio_id, portfolios)
+diff --git a/src/trd_bot/db/simulated_portfolio_repositories.py b/src/trd_bot/db/simulated_portfolio_repositories.py
+index 34bc2cf..17a8fb4 100644
+--- a/src/trd_bot/db/simulated_portfolio_repositories.py
++++ b/src/trd_bot/db/simulated_portfolio_repositories.py
+@@ -57,6 +57,22 @@ class SqlAlchemySimulatedPortfolioRepository:
+         value = self._session.scalar(select(func.count()).select_from(SimulatedPortfolioRow))
+         return int(value or 0)
+ 
++    def count_positions(self, portfolio_id: str) -> int:
++        value = self._session.scalar(
++            select(func.count())
++            .select_from(SimulatedPositionRow)
++            .where(SimulatedPositionRow.portfolio_id == portfolio_id)
++        )
++        return int(value or 0)
++
++    def count_timeline(self, portfolio_id: str) -> int:
++        value = self._session.scalar(
++            select(func.count())
++            .select_from(PortfolioTimelineEventRow)
++            .where(PortfolioTimelineEventRow.portfolio_id == portfolio_id)
++        )
++        return int(value or 0)
++
+     def list_page(
+         self,
+         *,
+diff --git a/src/trd_bot/main.py b/src/trd_bot/main.py
+index d958b04..0100273 100644
+--- a/src/trd_bot/main.py
++++ b/src/trd_bot/main.py
+@@ -7,6 +7,7 @@ from trd_bot.api.routes.monitoring import (
+     router as monitoring_router,
+ )
+ from trd_bot.api.routes.overview import router as overview_router
++from trd_bot.api.routes.portfolios import router as portfolios_router
+ from trd_bot.api.routes.research import router as research_router
+ from trd_bot.core.config import get_settings
+ 
+@@ -57,6 +58,11 @@ def create_app() -> FastAPI:
+         prefix="/api/v1",
+     )
+ 
++    application.include_router(
++        portfolios_router,
++        prefix="/api/v1",
++    )
++
+     application.include_router(
+         monitoring_router,
+         prefix="/api/v1",
+diff --git a/src/trd_bot/paper/__init__.py b/src/trd_bot/paper/__init__.py
+index dd627c4..a3ded84 100644
+--- a/src/trd_bot/paper/__init__.py
++++ b/src/trd_bot/paper/__init__.py
+@@ -5,6 +5,7 @@ from trd_bot.paper.portfolio import (
+     PositionStatus,
+     SimulatedPortfolio,
+     SimulatedPortfolioLedger,
++    SimulatedPortfolioRepository,
+     SimulatedPosition,
+     SimulationMode,
+     build_portfolio_event_id,
+@@ -19,6 +20,7 @@ __all__ = [
+     "PositionStatus",
+     "SimulatedPortfolio",
+     "SimulatedPortfolioLedger",
++    "SimulatedPortfolioRepository",
+     "SimulatedPosition",
+     "SimulationMode",
+     "build_portfolio_event_id",
+diff --git a/src/trd_bot/paper/portfolio.py b/src/trd_bot/paper/portfolio.py
+index 8f0d724..15752f9 100644
+--- a/src/trd_bot/paper/portfolio.py
++++ b/src/trd_bot/paper/portfolio.py
+@@ -2,7 +2,7 @@ import hashlib
+ from datetime import UTC, datetime
+ from decimal import Decimal
+ from enum import StrEnum
+-from typing import Self
++from typing import Protocol, Self
+ 
+ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+ 
+@@ -326,6 +326,45 @@ class SimulatedPortfolio(BaseModel):
+         return self
+ 
+ 
++class SimulatedPortfolioRepository(Protocol):
++    """Persistence contract for simulated portfolio aggregates and views."""
++
++    def save(self, portfolio: SimulatedPortfolio) -> SimulatedPortfolio: ...
++
++    def get(self, portfolio_id: str) -> SimulatedPortfolio | None: ...
++
++    def get_position(self, position_id: str) -> SimulatedPosition | None: ...
++
++    def count(self) -> int: ...
++
++    def count_positions(self, portfolio_id: str) -> int: ...
++
++    def count_timeline(self, portfolio_id: str) -> int: ...
++
++    def list_page(
++        self,
++        *,
++        limit: int,
++        offset: int,
++    ) -> tuple[SimulatedPortfolio, ...]: ...
++
++    def list_positions(
++        self,
++        *,
++        portfolio_id: str,
++        limit: int,
++        offset: int,
++    ) -> tuple[SimulatedPosition, ...]: ...
++
++    def list_timeline(
++        self,
++        *,
++        portfolio_id: str,
++        limit: int,
++        offset: int,
++    ) -> tuple[PortfolioTimelineEvent, ...]: ...
++
++
+ class SimulatedPortfolioLedger:
+     """Pure state transitions for an offline historical simulation."""
+ 
+diff --git a/tests/test_simulated_portfolio_api.py b/tests/test_simulated_portfolio_api.py
+new file mode 100644
+index 0000000..35c0197
+--- /dev/null
++++ b/tests/test_simulated_portfolio_api.py
+@@ -0,0 +1,375 @@
++from collections.abc import Iterator
++from datetime import UTC, datetime, timedelta
++from decimal import Decimal
++
++import pytest
++from fastapi.testclient import TestClient
++
++from trd_bot.api.dependencies import (
++    get_dataset_repository,
++    get_simulated_portfolio_repository,
++)
++from trd_bot.backtesting import PositionSide
++from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
++from trd_bot.main import app
++from trd_bot.paper import (
++    PortfolioTimelineEvent,
++    SimulatedPortfolio,
++    SimulatedPortfolioLedger,
++    SimulatedPosition,
++    SimulationMode,
++)
++from trd_bot.research import DatasetBuilder, DatasetSnapshot, InMemoryDatasetRepository
++
++CREATED_AT = datetime(2026, 8, 26, 12, tzinfo=UTC)
++PAIR = TradingPair(base_asset="BTC", quote_asset="USDT")
++client = TestClient(app)
++
++
++class InMemorySimulatedPortfolioRepository:
++    def __init__(self) -> None:
++        self._portfolios: dict[str, SimulatedPortfolio] = {}
++
++    def save(self, portfolio: SimulatedPortfolio) -> SimulatedPortfolio:
++        self._portfolios[portfolio.portfolio_id] = portfolio
++        return portfolio
++
++    def get(self, portfolio_id: str) -> SimulatedPortfolio | None:
++        return self._portfolios.get(portfolio_id)
++
++    def get_position(self, position_id: str) -> SimulatedPosition | None:
++        for portfolio in self._portfolios.values():
++            for position in portfolio.positions:
++                if position.position_id == position_id:
++                    return position
++        return None
++
++    def count(self) -> int:
++        return len(self._portfolios)
++
++    def count_positions(self, portfolio_id: str) -> int:
++        portfolio = self.get(portfolio_id)
++        return len(portfolio.positions) if portfolio is not None else 0
++
++    def count_timeline(self, portfolio_id: str) -> int:
++        portfolio = self.get(portfolio_id)
++        return len(portfolio.timeline) if portfolio is not None else 0
++
++    def list_page(
++        self,
++        *,
++        limit: int,
++        offset: int,
++    ) -> tuple[SimulatedPortfolio, ...]:
++        portfolios = tuple(
++            sorted(
++                self._portfolios.values(),
++                key=lambda item: (item.created_at, item.portfolio_id),
++                reverse=True,
++            )
++        )
++        return portfolios[offset : offset + limit]
++
++    def list_positions(
++        self,
++        *,
++        portfolio_id: str,
++        limit: int,
++        offset: int,
++    ) -> tuple[SimulatedPosition, ...]:
++        portfolio = self.get(portfolio_id)
++        if portfolio is None:
++            return ()
++        return portfolio.positions[offset : offset + limit]
++
++    def list_timeline(
++        self,
++        *,
++        portfolio_id: str,
++        limit: int,
++        offset: int,
++    ) -> tuple[PortfolioTimelineEvent, ...]:
++        portfolio = self.get(portfolio_id)
++        if portfolio is None:
++            return ()
++        return portfolio.timeline[offset : offset + limit]
++
++
++@pytest.fixture
++def repositories() -> Iterator[
++    tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ]
++]:
++    datasets = InMemoryDatasetRepository()
++    portfolios = InMemorySimulatedPortfolioRepository()
++
++    def override_datasets() -> InMemoryDatasetRepository:
++        return datasets
++
++    def override_portfolios() -> InMemorySimulatedPortfolioRepository:
++        return portfolios
++
++    app.dependency_overrides[get_dataset_repository] = override_datasets
++    app.dependency_overrides[get_simulated_portfolio_repository] = override_portfolios
++
++    try:
++        yield datasets, portfolios
++    finally:
++        app.dependency_overrides.pop(get_dataset_repository, None)
++        app.dependency_overrides.pop(get_simulated_portfolio_repository, None)
++
++
++def create_dataset() -> DatasetSnapshot:
++    candles = []
++    for index, price_text in enumerate(("100", "105", "110")):
++        open_time = CREATED_AT + timedelta(hours=index)
++        price = Decimal(price_text)
++        candles.append(
++            OHLCVCandle(
++                source="historical-test",
++                pair=PAIR,
++                timeframe=Timeframe.HOUR_1,
++                open_time=open_time,
++                close_time=open_time + timedelta(hours=1),
++                received_at=open_time + timedelta(hours=1, minutes=1),
++                open_price=price,
++                high_price=price + Decimal("1"),
++                low_price=price - Decimal("1"),
++                close_price=price,
++                volume=Decimal("1000"),
++                is_closed=True,
++            )
++        )
++    return DatasetBuilder().build(
++        name="Portfolio API historical dataset",
++        candles=candles,
++        created_at=CREATED_AT,
++    )
++
++
++def create_completed_portfolio(
++    *,
++    dataset_id: str,
++    created_at: datetime = CREATED_AT,
++) -> SimulatedPortfolio:
++    ledger = SimulatedPortfolioLedger()
++    created = ledger.create(
++        mode=SimulationMode.SHADOW,
++        dataset_id=dataset_id,
++        starting_cash=Decimal("1000"),
++        fee_rate=Decimal("0.001"),
++        created_at=created_at,
++    )
++    opened = ledger.open_position(
++        created,
++        pair=PAIR,
++        side=PositionSide.LONG,
++        price=Decimal("100"),
++        quantity=Decimal("2"),
++        occurred_at=created_at + timedelta(hours=1),
++    )
++    marked = ledger.mark_to_market(
++        opened,
++        position_id=opened.positions[0].position_id,
++        price=Decimal("110"),
++        occurred_at=created_at + timedelta(hours=2),
++    )
++    closed = ledger.close_position(
++        marked,
++        position_id=marked.positions[0].position_id,
++        price=Decimal("110"),
++        occurred_at=created_at + timedelta(hours=3),
++    )
++    return ledger.complete(
++        closed,
++        occurred_at=created_at + timedelta(hours=4),
++    )
++
++
++@pytest.mark.parametrize("mode", ["paper", "shadow"])
++def test_api_creates_portfolio_for_existing_historical_dataset(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++    mode: str,
++) -> None:
++    datasets, portfolios = repositories
++    dataset = datasets.save(create_dataset())
++
++    response = client.post(
++        "/api/v1/research/portfolios",
++        json={
++            "dataset_id": dataset.dataset_id,
++            "mode": mode,
++            "starting_cash": "1000",
++            "fee_rate": "0.001",
++        },
++    )
++
++    assert response.status_code == 201
++    data = response.json()
++    assert data["dataset_id"] == dataset.dataset_id
++    assert data["mode"] == mode
++    assert data["status"] == "active"
++    assert data["positions"] == []
++    assert len(data["timeline"]) == 1
++    assert portfolios.count() == 1
++
++
++def test_api_rejects_unknown_dataset_without_creating_portfolio(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++) -> None:
++    _, portfolios = repositories
++
++    response = client.post(
++        "/api/v1/research/portfolios",
++        json={"dataset_id": "dataset-0000000000000000"},
++    )
++
++    assert response.status_code == 404
++    assert response.json()["detail"] == "dataset not found"
++    assert portfolios.count() == 0
++
++
++@pytest.mark.parametrize(
++    "payload",
++    [
++        {"dataset_id": "dataset-valid", "mode": "live"},
++        {"dataset_id": "dataset-valid", "starting_cash": "0"},
++        {"dataset_id": "dataset-valid", "fee_rate": "1"},
++    ],
++)
++def test_api_rejects_invalid_portfolio_configuration(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++    payload: dict[str, str],
++) -> None:
++    response = client.post("/api/v1/research/portfolios", json=payload)
++    assert response.status_code == 422
++
++
++def test_api_lists_lightweight_portfolio_summaries(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++) -> None:
++    datasets, portfolios = repositories
++    dataset = datasets.save(create_dataset())
++    first = SimulatedPortfolioLedger().create(
++        mode=SimulationMode.PAPER,
++        dataset_id=dataset.dataset_id,
++        starting_cash=Decimal("1000"),
++        created_at=CREATED_AT,
++    )
++    second = create_completed_portfolio(
++        dataset_id=dataset.dataset_id,
++        created_at=CREATED_AT + timedelta(days=1),
++    )
++    portfolios.save(first)
++    portfolios.save(second)
++
++    response = client.get(
++        "/api/v1/research/portfolios",
++        params={"limit": 1, "offset": 0},
++    )
++
++    assert response.status_code == 200
++    data = response.json()
++    assert data["total"] == 2
++    assert data["count"] == 1
++    assert data["has_next"] is True
++    assert data["items"][0]["portfolio_id"] == second.portfolio_id
++    assert data["items"][0]["position_count"] == 1
++    assert data["items"][0]["event_count"] == 5
++    assert "positions" not in data["items"][0]
++    assert "timeline" not in data["items"][0]
++
++
++def test_api_returns_portfolio_position_and_timeline_resources(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++) -> None:
++    datasets, portfolios = repositories
++    dataset = datasets.save(create_dataset())
++    portfolio = portfolios.save(
++        create_completed_portfolio(dataset_id=dataset.dataset_id)
++    )
++    position = portfolio.positions[0]
++
++    detail_response = client.get(
++        f"/api/v1/research/portfolios/{portfolio.portfolio_id}"
++    )
++    positions_response = client.get(
++        f"/api/v1/research/portfolios/{portfolio.portfolio_id}/positions"
++    )
++    position_response = client.get(
++        f"/api/v1/research/portfolios/{portfolio.portfolio_id}/positions/{position.position_id}"
++    )
++    timeline_response = client.get(
++        f"/api/v1/research/portfolios/{portfolio.portfolio_id}/timeline",
++        params={"limit": 2, "offset": 1},
++    )
++
++    assert detail_response.status_code == 200
++    assert detail_response.json()["portfolio_id"] == portfolio.portfolio_id
++    assert positions_response.status_code == 200
++    assert positions_response.json()["total"] == 1
++    assert positions_response.json()["items"][0]["position_id"] == position.position_id
++    assert position_response.status_code == 200
++    assert position_response.json()["position_id"] == position.position_id
++    assert timeline_response.status_code == 200
++    assert timeline_response.json()["total"] == 5
++    assert timeline_response.json()["count"] == 2
++    assert timeline_response.json()["items"][0]["sequence_number"] == 2
++
++
++@pytest.mark.parametrize(
++    "suffix",
++    [
++        "",
++        "/positions",
++        "/timeline",
++    ],
++)
++def test_api_returns_404_for_unknown_portfolio(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++    suffix: str,
++) -> None:
++    response = client.get(
++        f"/api/v1/research/portfolios/portfolio-0000000000000000{suffix}"
++    )
++    assert response.status_code == 404
++    assert response.json()["detail"] == "simulated portfolio not found"
++
++
++@pytest.mark.parametrize(
++    "params",
++    [
++        {"limit": 0},
++        {"limit": 101},
++        {"offset": -1},
++    ],
++)
++def test_api_rejects_invalid_portfolio_pagination(
++    repositories: tuple[
++        InMemoryDatasetRepository,
++        InMemorySimulatedPortfolioRepository,
++    ],
++    params: dict[str, int],
++) -> None:
++    response = client.get("/api/v1/research/portfolios", params=params)
++    assert response.status_code == 422

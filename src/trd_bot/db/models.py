@@ -5,11 +5,13 @@ from sqlalchemy import (
     JSON,
     CheckConstraint,
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     Numeric,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -254,6 +256,207 @@ class WalkForwardRunRow(DatabaseBase):
     strategy_name: Mapped[str] = mapped_column(String(100), index=True)
     strategy_version: Mapped[str] = mapped_column(String(30))
     horizon_candles: Mapped[int] = mapped_column(Integer)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class SimulatedPortfolioRow(DatabaseBase):
+    """Persistent aggregate snapshot for an offline paper or shadow portfolio."""
+
+    __tablename__ = "simulated_portfolios"
+
+    __table_args__ = (
+        CheckConstraint(
+            "mode IN ('paper', 'shadow')",
+            name="mode_supported",
+        ),
+        CheckConstraint(
+            "status IN ('active', 'completed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "updated_at >= created_at",
+            name="updated_after_created",
+        ),
+        CheckConstraint(
+            "starting_cash > 0",
+            name="starting_cash_positive",
+        ),
+        CheckConstraint(
+            "cash >= 0",
+            name="cash_non_negative",
+        ),
+        CheckConstraint(
+            "fee_rate >= 0 AND fee_rate < 1",
+            name="fee_rate_range",
+        ),
+        CheckConstraint(
+            "fees_paid >= 0",
+            name="fees_paid_non_negative",
+        ),
+        Index(
+            "ix_simulated_portfolios_status_updated_at",
+            "status",
+            "updated_at",
+        ),
+        Index(
+            "ix_simulated_portfolios_dataset_created_at",
+            "dataset_id",
+            "created_at",
+        ),
+        Index(
+            "ix_simulated_portfolios_mode_status",
+            "mode",
+            "status",
+        ),
+    )
+
+    portfolio_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    starting_cash: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    cash: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    equity: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    fee_rate: Mapped[Decimal] = mapped_column(Numeric(18, 10))
+    fees_paid: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    unrealized_pnl: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class SimulatedPositionRow(DatabaseBase):
+    """Queryable snapshot of one position in a simulated portfolio."""
+
+    __tablename__ = "simulated_positions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "side IN ('long', 'short')",
+            name="side_supported",
+        ),
+        CheckConstraint(
+            "status IN ('open', 'closed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "quantity > 0",
+            name="quantity_positive",
+        ),
+        CheckConstraint(
+            "entry_price > 0 AND current_price > 0",
+            name="prices_positive",
+        ),
+        CheckConstraint(
+            "reserved_notional > 0",
+            name="reserved_notional_positive",
+        ),
+        CheckConstraint(
+            "entry_fee >= 0 AND exit_fee >= 0",
+            name="fees_non_negative",
+        ),
+        CheckConstraint(
+            "current_at >= opened_at",
+            name="current_after_opened",
+        ),
+        CheckConstraint(
+            "closed_at IS NULL OR closed_at > opened_at",
+            name="closed_after_opened",
+        ),
+        CheckConstraint(
+            "(status = 'open' AND exit_price IS NULL AND closed_at IS NULL) "
+            "OR (status = 'closed' AND exit_price IS NOT NULL AND closed_at IS NOT NULL)",
+            name="status_exit_details_consistent",
+        ),
+        Index(
+            "ix_simulated_positions_portfolio_status",
+            "portfolio_id",
+            "status",
+        ),
+        Index(
+            "ix_simulated_positions_pair_opened_at",
+            "base_asset",
+            "quote_asset",
+            "opened_at",
+        ),
+    )
+
+    position_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(
+        ForeignKey("simulated_portfolios.portfolio_id", ondelete="CASCADE"),
+        index=True,
+    )
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    side: Mapped[str] = mapped_column(String(20), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(30, 10))
+    entry_price: Mapped[Decimal] = mapped_column(Numeric(30, 10))
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    current_price: Mapped[Decimal] = mapped_column(Numeric(30, 10))
+    current_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reserved_notional: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    entry_fee: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    unrealized_pnl: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    exit_price: Mapped[Decimal | None] = mapped_column(Numeric(30, 10), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    exit_fee: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    gross_realized_pnl: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    realized_pnl: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class PortfolioTimelineEventRow(DatabaseBase):
+    """Persistent audit event for an offline simulated portfolio."""
+
+    __tablename__ = "portfolio_timeline_events"
+
+    __table_args__ = (
+        CheckConstraint(
+            "sequence_number > 0",
+            name="sequence_number_positive",
+        ),
+        CheckConstraint(
+            "event_type IN ('portfolio_created', 'position_opened', 'position_marked', "
+            "'position_closed', 'portfolio_completed')",
+            name="event_type_supported",
+        ),
+        UniqueConstraint(
+            "portfolio_id",
+            "sequence_number",
+            name="portfolio_sequence_unique",
+        ),
+        Index(
+            "ix_portfolio_timeline_events_portfolio_occurred_at",
+            "portfolio_id",
+            "occurred_at",
+        ),
+        Index(
+            "ix_portfolio_timeline_events_portfolio_event_type",
+            "portfolio_id",
+            "event_type",
+        ),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    portfolio_id: Mapped[str] = mapped_column(
+        ForeignKey("simulated_portfolios.portfolio_id", ondelete="CASCADE"),
+        index=True,
+    )
+    sequence_number: Mapped[int] = mapped_column(Integer)
+    event_type: Mapped[str] = mapped_column(String(40), index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    equity: Mapped[Decimal] = mapped_column(Numeric(30, 8))
+    position_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
     payload_json: Mapped[str] = mapped_column(Text)
 
 
