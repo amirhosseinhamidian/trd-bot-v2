@@ -109,6 +109,12 @@ from trd_bot.research.walk_forward import (
     build_walk_forward_plan_id,
     build_walk_forward_split_id,
 )
+from trd_bot.research.walk_forward_executions import (
+    WalkForwardExecution,
+    WalkForwardExecutionBuilder,
+    WalkForwardExecutionStateMachine,
+    WalkForwardExecutionStatus,
+)
 from trd_bot.research.walk_forward_reporting import (
     HistoricalFoldReturnDirection,
     WalkForwardFoldStatistics,
@@ -195,7 +201,11 @@ __all__ = [
     "WalkForwardConfig",
     "WalkForwardDatasetMaterializer",
     "WalkForwardDatasetSplit",
+    "WalkForwardExecution",
+    "WalkForwardExecutionBuilder",
     "WalkForwardExecutionResult",
+    "WalkForwardExecutionStateMachine",
+    "WalkForwardExecutionStatus",
     "WalkForwardExecutionSummary",
     "WalkForwardExecutor",
     "WalkForwardFold",

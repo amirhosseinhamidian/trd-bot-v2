@@ -147,6 +147,30 @@ def test_executor_runs_every_test_fold_through_research_pipeline() -> None:
         assert fold_result.result.performance_report.total_trades == 1
 
 
+def test_executor_reports_each_completed_fold() -> None:
+    dataset = create_dataset(10)
+    datasets = materialize(dataset)
+    progress_events: list[tuple[int, int]] = []
+
+    WalkForwardExecutor().execute(
+        dataset=dataset,
+        materialization=datasets,
+        strategy=LastCandleLongStrategy(),
+        on_fold_completed=lambda completed, total: progress_events.append(
+            (
+                completed,
+                total,
+            )
+        ),
+    )
+
+    assert progress_events == [
+        (1, 3),
+        (2, 3),
+        (3, 3),
+    ]
+
+
 def test_executor_never_exposes_future_test_candles_to_strategy() -> None:
     dataset = create_dataset(10)
     datasets = materialize(dataset)
