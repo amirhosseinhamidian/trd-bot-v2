@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 
 from trd_bot.api.background_jobs import (
     ExperimentExecutionTask,
+    WalkForwardExecutionTask,
     run_experiment_execution_job,
+    run_walk_forward_execution_job,
 )
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
@@ -13,6 +15,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemySystemMetricRepository,
+    SqlAlchemyWalkForwardExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
     get_database_session,
 )
@@ -26,6 +29,9 @@ from trd_bot.research import (
     ExperimentExecutionRepository,
     ExperimentRegistry,
     WalkForwardRunRegistry,
+)
+from trd_bot.research.walk_forward_executions import (
+    WalkForwardExecutionRepository,
 )
 
 _acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
@@ -54,6 +60,14 @@ def get_experiment_execution_repository(
     """Return the request-scoped experiment execution repository."""
 
     return SqlAlchemyExperimentExecutionRepository(session)
+
+
+def get_walk_forward_execution_repository(
+    session: DatabaseSessionDependency,
+) -> WalkForwardExecutionRepository:
+    """Return the request-scoped walk-forward execution repository."""
+
+    return SqlAlchemyWalkForwardExecutionRepository(session)
 
 
 def get_walk_forward_run_registry(
@@ -90,3 +104,9 @@ def get_experiment_execution_task() -> ExperimentExecutionTask:
     """Return the production experiment background task."""
 
     return run_experiment_execution_job
+
+
+def get_walk_forward_execution_task() -> WalkForwardExecutionTask:
+    """Return the production walk-forward background task."""
+
+    return run_walk_forward_execution_job

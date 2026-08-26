@@ -12,13 +12,18 @@ from fastapi import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from trd_bot.api.background_jobs import ExperimentExecutionTask
+from trd_bot.api.background_jobs import (
+    ExperimentExecutionTask,
+    WalkForwardExecutionTask,
+)
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
     get_dataset_repository,
     get_experiment_execution_repository,
     get_experiment_execution_task,
     get_experiment_registry,
+    get_walk_forward_execution_repository,
+    get_walk_forward_execution_task,
     get_walk_forward_run_registry,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
@@ -71,6 +76,11 @@ from trd_bot.research import (
     WalkForwardStabilityReport,
 )
 from trd_bot.research.experiments import ExperimentSummary
+from trd_bot.research.walk_forward_executions import (
+    WalkForwardExecution,
+    WalkForwardExecutionBuilder,
+    WalkForwardExecutionRepository,
+)
 from trd_bot.strategies import EMACrossoverStrategy
 from trd_bot.strategies.signals import StrategySignal
 
@@ -107,6 +117,16 @@ ExperimentExecutionRepositoryDependency = Annotated[
 ExperimentExecutionTaskDependency = Annotated[
     ExperimentExecutionTask,
     Depends(get_experiment_execution_task),
+]
+
+WalkForwardExecutionRepositoryDependency = Annotated[
+    WalkForwardExecutionRepository,
+    Depends(get_walk_forward_execution_repository),
+]
+
+WalkForwardExecutionTaskDependency = Annotated[
+    WalkForwardExecutionTask,
+    Depends(get_walk_forward_execution_task),
 ]
 
 
@@ -241,6 +261,29 @@ class ExperimentExecutionCatalogParams(BaseModel):
 
 ExperimentExecutionCatalogParamsQuery = Annotated[
     ExperimentExecutionCatalogParams,
+    Query(),
+]
+
+
+class WalkForwardExecutionCatalogParams(BaseModel):
+    """Pagination parameters for walk-forward execution lists."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    limit: int = Field(
+        default=20,
+        ge=1,
+        le=100,
+    )
+
+    offset: int = Field(
+        default=0,
+        ge=0,
+    )
+
+
+WalkForwardExecutionCatalogParamsQuery = Annotated[
+    WalkForwardExecutionCatalogParams,
     Query(),
 ]
 
@@ -854,6 +897,112 @@ def get_experiment_execution(
         raise HTTPException(
             status_code=404,
             detail="experiment execution not found",
+        )
+
+    return execution
+
+
+@router.post(
+    "/walk-forward-executions/ema-crossover",
+    response_model=WalkForwardExecution,
+    status_code=202,
+)
+def create_ema_crossover_walk_forward_execution(
+    request: StoredDatasetEMACrossoverWalkForwardRequest,
+    background_tasks: BackgroundTasks,
+    executions: WalkForwardExecutionRepositoryDependency,
+    datasets: DatasetRepositoryDependency,
+    execution_task: WalkForwardExecutionTaskDependency,
+) -> WalkForwardExecution:
+    """Queue walk-forward analysis for a stored historical dataset."""
+
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    walk_forward_config = _build_walk_forward_config(request)
+
+    try:
+        plan = WalkForwardPlanner().plan(
+            dataset=dataset,
+            config=walk_forward_config,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+    execution = WalkForwardExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=_build_execution_parameters(request),
+        walk_forward_config=walk_forward_config,
+        total_folds=len(plan.folds),
+    )
+
+    try:
+        stored_execution = executions.save(execution)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="walk-forward execution could not be stored",
+        ) from error
+
+    background_tasks.add_task(
+        execution_task,
+        stored_execution.execution_id,
+    )
+
+    return stored_execution
+
+
+@router.get(
+    "/walk-forward-executions",
+    response_model=Page[WalkForwardExecution],
+)
+def list_walk_forward_executions(
+    executions: WalkForwardExecutionRepositoryDependency,
+    params: WalkForwardExecutionCatalogParamsQuery,
+) -> Page[WalkForwardExecution]:
+    """List persisted walk-forward executions."""
+
+    pagination = PaginationParams(
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+    items = executions.list_page(
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+    return build_page(
+        items,
+        total=executions.count(),
+        pagination=pagination,
+    )
+
+
+@router.get(
+    "/walk-forward-executions/{execution_id}",
+    response_model=WalkForwardExecution,
+)
+def get_walk_forward_execution(
+    execution_id: str,
+    executions: WalkForwardExecutionRepositoryDependency,
+) -> WalkForwardExecution:
+    """Return one persisted walk-forward execution."""
+
+    execution = executions.get(execution_id)
+
+    if execution is None:
+        raise HTTPException(
+            status_code=404,
+            detail="walk-forward execution not found",
         )
 
     return execution
