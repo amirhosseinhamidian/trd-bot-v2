@@ -582,3 +582,15 @@ class ArchitectureRecommendationRow(DatabaseBase):
     )
 
     payload_json: Mapped[str] = mapped_column(Text)
+
+
+class MonitoringRuntimeStateRow(DatabaseBase):
+    """Singleton state for the last successful monitoring collector cycle."""
+
+    __tablename__ = "monitoring_runtime_state"
+
+    state_key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )

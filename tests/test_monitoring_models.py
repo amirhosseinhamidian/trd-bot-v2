@@ -9,6 +9,7 @@ from trd_bot.monitoring import (
     ArchitectureEvidence,
     ArchitectureRecommendation,
     RecommendationSeverity,
+    RecommendationStatus,
     SystemMetricName,
     SystemMetricSample,
     SystemMetricSource,
@@ -135,6 +136,61 @@ def test_architecture_recommendation_is_validated() -> None:
     )
 
     assert recommendation.interpretation == "capacity_planning_only"
+
+
+def test_recommendation_acknowledge_and_resolve_are_idempotent() -> None:
+    recommendation_id = build_architecture_recommendation_id(
+        candidate=ArchitectureCandidate.REDIS,
+        first_detected_at=RECORDED_AT,
+    )
+
+    recommendation = ArchitectureRecommendation(
+        recommendation_id=recommendation_id,
+        candidate=ArchitectureCandidate.REDIS,
+        severity=RecommendationSeverity.WARNING,
+        title="Review repeated API reads",
+        summary=("Repeated read latency remained above the configured warning threshold."),
+        first_detected_at=RECORDED_AT,
+        last_detected_at=(RECORDED_AT + timedelta(minutes=15)),
+        evidence=(
+            ArchitectureEvidence(
+                metric_name=SystemMetricName.API_REQUEST_LATENCY_P95,
+                observed_value=Decimal("0.750"),
+                threshold_value=Decimal("0.500"),
+                comparison="greater_than_or_equal",
+                consecutive_windows=3,
+            ),
+        ),
+    )
+
+    acknowledged_at = RECORDED_AT + timedelta(minutes=20)
+    acknowledged = recommendation.acknowledge(
+        acknowledged_at=acknowledged_at,
+    )
+
+    assert acknowledged.status is RecommendationStatus.ACTIVE
+    assert acknowledged.acknowledged_at == acknowledged_at
+    assert (
+        acknowledged.acknowledge(
+            acknowledged_at=(acknowledged_at + timedelta(minutes=1)),
+        )
+        == acknowledged
+    )
+
+    resolved_at = RECORDED_AT + timedelta(minutes=25)
+    resolved = acknowledged.resolve(
+        resolved_at=resolved_at,
+    )
+
+    assert resolved.status is RecommendationStatus.RESOLVED
+    assert resolved.acknowledged_at == acknowledged_at
+    assert resolved.resolved_at == resolved_at
+    assert (
+        resolved.resolve(
+            resolved_at=(resolved_at + timedelta(minutes=1)),
+        )
+        == resolved
+    )
 
 
 def test_recommendation_rejects_reversed_times() -> None:

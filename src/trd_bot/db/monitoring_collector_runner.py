@@ -7,6 +7,9 @@ from trd_bot.db.monitoring_repositories import (
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemySystemMetricRepository,
 )
+from trd_bot.db.monitoring_runtime_state_repository import (
+    SqlAlchemyMonitoringRuntimeStateRepository,
+)
 from trd_bot.monitoring.checkpoints import ArchitectureCheckpointPolicy
 from trd_bot.monitoring.collector import (
     AggregatedMetricObservation,
@@ -58,8 +61,14 @@ class SqlAlchemyMonitoringCollectorRunner:
                 policies=self._policies,
             )
 
-            return collector.collect(
+            result = collector.collect(
                 observations=observations,
                 checked_at=checked_at,
                 window_seconds=self._window_seconds,
             )
+
+            SqlAlchemyMonitoringRuntimeStateRepository(session).mark_checked(
+                checked_at=result.checked_at,
+            )
+
+            return result

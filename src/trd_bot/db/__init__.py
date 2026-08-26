@@ -6,6 +6,7 @@ from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
+    MonitoringRuntimeStateRow,
     PortfolioTimelineEventRow,
     ResearchExperimentRow,
     SimulatedPortfolioRow,
@@ -17,6 +18,9 @@ from trd_bot.db.models import (
 from trd_bot.db.monitoring_repositories import (
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemySystemMetricRepository,
+)
+from trd_bot.db.monitoring_runtime_state_repository import (
+    SqlAlchemyMonitoringRuntimeStateRepository,
 )
 from trd_bot.db.repositories import (
     SqlAlchemyDatasetRepository,
@@ -42,6 +46,7 @@ __all__ = [
     "DatabaseBase",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
+    "MonitoringRuntimeStateRow",
     "PortfolioTimelineEventRow",
     "ResearchExperimentRow",
     "SimulatedPortfolioRow",
@@ -50,6 +55,7 @@ __all__ = [
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
+    "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardExecutionRepository",

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import (
@@ -10,6 +11,7 @@ from pydantic import Field
 
 from trd_bot.api.dependencies import (
     get_architecture_recommendation_repository,
+    get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
 from trd_bot.api.pagination import (
@@ -21,6 +23,7 @@ from trd_bot.monitoring import (
     ArchitectureRecommendation,
     ArchitectureRecommendationRepository,
     MetricSampleQuery,
+    MonitoringRuntimeStateRepository,
     MonitoringSummary,
     MonitoringSummaryBuilder,
     RecommendationQuery,
@@ -43,6 +46,11 @@ MetricRepositoryDependency = Annotated[
 RecommendationRepositoryDependency = Annotated[
     ArchitectureRecommendationRepository,
     Depends(get_architecture_recommendation_repository),
+]
+
+RuntimeStateRepositoryDependency = Annotated[
+    MonitoringRuntimeStateRepository,
+    Depends(get_monitoring_runtime_state_repository),
 ]
 
 
@@ -207,6 +215,68 @@ def list_architecture_recommendations(
     )
 
 
+@router.post(
+    "/recommendations/{recommendation_id}/acknowledge",
+    response_model=ArchitectureRecommendation,
+)
+def acknowledge_architecture_recommendation(
+    recommendation_id: str,
+    repository: RecommendationRepositoryDependency,
+) -> ArchitectureRecommendation:
+    """Mark one active recommendation as acknowledged."""
+
+    recommendation = repository.get(recommendation_id)
+
+    if recommendation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="architecture recommendation not found",
+        )
+
+    try:
+        updated = recommendation.acknowledge(
+            acknowledged_at=datetime.now(UTC),
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail=str(error),
+        ) from error
+
+    return repository.upsert(updated)
+
+
+@router.post(
+    "/recommendations/{recommendation_id}/resolve",
+    response_model=ArchitectureRecommendation,
+)
+def resolve_architecture_recommendation(
+    recommendation_id: str,
+    repository: RecommendationRepositoryDependency,
+) -> ArchitectureRecommendation:
+    """Resolve one active architecture recommendation."""
+
+    recommendation = repository.get(recommendation_id)
+
+    if recommendation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="architecture recommendation not found",
+        )
+
+    try:
+        updated = recommendation.resolve(
+            resolved_at=datetime.now(UTC),
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail=str(error),
+        ) from error
+
+    return repository.upsert(updated)
+
+
 @router.get(
     "/summary",
     response_model=MonitoringSummary,
@@ -214,10 +284,12 @@ def list_architecture_recommendations(
 def get_monitoring_summary(
     metrics: MetricRepositoryDependency,
     recommendations: (RecommendationRepositoryDependency),
+    runtime_state: RuntimeStateRepositoryDependency,
 ) -> MonitoringSummary:
     """Return a dashboard-ready capacity summary."""
 
     return MonitoringSummaryBuilder().build(
         metrics=metrics,
         recommendations=recommendations,
+        runtime_state=runtime_state,
     )

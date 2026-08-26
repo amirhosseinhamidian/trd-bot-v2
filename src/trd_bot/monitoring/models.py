@@ -258,6 +258,9 @@ class ArchitectureRecommendation(BaseModel):
     first_detected_at: datetime
     last_detected_at: datetime
 
+    acknowledged_at: datetime | None = None
+    resolved_at: datetime | None = None
+
     evidence: tuple[
         ArchitectureEvidence,
         ...,
@@ -268,18 +271,39 @@ class ArchitectureRecommendation(BaseModel):
     @field_validator(
         "first_detected_at",
         "last_detected_at",
+        "acknowledged_at",
+        "resolved_at",
     )
     @classmethod
     def timestamps_must_be_timezone_aware(
         cls,
-        value: datetime,
-    ) -> datetime:
+        value: datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+
         return normalize_timestamp(value)
 
     @model_validator(mode="after")
     def validate_recommendation(self) -> Self:
         if self.last_detected_at < self.first_detected_at:
             raise ValueError("last detection cannot precede first detection")
+
+        if self.acknowledged_at is not None and self.acknowledged_at < self.first_detected_at:
+            raise ValueError("acknowledgement cannot precede first detection")
+
+        if self.resolved_at is not None and self.resolved_at < self.first_detected_at:
+            raise ValueError("resolution cannot precede first detection")
+
+        if self.resolved_at is not None and self.status is not RecommendationStatus.RESOLVED:
+            raise ValueError("resolved_at requires resolved recommendation status")
+
+        if (
+            self.acknowledged_at is not None
+            and self.resolved_at is not None
+            and self.acknowledged_at > self.resolved_at
+        ):
+            raise ValueError("acknowledgement cannot follow resolution")
 
         expected_id = build_architecture_recommendation_id(
             candidate=self.candidate,
@@ -290,3 +314,44 @@ class ArchitectureRecommendation(BaseModel):
             raise ValueError("recommendation ID does not match its identity")
 
         return self
+
+    def acknowledge(
+        self,
+        *,
+        acknowledged_at: datetime,
+    ) -> Self:
+        """Mark an active recommendation as seen without resolving it."""
+
+        if self.status is not RecommendationStatus.ACTIVE:
+            raise ValueError("only active recommendations can be acknowledged")
+
+        if self.acknowledged_at is not None:
+            return self
+
+        return type(self).model_validate(
+            {
+                **self.model_dump(),
+                "acknowledged_at": normalize_timestamp(acknowledged_at),
+            }
+        )
+
+    def resolve(
+        self,
+        *,
+        resolved_at: datetime,
+    ) -> Self:
+        """Resolve an active recommendation idempotently."""
+
+        if self.status is RecommendationStatus.RESOLVED:
+            return self
+
+        if self.status is not RecommendationStatus.ACTIVE:
+            raise ValueError("only active recommendations can be resolved")
+
+        return type(self).model_validate(
+            {
+                **self.model_dump(),
+                "status": RecommendationStatus.RESOLVED,
+                "resolved_at": normalize_timestamp(resolved_at),
+            }
+        )

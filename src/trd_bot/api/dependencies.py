@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemyMonitoringRuntimeStateRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
     SqlAlchemyWalkForwardExecutionRepository,
@@ -22,6 +23,7 @@ from trd_bot.db import (
 )
 from trd_bot.monitoring import (
     ArchitectureRecommendationRepository,
+    MonitoringRuntimeStateRepository,
     SystemMetricRepository,
 )
 from trd_bot.paper import SimulatedPortfolioRepository
@@ -108,6 +110,14 @@ def get_architecture_recommendation_repository(
     """Return the request-scoped recommendation repository."""
 
     return SqlAlchemyArchitectureRecommendationRepository(session)
+
+
+def get_monitoring_runtime_state_repository(
+    session: DatabaseSessionDependency,
+) -> MonitoringRuntimeStateRepository:
+    """Return the request-scoped monitoring runtime state repository."""
+
+    return SqlAlchemyMonitoringRuntimeStateRepository(session)
 
 
 def get_experiment_execution_task() -> ExperimentExecutionTask:

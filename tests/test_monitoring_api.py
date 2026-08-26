@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_architecture_recommendation_repository,
+    get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
 from trd_bot.main import app
@@ -16,6 +17,7 @@ from trd_bot.monitoring import (
     ArchitectureEvidence,
     ArchitectureRecommendation,
     InMemoryArchitectureRecommendationRepository,
+    InMemoryMonitoringRuntimeStateRepository,
     InMemorySystemMetricRepository,
     RecommendationSeverity,
     RecommendationStatus,
@@ -47,6 +49,7 @@ def repositories() -> Iterator[
     metric_repository = InMemorySystemMetricRepository()
 
     recommendation_repository = InMemoryArchitectureRecommendationRepository()
+    runtime_state_repository = InMemoryMonitoringRuntimeStateRepository()
 
     def override_metrics() -> InMemorySystemMetricRepository:
         return metric_repository
@@ -57,6 +60,10 @@ def repositories() -> Iterator[
     app.dependency_overrides[get_system_metric_repository] = override_metrics
 
     app.dependency_overrides[get_architecture_recommendation_repository] = override_recommendations
+
+    app.dependency_overrides[get_monitoring_runtime_state_repository] = lambda: (
+        runtime_state_repository
+    )
 
     try:
         yield (
@@ -71,6 +78,11 @@ def repositories() -> Iterator[
 
         app.dependency_overrides.pop(
             get_architecture_recommendation_repository,
+            None,
+        )
+
+        app.dependency_overrides.pop(
+            get_monitoring_runtime_state_repository,
             None,
         )
 
@@ -281,3 +293,69 @@ def test_api_builds_critical_monitoring_summary(
     assert data["critical_count"] == 1
     assert len(data["latest_metrics"]) == 1
     assert data["interpretation"] == "capacity_planning_only"
+
+
+def test_api_acknowledges_active_recommendation(
+    repositories: tuple[
+        InMemorySystemMetricRepository,
+        InMemoryArchitectureRecommendationRepository,
+    ],
+) -> None:
+    _, recommendations = repositories
+
+    recommendation = create_critical_recommendation()
+    recommendations.upsert(recommendation)
+
+    url = f"/api/v1/monitoring/recommendations/{recommendation.recommendation_id}/acknowledge"
+
+    first_response = client.post(url)
+
+    assert first_response.status_code == 200
+
+    first_payload = first_response.json()
+
+    assert first_payload["status"] == "active"
+    assert first_payload["acknowledged_at"] is not None
+    assert first_payload["resolved_at"] is None
+
+    second_response = client.post(url)
+
+    assert second_response.status_code == 200
+    assert second_response.json()["acknowledged_at"] == first_payload["acknowledged_at"]
+
+
+def test_api_resolves_recommendation_idempotently(
+    repositories: tuple[
+        InMemorySystemMetricRepository,
+        InMemoryArchitectureRecommendationRepository,
+    ],
+) -> None:
+    _, recommendations = repositories
+
+    recommendation = create_critical_recommendation()
+    recommendations.upsert(recommendation)
+
+    url = f"/api/v1/monitoring/recommendations/{recommendation.recommendation_id}/resolve"
+
+    first_response = client.post(url)
+
+    assert first_response.status_code == 200
+
+    first_payload = first_response.json()
+
+    assert first_payload["status"] == "resolved"
+    assert first_payload["resolved_at"] is not None
+
+    second_response = client.post(url)
+
+    assert second_response.status_code == 200
+    assert second_response.json()["resolved_at"] == first_payload["resolved_at"]
+
+
+def test_api_returns_404_for_unknown_recommendation_action() -> None:
+    response = client.post(
+        "/api/v1/monitoring/recommendations/recommendation-0000000000000000/acknowledge"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == ("architecture recommendation not found")

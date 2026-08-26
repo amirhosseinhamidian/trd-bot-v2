@@ -230,3 +230,60 @@ def test_checkpoint_resolves_recovered_recommendation() -> None:
     assert recovered_result.outcome is (CheckpointOutcome.HEALTHY)
     assert recovered_result.recommendation is not None
     assert recovered_result.recommendation.status is (RecommendationStatus.RESOLVED)
+    assert recovered_result.recommendation.resolved_at == (recovery_start + timedelta(minutes=15))
+
+
+def test_checkpoint_preserves_acknowledgement_while_condition_remains_active() -> None:
+    metrics = InMemorySystemMetricRepository()
+    recommendations = InMemoryArchitectureRecommendationRepository()
+
+    evaluator = ArchitectureCheckpointEvaluator(
+        metric_repository=metrics,
+        recommendation_repository=recommendations,
+    )
+    policy = get_policy(ArchitectureCandidate.REDIS)
+
+    save_redis_windows(
+        metrics,
+        latency="0.75",
+        repeated_reads="0.70",
+    )
+
+    first_result = evaluator.evaluate(
+        policy=policy,
+        evaluated_at=(START_TIME + timedelta(minutes=15)),
+    )
+
+    assert first_result.recommendation is not None
+
+    acknowledged_at = START_TIME + timedelta(minutes=16)
+    acknowledged = first_result.recommendation.acknowledge(
+        acknowledged_at=acknowledged_at,
+    )
+    recommendations.upsert(acknowledged)
+
+    save_sample(
+        metrics,
+        metric_name=SystemMetricName.API_REQUEST_LATENCY_P95,
+        source=SystemMetricSource.API,
+        value="0.80",
+        recorded_at=(START_TIME + timedelta(minutes=15)),
+    )
+    save_sample(
+        metrics,
+        metric_name=SystemMetricName.API_REPEATED_READ_RATIO,
+        source=SystemMetricSource.API,
+        value="0.72",
+        recorded_at=(START_TIME + timedelta(minutes=15)),
+    )
+
+    repeated_result = evaluator.evaluate(
+        policy=policy,
+        evaluated_at=(START_TIME + timedelta(minutes=20)),
+    )
+
+    assert repeated_result.outcome is CheckpointOutcome.WARNING
+    assert repeated_result.recommendation is not None
+    assert repeated_result.recommendation.recommendation_id == acknowledged.recommendation_id
+    assert repeated_result.recommendation.status is RecommendationStatus.ACTIVE
+    assert repeated_result.recommendation.acknowledged_at == acknowledged_at
