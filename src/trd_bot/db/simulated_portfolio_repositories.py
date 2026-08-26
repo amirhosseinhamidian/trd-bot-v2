@@ -20,7 +20,12 @@ class SqlAlchemySimulatedPortfolioRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def save(self, portfolio: SimulatedPortfolio) -> SimulatedPortfolio:
+    def save(
+        self,
+        portfolio: SimulatedPortfolio,
+        *,
+        commit: bool = True,
+    ) -> SimulatedPortfolio:
         row = self._session.get(SimulatedPortfolioRow, portfolio.portfolio_id)
 
         if row is None:
@@ -30,7 +35,9 @@ class SqlAlchemySimulatedPortfolioRepository:
 
         try:
             self._replace_children(portfolio)
-            self._session.commit()
+            self._session.flush()
+            if commit:
+                self._session.commit()
         except IntegrityError as error:
             self._session.rollback()
             raise ValueError("simulated portfolio could not be persisted") from error

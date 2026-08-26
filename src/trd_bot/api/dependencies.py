@@ -11,6 +11,7 @@ from trd_bot.api.background_jobs import (
 )
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
+    SqlAlchemyCandidateJournalRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
@@ -88,6 +89,14 @@ def get_simulated_portfolio_repository(
     """Return the request-scoped offline portfolio repository."""
 
     return SqlAlchemySimulatedPortfolioRepository(session)
+
+
+def get_candidate_journal_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyCandidateJournalRepository:
+    """Return the request-scoped immutable candidate journal repository."""
+
+    return SqlAlchemyCandidateJournalRepository(session)
 
 
 def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:

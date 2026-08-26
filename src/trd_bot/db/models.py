@@ -594,3 +594,94 @@ class MonitoringRuntimeStateRow(DatabaseBase):
         DateTime(timezone=True),
         nullable=True,
     )
+
+
+class CandidateJournalRow(DatabaseBase):
+    """Queryable immutable audit record for a completed candidate lifecycle."""
+
+    __tablename__ = "candidate_journals"
+
+    __table_args__ = (
+        CheckConstraint(
+            "schema_version > 0",
+            name="schema_version_positive",
+        ),
+        CheckConstraint(
+            "recorded_at >= evaluated_at",
+            name="recorded_after_evaluated",
+        ),
+        CheckConstraint(
+            "attempted_count >= 0",
+            name="attempted_count_non_negative",
+        ),
+        CheckConstraint(
+            "status IN ('no_position', 'closed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "exit_reason IS NULL OR exit_reason IN "
+            "('invalidation', 'target', 'time_expiry', 'end_of_data')",
+            name="exit_reason_supported",
+        ),
+        CheckConstraint(
+            "(status = 'no_position' "
+            "AND selected_candidate_id IS NULL "
+            "AND signal_id IS NULL "
+            "AND experiment_id IS NULL "
+            "AND position_id IS NULL "
+            "AND exit_reason IS NULL) "
+            "OR "
+            "(status = 'closed' "
+            "AND selected_candidate_id IS NOT NULL "
+            "AND signal_id IS NOT NULL "
+            "AND experiment_id IS NOT NULL "
+            "AND position_id IS NOT NULL "
+            "AND exit_reason IS NOT NULL)",
+            name="status_lineage_consistent",
+        ),
+        Index(
+            "ix_candidate_journals_dataset_recorded_at",
+            "dataset_id",
+            "recorded_at",
+        ),
+        Index(
+            "ix_candidate_journals_portfolio_recorded_at",
+            "portfolio_id",
+            "recorded_at",
+        ),
+    )
+
+    journal_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[int] = mapped_column(Integer)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), index=True)
+    portfolio_id: Mapped[str] = mapped_column(String(100), index=True)
+    attempted_count: Mapped[int] = mapped_column(Integer)
+    selected_candidate_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    signal_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    experiment_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    position_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    exit_reason: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+        index=True,
+    )
+    payload_json: Mapped[str] = mapped_column(Text)
