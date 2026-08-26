@@ -12,6 +12,7 @@ from trd_bot.api.background_jobs import (
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyCandidateJournalRepository,
+    SqlAlchemyCandidateProjectionRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
@@ -97,6 +98,14 @@ def get_candidate_journal_repository(
     """Return the request-scoped immutable candidate journal repository."""
 
     return SqlAlchemyCandidateJournalRepository(session)
+
+
+def get_candidate_projection_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyCandidateProjectionRepository:
+    """Return the request-scoped persisted candidate projection repository."""
+
+    return SqlAlchemyCandidateProjectionRepository(session)
 
 
 def get_acceptance_policy_preset_catalog() -> AcceptancePolicyPresetCatalog:

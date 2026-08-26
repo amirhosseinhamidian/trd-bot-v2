@@ -685,3 +685,131 @@ class CandidateJournalRow(DatabaseBase):
         index=True,
     )
     payload_json: Mapped[str] = mapped_column(Text)
+
+
+class CandidateProjectionRow(DatabaseBase):
+    """Derived query model for the latest persisted candidate projection."""
+
+    __tablename__ = "candidate_projections"
+
+    __table_args__ = (
+        CheckConstraint(
+            "occurrence_count > 0",
+            name="occurrence_count_positive",
+        ),
+        CheckConstraint(
+            "latest_rank > 0",
+            name="latest_rank_positive",
+        ),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1",
+            name="confidence_supported",
+        ),
+        CheckConstraint(
+            "signal_score >= -1 AND signal_score <= 1",
+            name="signal_score_supported",
+        ),
+        CheckConstraint(
+            "latest_ranking_score >= 0 AND latest_ranking_score <= 1",
+            name="latest_ranking_score_supported",
+        ),
+        CheckConstraint(
+            "status IN ('candidate', 'selected', 'stale', 'invalidated')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "action IN ('long', 'short', 'neutral', 'no_trade')",
+            name="action_supported",
+        ),
+        CheckConstraint(
+            "latest_replay_status IN ('opened', 'risk_rejected', 'no_fill')",
+            name="latest_replay_status_supported",
+        ),
+        CheckConstraint(
+            "latest_risk_decision IN ('approved', 'rejected')",
+            name="latest_risk_decision_supported",
+        ),
+        CheckConstraint(
+            "selected IN (0, 1)",
+            name="selected_boolean",
+        ),
+        CheckConstraint(
+            "exit_reason IS NULL OR exit_reason IN "
+            "('invalidation', 'target', 'time_expiry', 'end_of_data')",
+            name="exit_reason_supported",
+        ),
+        CheckConstraint(
+            "(selected = 1 "
+            "AND latest_replay_status = 'opened' "
+            "AND position_id IS NOT NULL "
+            "AND exit_reason IS NOT NULL) "
+            "OR "
+            "(selected = 0 "
+            "AND latest_replay_status <> 'opened' "
+            "AND position_id IS NULL "
+            "AND exit_reason IS NULL)",
+            name="selection_lineage_consistent",
+        ),
+        Index(
+            "ix_candidate_projections_dataset_latest_recorded_at",
+            "dataset_id",
+            "latest_recorded_at",
+        ),
+        Index(
+            "ix_candidate_projections_pair_timeframe",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+        ),
+        Index(
+            "ix_candidate_projections_strategy_latest_recorded_at",
+            "strategy_name",
+            "strategy_version",
+            "latest_recorded_at",
+        ),
+    )
+
+    candidate_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), index=True)
+    experiment_id: Mapped[str] = mapped_column(String(100), index=True)
+    signal_id: Mapped[str] = mapped_column(String(100), index=True)
+
+    latest_journal_id: Mapped[str] = mapped_column(String(100), index=True)
+    latest_recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    action: Mapped[str] = mapped_column(String(20), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+
+    strategy_name: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_version: Mapped[str] = mapped_column(String(30))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    confidence: Mapped[Decimal] = mapped_column(Numeric(18, 10))
+    signal_score: Mapped[Decimal] = mapped_column(Numeric(18, 10))
+
+    occurrence_count: Mapped[int] = mapped_column(Integer)
+    latest_rank: Mapped[int] = mapped_column(Integer)
+    latest_ranking_score: Mapped[Decimal] = mapped_column(Numeric(18, 10))
+    latest_replay_status: Mapped[str] = mapped_column(String(30), index=True)
+    latest_risk_decision: Mapped[str] = mapped_column(String(30), index=True)
+    selected: Mapped[int] = mapped_column(Integer, index=True)
+
+    position_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    exit_reason: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+        index=True,
+    )
+    payload_json: Mapped[str] = mapped_column(Text)

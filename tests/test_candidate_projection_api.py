@@ -5,31 +5,45 @@ from tests.test_candidate_journal import (
     build_closed_lifecycle,
     build_no_position_lifecycle,
 )
-from trd_bot.api.dependencies import get_candidate_journal_repository
+from trd_bot.api.dependencies import get_candidate_projection_repository
 from trd_bot.api.routes.candidates import router
 from trd_bot.research.candidate_journal import (
     CandidateJournalBuilder,
     CandidateJournalEntry,
 )
+from trd_bot.research.candidate_projection import (
+    CandidateJournalProjectionReader,
+    CandidateProjection,
+)
 
 
-class InMemoryCandidateJournalRepository:
+class InMemoryCandidateProjectionRepository:
     def __init__(
         self,
-        entries: tuple[CandidateJournalEntry, ...],
+        projections: tuple[CandidateProjection, ...],
     ) -> None:
-        self._entries = entries
+        self._projections = projections
+
+    def get(self, candidate_id: str) -> CandidateProjection | None:
+        return next(
+            (
+                projection
+                for projection in self._projections
+                if projection.candidate.candidate_id == candidate_id
+            ),
+            None,
+        )
 
     def count(self) -> int:
-        return len(self._entries)
+        return len(self._projections)
 
     def list_page(
         self,
         *,
         limit: int,
         offset: int,
-    ) -> tuple[CandidateJournalEntry, ...]:
-        return self._entries[offset : offset + limit]
+    ) -> tuple[CandidateProjection, ...]:
+        return self._projections[offset : offset + limit]
 
 
 def build_client() -> tuple[
@@ -39,11 +53,12 @@ def build_client() -> tuple[
     closed = CandidateJournalBuilder.from_lifecycle(build_closed_lifecycle())
     no_position = CandidateJournalBuilder.from_lifecycle(build_no_position_lifecycle())
     entries = (closed, no_position)
-    repository = InMemoryCandidateJournalRepository(entries)
+    projections = CandidateJournalProjectionReader.build(entries)
+    repository = InMemoryCandidateProjectionRepository(projections)
 
     application = FastAPI()
     application.include_router(router)
-    application.dependency_overrides[get_candidate_journal_repository] = lambda: repository
+    application.dependency_overrides[get_candidate_projection_repository] = lambda: repository
 
     return TestClient(application), entries
 
@@ -63,6 +78,22 @@ def test_list_candidate_projections_returns_attempted_candidates() -> None:
     assert payload["total"] == len(expected_ids)
     assert returned_ids == expected_ids
     assert all("trade_plan" not in item for item in payload["items"])
+
+
+def test_list_candidate_projections_uses_repository_pagination() -> None:
+    client, _ = build_client()
+
+    response = client.get(
+        "/research/candidates",
+        params={"limit": 1, "offset": 1},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] >= 2
+    assert payload["count"] == 1
+    assert payload["limit"] == 1
+    assert payload["offset"] == 1
 
 
 def test_get_candidate_projection_returns_complete_candidate_snapshot() -> None:

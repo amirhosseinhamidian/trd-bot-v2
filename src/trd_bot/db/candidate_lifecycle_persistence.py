@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from trd_bot.db.candidate_journal_repositories import (
     SqlAlchemyCandidateJournalRepository,
 )
+from trd_bot.db.candidate_projection_repositories import (
+    SqlAlchemyCandidateProjectionRepository,
+)
 from trd_bot.db.simulated_portfolio_repositories import (
     SqlAlchemySimulatedPortfolioRepository,
 )
@@ -10,18 +13,20 @@ from trd_bot.research.candidate_journal import (
     CandidateJournalBuilder,
     CandidateJournalEntry,
 )
+from trd_bot.research.candidate_projection import CandidateJournalProjectionReader
 from trd_bot.research.dataset_replay_lifecycle import (
     CandidateReplayLifecycleResult,
 )
 
 
 class SqlAlchemyCandidateLifecycleRecorder:
-    """Atomically persist a completed offline lifecycle and its journal."""
+    """Atomically persist lifecycle, journal, and derived candidate projections."""
 
     def __init__(self, session: Session) -> None:
         self._session = session
         self._portfolio_repository = SqlAlchemySimulatedPortfolioRepository(session)
         self._journal_repository = SqlAlchemyCandidateJournalRepository(session)
+        self._projection_repository = SqlAlchemyCandidateProjectionRepository(session)
 
     def record(
         self,
@@ -38,9 +43,27 @@ class SqlAlchemyCandidateLifecycleRecorder:
                 journal,
                 commit=False,
             )
+            self._refresh_candidate_projections()
             self._session.commit()
         except Exception:
             self._session.rollback()
             raise
 
         return persisted_journal
+
+    def _refresh_candidate_projections(self) -> None:
+        journal_count = self._journal_repository.count()
+        journals = (
+            self._journal_repository.list_page(
+                limit=journal_count,
+                offset=0,
+            )
+            if journal_count > 0
+            else ()
+        )
+
+        for projection in CandidateJournalProjectionReader.build(journals):
+            self._projection_repository.save(
+                projection,
+                commit=False,
+            )
