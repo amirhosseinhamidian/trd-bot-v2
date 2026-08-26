@@ -72,6 +72,15 @@ export interface StoredDatasetEMACrossoverRequest {
   slippage_rate: string;
 }
 
+export interface StoredDatasetEMACrossoverWalkForwardRequest
+  extends StoredDatasetEMACrossoverRequest {
+  train_candles: number;
+  test_candles: number;
+  step_candles: number;
+  gap_candles: number;
+  mode: WalkForwardMode;
+}
+
 export type ExperimentExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export interface ExperimentExecutionParameters {
@@ -97,6 +106,28 @@ export interface ExperimentExecution {
   strategy_version: string;
   parameters: ExperimentExecutionParameters;
   experiment_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+}
+
+export type WalkForwardExecutionStatus = ExperimentExecutionStatus;
+
+export interface WalkForwardExecution {
+  execution_id: string;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: WalkForwardExecutionStatus;
+  progress_percent: number;
+  dataset_id: string;
+  strategy_name: string;
+  strategy_version: string;
+  parameters: ExperimentExecutionParameters;
+  walk_forward_config: WalkForwardConfig;
+  total_folds: number;
+  completed_folds: number;
+  walk_forward_run_id: string | null;
   error_code: string | null;
   error_message: string | null;
 }

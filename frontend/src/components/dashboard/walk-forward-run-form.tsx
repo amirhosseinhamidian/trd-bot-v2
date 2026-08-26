@@ -1,0 +1,691 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+
+import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { getWalkForwardRunCopy } from '@/components/dashboard/walk-forward-run-copy';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Select,
+  SelectOption,
+  Spinner,
+} from '@/components/ui';
+import {
+  ApiRequestError,
+  createEmaCrossoverWalkForwardExecution,
+  getDatasets,
+  getWalkForwardExecution,
+} from '@/lib/api/client';
+import type {
+  DatasetSummary,
+  StoredDatasetEMACrossoverWalkForwardRequest,
+  WalkForwardExecution,
+  WalkForwardMode,
+} from '@/lib/api/types';
+import { estimateWalkForwardFoldCount } from '@/lib/walk-forward/fold-estimate';
+
+type WalkForwardRunFormProps = {
+  locale: DashboardLocale;
+  initialExecutionId?: string;
+};
+
+type FormValues = {
+  datasetId: string;
+  mode: WalkForwardMode;
+  fastPeriod: string;
+  slowPeriod: string;
+  horizonCandles: string;
+  trainCandles: string;
+  testCandles: string;
+  stepCandles: string;
+  gapCandles: string;
+  startingBalance: string;
+  allocationFraction: string;
+  feeRate: string;
+  slippageRate: string;
+};
+
+type NumericField = {
+  key: Exclude<keyof FormValues, 'datasetId' | 'mode'>;
+  label: string;
+  min: number | string;
+  max?: number | string;
+  step: number | string;
+};
+
+const INITIAL_VALUES: FormValues = {
+  datasetId: '',
+  mode: 'rolling',
+  fastPeriod: '9',
+  slowPeriod: '21',
+  horizonCandles: '1',
+  trainCandles: '120',
+  testCandles: '24',
+  stepCandles: '24',
+  gapCandles: '0',
+  startingBalance: '10000',
+  allocationFraction: '0.10',
+  feeRate: '0.001',
+  slippageRate: '0.0005',
+};
+
+const POLLING_INTERVAL_MS = 1000;
+
+function fetchAvailableDatasets() {
+  return getDatasets({
+    sortBy: 'created_at',
+    sortDirection: 'desc',
+    limit: 100,
+    offset: 0,
+  });
+}
+
+function parseInteger(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isInteger(parsedValue) ? parsedValue : null;
+}
+
+function parseDecimal(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+export default function WalkForwardRunForm({
+  locale,
+  initialExecutionId,
+}: WalkForwardRunFormProps) {
+  const copy = getWalkForwardRunCopy(locale);
+  const { push, replace } = useRouter();
+  const direction = locale === 'fa' ? 'rtl' : 'ltr';
+
+  const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
+  const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
+  const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
+  const [hasDatasetError, setHasDatasetError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(() => Boolean(initialExecutionId));
+  const [formError, setFormError] = useState<string | null>(null);
+  const [execution, setExecution] = useState<WalkForwardExecution | null>(null);
+  const [createdRunId, setCreatedRunId] = useState<string | null>(null);
+  const pollingControllerRef = useRef<AbortController | null>(null);
+  const pollingTimeoutRef = useRef<number | null>(null);
+
+  const selectedDataset = useMemo(
+    () => datasets.find((dataset) => dataset.dataset_id === values.datasetId) ?? null,
+    [datasets, values.datasetId],
+  );
+
+  const estimatedFolds = useMemo(() => {
+    if (!selectedDataset) {
+      return null;
+    }
+
+    const trainCandles = parseInteger(values.trainCandles);
+    const testCandles = parseInteger(values.testCandles);
+    const stepCandles = parseInteger(values.stepCandles);
+    const gapCandles = parseInteger(values.gapCandles);
+
+    if (
+      trainCandles === null ||
+      testCandles === null ||
+      stepCandles === null ||
+      gapCandles === null
+    ) {
+      return null;
+    }
+
+    return estimateWalkForwardFoldCount(selectedDataset.candle_count, {
+      trainCandles,
+      testCandles,
+      stepCandles,
+      gapCandles,
+    });
+  }, [
+    selectedDataset,
+    values.gapCandles,
+    values.stepCandles,
+    values.testCandles,
+    values.trainCandles,
+  ]);
+
+  async function loadDatasets(): Promise<void> {
+    setIsLoadingDatasets(true);
+    setHasDatasetError(false);
+
+    try {
+      const result = await fetchAvailableDatasets();
+      setDatasets(result.items);
+    } catch {
+      setHasDatasetError(true);
+    } finally {
+      setIsLoadingDatasets(false);
+    }
+  }
+
+  useEffect(() => {
+    let isActive = true;
+
+    void fetchAvailableDatasets()
+      .then((result) => {
+        if (isActive) {
+          setDatasets(result.items);
+          setHasDatasetError(false);
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setHasDatasetError(true);
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingDatasets(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const stopPolling = useCallback((): void => {
+    pollingControllerRef.current?.abort();
+    pollingControllerRef.current = null;
+
+    if (pollingTimeoutRef.current !== null) {
+      window.clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => stopPolling, [stopPolling]);
+
+  function updateValue<Key extends keyof FormValues>(key: Key, value: FormValues[Key]): void {
+    setValues((currentValues) => ({
+      ...currentValues,
+      [key]: value,
+    }));
+    setFormError(null);
+    setExecution(null);
+    setCreatedRunId(null);
+    stopPolling();
+  }
+
+  function buildRequest(): StoredDatasetEMACrossoverWalkForwardRequest | null {
+    const fastPeriod = parseInteger(values.fastPeriod);
+    const slowPeriod = parseInteger(values.slowPeriod);
+    const horizonCandles = parseInteger(values.horizonCandles);
+    const trainCandles = parseInteger(values.trainCandles);
+    const testCandles = parseInteger(values.testCandles);
+    const stepCandles = parseInteger(values.stepCandles);
+    const gapCandles = parseInteger(values.gapCandles);
+    const startingBalance = parseDecimal(values.startingBalance);
+    const allocationFraction = parseDecimal(values.allocationFraction);
+    const feeRate = parseDecimal(values.feeRate);
+    const slippageRate = parseDecimal(values.slippageRate);
+
+    if (!values.datasetId || selectedDataset === null) {
+      setFormError(copy.errors.datasetRequired);
+      return null;
+    }
+    if (fastPeriod === null || fastPeriod < 2) {
+      setFormError(copy.errors.invalidFastPeriod);
+      return null;
+    }
+    if (slowPeriod === null || slowPeriod < 3) {
+      setFormError(copy.errors.invalidSlowPeriod);
+      return null;
+    }
+    if (slowPeriod <= fastPeriod) {
+      setFormError(copy.errors.slowMustBeGreater);
+      return null;
+    }
+    if (horizonCandles === null || horizonCandles < 1) {
+      setFormError(copy.errors.invalidHorizon);
+      return null;
+    }
+    if (trainCandles === null || trainCandles < 2) {
+      setFormError(copy.errors.invalidTrain);
+      return null;
+    }
+    if (testCandles === null || testCandles < 1) {
+      setFormError(copy.errors.invalidTest);
+      return null;
+    }
+    if (stepCandles === null || stepCandles < 1) {
+      setFormError(copy.errors.invalidStep);
+      return null;
+    }
+    if (stepCandles < testCandles) {
+      setFormError(copy.errors.stepBeforeTest);
+      return null;
+    }
+    if (gapCandles === null || gapCandles < 0) {
+      setFormError(copy.errors.invalidGap);
+      return null;
+    }
+    if (startingBalance === null || startingBalance <= 0) {
+      setFormError(copy.errors.invalidStartingBalance);
+      return null;
+    }
+    if (allocationFraction === null || allocationFraction <= 0 || allocationFraction > 1) {
+      setFormError(copy.errors.invalidAllocation);
+      return null;
+    }
+    if (feeRate === null || feeRate < 0 || feeRate >= 1) {
+      setFormError(copy.errors.invalidFee);
+      return null;
+    }
+    if (slippageRate === null || slippageRate < 0 || slippageRate >= 1) {
+      setFormError(copy.errors.invalidSlippage);
+      return null;
+    }
+
+    const foldCount = estimateWalkForwardFoldCount(selectedDataset.candle_count, {
+      trainCandles,
+      testCandles,
+      stepCandles,
+      gapCandles,
+    });
+
+    if (foldCount === 0) {
+      setFormError(copy.errors.insufficientCandles);
+      return null;
+    }
+
+    return {
+      dataset_id: selectedDataset.dataset_id,
+      fast_period: fastPeriod,
+      slow_period: slowPeriod,
+      horizon_candles: horizonCandles,
+      train_candles: trainCandles,
+      test_candles: testCandles,
+      step_candles: stepCandles,
+      gap_candles: gapCandles,
+      mode: values.mode,
+      starting_balance: values.startingBalance.trim(),
+      allocation_fraction: values.allocationFraction.trim(),
+      fee_rate: values.feeRate.trim(),
+      slippage_rate: values.slippageRate.trim(),
+    };
+  }
+
+  const pollExecution = useCallback(
+    async function pollWalkForwardExecution(
+      executionId: string,
+      signal: AbortSignal,
+    ): Promise<void> {
+      try {
+        const currentExecution = await getWalkForwardExecution(executionId);
+
+        if (signal.aborted) {
+          return;
+        }
+
+        setExecution(currentExecution);
+
+        if (currentExecution.status === 'succeeded') {
+          if (!currentExecution.walk_forward_run_id) {
+            setFormError(copy.errors.missingResult);
+            setIsSubmitting(false);
+            return;
+          }
+
+          const runId = currentExecution.walk_forward_run_id;
+
+          setCreatedRunId(runId);
+          setIsSubmitting(false);
+          pollingControllerRef.current = null;
+
+          push('/' + locale + '/walk-forward/' + encodeURIComponent(runId));
+          return;
+        }
+
+        if (currentExecution.status === 'failed') {
+          setFormError(copy.errors.executionFailed);
+          setIsSubmitting(false);
+          pollingControllerRef.current = null;
+          return;
+        }
+
+        pollingTimeoutRef.current = window.setTimeout(() => {
+          void pollWalkForwardExecution(executionId, signal);
+        }, POLLING_INTERVAL_MS);
+      } catch {
+        if (signal.aborted) {
+          return;
+        }
+
+        setFormError(copy.errors.statusUnavailable);
+        setIsSubmitting(false);
+        pollingControllerRef.current = null;
+      }
+    },
+    [
+      copy.errors.executionFailed,
+      copy.errors.missingResult,
+      copy.errors.statusUnavailable,
+      locale,
+      push,
+    ],
+  );
+
+  useEffect(() => {
+    if (!initialExecutionId) {
+      return;
+    }
+
+    const pollingController = new AbortController();
+
+    pollingControllerRef.current = pollingController;
+    void pollExecution(initialExecutionId, pollingController.signal);
+
+    return stopPolling;
+  }, [initialExecutionId, pollExecution, stopPolling]);
+
+  async function submitForm(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const request = buildRequest();
+
+    if (request === null) {
+      return;
+    }
+
+    stopPolling();
+    setIsSubmitting(true);
+    setFormError(null);
+    setExecution(null);
+    setCreatedRunId(null);
+
+    try {
+      const queuedExecution = await createEmaCrossoverWalkForwardExecution(request);
+      setExecution(queuedExecution);
+      replace(
+        '/' +
+          locale +
+          '/walk-forward?execution=' +
+          encodeURIComponent(queuedExecution.execution_id),
+      );
+
+      const pollingController = new AbortController();
+
+      pollingControllerRef.current = pollingController;
+      void pollExecution(queuedExecution.execution_id, pollingController.signal);
+    } catch (error) {
+      setIsSubmitting(false);
+
+      if (error instanceof ApiRequestError) {
+        if (error.status === 404) {
+          setFormError(copy.errors.datasetNotFound);
+        } else if (error.status === 409 || error.status === 422) {
+          setFormError(copy.errors.validationFailed);
+        } else {
+          setFormError(copy.errors.generic);
+        }
+      } else {
+        setFormError(copy.errors.generic);
+      }
+    }
+  }
+
+  const isExecutionActive = execution?.status === 'queued' || execution?.status === 'running';
+  const isFormDisabled =
+    isLoadingDatasets ||
+    hasDatasetError ||
+    datasets.length === 0 ||
+    isSubmitting ||
+    isExecutionActive;
+  const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
+  const numericFields: NumericField[] = [
+    { key: 'fastPeriod', label: copy.fields.fastPeriod, min: 2, step: 1 },
+    { key: 'slowPeriod', label: copy.fields.slowPeriod, min: 3, step: 1 },
+    { key: 'horizonCandles', label: copy.fields.horizonCandles, min: 1, step: 1 },
+    { key: 'trainCandles', label: copy.fields.trainCandles, min: 2, step: 1 },
+    { key: 'testCandles', label: copy.fields.testCandles, min: 1, step: 1 },
+    { key: 'stepCandles', label: copy.fields.stepCandles, min: 1, step: 1 },
+    { key: 'gapCandles', label: copy.fields.gapCandles, min: 0, step: 1 },
+    { key: 'startingBalance', label: copy.fields.startingBalance, min: '0.01', step: 'any' },
+    {
+      key: 'allocationFraction',
+      label: copy.fields.allocationFraction,
+      min: '0.000001',
+      max: 1,
+      step: 'any',
+    },
+    { key: 'feeRate', label: copy.fields.feeRate, min: 0, max: '0.999999', step: 'any' },
+    {
+      key: 'slippageRate',
+      label: copy.fields.slippageRate,
+      min: 0,
+      max: '0.999999',
+      step: 'any',
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="border-b border-slate-800">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.22em] text-cyan-400 uppercase">
+              {copy.eyebrow}
+            </p>
+            <CardTitle className="mt-3">{copy.title}</CardTitle>
+            <CardDescription className="mt-2 max-w-3xl leading-7">
+              {copy.description}
+            </CardDescription>
+          </div>
+          <Badge variant="warning">{copy.historicalOnly}</Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-6">
+        {isLoadingDatasets ? (
+          <div className="flex min-h-32 items-center justify-center">
+            <Spinner label={copy.states.loadingDatasets} className="text-cyan-400" />
+          </div>
+        ) : hasDatasetError ? (
+          <div role="alert" className="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5">
+            <p className="text-sm text-rose-200">{copy.states.datasetLoadError}</p>
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-4"
+              onClick={() => void loadDatasets()}
+            >
+              {copy.actions.retryDatasets}
+            </Button>
+          </div>
+        ) : datasets.length === 0 ? (
+          <p className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5 text-sm text-slate-400">
+            {copy.states.noDatasets}
+          </p>
+        ) : (
+          <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="md:col-span-2">
+                <Select
+                  dir={direction}
+                  label={copy.fields.dataset}
+                  value={values.datasetId}
+                  disabled={isFormDisabled}
+                  onValueChange={(value) => updateValue('datasetId', value)}
+                >
+                  <SelectOption value="">{copy.fields.datasetPlaceholder}</SelectOption>
+                  {datasets.map((dataset) => (
+                    <SelectOption key={dataset.dataset_id} value={dataset.dataset_id}>
+                      {dataset.name} · {dataset.pair.base_asset}/{dataset.pair.quote_asset} ·{' '}
+                      {dataset.timeframe}
+                    </SelectOption>
+                  ))}
+                </Select>
+              </div>
+
+              <Select
+                dir={direction}
+                label={copy.fields.strategy}
+                value="ema-crossover"
+                disabled={isFormDisabled}
+                onValueChange={() => undefined}
+              >
+                <SelectOption value="ema-crossover">{copy.strategy.emaCrossover}</SelectOption>
+              </Select>
+
+              <Select
+                dir={direction}
+                label={copy.fields.mode}
+                value={values.mode}
+                disabled={isFormDisabled}
+                onValueChange={(value) => updateValue('mode', value as WalkForwardMode)}
+              >
+                <SelectOption value="rolling">{copy.modes.rolling}</SelectOption>
+                <SelectOption value="expanding">{copy.modes.expanding}</SelectOption>
+              </Select>
+
+              {numericFields.map((field) => (
+                <Input
+                  key={field.key}
+                  dir="ltr"
+                  type="number"
+                  label={field.label}
+                  value={values[field.key]}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  disabled={isFormDisabled}
+                  className="text-left"
+                  onChange={(event) => updateValue(field.key, event.target.value)}
+                />
+              ))}
+            </div>
+
+            {selectedDataset ? (
+              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-5">
+                <p className="font-semibold text-cyan-100">{copy.estimate.title}</p>
+                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-slate-500">{copy.estimate.candles}</dt>
+                    <dd className="mt-1 text-slate-200">
+                      {numberFormatter.format(selectedDataset.candle_count)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">{copy.estimate.folds}</dt>
+                    <dd className="mt-1 text-slate-200">
+                      {estimatedFolds === null
+                        ? copy.estimate.unavailable
+                        : numberFormatter.format(estimatedFolds)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ) : null}
+
+            {execution && isExecutionActive ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Spinner
+                      label={
+                        execution.status === 'queued' ? copy.states.queued : copy.states.running
+                      }
+                      className="text-cyan-400"
+                    />
+                    <p className="text-sm font-medium text-cyan-100">
+                      {execution.status === 'queued' ? copy.states.queued : copy.states.running}
+                    </p>
+                  </div>
+                  <span dir="ltr" className="font-mono text-sm font-semibold text-cyan-300">
+                    {execution.progress_percent}%
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-slate-400">
+                    <span>{copy.states.progress}</span>
+                    <span>
+                      {copy.states.foldsCompleted}:{' '}
+                      {numberFormatter.format(execution.completed_folds)}/
+                      {numberFormatter.format(execution.total_folds)}
+                    </span>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-label={copy.states.progress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={execution.progress_percent}
+                    className="h-2 overflow-hidden rounded-full bg-slate-800"
+                  >
+                    <div
+                      className="h-full rounded-full bg-cyan-400 transition-[width] duration-500 ease-out"
+                      style={{ width: execution.progress_percent + '%' }}
+                    />
+                  </div>
+                  <p dir="ltr" className="mt-3 truncate font-mono text-xs text-slate-500">
+                    {execution.execution_id}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {formError ? (
+              <p
+                role="alert"
+                className="rounded-xl border border-rose-400/20 bg-rose-400/5 px-4 py-3 text-sm text-rose-200"
+              >
+                {formError}
+              </p>
+            ) : null}
+
+            {createdRunId ? (
+              <div
+                role="status"
+                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3"
+              >
+                <p className="text-sm text-emerald-200">{copy.states.success}</p>
+                <Link
+                  href={'/' + locale + '/walk-forward/' + encodeURIComponent(createdRunId)}
+                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                >
+                  {copy.actions.viewResult}
+                </Link>
+              </div>
+            ) : null}
+
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              loadingText={
+                execution?.status === 'queued' ? copy.actions.queuing : copy.actions.running
+              }
+              disabled={isFormDisabled}
+            >
+              {copy.actions.run}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

@@ -29,6 +29,8 @@ import type {
   CreatedResearchExperiment,
   StoredDatasetEMACrossoverRequest,
   ExperimentExecution,
+  StoredDatasetEMACrossoverWalkForwardRequest,
+  WalkForwardExecution,
 } from '@/lib/api/types';
 
 const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8000';
@@ -273,6 +275,23 @@ export async function createEmaCrossoverExperimentExecution(
 export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {
   return getJson<ExperimentExecution>(
     `/api/v1/research/experiment-executions/${encodeURIComponent(executionId)}`,
+  );
+}
+
+export async function createEmaCrossoverWalkForwardExecution(
+  request: StoredDatasetEMACrossoverWalkForwardRequest,
+): Promise<WalkForwardExecution> {
+  return postJson<WalkForwardExecution>(
+    '/api/v1/research/walk-forward-executions/ema-crossover',
+    request,
+  );
+}
+
+export async function getWalkForwardExecution(
+  executionId: string,
+): Promise<WalkForwardExecution> {
+  return getJson<WalkForwardExecution>(
+    `/api/v1/research/walk-forward-executions/${encodeURIComponent(executionId)}`,
   );
 }
 

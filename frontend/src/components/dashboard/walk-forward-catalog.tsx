@@ -9,6 +9,7 @@ import WalkForwardFilterPanel, {
   type WalkForwardFilterValues,
 } from '@/components/dashboard/walk-forward-filter-panel';
 import { getWalkForwardCopy } from '@/components/dashboard/walk-forward-copy';
+import WalkForwardRunForm from '@/components/dashboard/walk-forward-run-form';
 import {
   Badge,
   Card,
@@ -29,6 +30,7 @@ const PAGE_SIZE = 12;
 type WalkForwardCatalogProps = {
   initialPage: Page<WalkForwardRunSummary>;
   locale: DashboardLocale;
+  initialExecutionId?: string;
 };
 
 function formatNumber(value: number, locale: DashboardLocale): string {
@@ -88,7 +90,11 @@ function buildWalkForwardFilters(filters: WalkForwardFilterValues): WalkForwardR
   };
 }
 
-export default function WalkForwardCatalog({ initialPage, locale }: WalkForwardCatalogProps) {
+export default function WalkForwardCatalog({
+  initialPage,
+  locale,
+  initialExecutionId,
+}: WalkForwardCatalogProps) {
   const copy = getWalkForwardCopy(locale);
 
   const [page, setPage] = useState(initialPage);
@@ -162,6 +168,8 @@ export default function WalkForwardCatalog({ initialPage, locale }: WalkForwardC
           {copy.description}
         </p>
       </section>
+
+      <WalkForwardRunForm locale={locale} initialExecutionId={initialExecutionId} />
 
       <WalkForwardFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
 
