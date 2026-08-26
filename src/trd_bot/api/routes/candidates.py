@@ -1,0 +1,185 @@
+from datetime import datetime
+from decimal import Decimal
+from typing import Annotated, Self
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict, Field
+
+from trd_bot.api.dependencies import get_candidate_journal_repository
+from trd_bot.api.pagination import Page, PaginationParams, build_page
+from trd_bot.db import SqlAlchemyCandidateJournalRepository
+from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.research.candidate_projection import (
+    CandidateJournalOccurrence,
+    CandidateJournalProjectionReader,
+    CandidateProjection,
+)
+from trd_bot.research.candidates import (
+    CandidateAction,
+    CandidateStatus,
+    ResearchCandidate,
+)
+from trd_bot.research.dataset_replay import CandidateReplayStatus
+from trd_bot.research.position_monitoring import CandidateExitReason
+from trd_bot.research.risk_policy import CandidateRiskDecision
+
+router = APIRouter(
+    prefix="/research/candidates",
+    tags=["Candidate projections"],
+)
+
+CandidateJournalRepositoryDependency = Annotated[
+    SqlAlchemyCandidateJournalRepository,
+    Depends(get_candidate_journal_repository),
+]
+PaginationQuery = Annotated[PaginationParams, Query()]
+
+
+class CandidateProjectionSummary(BaseModel):
+    """Lightweight latest view of one journal-backed replay-attempted candidate."""
+
+    model_config = ConfigDict(frozen=True)
+
+    candidate_id: str
+    status: CandidateStatus
+    action: CandidateAction
+    pair: TradingPair
+    timeframe: Timeframe
+    strategy_name: str
+    strategy_version: str
+    confidence: Decimal
+    signal_score: Decimal
+    created_at: datetime
+    valid_until: datetime
+
+    occurrence_count: int = Field(ge=1)
+    latest_journal_id: str
+    latest_recorded_at: datetime
+    latest_replay_status: CandidateReplayStatus
+    latest_risk_decision: CandidateRiskDecision
+    selected: bool
+    position_id: str | None = None
+    exit_reason: CandidateExitReason | None = None
+
+    @classmethod
+    def from_projection(cls, projection: CandidateProjection) -> Self:
+        candidate = projection.candidate
+        latest = projection.latest
+
+        return cls(
+            candidate_id=candidate.candidate_id,
+            status=candidate.status,
+            action=candidate.action,
+            pair=candidate.pair,
+            timeframe=candidate.timeframe,
+            strategy_name=candidate.strategy_name,
+            strategy_version=candidate.strategy_version,
+            confidence=candidate.confidence,
+            signal_score=candidate.signal_score,
+            created_at=candidate.created_at,
+            valid_until=candidate.valid_until,
+            occurrence_count=len(projection.history),
+            latest_journal_id=latest.journal_id,
+            latest_recorded_at=latest.recorded_at,
+            latest_replay_status=latest.replay_status,
+            latest_risk_decision=latest.risk_decision,
+            selected=latest.selected,
+            position_id=latest.position_id,
+            exit_reason=latest.exit_reason,
+        )
+
+
+class CandidateProjectionDetail(BaseModel):
+    """Complete candidate snapshot with latest persisted attempt metadata."""
+
+    model_config = ConfigDict(frozen=True)
+
+    candidate: ResearchCandidate
+    occurrence_count: int = Field(ge=1)
+    journal_ids: tuple[str, ...]
+    latest: CandidateJournalOccurrence
+
+    @classmethod
+    def from_projection(cls, projection: CandidateProjection) -> Self:
+        return cls(
+            candidate=projection.candidate,
+            occurrence_count=len(projection.history),
+            journal_ids=tuple(item.journal_id for item in projection.history),
+            latest=projection.latest,
+        )
+
+
+def _load_projections(
+    journals: SqlAlchemyCandidateJournalRepository,
+) -> tuple[CandidateProjection, ...]:
+    total = journals.count()
+    entries = journals.list_page(limit=total, offset=0) if total > 0 else ()
+    return CandidateJournalProjectionReader.build(entries)
+
+
+def _get_projection_or_404(
+    candidate_id: str,
+    journals: SqlAlchemyCandidateJournalRepository,
+) -> CandidateProjection:
+    projection = CandidateJournalProjectionReader.get(
+        _load_projections(journals),
+        candidate_id,
+    )
+    if projection is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="candidate projection not found",
+        )
+    return projection
+
+
+@router.get("", response_model=Page[CandidateProjectionSummary])
+def list_candidate_projections(
+    journals: CandidateJournalRepositoryDependency,
+    pagination: PaginationQuery,
+) -> Page[CandidateProjectionSummary]:
+    """List candidates preserved by replay-attempt journal records."""
+
+    projections = _load_projections(journals)
+    page_items = projections[pagination.offset : pagination.offset + pagination.limit]
+    summaries = tuple(CandidateProjectionSummary.from_projection(item) for item in page_items)
+
+    return build_page(
+        summaries,
+        total=len(projections),
+        pagination=pagination,
+    )
+
+
+@router.get(
+    "/{candidate_id}/lineage",
+    response_model=Page[CandidateJournalOccurrence],
+)
+def list_candidate_lineage(
+    candidate_id: str,
+    journals: CandidateJournalRepositoryDependency,
+    pagination: PaginationQuery,
+) -> Page[CandidateJournalOccurrence]:
+    """List persisted replay-attempt lineage for one candidate newest first."""
+
+    projection = _get_projection_or_404(candidate_id, journals)
+    items = projection.history[pagination.offset : pagination.offset + pagination.limit]
+
+    return build_page(
+        items,
+        total=len(projection.history),
+        pagination=pagination,
+    )
+
+
+@router.get(
+    "/{candidate_id}",
+    response_model=CandidateProjectionDetail,
+)
+def get_candidate_projection(
+    candidate_id: str,
+    journals: CandidateJournalRepositoryDependency,
+) -> CandidateProjectionDetail:
+    """Return the latest journal-backed candidate snapshot and lineage pointers."""
+
+    return CandidateProjectionDetail.from_projection(_get_projection_or_404(candidate_id, journals))
