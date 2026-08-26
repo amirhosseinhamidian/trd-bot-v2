@@ -242,6 +242,7 @@ class ArchitectureCheckpointEvaluator:
             summary=policy.summary,
             first_detected_at=(first_detected_at),
             last_detected_at=(normalized_time),
+            acknowledged_at=(active.acknowledged_at if active is not None else None),
             evidence=tuple(evidence),
         )
 
@@ -290,11 +291,8 @@ class ArchitectureCheckpointEvaluator:
         if active is None:
             return None
 
-        resolved = active.model_copy(
-            update={
-                "status": (RecommendationStatus.RESOLVED),
-                "last_detected_at": evaluated_at,
-            }
+        resolved = active.resolve(
+            resolved_at=evaluated_at,
         )
 
         return self._recommendations.upsert(resolved)

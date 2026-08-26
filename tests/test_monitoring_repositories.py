@@ -251,3 +251,49 @@ def test_sqlalchemy_recommendation_repository_upserts() -> None:
             assert results == (updated,)
     finally:
         engine.dispose()
+
+
+def test_sqlalchemy_recommendation_repository_persists_lifecycle() -> None:
+    engine = create_database_engine("sqlite+pysqlite:///:memory:")
+
+    DatabaseBase.metadata.create_all(engine)
+    factory = create_session_factory(engine)
+
+    active = create_recommendation(
+        first_detected_at=START_TIME,
+        last_detected_at=START_TIME,
+        severity=RecommendationSeverity.WARNING,
+    )
+
+    acknowledged_at = START_TIME + timedelta(minutes=5)
+    resolved_at = START_TIME + timedelta(minutes=10)
+
+    acknowledged = active.acknowledge(
+        acknowledged_at=acknowledged_at,
+    )
+    resolved = acknowledged.resolve(
+        resolved_at=resolved_at,
+    )
+
+    try:
+        with factory() as session:
+            repository = SqlAlchemyArchitectureRecommendationRepository(session)
+
+            repository.upsert(acknowledged)
+
+            stored_acknowledged = repository.get(active.recommendation_id)
+
+            assert stored_acknowledged is not None
+            assert stored_acknowledged.acknowledged_at == acknowledged_at
+            assert stored_acknowledged.status is (RecommendationStatus.ACTIVE)
+
+            repository.upsert(resolved)
+
+            stored_resolved = repository.get(active.recommendation_id)
+
+            assert stored_resolved is not None
+            assert stored_resolved.acknowledged_at == acknowledged_at
+            assert stored_resolved.resolved_at == resolved_at
+            assert stored_resolved.status is (RecommendationStatus.RESOLVED)
+    finally:
+        engine.dispose()
