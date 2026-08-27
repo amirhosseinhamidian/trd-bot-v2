@@ -130,6 +130,9 @@ export default function CandidateDetail({
             <Badge variant={latest.selected ? 'success' : 'info'}>
               {latest.selected ? copy.selected : copy.notSelected}
             </Badge>
+            <Badge variant={latest.occurrence_type === 'skipped' ? 'warning' : 'info'}>
+              {copy.occurrenceTypes[latest.occurrence_type]}
+            </Badge>
             <Badge variant="info">{copy.statuses[snapshot.status]}</Badge>
             <Badge variant="warning">{copy.actions[snapshot.action]}</Badge>
           </div>
@@ -205,13 +208,17 @@ export default function CandidateDetail({
             <div>
               <p className="text-xs text-slate-500">{copy.fields.replay}</p>
               <p className="mt-2 text-sm text-slate-200">
-                {copy.replayStatuses[latest.replay_status]}
+                {latest.replay_status
+                  ? copy.replayStatuses[latest.replay_status]
+                  : copy.notEvaluated}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-500">{copy.fields.risk}</p>
               <p className="mt-2 text-sm text-slate-200">
-                {copy.riskDecisions[latest.risk_decision]}
+                {latest.risk_decision
+                  ? copy.riskDecisions[latest.risk_decision]
+                  : copy.notEvaluated}
               </p>
             </div>
             <div>
@@ -226,6 +233,14 @@ export default function CandidateDetail({
                 {latest.exit_reason ? copy.exitReasons[latest.exit_reason] : '—'}
               </p>
             </div>
+            {latest.skip_reason ? (
+              <div>
+                <p className="text-xs text-slate-500">{copy.fields.skipReason}</p>
+                <p className="mt-2 text-sm text-slate-200">
+                  {copy.skipReasons[latest.skip_reason]}
+                </p>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -283,15 +298,31 @@ export default function CandidateDetail({
                       </p>
                     </div>
                     <div>
+                      <p className="text-xs text-slate-500">{copy.fields.occurrence}</p>
+                      <p className="mt-2 text-sm text-slate-200">
+                        {copy.occurrenceTypes[occurrence.occurrence_type]}
+                      </p>
+                    </div>
+                    <div>
                       <p className="text-xs text-slate-500">{copy.fields.replay}</p>
                       <p className="mt-2 text-sm text-slate-200">
-                        {copy.replayStatuses[occurrence.replay_status]}
+                        {occurrence.replay_status
+                          ? copy.replayStatuses[occurrence.replay_status]
+                          : copy.notEvaluated}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">{copy.fields.risk}</p>
                       <p className="mt-2 text-sm text-slate-200">
-                        {copy.riskDecisions[occurrence.risk_decision]}
+                        {occurrence.risk_decision
+                          ? copy.riskDecisions[occurrence.risk_decision]
+                          : copy.notEvaluated}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">{copy.fields.skipReason}</p>
+                      <p className="mt-2 text-sm text-slate-200">
+                        {occurrence.skip_reason ? copy.skipReasons[occurrence.skip_reason] : '—'}
                       </p>
                     </div>
                     <div>

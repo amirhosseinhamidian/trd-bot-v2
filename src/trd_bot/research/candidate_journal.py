@@ -19,8 +19,12 @@ def build_candidate_journal_id(
 ) -> str:
     """Build a deterministic journal identity from the complete lifecycle payload."""
 
+    identity_payload = lifecycle.model_dump(mode="json")
+    if not lifecycle.replay.skipped:
+        identity_payload["replay"].pop("skipped", None)
+
     serialized = json.dumps(
-        lifecycle.model_dump(mode="json"),
+        identity_payload,
         sort_keys=True,
         separators=(",", ":"),
     )

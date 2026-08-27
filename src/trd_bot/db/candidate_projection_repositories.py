@@ -113,8 +113,12 @@ class SqlAlchemyCandidateProjectionRepository:
         row.occurrence_count = len(projection.history)
         row.latest_rank = latest.rank
         row.latest_ranking_score = latest.ranking_score
-        row.latest_replay_status = latest.replay_status.value
-        row.latest_risk_decision = latest.risk_decision.value
+        row.latest_replay_status = (
+            latest.replay_status.value if latest.replay_status is not None else None
+        )
+        row.latest_risk_decision = (
+            latest.risk_decision.value if latest.risk_decision is not None else None
+        )
         row.selected = int(latest.selected)
         row.position_id = latest.position_id
         row.exit_reason = latest.exit_reason.value if latest.exit_reason is not None else None

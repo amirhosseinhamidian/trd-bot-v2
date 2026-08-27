@@ -723,11 +723,12 @@ class CandidateProjectionRow(DatabaseBase):
             name="action_supported",
         ),
         CheckConstraint(
+            "latest_replay_status IS NULL OR "
             "latest_replay_status IN ('opened', 'risk_rejected', 'no_fill')",
             name="latest_replay_status_supported",
         ),
         CheckConstraint(
-            "latest_risk_decision IN ('approved', 'rejected')",
+            "latest_risk_decision IS NULL OR latest_risk_decision IN ('approved', 'rejected')",
             name="latest_risk_decision_supported",
         ),
         CheckConstraint(
@@ -743,13 +744,17 @@ class CandidateProjectionRow(DatabaseBase):
         CheckConstraint(
             "(selected = 1 "
             "AND latest_replay_status = 'opened' "
+            "AND latest_risk_decision IS NOT NULL "
             "AND position_id IS NOT NULL "
             "AND exit_reason IS NOT NULL) "
             "OR "
             "(selected = 0 "
-            "AND latest_replay_status <> 'opened' "
             "AND position_id IS NULL "
-            "AND exit_reason IS NULL)",
+            "AND exit_reason IS NULL "
+            "AND ((latest_replay_status IS NULL AND latest_risk_decision IS NULL) "
+            "OR (latest_replay_status IS NOT NULL "
+            "AND latest_replay_status <> 'opened' "
+            "AND latest_risk_decision IS NOT NULL)))",
             name="selection_lineage_consistent",
         ),
         Index(
@@ -800,8 +805,16 @@ class CandidateProjectionRow(DatabaseBase):
     occurrence_count: Mapped[int] = mapped_column(Integer)
     latest_rank: Mapped[int] = mapped_column(Integer)
     latest_ranking_score: Mapped[Decimal] = mapped_column(Numeric(18, 10))
-    latest_replay_status: Mapped[str] = mapped_column(String(30), index=True)
-    latest_risk_decision: Mapped[str] = mapped_column(String(30), index=True)
+    latest_replay_status: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        index=True,
+    )
+    latest_risk_decision: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        index=True,
+    )
     selected: Mapped[int] = mapped_column(Integer, index=True)
 
     position_id: Mapped[str | None] = mapped_column(

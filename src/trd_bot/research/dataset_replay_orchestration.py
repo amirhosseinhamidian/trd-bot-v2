@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from enum import StrEnum
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -13,6 +14,24 @@ from trd_bot.research.dataset_replay import (
     CandidateReplayStatus,
 )
 from trd_bot.research.datasets import DatasetSnapshot
+
+
+class CandidateReplaySkipReason(StrEnum):
+    """Reason a ranked candidate was not replay-attempted."""
+
+    POSITION_OPENED = "position_opened"
+
+
+class CandidateReplaySkip(BaseModel):
+    """Auditable snapshot for one ranked candidate skipped after an earlier open."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    ranking_entry: CandidateRankingEntry
+    reason: CandidateReplaySkipReason
 
 
 class CandidateReplayBatchResult(BaseModel):
@@ -33,6 +52,7 @@ class CandidateReplayBatchResult(BaseModel):
     skipped_count: int = Field(ge=0)
 
     attempted: tuple[CandidateReplayResult, ...]
+    skipped: tuple[CandidateReplaySkip, ...] = ()
     skipped_candidate_ids: tuple[str, ...]
     selected_candidate_id: str | None = Field(
         default=None,
@@ -58,6 +78,19 @@ class CandidateReplayBatchResult(BaseModel):
 
         if self.skipped_count != len(self.skipped_candidate_ids):
             raise ValueError("replay skipped count does not match candidate IDs")
+
+        if self.skipped and self.skipped_count != len(self.skipped):
+            raise ValueError("replay skipped count does not match snapshots")
+
+        if self.skipped:
+            skipped_ids = tuple(item.ranking_entry.candidate.candidate_id for item in self.skipped)
+            if skipped_ids != self.skipped_candidate_ids:
+                raise ValueError("replay skipped snapshots do not match candidate IDs")
+
+            if any(
+                item.ranking_entry.candidate.dataset_id != self.dataset_id for item in self.skipped
+            ):
+                raise ValueError("replay batch skipped candidate belongs to another dataset")
 
         if self.total_candidates != self.attempted_count + self.skipped_count:
             raise ValueError("replay batch counts do not reconcile")
@@ -104,7 +137,7 @@ class CandidateReplayBatchResult(BaseModel):
         if self.selected_candidate_id is not None:
             raise ValueError("replay batch without an open cannot select a candidate")
 
-        if self.skipped_candidate_ids:
+        if self.skipped_candidate_ids or self.skipped:
             raise ValueError("replay batch can skip candidates only after an open")
 
         if self.portfolio.updated_at != self.initial_portfolio_updated_at:
@@ -151,6 +184,7 @@ class CandidateDatasetReplayOrchestrator:
             raise ValueError("replay batch ranks must be unique")
 
         attempted: list[CandidateReplayResult] = []
+        skipped: tuple[CandidateReplaySkip, ...] = ()
         skipped_candidate_ids: tuple[str, ...] = ()
         selected_candidate_id: str | None = None
         final_portfolio = portfolio
@@ -172,8 +206,15 @@ class CandidateDatasetReplayOrchestrator:
 
             final_portfolio = result.simulation.portfolio
             selected_candidate_id = result.simulation.selected_candidate.candidate_id
+            skipped = tuple(
+                CandidateReplaySkip(
+                    ranking_entry=later_entry,
+                    reason=CandidateReplaySkipReason.POSITION_OPENED,
+                )
+                for later_entry in ordered[index + 1 :]
+            )
             skipped_candidate_ids = tuple(
-                later_entry.candidate.candidate_id for later_entry in ordered[index + 1 :]
+                item.ranking_entry.candidate.candidate_id for item in skipped
             )
             break
 
@@ -186,6 +227,7 @@ class CandidateDatasetReplayOrchestrator:
             attempted_count=len(attempted),
             skipped_count=len(skipped_candidate_ids),
             attempted=tuple(attempted),
+            skipped=skipped,
             skipped_candidate_ids=skipped_candidate_ids,
             selected_candidate_id=selected_candidate_id,
             portfolio=final_portfolio,

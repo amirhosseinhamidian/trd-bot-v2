@@ -39,11 +39,32 @@ function makeOccurrence(journalId: string, recordedAt: string): CandidateJournal
     },
     rank: 1,
     ranking_score: '0.81',
+    occurrence_type: 'attempted',
     replay_status: 'opened',
     risk_decision: 'approved',
+    skip_reason: null,
     selected: true,
     position_id: 'position-1',
     exit_reason: 'target',
+  };
+}
+
+function makeSkippedOccurrence(journalId: string, recordedAt: string): CandidateJournalOccurrence {
+  const attempted = makeOccurrence(journalId, recordedAt);
+
+  return {
+    ...attempted,
+    candidate: {
+      ...attempted.candidate,
+      status: 'candidate',
+    },
+    occurrence_type: 'skipped',
+    replay_status: null,
+    risk_decision: null,
+    skip_reason: 'position_opened',
+    selected: false,
+    position_id: null,
+    exit_reason: null,
   };
 }
 
@@ -76,6 +97,26 @@ function makePage(
 describe('CandidateDetail', () => {
   beforeEach(() => {
     mocks.getCandidateLineage.mockReset();
+  });
+
+  it('renders skipped detail and lineage without fabricated evaluation outcomes', () => {
+    const skipped = makeSkippedOccurrence('journal-skipped', '2026-08-26T12:00:00Z');
+    const detail: CandidateProjectionDetail = {
+      candidate: skipped.candidate,
+      occurrence_count: 1,
+      journal_ids: [skipped.journal_id],
+      latest: skipped,
+    };
+
+    render(
+      <CandidateDetail locale="en" candidate={detail} initialLineage={makePage([skipped], 0)} />,
+    );
+
+    expect(screen.getAllByText('Skipped').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Not evaluated').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Earlier candidate position opened').length).toBeGreaterThanOrEqual(
+      1,
+    );
   });
 
   it('renders read-only candidate lineage and loads the next lineage page', async () => {

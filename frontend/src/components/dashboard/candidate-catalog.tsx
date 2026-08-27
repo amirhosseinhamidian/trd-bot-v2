@@ -161,6 +161,14 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                         {candidate.selected ? copy.selected : copy.notSelected}
                       </Badge>
 
+                      <Badge
+                        variant={
+                          candidate.latest_occurrence_type === 'skipped' ? 'warning' : 'info'
+                        }
+                      >
+                        {copy.occurrenceTypes[candidate.latest_occurrence_type]}
+                      </Badge>
+
                       <Badge variant="info">{copy.statuses[candidate.status]}</Badge>
                       <Badge variant="warning">{copy.actions[candidate.action]}</Badge>
                     </div>
@@ -207,16 +215,29 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                     <div>
                       <dt className="text-xs text-slate-500">{copy.fields.replay}</dt>
                       <dd className="mt-1 text-sm text-slate-200">
-                        {copy.replayStatuses[candidate.latest_replay_status]}
+                        {candidate.latest_replay_status
+                          ? copy.replayStatuses[candidate.latest_replay_status]
+                          : copy.notEvaluated}
                       </dd>
                     </div>
 
                     <div>
                       <dt className="text-xs text-slate-500">{copy.fields.risk}</dt>
                       <dd className="mt-1 text-sm text-slate-200">
-                        {copy.riskDecisions[candidate.latest_risk_decision]}
+                        {candidate.latest_risk_decision
+                          ? copy.riskDecisions[candidate.latest_risk_decision]
+                          : copy.notEvaluated}
                       </dd>
                     </div>
+
+                    {candidate.latest_skip_reason ? (
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs text-slate-500">{copy.fields.skipReason}</dt>
+                        <dd className="mt-1 text-sm text-slate-200">
+                          {copy.skipReasons[candidate.latest_skip_reason]}
+                        </dd>
+                      </div>
+                    ) : null}
                   </dl>
 
                   <div className="grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-2">

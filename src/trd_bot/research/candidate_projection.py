@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -11,12 +12,20 @@ from trd_bot.research.candidates import (
     normalize_candidate_timestamp,
 )
 from trd_bot.research.dataset_replay import CandidateReplayStatus
+from trd_bot.research.dataset_replay_orchestration import CandidateReplaySkipReason
 from trd_bot.research.position_monitoring import CandidateExitReason
 from trd_bot.research.risk_policy import CandidateRiskDecision
 
 
+class CandidateOccurrenceType(StrEnum):
+    """How one candidate entered a persisted journal lineage."""
+
+    ATTEMPTED = "attempted"
+    SKIPPED = "skipped"
+
+
 class CandidateJournalOccurrence(BaseModel):
-    """One persisted replay attempt for a candidate in a lifecycle journal."""
+    """One persisted attempted or skipped candidate occurrence in a lifecycle journal."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -27,8 +36,10 @@ class CandidateJournalOccurrence(BaseModel):
 
     rank: int = Field(ge=1)
     ranking_score: Decimal = Field(ge=0, le=1)
-    replay_status: CandidateReplayStatus
-    risk_decision: CandidateRiskDecision
+    occurrence_type: CandidateOccurrenceType = CandidateOccurrenceType.ATTEMPTED
+    replay_status: CandidateReplayStatus | None
+    risk_decision: CandidateRiskDecision | None
+    skip_reason: CandidateReplaySkipReason | None = None
 
     selected: bool
     position_id: str | None = Field(
@@ -45,6 +56,24 @@ class CandidateJournalOccurrence(BaseModel):
 
     @model_validator(mode="after")
     def validate_occurrence(self) -> Self:
+        if self.occurrence_type is CandidateOccurrenceType.SKIPPED:
+            if self.replay_status is not None or self.risk_decision is not None:
+                raise ValueError("skipped occurrence cannot contain replay or risk outcomes")
+            if self.skip_reason is None:
+                raise ValueError("skipped occurrence requires a skip reason")
+            if self.selected:
+                raise ValueError("skipped occurrence cannot be selected")
+            if self.candidate.status is CandidateStatus.SELECTED:
+                raise ValueError("skipped occurrence cannot contain selected candidate state")
+            if self.position_id is not None or self.exit_reason is not None:
+                raise ValueError("skipped occurrence cannot contain position lineage")
+            return self
+
+        if self.skip_reason is not None:
+            raise ValueError("attempted occurrence cannot contain a skip reason")
+        if self.replay_status is None or self.risk_decision is None:
+            raise ValueError("attempted occurrence requires replay and risk outcomes")
+
         if self.selected:
             if self.replay_status is not CandidateReplayStatus.OPENED:
                 raise ValueError("selected occurrence requires an opened replay")
@@ -63,7 +92,7 @@ class CandidateJournalOccurrence(BaseModel):
 
 
 class CandidateProjection(BaseModel):
-    """Latest candidate snapshot plus every persisted replay-attempt occurrence."""
+    """Latest candidate snapshot plus every persisted journal occurrence."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -138,6 +167,24 @@ class CandidateJournalProjectionReader:
                     selected=selected,
                     position_id=position_id,
                     exit_reason=exit_reason,
+                    candidate=candidate,
+                )
+                occurrences.setdefault(candidate.candidate_id, []).append(occurrence)
+
+            for skipped in journal.lifecycle.replay.skipped:
+                candidate = skipped.ranking_entry.candidate
+                occurrence = CandidateJournalOccurrence(
+                    journal_id=journal.journal_id,
+                    recorded_at=journal.recorded_at,
+                    evaluated_at=journal.evaluated_at,
+                    portfolio_id=journal.portfolio_id,
+                    rank=skipped.ranking_entry.rank,
+                    ranking_score=skipped.ranking_entry.total_score,
+                    occurrence_type=CandidateOccurrenceType.SKIPPED,
+                    replay_status=None,
+                    risk_decision=None,
+                    skip_reason=skipped.reason,
+                    selected=False,
                     candidate=candidate,
                 )
                 occurrences.setdefault(candidate.candidate_id, []).append(occurrence)

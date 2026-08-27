@@ -2,6 +2,8 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   CandidateAction,
   CandidateExitReason,
+  CandidateOccurrenceType,
+  CandidateReplaySkipReason,
   CandidateReplayStatus,
   CandidateRiskDecision,
   CandidateStatus,
@@ -22,6 +24,7 @@ type CandidateDetailCopy = {
   next: string;
   selected: string;
   notSelected: string;
+  notEvaluated: string;
   fields: {
     candidateId: string;
     datasetId: string;
@@ -39,14 +42,18 @@ type CandidateDetailCopy = {
     rankingScore: string;
     replay: string;
     risk: string;
+    occurrence: string;
+    skipReason: string;
     recordedAt: string;
     positionId: string;
     exitReason: string;
   };
   statuses: Record<CandidateStatus, string>;
   actions: Record<CandidateAction, string>;
+  occurrenceTypes: Record<CandidateOccurrenceType, string>;
   replayStatuses: Record<CandidateReplayStatus, string>;
   riskDecisions: Record<CandidateRiskDecision, string>;
+  skipReasons: Record<CandidateReplaySkipReason, string>;
   exitReasons: Record<CandidateExitReason, string>;
 };
 
@@ -66,6 +73,7 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
     next: 'بعدی',
     selected: 'انتخاب‌شده',
     notSelected: 'انتخاب‌نشده',
+    notEvaluated: 'ارزیابی‌نشده',
     fields: {
       candidateId: 'Candidate ID',
       datasetId: 'Dataset ID',
@@ -83,6 +91,8 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       rankingScore: 'امتیاز رتبه‌بندی',
       replay: 'نتیجه Replay',
       risk: 'تصمیم ریسک',
+      occurrence: 'نوع رخداد',
+      skipReason: 'دلیل عبور',
       recordedAt: 'زمان ثبت',
       positionId: 'Position ID',
       exitReason: 'دلیل خروج',
@@ -99,6 +109,10 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       neutral: 'Neutral',
       no_trade: 'No trade',
     },
+    occurrenceTypes: {
+      attempted: 'بررسی‌شده',
+      skipped: 'عبور شده',
+    },
     replayStatuses: {
       opened: 'موقعیت باز شد',
       risk_rejected: 'رد ریسک',
@@ -108,9 +122,15 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       approved: 'تأیید',
       rejected: 'رد',
     },
+    skipReasons: {
+      position_opened: 'موقعیت کاندید قبلی باز شد',
+    },
     exitReasons: {
       invalidation: 'ابطال',
       target: 'هدف',
+      trend_reversal: 'بازگشت روند',
+      portfolio_risk: 'ریسک پرتفوی',
+      data_unreliable: 'داده نامطمئن',
       time_expiry: 'پایان زمان',
       end_of_data: 'پایان داده',
     },
@@ -130,6 +150,7 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
     next: 'Next',
     selected: 'Selected',
     notSelected: 'Not selected',
+    notEvaluated: 'Not evaluated',
     fields: {
       candidateId: 'Candidate ID',
       datasetId: 'Dataset ID',
@@ -147,6 +168,8 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       rankingScore: 'Ranking score',
       replay: 'Replay outcome',
       risk: 'Risk decision',
+      occurrence: 'Occurrence',
+      skipReason: 'Skip reason',
       recordedAt: 'Recorded at',
       positionId: 'Position ID',
       exitReason: 'Exit reason',
@@ -163,6 +186,10 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       neutral: 'Neutral',
       no_trade: 'No trade',
     },
+    occurrenceTypes: {
+      attempted: 'Attempted',
+      skipped: 'Skipped',
+    },
     replayStatuses: {
       opened: 'Position opened',
       risk_rejected: 'Risk rejected',
@@ -172,9 +199,15 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       approved: 'Approved',
       rejected: 'Rejected',
     },
+    skipReasons: {
+      position_opened: 'Earlier candidate position opened',
+    },
     exitReasons: {
       invalidation: 'Invalidation',
       target: 'Target',
+      trend_reversal: 'Trend reversal',
+      portfolio_risk: 'Portfolio risk',
+      data_unreliable: 'Data unreliable',
       time_expiry: 'Time expiry',
       end_of_data: 'End of data',
     },

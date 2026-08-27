@@ -11,6 +11,7 @@ from trd_bot.db import SqlAlchemyCandidateProjectionRepository
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.research.candidate_projection import (
     CandidateJournalOccurrence,
+    CandidateOccurrenceType,
     CandidateProjection,
 )
 from trd_bot.research.candidates import (
@@ -19,6 +20,7 @@ from trd_bot.research.candidates import (
     ResearchCandidate,
 )
 from trd_bot.research.dataset_replay import CandidateReplayStatus
+from trd_bot.research.dataset_replay_orchestration import CandidateReplaySkipReason
 from trd_bot.research.position_monitoring import CandidateExitReason
 from trd_bot.research.risk_policy import CandidateRiskDecision
 
@@ -35,7 +37,7 @@ PaginationQuery = Annotated[PaginationParams, Query()]
 
 
 class CandidateProjectionSummary(BaseModel):
-    """Lightweight latest view of one persisted replay-attempted candidate."""
+    """Lightweight latest view of one persisted candidate occurrence."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -54,8 +56,10 @@ class CandidateProjectionSummary(BaseModel):
     occurrence_count: int = Field(ge=1)
     latest_journal_id: str
     latest_recorded_at: datetime
-    latest_replay_status: CandidateReplayStatus
-    latest_risk_decision: CandidateRiskDecision
+    latest_occurrence_type: CandidateOccurrenceType
+    latest_replay_status: CandidateReplayStatus | None
+    latest_risk_decision: CandidateRiskDecision | None
+    latest_skip_reason: CandidateReplaySkipReason | None = None
     selected: bool
     position_id: str | None = None
     exit_reason: CandidateExitReason | None = None
@@ -80,8 +84,10 @@ class CandidateProjectionSummary(BaseModel):
             occurrence_count=len(projection.history),
             latest_journal_id=latest.journal_id,
             latest_recorded_at=latest.recorded_at,
+            latest_occurrence_type=latest.occurrence_type,
             latest_replay_status=latest.replay_status,
             latest_risk_decision=latest.risk_decision,
+            latest_skip_reason=latest.skip_reason,
             selected=latest.selected,
             position_id=latest.position_id,
             exit_reason=latest.exit_reason,
@@ -150,7 +156,7 @@ def list_candidate_lineage(
     projections: CandidateProjectionRepositoryDependency,
     pagination: PaginationQuery,
 ) -> Page[CandidateJournalOccurrence]:
-    """List persisted replay-attempt lineage for one candidate newest first."""
+    """List persisted candidate lineage occurrences newest first."""
 
     projection = _get_projection_or_404(candidate_id, projections)
     items = projection.history[pagination.offset : pagination.offset + pagination.limit]
