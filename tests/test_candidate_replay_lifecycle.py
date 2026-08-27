@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
+from trd_bot.paper.portfolio import SimulatedPortfolio
 from trd_bot.research import (
     CandidateBuilder,
     CandidateEntryZone,
@@ -18,6 +19,9 @@ from trd_bot.research import (
     CandidateTradePlan,
     DatasetBuilder,
 )
+from trd_bot.research.candidate_ranking import CandidateRankingEntry
+from trd_bot.research.candidates import ResearchCandidate
+from trd_bot.research.datasets import DatasetSnapshot
 from trd_bot.strategies import (
     SignalDirection,
     StrategyFeature,
@@ -60,7 +64,7 @@ def candle(
     )
 
 
-def lifecycle_dataset():
+def lifecycle_dataset() -> DatasetSnapshot:
     return DatasetBuilder().build(
         name="candidate lifecycle replay dataset",
         candles=(
@@ -108,7 +112,7 @@ def candidate(
     entry_high: str,
     invalidation: str,
     target: str,
-):
+) -> ResearchCandidate:
     signal_close = datetime(2026, 8, 26, 11, tzinfo=UTC)
     source_signal = StrategySignal(
         signal_id=build_signal_id(
@@ -160,7 +164,7 @@ def candidate(
     )
 
 
-def ranked_entries(*, dataset_id: str):
+def ranked_entries(*, dataset_id: str) -> tuple[CandidateRankingEntry, ...]:
     return (
         CandidateRanker()
         .rank(
@@ -190,7 +194,7 @@ def ranked_entries(*, dataset_id: str):
     )
 
 
-def simulated_portfolio(*, dataset_id: str):
+def simulated_portfolio(*, dataset_id: str) -> SimulatedPortfolio:
     return SimulatedPortfolioLedger().create(
         mode=SimulationMode.PAPER,
         dataset_id=dataset_id,

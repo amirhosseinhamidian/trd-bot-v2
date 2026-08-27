@@ -1,4 +1,6 @@
 import pytest
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from tests.test_candidate_journal import (
     build_closed_lifecycle,
@@ -17,7 +19,7 @@ from trd_bot.db.simulated_portfolio_repositories import (
 from trd_bot.research.candidate_journal import CandidateJournalBuilder
 
 
-def build_storage():
+def build_storage() -> tuple[Engine, sessionmaker[Session]]:
     engine = create_database_engine("sqlite+pysqlite:///:memory:")
     DatabaseBase.metadata.create_all(engine)
     factory = create_session_factory(engine)
@@ -37,11 +39,13 @@ def test_recorder_persists_final_portfolio_and_journal_atomically() -> None:
             journal_repository = SqlAlchemyCandidateJournalRepository(session)
 
             stored_portfolio = portfolio_repository.get(lifecycle.portfolio.portfolio_id)
+            assert stored_portfolio is not None
             assert stored_portfolio == lifecycle.portfolio
             assert stored_portfolio.positions == lifecycle.portfolio.positions
 
             assert journal_repository.get(journal.journal_id) == journal
             assert journal.position_id is not None
+            assert lifecycle.monitoring is not None
             assert (
                 portfolio_repository.get_position(journal.position_id)
                 == lifecycle.monitoring.closed_position

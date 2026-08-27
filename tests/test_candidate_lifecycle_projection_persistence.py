@@ -1,4 +1,6 @@
 import pytest
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from tests.test_candidate_journal import (
     build_closed_lifecycle,
@@ -20,7 +22,7 @@ from trd_bot.db.simulated_portfolio_repositories import (
 from trd_bot.research.candidate_projection import CandidateJournalProjectionReader
 
 
-def build_storage():
+def build_storage() -> tuple[Engine, sessionmaker[Session]]:
     engine = create_database_engine("sqlite+pysqlite:///:memory:")
     DatabaseBase.metadata.create_all(engine)
     factory = create_session_factory(engine)
@@ -92,7 +94,7 @@ def test_projection_failure_rolls_back_portfolio_and_journal(
         with factory() as session:
             recorder = SqlAlchemyCandidateLifecycleRecorder(session)
 
-            def fail_projection_save(*args, **kwargs):
+            def fail_projection_save(*args: object, **kwargs: object) -> None:
                 raise ValueError("projection write failed")
 
             monkeypatch.setattr(

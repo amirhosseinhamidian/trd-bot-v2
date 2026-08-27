@@ -1,4 +1,5 @@
-from sqlalchemy import select
+from sqlalchemy import Engine, select
+from sqlalchemy.orm import Session, sessionmaker
 
 from tests.test_candidate_journal import (
     build_closed_lifecycle,
@@ -14,7 +15,7 @@ from trd_bot.db import (
 from trd_bot.research.candidate_journal import CandidateJournalBuilder
 
 
-def build_repository():
+def build_repository() -> tuple[Engine, sessionmaker[Session]]:
     engine = create_database_engine("sqlite+pysqlite:///:memory:")
     DatabaseBase.metadata.create_all(engine)
     factory = create_session_factory(engine)

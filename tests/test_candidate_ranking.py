@@ -16,6 +16,7 @@ from trd_bot.research.candidates import (
     CandidateEntryZone,
     CandidateTarget,
     CandidateTradePlan,
+    ResearchCandidate,
 )
 from trd_bot.strategies import (
     SignalDirection,
@@ -93,7 +94,7 @@ def create_candidate(
     created_at: datetime = CREATED_AT,
     valid_until: datetime | None = None,
     action: CandidateAction | None = None,
-):
+) -> ResearchCandidate:
     return CandidateBuilder.from_signal(
         signal=create_signal(
             score=signal_score,

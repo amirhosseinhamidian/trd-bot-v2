@@ -16,6 +16,7 @@ def test_projection_builds_selected_and_unselected_candidate_views() -> None:
 
     assert len(projections) >= 2
 
+    assert closed.selected_candidate_id is not None
     selected = CandidateJournalProjectionReader.get(
         projections,
         closed.selected_candidate_id,

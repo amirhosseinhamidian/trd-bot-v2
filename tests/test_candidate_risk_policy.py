@@ -7,7 +7,8 @@ from pydantic import ValidationError
 from trd_bot.backtesting import PositionSide
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
-from trd_bot.research.candidate_ranking import CandidateRanker
+from trd_bot.paper.portfolio import SimulatedPortfolio
+from trd_bot.research.candidate_ranking import CandidateRanker, CandidateRankingEntry
 from trd_bot.research.candidates import (
     CandidateBuilder,
     CandidateEntryZone,
@@ -15,6 +16,8 @@ from trd_bot.research.candidates import (
     CandidateTradePlan,
 )
 from trd_bot.research.risk_policy import (
+    CandidateRiskAssessment,
+    CandidateRiskCheck,
     CandidateRiskCheckName,
     CandidateRiskDecision,
     CandidateRiskEvaluator,
@@ -96,7 +99,7 @@ def ranked_entry(
     confidence: Decimal = Decimal("0.80"),
     valid_until: datetime = VALID_UNTIL,
     first_target: Decimal = Decimal("112"),
-):
+) -> CandidateRankingEntry:
     candidate = CandidateBuilder.from_signal(
         signal=create_signal(),
         experiment_id=EXPERIMENT_ID,
@@ -122,7 +125,7 @@ def ranked_entry(
 def portfolio(
     *,
     dataset_id: str = "dataset-test",
-):
+) -> SimulatedPortfolio:
     return SimulatedPortfolioLedger().create(
         mode=SimulationMode.PAPER,
         dataset_id=dataset_id,
@@ -131,7 +134,10 @@ def portfolio(
     )
 
 
-def check_by_name(assessment, name: CandidateRiskCheckName):
+def check_by_name(
+    assessment: CandidateRiskAssessment,
+    name: CandidateRiskCheckName,
+) -> CandidateRiskCheck:
     return next(check for check in assessment.checks if check.name is name)
 
 

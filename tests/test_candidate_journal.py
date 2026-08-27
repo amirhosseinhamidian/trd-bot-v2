@@ -15,13 +15,14 @@ from trd_bot.research.candidate_journal import (
 )
 from trd_bot.research.candidate_ranking import CandidateRanker
 from trd_bot.research.dataset_replay_lifecycle import (
+    CandidateReplayLifecycleResult,
     CandidateReplayLifecycleRunner,
     CandidateReplayLifecycleStatus,
 )
 from trd_bot.research.position_monitoring import CandidateExitReason
 
 
-def build_closed_lifecycle():
+def build_closed_lifecycle() -> CandidateReplayLifecycleResult:
     dataset = lifecycle_dataset()
 
     return CandidateReplayLifecycleRunner().run(
@@ -36,7 +37,7 @@ def build_closed_lifecycle():
     )
 
 
-def build_no_position_lifecycle():
+def build_no_position_lifecycle() -> CandidateReplayLifecycleResult:
     dataset = lifecycle_dataset()
     ranked = (
         CandidateRanker()

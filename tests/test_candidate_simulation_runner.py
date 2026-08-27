@@ -6,6 +6,7 @@ import pytest
 from trd_bot.backtesting import PositionSide
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
+from trd_bot.paper.portfolio import SimulatedPortfolio
 from trd_bot.research.candidate_ranking import CandidateRanker
 from trd_bot.research.candidate_simulation_runner import CandidateSimulationRunner
 from trd_bot.research.candidates import (
@@ -14,8 +15,10 @@ from trd_bot.research.candidates import (
     CandidateStatus,
     CandidateTarget,
     CandidateTradePlan,
+    ResearchCandidate,
 )
 from trd_bot.research.risk_policy import (
+    CandidateRiskAssessment,
     CandidateRiskDecision,
     CandidateRiskEvaluator,
     CandidateRiskPolicy,
@@ -76,7 +79,7 @@ def create_signal() -> StrategySignal:
 def candidate(
     *,
     valid_until: datetime = VALID_UNTIL,
-):
+) -> ResearchCandidate:
     return CandidateBuilder.from_signal(
         signal=create_signal(),
         experiment_id=EXPERIMENT_ID,
@@ -100,7 +103,7 @@ def candidate(
     )
 
 
-def portfolio():
+def portfolio() -> SimulatedPortfolio:
     return SimulatedPortfolioLedger().create(
         mode=SimulationMode.PAPER,
         dataset_id="dataset-test",
@@ -110,11 +113,11 @@ def portfolio():
 
 
 def assessment(
-    simulated_portfolio,
+    simulated_portfolio: SimulatedPortfolio,
     *,
     risk_policy: CandidateRiskPolicy | None = None,
     valid_until: datetime = VALID_UNTIL,
-):
+) -> CandidateRiskAssessment:
     ranking_entry = (
         CandidateRanker()
         .rank(

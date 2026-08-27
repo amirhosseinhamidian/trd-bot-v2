@@ -4,14 +4,17 @@ from decimal import Decimal
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
 from trd_bot.research.candidate_ranking import CandidateRanker
-from trd_bot.research.candidate_simulation_runner import CandidateSimulationRunner
+from trd_bot.research.candidate_simulation_runner import (
+    CandidateSimulationResult,
+    CandidateSimulationRunner,
+)
 from trd_bot.research.candidates import (
     CandidateBuilder,
     CandidateEntryZone,
     CandidateTarget,
     CandidateTradePlan,
 )
-from trd_bot.research.datasets import DatasetBuilder
+from trd_bot.research.datasets import DatasetBuilder, DatasetSnapshot
 from trd_bot.research.position_monitoring import (
     CandidateExitDirective,
     CandidateExitReason,
@@ -65,7 +68,7 @@ def candle(
 def dataset(
     *,
     future_candles: tuple[OHLCVCandle, ...],
-):
+) -> DatasetSnapshot:
     candles = (
         candle(
             10,
@@ -97,10 +100,10 @@ def dataset(
 
 def simulation(
     *,
-    monitoring_dataset,
+    monitoring_dataset: DatasetSnapshot,
     valid_until: datetime,
     action: SignalDirection = SignalDirection.LONG,
-):
+) -> CandidateSimulationResult:
     score = Decimal("0.80")
     entry_zone = CandidateEntryZone(
         lower_price=Decimal("100"),

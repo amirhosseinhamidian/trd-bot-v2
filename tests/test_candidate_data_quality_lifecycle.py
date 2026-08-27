@@ -7,15 +7,18 @@ from tests.test_candidate_replay_lifecycle import (
     candle,
     simulated_portfolio,
 )
+from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import CandidateRanker, DatasetBuilder
+from trd_bot.research.candidate_ranking import CandidateRankingEntry
 from trd_bot.research.dataset_replay_lifecycle import CandidateReplayLifecycleRunner
+from trd_bot.research.datasets import DatasetSnapshot
 from trd_bot.research.position_monitoring import (
     CandidateExitDirective,
     CandidateExitReason,
 )
 
 
-def lifecycle_dataset_with_monitoring_horizon():
+def lifecycle_dataset_with_monitoring_horizon() -> DatasetSnapshot:
     return DatasetBuilder().build(
         name="candidate lifecycle quality observation dataset",
         candles=(
@@ -31,7 +34,10 @@ def lifecycle_dataset_with_monitoring_horizon():
     )
 
 
-def ranked_entries_without_price_exit(*, dataset_id: str):
+def ranked_entries_without_price_exit(
+    *,
+    dataset_id: str,
+) -> tuple[CandidateRankingEntry, ...]:
     return (
         CandidateRanker()
         .rank(
@@ -61,7 +67,10 @@ def ranked_entries_without_price_exit(*, dataset_id: str):
     )
 
 
-def observation_candles(dataset, *hours: int):
+def observation_candles(
+    dataset: DatasetSnapshot,
+    *hours: int,
+) -> tuple[OHLCVCandle, ...]:
     requested = set(hours)
     return tuple(candle for candle in dataset.candles if candle.open_time.hour in requested)
 

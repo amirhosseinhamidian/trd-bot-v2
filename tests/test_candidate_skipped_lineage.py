@@ -11,7 +11,11 @@ from trd_bot.research.candidate_journal import (
     CandidateJournalBuilder,
     build_candidate_journal_id,
 )
-from trd_bot.research.dataset_replay_lifecycle import CandidateReplayLifecycleRunner
+from trd_bot.research.candidate_ranking import CandidateRankingEntry
+from trd_bot.research.dataset_replay_lifecycle import (
+    CandidateReplayLifecycleResult,
+    CandidateReplayLifecycleRunner,
+)
 from trd_bot.research.dataset_replay_orchestration import (
     CandidateDatasetReplayOrchestrator,
     CandidateReplayBatchResult,
@@ -19,7 +23,10 @@ from trd_bot.research.dataset_replay_orchestration import (
 )
 
 
-def build_skipping_lifecycle():
+def build_skipping_lifecycle() -> tuple[
+    CandidateReplayLifecycleResult,
+    tuple[CandidateRankingEntry, ...],
+]:
     dataset = replay_dataset()
     entries = ranked_entries(dataset_id=dataset.dataset_id)
 

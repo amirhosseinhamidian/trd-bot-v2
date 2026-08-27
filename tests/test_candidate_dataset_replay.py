@@ -5,7 +5,8 @@ import pytest
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
-from trd_bot.research.candidate_ranking import CandidateRanker
+from trd_bot.paper.portfolio import SimulatedPortfolio
+from trd_bot.research.candidate_ranking import CandidateRanker, CandidateRankingEntry
 from trd_bot.research.candidates import (
     CandidateBuilder,
     CandidateEntryZone,
@@ -16,7 +17,7 @@ from trd_bot.research.dataset_replay import (
     CandidateDatasetReplayRunner,
     CandidateReplayStatus,
 )
-from trd_bot.research.datasets import DatasetBuilder
+from trd_bot.research.datasets import DatasetBuilder, DatasetSnapshot
 from trd_bot.research.risk_policy import (
     CandidateRiskEvaluator,
     CandidateRiskPolicy,
@@ -66,7 +67,7 @@ def candle(
 def dataset(
     *,
     replay_candles: tuple[OHLCVCandle, ...],
-):
+) -> DatasetSnapshot:
     all_candles = (
         candle(
             10,
@@ -130,9 +131,9 @@ def signal(
 
 def long_entry(
     *,
-    replay_dataset,
+    replay_dataset: DatasetSnapshot,
     valid_until: datetime = VALID_UNTIL,
-):
+) -> CandidateRankingEntry:
     candidate = CandidateBuilder.from_signal(
         signal=signal(
             dataset_id=replay_dataset.dataset_id,
@@ -171,8 +172,8 @@ def long_entry(
 
 def short_entry(
     *,
-    replay_dataset,
-):
+    replay_dataset: DatasetSnapshot,
+) -> CandidateRankingEntry:
     candidate = CandidateBuilder.from_signal(
         signal=signal(
             dataset_id=replay_dataset.dataset_id,
@@ -209,7 +210,7 @@ def short_entry(
     )
 
 
-def portfolio(*, dataset_id: str):
+def portfolio(*, dataset_id: str) -> SimulatedPortfolio:
     return SimulatedPortfolioLedger().create(
         mode=SimulationMode.PAPER,
         dataset_id=dataset_id,
