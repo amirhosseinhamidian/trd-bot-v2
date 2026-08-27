@@ -1,9 +1,20 @@
 from trd_bot.db.base import DatabaseBase
+from trd_bot.db.candidate_journal_repositories import (
+    SqlAlchemyCandidateJournalRepository,
+)
+from trd_bot.db.candidate_projection_rebuild import (
+    SqlAlchemyCandidateProjectionRebuilder,
+)
+from trd_bot.db.candidate_projection_repositories import (
+    SqlAlchemyCandidateProjectionRepository,
+)
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
+    CandidateJournalRow,
+    CandidateProjectionRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
     MonitoringRuntimeStateRow,
@@ -43,6 +54,8 @@ from trd_bot.db.walk_forward_execution_repositories import (
 
 __all__ = [
     "ArchitectureRecommendationRow",
+    "CandidateJournalRow",
+    "CandidateProjectionRow",
     "DatabaseBase",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
@@ -52,6 +65,9 @@ __all__ = [
     "SimulatedPortfolioRow",
     "SimulatedPositionRow",
     "SqlAlchemyArchitectureRecommendationRepository",
+    "SqlAlchemyCandidateJournalRepository",
+    "SqlAlchemyCandidateProjectionRebuilder",
+    "SqlAlchemyCandidateProjectionRepository",
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",

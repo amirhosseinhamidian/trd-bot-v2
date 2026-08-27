@@ -11,12 +11,51 @@ from trd_bot.research.activity import (
     ResearchActivityItem,
     ResearchActivityType,
 )
+from trd_bot.research.candidate_ranking import (
+    CandidateRanker,
+    CandidateRankingComponent,
+    CandidateRankingComponentName,
+    CandidateRankingEntry,
+    CandidateRankingPolicy,
+    CandidateRankingResult,
+)
+from trd_bot.research.candidate_simulation_runner import (
+    CandidateSimulationResult,
+    CandidateSimulationRunner,
+)
+from trd_bot.research.candidates import (
+    CandidateAction,
+    CandidateBuilder,
+    CandidateEntryZone,
+    CandidateEvidence,
+    CandidateStatus,
+    CandidateTarget,
+    CandidateTradePlan,
+    ResearchCandidate,
+    build_candidate_id,
+    normalize_candidate_timestamp,
+)
 from trd_bot.research.comparisons import (
     ExperimentComparator,
     ExperimentComparisonEntry,
     ExperimentComparisonMetric,
     ExperimentComparisonRequest,
     ExperimentComparisonResult,
+)
+from trd_bot.research.dataset_replay import (
+    CandidateDatasetReplayRunner,
+    CandidateReplayFill,
+    CandidateReplayResult,
+    CandidateReplayStatus,
+)
+from trd_bot.research.dataset_replay_lifecycle import (
+    CandidateReplayLifecycleResult,
+    CandidateReplayLifecycleRunner,
+    CandidateReplayLifecycleStatus,
+)
+from trd_bot.research.dataset_replay_orchestration import (
+    CandidateDatasetReplayOrchestrator,
+    CandidateReplayBatchResult,
 )
 from trd_bot.research.datasets import (
     DatasetBuilder,
@@ -82,10 +121,24 @@ from trd_bot.research.policy_presets import (
     PresetExperimentResearchReport,
     default_acceptance_policy_presets,
 )
+from trd_bot.research.position_monitoring import (
+    CandidateExitReason,
+    CandidateExitTrigger,
+    CandidatePositionMonitor,
+    CandidatePositionMonitoringResult,
+)
 from trd_bot.research.reporting import (
     DirectionMetrics,
     StrategyEvaluationSummary,
     StrategyReportBuilder,
+)
+from trd_bot.research.risk_policy import (
+    CandidateRiskAssessment,
+    CandidateRiskCheck,
+    CandidateRiskCheckName,
+    CandidateRiskDecision,
+    CandidateRiskEvaluator,
+    CandidateRiskPolicy,
 )
 from trd_bot.research.signal_catalog import (
     ExperimentSignalCatalog,
@@ -136,6 +189,40 @@ __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
     "AcceptancePolicyPreset",
     "AcceptancePolicyPresetCatalog",
+    "CandidateAction",
+    "CandidateBuilder",
+    "CandidateDatasetReplayOrchestrator",
+    "CandidateDatasetReplayRunner",
+    "CandidateEntryZone",
+    "CandidateEvidence",
+    "CandidateExitReason",
+    "CandidateExitTrigger",
+    "CandidatePositionMonitor",
+    "CandidatePositionMonitoringResult",
+    "CandidateRanker",
+    "CandidateRankingComponent",
+    "CandidateRankingComponentName",
+    "CandidateRankingEntry",
+    "CandidateRankingPolicy",
+    "CandidateRankingResult",
+    "CandidateReplayBatchResult",
+    "CandidateReplayFill",
+    "CandidateReplayLifecycleResult",
+    "CandidateReplayLifecycleRunner",
+    "CandidateReplayLifecycleStatus",
+    "CandidateReplayResult",
+    "CandidateReplayStatus",
+    "CandidateRiskAssessment",
+    "CandidateRiskCheck",
+    "CandidateRiskCheckName",
+    "CandidateRiskDecision",
+    "CandidateRiskEvaluator",
+    "CandidateRiskPolicy",
+    "CandidateSimulationResult",
+    "CandidateSimulationRunner",
+    "CandidateStatus",
+    "CandidateTarget",
+    "CandidateTradePlan",
     "DatasetBuilder",
     "DatasetCatalogQuery",
     "DatasetRepository",
@@ -189,6 +276,7 @@ __all__ = [
     "ResearchActivityBuilder",
     "ResearchActivityItem",
     "ResearchActivityType",
+    "ResearchCandidate",
     "ResearchExperiment",
     "ResearchPipeline",
     "ResearchPipelineResult",
@@ -224,10 +312,12 @@ __all__ = [
     "WalkForwardRunSummary",
     "WalkForwardStabilityAnalyzer",
     "WalkForwardStabilityReport",
+    "build_candidate_id",
     "build_experiment_id",
     "build_research_backtest_run_id",
     "build_walk_forward_execution_id",
     "build_walk_forward_plan_id",
     "build_walk_forward_split_id",
     "default_acceptance_policy_presets",
+    "normalize_candidate_timestamp",
 ]

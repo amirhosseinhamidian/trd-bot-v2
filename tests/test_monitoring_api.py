@@ -352,7 +352,12 @@ def test_api_resolves_recommendation_idempotently(
     assert second_response.json()["resolved_at"] == first_payload["resolved_at"]
 
 
-def test_api_returns_404_for_unknown_recommendation_action() -> None:
+def test_api_returns_404_for_unknown_recommendation_action(
+    repositories: tuple[
+        InMemorySystemMetricRepository,
+        InMemoryArchitectureRecommendationRepository,
+    ],
+) -> None:
     response = client.post(
         "/api/v1/monitoring/recommendations/recommendation-0000000000000000/acknowledge"
     )

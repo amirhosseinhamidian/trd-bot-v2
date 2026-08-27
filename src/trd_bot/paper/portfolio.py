@@ -6,7 +6,7 @@ from typing import Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from trd_bot.backtesting import PositionSide
+from trd_bot.backtesting.models import PositionSide
 from trd_bot.backtesting.performance import quantize_money
 from trd_bot.domain.market_data import TradingPair
 

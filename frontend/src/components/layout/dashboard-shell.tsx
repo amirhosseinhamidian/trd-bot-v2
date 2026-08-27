@@ -66,6 +66,12 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       enabled: true,
     },
     {
+      key: 'candidates',
+      label: copy.navigation.candidates,
+      href: `/${locale}/candidates`,
+      enabled: true,
+    },
+    {
       key: 'signals',
       label: copy.navigation.signals,
       href: `/${locale}/signals`,

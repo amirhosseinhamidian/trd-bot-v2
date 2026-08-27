@@ -66,6 +66,8 @@ def test_session_factory_executes_sqlite_query() -> None:
 def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
         "architecture_recommendations",
+        "candidate_journals",
+        "candidate_projections",
         "dataset_snapshots",
         "experiment_executions",
         "monitoring_runtime_state",
@@ -147,6 +149,8 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert {
             "alembic_version",
             "architecture_recommendations",
+            "candidate_journals",
+            "candidate_projections",
             "dataset_snapshots",
             "monitoring_runtime_state",
             "portfolio_timeline_events",
@@ -170,6 +174,8 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "research_experiments" not in downgraded_tables
         assert "walk_forward_runs" not in downgraded_tables
         assert "architecture_recommendations" not in downgraded_tables
+        assert "candidate_journals" not in downgraded_tables
+        assert "candidate_projections" not in downgraded_tables
         assert "system_metric_samples" not in downgraded_tables
         assert "monitoring_runtime_state" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables
