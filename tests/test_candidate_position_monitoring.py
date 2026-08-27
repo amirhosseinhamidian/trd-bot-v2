@@ -13,6 +13,7 @@ from trd_bot.research.candidates import (
 )
 from trd_bot.research.datasets import DatasetBuilder
 from trd_bot.research.position_monitoring import (
+    CandidateExitDirective,
     CandidateExitReason,
     CandidatePositionMonitor,
 )
@@ -384,3 +385,181 @@ def test_short_monitor_uses_short_invalidation_and_target_direction() -> None:
     assert result.trigger.reason is CandidateExitReason.TARGET
     assert result.trigger.price == Decimal("92")
     assert result.closed_position.exit_price == Decimal("92")
+
+
+def test_trend_reversal_directive_closes_at_closed_candle_price() -> None:
+    monitoring_dataset = dataset(
+        future_candles=(
+            candle(
+                13,
+                high_price="106",
+                low_price="99",
+                close_price="104",
+            ),
+            candle(
+                14,
+                high_price="106",
+                low_price="100",
+                close_price="105",
+            ),
+        )
+    )
+
+    result = CandidatePositionMonitor().run(
+        simulation=simulation(
+            monitoring_dataset=monitoring_dataset,
+            valid_until=datetime(2026, 8, 26, 17, tzinfo=UTC),
+        ),
+        dataset=monitoring_dataset,
+        exit_directives=(
+            CandidateExitDirective(
+                reason=CandidateExitReason.TREND_REVERSAL,
+                occurred_at=datetime(2026, 8, 26, 14, tzinfo=UTC),
+            ),
+        ),
+    )
+
+    assert result.trigger.reason is CandidateExitReason.TREND_REVERSAL
+    assert result.trigger.price == Decimal("104")
+    assert result.marked_candles == 0
+
+
+def test_portfolio_risk_directive_closes_at_closed_candle_price() -> None:
+    monitoring_dataset = dataset(
+        future_candles=(
+            candle(
+                13,
+                high_price="106",
+                low_price="99",
+                close_price="104",
+            ),
+            candle(
+                14,
+                high_price="106",
+                low_price="100",
+                close_price="105",
+            ),
+        )
+    )
+
+    result = CandidatePositionMonitor().run(
+        simulation=simulation(
+            monitoring_dataset=monitoring_dataset,
+            valid_until=datetime(2026, 8, 26, 17, tzinfo=UTC),
+        ),
+        dataset=monitoring_dataset,
+        exit_directives=(
+            CandidateExitDirective(
+                reason=CandidateExitReason.PORTFOLIO_RISK,
+                occurred_at=datetime(2026, 8, 26, 14, tzinfo=UTC),
+            ),
+        ),
+    )
+
+    assert result.trigger.reason is CandidateExitReason.PORTFOLIO_RISK
+    assert result.trigger.price == Decimal("104")
+
+
+def test_data_unreliable_directive_uses_last_trusted_mark_and_wins_first() -> None:
+    monitoring_dataset = dataset(
+        future_candles=(
+            candle(
+                13,
+                high_price="109",
+                low_price="96",
+                close_price="104",
+            ),
+            candle(
+                14,
+                high_price="106",
+                low_price="100",
+                close_price="105",
+            ),
+        )
+    )
+
+    result = CandidatePositionMonitor().run(
+        simulation=simulation(
+            monitoring_dataset=monitoring_dataset,
+            valid_until=datetime(2026, 8, 26, 17, tzinfo=UTC),
+        ),
+        dataset=monitoring_dataset,
+        exit_directives=(
+            CandidateExitDirective(
+                reason=CandidateExitReason.DATA_UNRELIABLE,
+                occurred_at=datetime(2026, 8, 26, 14, tzinfo=UTC),
+            ),
+        ),
+    )
+
+    assert result.trigger.reason is CandidateExitReason.DATA_UNRELIABLE
+    assert result.trigger.price == Decimal("101")
+    assert result.marked_candles == 0
+
+
+def test_price_invalidation_wins_over_trend_reversal_on_same_candle() -> None:
+    monitoring_dataset = dataset(
+        future_candles=(
+            candle(
+                13,
+                high_price="109",
+                low_price="96",
+                close_price="104",
+            ),
+            candle(
+                14,
+                high_price="106",
+                low_price="100",
+                close_price="105",
+            ),
+        )
+    )
+
+    result = CandidatePositionMonitor().run(
+        simulation=simulation(
+            monitoring_dataset=monitoring_dataset,
+            valid_until=datetime(2026, 8, 26, 17, tzinfo=UTC),
+        ),
+        dataset=monitoring_dataset,
+        exit_directives=(
+            CandidateExitDirective(
+                reason=CandidateExitReason.TREND_REVERSAL,
+                occurred_at=datetime(2026, 8, 26, 14, tzinfo=UTC),
+            ),
+        ),
+    )
+
+    assert result.trigger.reason is CandidateExitReason.INVALIDATION
+    assert result.trigger.price == Decimal("97")
+
+
+def test_monitor_rejects_directive_without_matching_closed_candle() -> None:
+    monitoring_dataset = dataset(
+        future_candles=(
+            candle(
+                13,
+                high_price="106",
+                low_price="99",
+                close_price="104",
+            ),
+        )
+    )
+
+    try:
+        CandidatePositionMonitor().run(
+            simulation=simulation(
+                monitoring_dataset=monitoring_dataset,
+                valid_until=datetime(2026, 8, 26, 17, tzinfo=UTC),
+            ),
+            dataset=monitoring_dataset,
+            exit_directives=(
+                CandidateExitDirective(
+                    reason=CandidateExitReason.TREND_REVERSAL,
+                    occurred_at=datetime(2026, 8, 26, 16, tzinfo=UTC),
+                ),
+            ),
+        )
+    except ValueError as error:
+        assert str(error) == ("exit directives must match future closed candle times")
+    else:
+        raise AssertionError("unmatched exit directive must fail")

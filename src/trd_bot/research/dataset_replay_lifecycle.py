@@ -5,19 +5,32 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.paper.portfolio import SimulatedPortfolio
 from trd_bot.research.candidate_ranking import CandidateRankingEntry
 from trd_bot.research.candidates import normalize_candidate_timestamp
+from trd_bot.research.data_quality_exit import (
+    CandidateDataQualityExitDirectiveProducer,
+)
 from trd_bot.research.dataset_replay import CandidateReplayStatus
 from trd_bot.research.dataset_replay_orchestration import (
     CandidateDatasetReplayOrchestrator,
     CandidateReplayBatchResult,
 )
 from trd_bot.research.datasets import DatasetSnapshot
+from trd_bot.research.portfolio_risk_exit import (
+    CandidatePortfolioRiskExitDirectiveProducer,
+)
 from trd_bot.research.position_monitoring import (
+    CandidateExitDirective,
+    CandidateExitReason,
     CandidatePositionMonitor,
     CandidatePositionMonitoringResult,
 )
+from trd_bot.research.trend_reversal_exit import (
+    CandidateTrendReversalExitDirectiveProducer,
+)
+from trd_bot.strategies.signals import StrategySignal
 
 
 class CandidateReplayLifecycleStatus(StrEnum):
@@ -97,9 +110,21 @@ class CandidateReplayLifecycleRunner:
         *,
         replay_orchestrator: CandidateDatasetReplayOrchestrator | None = None,
         position_monitor: CandidatePositionMonitor | None = None,
+        data_quality_exit_producer: CandidateDataQualityExitDirectiveProducer | None = None,
+        trend_reversal_exit_producer: CandidateTrendReversalExitDirectiveProducer | None = None,
+        portfolio_risk_exit_producer: CandidatePortfolioRiskExitDirectiveProducer | None = None,
     ) -> None:
         self._replay_orchestrator = replay_orchestrator or CandidateDatasetReplayOrchestrator()
         self._position_monitor = position_monitor or CandidatePositionMonitor()
+        self._data_quality_exit_producer = (
+            data_quality_exit_producer or CandidateDataQualityExitDirectiveProducer()
+        )
+        self._trend_reversal_exit_producer = (
+            trend_reversal_exit_producer or CandidateTrendReversalExitDirectiveProducer()
+        )
+        self._portfolio_risk_exit_producer = (
+            portfolio_risk_exit_producer or CandidatePortfolioRiskExitDirectiveProducer()
+        )
 
     def run(
         self,
@@ -108,6 +133,9 @@ class CandidateReplayLifecycleRunner:
         portfolio: SimulatedPortfolio,
         dataset: DatasetSnapshot,
         evaluated_at: datetime,
+        exit_directives: Sequence[CandidateExitDirective] = (),
+        monitoring_observations: Sequence[OHLCVCandle] | None = None,
+        historical_signals: Sequence[StrategySignal] = (),
     ) -> CandidateReplayLifecycleResult:
         normalized_evaluated_at = normalize_candidate_timestamp(evaluated_at)
 
@@ -139,9 +167,39 @@ class CandidateReplayLifecycleRunner:
         if simulation is None:
             raise ValueError("opened replay must contain simulation details")
 
+        monitoring_candles = tuple(
+            candle for candle in dataset.candles if candle.open_time >= simulation.opened_at
+        )
+        generated_exit_directives: tuple[CandidateExitDirective, ...] = ()
+
+        if monitoring_observations is not None:
+            self._validate_monitoring_observations(
+                observations=monitoring_observations,
+                dataset=dataset,
+            )
+            generated_exit_directives += self._data_quality_exit_producer.produce(
+                observed_candles=monitoring_observations,
+                monitoring_candles=monitoring_candles,
+            )
+
+        generated_exit_directives += self._trend_reversal_exit_producer.produce(
+            candidate=simulation.selected_candidate,
+            opened_at=simulation.opened_at,
+            signals=historical_signals,
+            monitoring_candles=monitoring_candles,
+        )
+        generated_exit_directives += self._portfolio_risk_exit_producer.produce(
+            simulation=simulation,
+            monitoring_candles=monitoring_candles,
+        )
+
         monitoring = self._position_monitor.run(
             simulation=simulation,
             dataset=dataset,
+            exit_directives=self._merge_exit_directives(
+                explicit=exit_directives,
+                generated=generated_exit_directives,
+            ),
         )
 
         return CandidateReplayLifecycleResult(
@@ -152,3 +210,79 @@ class CandidateReplayLifecycleRunner:
             monitoring=monitoring,
             portfolio=monitoring.portfolio,
         )
+
+    @staticmethod
+    def _validate_monitoring_observations(
+        *,
+        observations: Sequence[OHLCVCandle],
+        dataset: DatasetSnapshot,
+    ) -> None:
+        mismatched = any(
+            candle.source != dataset.source
+            or candle.pair != dataset.pair
+            or candle.timeframe is not dataset.timeframe
+            for candle in observations
+        )
+        if mismatched:
+            raise ValueError("monitoring observations must match lifecycle dataset series")
+
+    @staticmethod
+    def _merge_exit_directives(
+        *,
+        explicit: Sequence[CandidateExitDirective],
+        generated: Sequence[CandidateExitDirective],
+    ) -> tuple[CandidateExitDirective, ...]:
+        merged: dict[datetime, CandidateExitDirective] = {}
+
+        for directive in explicit:
+            if directive.occurred_at in merged:
+                raise ValueError("exit directive times must be unique")
+            merged[directive.occurred_at] = directive
+
+        for directive in generated:
+            existing = merged.get(directive.occurred_at)
+            if existing is None:
+                merged[directive.occurred_at] = directive
+                continue
+
+            if existing.reason is directive.reason:
+                continue
+
+            existing_priority = CandidateReplayLifecycleRunner._directive_priority(existing.reason)
+            generated_priority = CandidateReplayLifecycleRunner._directive_priority(
+                directive.reason
+            )
+
+            if generated_priority > existing_priority:
+                merged[directive.occurred_at] = directive
+                continue
+
+            if generated_priority < existing_priority:
+                continue
+
+            raise ValueError("exit directives with equal priority conflict")
+
+        return tuple(
+            sorted(
+                merged.values(),
+                key=lambda directive: (
+                    directive.occurred_at,
+                    directive.reason.value,
+                ),
+            )
+        )
+
+    @staticmethod
+    def _directive_priority(
+        reason: CandidateExitReason,
+    ) -> int:
+        if reason is CandidateExitReason.DATA_UNRELIABLE:
+            return 2
+
+        if reason in (
+            CandidateExitReason.TREND_REVERSAL,
+            CandidateExitReason.PORTFOLIO_RISK,
+        ):
+            return 1
+
+        raise ValueError("unsupported generated exit directive reason")

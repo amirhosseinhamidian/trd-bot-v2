@@ -620,7 +620,8 @@ class CandidateJournalRow(DatabaseBase):
         ),
         CheckConstraint(
             "exit_reason IS NULL OR exit_reason IN "
-            "('invalidation', 'target', 'time_expiry', 'end_of_data')",
+            "('invalidation', 'target', 'trend_reversal', 'portfolio_risk', "
+            "'data_unreliable', 'time_expiry', 'end_of_data')",
             name="exit_reason_supported",
         ),
         CheckConstraint(
@@ -735,7 +736,8 @@ class CandidateProjectionRow(DatabaseBase):
         ),
         CheckConstraint(
             "exit_reason IS NULL OR exit_reason IN "
-            "('invalidation', 'target', 'time_expiry', 'end_of_data')",
+            "('invalidation', 'target', 'trend_reversal', 'portfolio_risk', "
+            "'data_unreliable', 'time_expiry', 'end_of_data')",
             name="exit_reason_supported",
         ),
         CheckConstraint(

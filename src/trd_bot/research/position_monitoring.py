@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -25,8 +26,44 @@ class CandidateExitReason(StrEnum):
 
     INVALIDATION = "invalidation"
     TARGET = "target"
+    TREND_REVERSAL = "trend_reversal"
+    PORTFOLIO_RISK = "portfolio_risk"
+    DATA_UNRELIABLE = "data_unreliable"
     TIME_EXPIRY = "time_expiry"
     END_OF_DATA = "end_of_data"
+
+
+class CandidateExitDirective(BaseModel):
+    """One deterministic non-price exit instruction for offline monitoring."""
+
+    model_config = ConfigDict(
+        frozen=True,
+        extra="forbid",
+    )
+
+    reason: CandidateExitReason
+    occurred_at: datetime
+
+    @field_validator("occurred_at")
+    @classmethod
+    def occurred_at_must_be_timezone_aware(
+        cls,
+        value: datetime,
+    ) -> datetime:
+        return normalize_candidate_timestamp(value)
+
+    @model_validator(mode="after")
+    def validate_directive(self) -> Self:
+        if self.reason not in (
+            CandidateExitReason.TREND_REVERSAL,
+            CandidateExitReason.PORTFOLIO_RISK,
+            CandidateExitReason.DATA_UNRELIABLE,
+        ):
+            raise ValueError(
+                "exit directive reason must be trend reversal, portfolio risk, or data unreliable"
+            )
+
+        return self
 
 
 class CandidateExitTrigger(BaseModel):
@@ -157,6 +194,7 @@ class CandidatePositionMonitor:
         *,
         simulation: CandidateSimulationResult,
         dataset: DatasetSnapshot,
+        exit_directives: Sequence[CandidateExitDirective] = (),
     ) -> CandidatePositionMonitoringResult:
         candidate = simulation.selected_candidate
         position = simulation.opened_position
@@ -173,13 +211,36 @@ class CandidatePositionMonitor:
         if not future_candles:
             raise ValueError("dataset has no closed candle after simulated entry")
 
+        directives_by_time = self._prepare_directives(
+            exit_directives=exit_directives,
+            future_candles=future_candles,
+        )
         current_portfolio = portfolio
 
         for index, candle in enumerate(future_candles):
-            trigger = self._price_trigger(
-                simulation=simulation,
-                candle=candle,
-            )
+            trigger: CandidateExitTrigger | None
+            directive = directives_by_time.get(candle.close_time)
+
+            if directive is not None and directive.reason is CandidateExitReason.DATA_UNRELIABLE:
+                trigger = self._directive_trigger(
+                    directive=directive,
+                    candle=candle,
+                    portfolio=current_portfolio,
+                    position_id=position.position_id,
+                )
+            else:
+                trigger = self._price_trigger(
+                    simulation=simulation,
+                    candle=candle,
+                )
+
+            if trigger is None and directive is not None:
+                trigger = self._directive_trigger(
+                    directive=directive,
+                    candle=candle,
+                    portfolio=current_portfolio,
+                    position_id=position.position_id,
+                )
 
             if trigger is None and candle.close_time >= candidate.valid_until:
                 trigger = CandidateExitTrigger(
@@ -262,6 +323,49 @@ class CandidatePositionMonitor:
             raise ValueError("simulation portfolio must be the entry snapshot")
 
     @staticmethod
+    def _prepare_directives(
+        *,
+        exit_directives: Sequence[CandidateExitDirective],
+        future_candles: tuple[OHLCVCandle, ...],
+    ) -> dict[datetime, CandidateExitDirective]:
+        directive_times = tuple(directive.occurred_at for directive in exit_directives)
+        if len(directive_times) != len(set(directive_times)):
+            raise ValueError("exit directive times must be unique")
+
+        candle_close_times = {candle.close_time for candle in future_candles}
+        unmatched = tuple(
+            occurred_at for occurred_at in directive_times if occurred_at not in candle_close_times
+        )
+        if unmatched:
+            raise ValueError("exit directives must match future closed candle times")
+
+        return {directive.occurred_at: directive for directive in exit_directives}
+
+    @staticmethod
+    def _directive_trigger(
+        *,
+        directive: CandidateExitDirective,
+        candle: OHLCVCandle,
+        portfolio: SimulatedPortfolio,
+        position_id: str,
+    ) -> CandidateExitTrigger:
+        if directive.reason is CandidateExitReason.DATA_UNRELIABLE:
+            price = CandidatePositionMonitor._open_position(
+                portfolio,
+                position_id,
+            ).current_price
+        else:
+            price = candle.close_price
+
+        return CandidateExitTrigger(
+            reason=directive.reason,
+            price=price,
+            occurred_at=candle.close_time,
+            candle_open_time=candle.open_time,
+            candle_close_time=candle.close_time,
+        )
+
+    @staticmethod
     def _price_trigger(
         *,
         simulation: CandidateSimulationResult,
@@ -307,6 +411,17 @@ class CandidatePositionMonitor:
             )
 
         return None
+
+    @staticmethod
+    def _open_position(
+        portfolio: SimulatedPortfolio,
+        position_id: str,
+    ) -> SimulatedPosition:
+        for position in portfolio.positions:
+            if position.position_id == position_id and position.status is PositionStatus.OPEN:
+                return position
+
+        raise ValueError("open simulated position was not found")
 
     @staticmethod
     def _closed_position(
