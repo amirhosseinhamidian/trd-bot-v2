@@ -2,6 +2,9 @@ from trd_bot.db.base import DatabaseBase
 from trd_bot.db.candidate_journal_repositories import (
     SqlAlchemyCandidateJournalRepository,
 )
+from trd_bot.db.candidate_projection_rebuild import (
+    SqlAlchemyCandidateProjectionRebuilder,
+)
 from trd_bot.db.candidate_projection_repositories import (
     SqlAlchemyCandidateProjectionRepository,
 )
@@ -63,6 +66,7 @@ __all__ = [
     "SimulatedPositionRow",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyCandidateJournalRepository",
+    "SqlAlchemyCandidateProjectionRebuilder",
     "SqlAlchemyCandidateProjectionRepository",
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
