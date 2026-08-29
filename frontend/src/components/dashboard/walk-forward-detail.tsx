@@ -88,7 +88,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
       <section>
         <Link
           href={`/${locale}/walk-forward`}
-          className="text-sm font-medium text-app-accent transition hover:text-app-accent"
+          className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
         >
           <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.back}
         </Link>
@@ -243,7 +243,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
         </CardHeader>
 
         <CardContent>
-          <Table>
+          <Table scrollLabel={copy.foldsTableScrollLabel} className="min-w-[48rem]">
             <TableHeader>
               <TableRow>
                 <TableHead>{copy.fields.foldNumber}</TableHead>

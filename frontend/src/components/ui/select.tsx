@@ -58,7 +58,7 @@ export function Select({
           aria-describedby={error || hint ? messageId : undefined}
           dir={dir}
           className={cn(
-            'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
+            'flex min-h-11 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
             'hover:bg-app-hover',
             'focus:border-app-accent-border focus:ring-2 focus:ring-app-accent-soft',
             'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
@@ -67,7 +67,9 @@ export function Select({
             className,
           )}
         >
-          <SelectPrimitive.Value placeholder={placeholder} />
+          <span data-slot="select-value" className="min-w-0 flex-1 truncate text-start">
+            <SelectPrimitive.Value placeholder={placeholder} />
+          </span>
 
           <SelectPrimitive.Icon asChild>
             <svg
@@ -150,7 +152,7 @@ export const SelectOption = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex min-h-10 cursor-pointer items-center rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
+      'relative flex min-h-10 min-w-0 cursor-pointer items-center overflow-hidden rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
       'data-[highlighted]:bg-app-accent-soft data-[highlighted]:text-app-accent',
       'data-[state=checked]:text-app-accent',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
@@ -158,7 +160,9 @@ export const SelectOption = forwardRef<
     )}
     {...props}
   >
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    <SelectPrimitive.ItemText className="block min-w-0 truncate">
+      {children}
+    </SelectPrimitive.ItemText>
 
     <SelectPrimitive.ItemIndicator className="absolute end-3 flex items-center text-app-accent">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">

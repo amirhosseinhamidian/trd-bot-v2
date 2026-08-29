@@ -162,6 +162,12 @@ describe('ExperimentRunForm', () => {
 
     const datasetSelect = await screen.findByLabelText('Dataset');
 
+    expect(
+      screen.getByRole('button', {
+        name: 'Run historical backtest',
+      }),
+    ).toHaveClass('w-full', 'sm:w-auto');
+
     await user.selectOptions(datasetSelect, dataset.dataset_id);
 
     await user.click(

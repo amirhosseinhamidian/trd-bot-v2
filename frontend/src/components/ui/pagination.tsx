@@ -35,14 +35,15 @@ export function Pagination({
       aria-busy={isLoading}
       className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-xs text-app-muted">
+      <p className="text-center text-xs text-app-muted sm:text-start">
         {pageLabel}: {currentPage} / {totalPages}
       </p>
 
-      <div className="flex gap-2">
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
         <Button
           variant="secondary"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={!hasPrevious || isLoading}
           onClick={() => onOffsetChange(Math.max(0, offset - limit))}
         >
@@ -52,6 +53,7 @@ export function Pagination({
         <Button
           variant="secondary"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={!hasNext || isLoading}
           onClick={() => onOffsetChange(offset + limit)}
         >

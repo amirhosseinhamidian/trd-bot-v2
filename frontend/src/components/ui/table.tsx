@@ -10,17 +10,25 @@ import { cn } from '@/lib/utils/cn';
 
 export type TableProps = TableHTMLAttributes<HTMLTableElement> & {
   containerClassName?: string;
+  scrollLabel?: string;
 };
 
 export const Table = forwardRef<HTMLTableElement, TableProps>(
-  ({ className, containerClassName, ...props }, ref) => (
+  ({ className, containerClassName, scrollLabel, ...props }, ref) => (
     <div
+      role={scrollLabel ? 'region' : undefined}
+      aria-label={scrollLabel}
+      tabIndex={scrollLabel ? 0 : undefined}
       className={cn(
-        'relative w-full overflow-x-auto rounded-xl border border-app-border bg-app-surface',
+        'relative w-full overflow-x-auto overscroll-x-contain rounded-xl border border-app-border bg-app-surface focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset',
         containerClassName,
       )}
     >
-      <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
+      <table
+        ref={ref}
+        className={cn('w-full min-w-full caption-bottom text-sm', className)}
+        {...props}
+      />
     </div>
   ),
 );
@@ -58,9 +66,10 @@ export const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTable
 TableRow.displayName = 'TableRow';
 
 export const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCellElement>>(
-  ({ className, ...props }, ref) => (
+  ({ className, scope = 'col', ...props }, ref) => (
     <th
       ref={ref}
+      scope={scope}
       className={cn(
         'h-11 px-4 text-start text-xs font-medium whitespace-nowrap text-app-muted',
         className,

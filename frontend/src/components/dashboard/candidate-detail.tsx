@@ -105,7 +105,7 @@ export default function CandidateDetail({
       <section>
         <Link
           href={`/${locale}/candidates`}
-          className="text-sm font-medium text-app-accent transition hover:opacity-80"
+          className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
         >
           {locale === 'fa' ? '→' : '←'} {copy.back}
         </Link>

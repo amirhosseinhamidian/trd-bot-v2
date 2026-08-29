@@ -36,6 +36,7 @@ export type DatasetDetailCopy = {
     errorTitle: string;
     errorDescription: string;
     retry: string;
+    scrollLabel: string;
   };
   pagination: {
     page: string;
@@ -86,6 +87,7 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       errorTitle: 'دریافت کندل‌ها ناموفق بود',
       errorDescription: 'اتصال Backend را بررسی کرده و دوباره تلاش کنید.',
       retry: 'تلاش مجدد',
+      scrollLabel: 'جدول کندل‌های تاریخی؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
     },
     pagination: {
       page: 'صفحه',
@@ -134,6 +136,7 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       errorTitle: 'Unable to retrieve candles',
       errorDescription: 'Check the backend connection and try again.',
       retry: 'Try again',
+      scrollLabel: 'Historical candles table; scroll horizontally to view all columns',
     },
     pagination: {
       page: 'Page',

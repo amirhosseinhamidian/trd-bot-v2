@@ -482,7 +482,7 @@ export default function WalkForwardRunForm({
     <Card>
       <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
@@ -506,7 +506,7 @@ export default function WalkForwardRunForm({
             <Button
               type="button"
               variant="secondary"
-              className="mt-4"
+              className="mt-4 w-full sm:w-auto"
               onClick={() => void loadDatasets()}
             >
               {copy.actions.retryDatasets}
@@ -519,7 +519,7 @@ export default function WalkForwardRunForm({
         ) : (
           <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="md:col-span-2">
+              <div className="min-w-0 md:col-span-2">
                 <Select
                   dir={direction}
                   label={copy.fields.dataset}
@@ -603,8 +603,8 @@ export default function WalkForwardRunForm({
                 aria-live="polite"
                 className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
                     <Spinner
                       label={
                         execution.status === 'queued' ? copy.states.queued : copy.states.running
@@ -621,7 +621,7 @@ export default function WalkForwardRunForm({
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
+                  <div className="mb-2 flex flex-col items-start gap-1 text-xs text-app-muted sm:flex-row sm:items-center sm:justify-between">
                     <span>{copy.states.progress}</span>
                     <span>
                       {copy.states.foldsCompleted}:{' '}
@@ -642,7 +642,10 @@ export default function WalkForwardRunForm({
                       style={{ width: execution.progress_percent + '%' }}
                     />
                   </div>
-                  <p dir="ltr" className="mt-3 truncate text-xs font-semibold text-app-muted">
+                  <p
+                    dir="ltr"
+                    className="mt-3 text-left text-xs font-semibold break-all text-app-muted"
+                  >
                     {execution.execution_id}
                   </p>
                 </div>
@@ -652,7 +655,7 @@ export default function WalkForwardRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-500"
+                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm break-words text-rose-500"
               >
                 {formError}
               </p>
@@ -661,12 +664,14 @@ export default function WalkForwardRunForm({
             {createdRunId ? (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
+                className="flex flex-col items-stretch gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <p className="text-sm text-emerald-500">{copy.states.success}</p>
+                <p className="min-w-0 text-sm break-words text-emerald-500">
+                  {copy.states.success}
+                </p>
                 <Link
                   href={'/' + locale + '/walk-forward/' + encodeURIComponent(createdRunId)}
-                  className="text-sm font-semibold text-emerald-500 transition hover:opacity-80"
+                  className="inline-flex w-full items-center justify-center rounded-md text-center text-sm font-semibold text-emerald-500 transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
                 >
                   {copy.actions.viewResult}
                 </Link>
@@ -680,6 +685,7 @@ export default function WalkForwardRunForm({
                 execution?.status === 'queued' ? copy.actions.queuing : copy.actions.running
               }
               disabled={isFormDisabled}
+              className="w-full sm:w-auto"
             >
               {copy.actions.run}
             </Button>
