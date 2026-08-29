@@ -33,7 +33,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={cn('w-full', containerClassName)}>
         {label ? (
-          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-slate-300">
+          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-app-foreground">
             {label}
           </label>
         ) : null}
@@ -44,8 +44,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={error ? true : ariaInvalid}
           aria-describedby={error || hint ? messageId : ariaDescribedBy}
           className={cn(
-            'min-h-11 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-sm text-slate-200 transition outline-none placeholder:text-slate-700 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/10 disabled:cursor-not-allowed disabled:opacity-50',
-            error && 'border-red-400/50 focus:border-red-400 focus:ring-red-400/10',
+            'min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3.5 py-2.5 text-sm text-app-foreground transition outline-none placeholder:text-app-subtle focus:border-app-accent-border focus:ring-2 focus:ring-app-accent-soft disabled:cursor-not-allowed disabled:opacity-50',
+            error && 'border-red-500/50 focus:border-red-500 focus:ring-red-500/10',
             className,
           )}
           {...props}
@@ -55,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <p
             id={messageId}
             role={error ? 'alert' : undefined}
-            className={cn('mt-2 text-xs', error ? 'text-red-300' : 'text-slate-500')}
+            className={cn('mt-2 text-xs', error ? 'text-red-500' : 'text-app-muted')}
           >
             {error ?? hint}
           </p>

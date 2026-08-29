@@ -480,10 +480,10 @@ export default function WalkForwardRunForm({
 
   return (
     <Card>
-      <CardHeader className="border-b border-slate-800">
+      <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.22em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
             <CardTitle className="mt-3">{copy.title}</CardTitle>
@@ -498,11 +498,11 @@ export default function WalkForwardRunForm({
       <CardContent className="pt-6">
         {isLoadingDatasets ? (
           <div className="flex min-h-32 items-center justify-center">
-            <Spinner label={copy.states.loadingDatasets} className="text-cyan-400" />
+            <Spinner label={copy.states.loadingDatasets} className="text-app-accent" />
           </div>
         ) : hasDatasetError ? (
-          <div role="alert" className="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5">
-            <p className="text-sm text-rose-200">{copy.states.datasetLoadError}</p>
+          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <p className="text-sm text-rose-500">{copy.states.datasetLoadError}</p>
             <Button
               type="button"
               variant="secondary"
@@ -513,7 +513,7 @@ export default function WalkForwardRunForm({
             </Button>
           </div>
         ) : datasets.length === 0 ? (
-          <p className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5 text-sm text-slate-400">
+          <p className="rounded-2xl border border-app-border bg-app-surface-muted p-5 text-sm text-app-muted">
             {copy.states.noDatasets}
           </p>
         ) : (
@@ -576,18 +576,18 @@ export default function WalkForwardRunForm({
             </div>
 
             {selectedDataset ? (
-              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-5">
-                <p className="font-semibold text-cyan-100">{copy.estimate.title}</p>
+              <div className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5">
+                <p className="font-semibold text-app-accent">{copy.estimate.title}</p>
                 <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-slate-500">{copy.estimate.candles}</dt>
-                    <dd className="mt-1 text-slate-200">
+                    <dt className="text-app-muted">{copy.estimate.candles}</dt>
+                    <dd className="mt-1 text-app-foreground">
                       {numberFormatter.format(selectedDataset.candle_count)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">{copy.estimate.folds}</dt>
-                    <dd className="mt-1 text-slate-200">
+                    <dt className="text-app-muted">{copy.estimate.folds}</dt>
+                    <dd className="mt-1 text-app-foreground">
                       {estimatedFolds === null
                         ? copy.estimate.unavailable
                         : numberFormatter.format(estimatedFolds)}
@@ -601,7 +601,7 @@ export default function WalkForwardRunForm({
               <div
                 role="status"
                 aria-live="polite"
-                className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"
+                className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -609,19 +609,19 @@ export default function WalkForwardRunForm({
                       label={
                         execution.status === 'queued' ? copy.states.queued : copy.states.running
                       }
-                      className="text-cyan-400"
+                      className="text-app-accent"
                     />
-                    <p className="text-sm font-medium text-cyan-100">
+                    <p className="text-sm font-medium text-app-accent">
                       {execution.status === 'queued' ? copy.states.queued : copy.states.running}
                     </p>
                   </div>
-                  <span dir="ltr" className="font-mono text-sm font-semibold text-cyan-300">
+                  <span dir="ltr" className="text-sm font-semibold text-app-accent">
                     {execution.progress_percent}%
                   </span>
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-slate-400">
+                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
                     <span>{copy.states.progress}</span>
                     <span>
                       {copy.states.foldsCompleted}:{' '}
@@ -635,14 +635,14 @@ export default function WalkForwardRunForm({
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={execution.progress_percent}
-                    className="h-2 overflow-hidden rounded-full bg-slate-800"
+                    className="h-2 overflow-hidden rounded-full bg-app-border"
                   >
                     <div
-                      className="h-full rounded-full bg-cyan-400 transition-[width] duration-500 ease-out"
+                      className="h-full rounded-full bg-app-accent transition-[width] duration-500 ease-out"
                       style={{ width: execution.progress_percent + '%' }}
                     />
                   </div>
-                  <p dir="ltr" className="mt-3 truncate font-mono text-xs text-slate-500">
+                  <p dir="ltr" className="mt-3 truncate text-xs font-semibold text-app-muted">
                     {execution.execution_id}
                   </p>
                 </div>
@@ -652,7 +652,7 @@ export default function WalkForwardRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-400/20 bg-rose-400/5 px-4 py-3 text-sm text-rose-200"
+                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-500"
               >
                 {formError}
               </p>
@@ -661,12 +661,12 @@ export default function WalkForwardRunForm({
             {createdRunId ? (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
               >
-                <p className="text-sm text-emerald-200">{copy.states.success}</p>
+                <p className="text-sm text-emerald-500">{copy.states.success}</p>
                 <Link
                   href={'/' + locale + '/walk-forward/' + encodeURIComponent(createdRunId)}
-                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                  className="text-sm font-semibold text-emerald-500 transition hover:opacity-80"
                 >
                   {copy.actions.viewResult}
                 </Link>

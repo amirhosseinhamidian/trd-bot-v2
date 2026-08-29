@@ -19,11 +19,11 @@ export default function DatasetNotFound() {
         title={copy.notFound.title}
         description={copy.notFound.description}
         className="w-full max-w-xl"
-        icon={<span className="font-mono text-sm">404</span>}
+        icon={<span className="text-sm font-semibold">404</span>}
         action={
           <Link
             href={`/${locale}/datasets`}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+            className="inline-flex min-h-10 items-center justify-center rounded-xl bg-app-accent px-4 py-2.5 text-sm font-semibold text-app-background transition hover:opacity-90"
           >
             {copy.notFound.back}
           </Link>

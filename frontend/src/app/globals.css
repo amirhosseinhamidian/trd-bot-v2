@@ -2,10 +2,69 @@
 
 @theme inline {
   --font-sans: var(--font-vazirmatn), Tahoma, Arial, sans-serif;
+
+  --color-app-background: var(--app-background);
+  --color-app-surface: var(--app-surface);
+  --color-app-surface-muted: var(--app-surface-muted);
+  --color-app-border: var(--app-border);
+  --color-app-foreground: var(--app-foreground);
+  --color-app-muted: var(--app-muted);
+  --color-app-subtle: var(--app-subtle);
+  --color-app-hover: var(--app-hover);
+  --color-app-chrome: var(--app-chrome);
+  --color-app-overlay: var(--app-overlay);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-soft: var(--app-accent-soft);
+  --color-app-accent-border: var(--app-accent-border);
+  --color-app-warning: var(--app-warning);
+  --color-app-warning-soft: var(--app-warning-soft);
+  --color-app-warning-border: var(--app-warning-border);
 }
 
 :root {
   color-scheme: dark;
+
+  --app-background: #020617;
+  --app-surface: #0f172a;
+  --app-surface-muted: #111827;
+  --app-border: #1e293b;
+  --app-foreground: #f8fafc;
+  --app-muted: #94a3b8;
+  --app-subtle: #64748b;
+  --app-hover: #172033;
+  --app-chrome: rgba(2, 6, 23, 0.94);
+  --app-overlay: rgba(2, 6, 23, 0.8);
+  --app-accent: #67e8f9;
+  --app-accent-soft: rgba(34, 211, 238, 0.1);
+  --app-accent-border: rgba(34, 211, 238, 0.22);
+  --app-warning: #fcd34d;
+  --app-warning-soft: rgba(251, 191, 36, 0.06);
+  --app-warning-border: rgba(251, 191, 36, 0.18);
+  --app-glow-primary: rgba(34, 211, 238, 0.12);
+  --app-glow-secondary: rgba(59, 130, 246, 0.09);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --app-background: #f8fafc;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f1f5f9;
+  --app-border: #cbd5e1;
+  --app-foreground: #0f172a;
+  --app-muted: #475569;
+  --app-subtle: #64748b;
+  --app-hover: #e2e8f0;
+  --app-chrome: rgba(255, 255, 255, 0.94);
+  --app-overlay: rgba(15, 23, 42, 0.38);
+  --app-accent: #0e7490;
+  --app-accent-soft: rgba(6, 182, 212, 0.1);
+  --app-accent-border: rgba(8, 145, 178, 0.24);
+  --app-warning: #b45309;
+  --app-warning-soft: rgba(245, 158, 11, 0.1);
+  --app-warning-border: rgba(217, 119, 6, 0.2);
+  --app-glow-primary: rgba(6, 182, 212, 0.1);
+  --app-glow-secondary: rgba(59, 130, 246, 0.07);
 }
 
 * {
@@ -14,15 +73,17 @@
 
 html {
   min-width: 320px;
-  background: #020617;
+  background: var(--app-background);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
+  color: var(--app-foreground);
   background:
-    radial-gradient(circle at 90% 0, rgba(34, 211, 238, 0.12), transparent 30rem),
-    radial-gradient(circle at 5% 40%, rgba(59, 130, 246, 0.09), transparent 26rem), #020617;
+    radial-gradient(circle at 90% 0, var(--app-glow-primary), transparent 30rem),
+    radial-gradient(circle at 5% 40%, var(--app-glow-secondary), transparent 26rem),
+    var(--app-background);
 }
 
 button,

@@ -142,11 +142,11 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
       <section>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
           </div>
@@ -156,7 +156,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           </Badge>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
       </section>
@@ -170,8 +170,8 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-            <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
           </div>
         ) : null}
 
@@ -188,14 +188,14 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {page.items.map((dataset) => (
               <Card key={dataset.dataset_id} className="overflow-hidden">
-                <CardHeader className="border-b border-slate-800">
+                <CardHeader className="border-b border-app-border">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <CardTitle className="truncate">{dataset.name}</CardTitle>
 
                       <CardDescription
                         dir="ltr"
-                        className="mt-2 truncate text-left font-mono text-xs"
+                        className="mt-2 truncate text-left text-xs font-semibold"
                       >
                         {dataset.dataset_id}
                       </CardDescription>
@@ -208,51 +208,51 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
                 <CardContent className="pt-6">
                   <dl className="space-y-4 text-sm">
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.fields.pair}</dt>
-                      <dd dir="ltr" className="font-medium text-slate-200">
+                      <dt className="text-app-muted">{copy.fields.pair}</dt>
+                      <dd dir="ltr" className="font-medium text-app-foreground">
                         {dataset.pair.base_asset}/{dataset.pair.quote_asset}
                       </dd>
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.fields.marketType}</dt>
-                      <dd className="text-slate-300">{dataset.pair.market_type}</dd>
+                      <dt className="text-app-muted">{copy.fields.marketType}</dt>
+                      <dd className="text-app-foreground">{dataset.pair.market_type}</dd>
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.fields.candles}</dt>
-                      <dd className="text-slate-300">
+                      <dt className="text-app-muted">{copy.fields.candles}</dt>
+                      <dd className="text-app-foreground">
                         {formatNumber(dataset.candle_count, locale)}
                       </dd>
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.fields.source}</dt>
-                      <dd className="truncate text-slate-300">{dataset.source}</dd>
+                      <dt className="text-app-muted">{copy.fields.source}</dt>
+                      <dd className="truncate text-app-foreground">{dataset.source}</dd>
                     </div>
 
-                    <div className="border-t border-slate-800 pt-4">
-                      <dt className="text-xs text-slate-500">{copy.fields.period}</dt>
-                      <dd className="mt-2 text-xs leading-6 text-slate-300">
+                    <div className="border-t border-app-border pt-4">
+                      <dt className="text-xs text-app-muted">{copy.fields.period}</dt>
+                      <dd className="mt-2 text-xs leading-6 text-app-foreground">
                         <span>{formatShortDate(dataset.start_time, locale)}</span>
-                        <span className="mx-2 text-slate-700">—</span>
+                        <span className="mx-2 text-app-subtle">—</span>
                         <span>{formatShortDate(dataset.end_time, locale)}</span>
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.createdAt}</dt>
-                      <dd className="mt-2 text-xs text-slate-400">
+                      <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
+                      <dd className="mt-2 text-xs text-app-muted">
                         {formatDate(dataset.created_at, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.checksum}</dt>
+                      <dt className="text-xs text-app-muted">{copy.fields.checksum}</dt>
                       <dd
                         dir="ltr"
                         title={dataset.checksum}
-                        className="mt-2 truncate text-left font-mono text-xs text-slate-600"
+                        className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
                       >
                         {dataset.checksum}
                       </dd>
@@ -262,7 +262,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
                 <CardFooter>
                   <Link
                     href={`/${locale}/datasets/${encodeURIComponent(dataset.dataset_id)}`}
-                    className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/40 hover:text-cyan-300"
+                    className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent"
                   >
                     {copy.viewDetails}
                   </Link>
@@ -274,7 +274,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
       </section>
 
       {!hasError && page.total > 0 ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
             total={page.total}
             limit={page.limit}

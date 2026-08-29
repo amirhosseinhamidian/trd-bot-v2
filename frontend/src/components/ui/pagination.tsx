@@ -35,7 +35,7 @@ export function Pagination({
       aria-busy={isLoading}
       className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-app-muted">
         {pageLabel}: {currentPage} / {totalPages}
       </p>
 

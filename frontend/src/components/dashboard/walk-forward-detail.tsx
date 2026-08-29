@@ -72,9 +72,9 @@ function directionVariant(direction: HistoricalFoldReturnDirection): BadgeVarian
 
 function Metric({ label, value }: MetricProps) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-      <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-2 text-lg font-semibold text-slate-100">{value}</dd>
+    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+      <dt className="text-xs text-app-muted">{label}</dt>
+      <dd className="mt-2 text-lg font-semibold text-app-foreground">{value}</dd>
     </div>
   );
 }
@@ -88,18 +88,20 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
       <section>
         <Link
           href={`/${locale}/walk-forward`}
-          className="text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
+          className="text-sm font-medium text-app-accent transition hover:text-app-accent"
         >
           <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.back}
         </Link>
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-cyan-300">{copy.eyebrow}</p>
+            <p className="text-sm font-medium text-app-accent">{copy.eyebrow}</p>
 
-            <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">{run.strategy_name}</h1>
+            <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
+              {run.strategy_name}
+            </h1>
 
-            <p dir="ltr" className="mt-2 font-mono text-sm break-all text-slate-500">
+            <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
               {run.execution_id}
             </p>
           </div>
@@ -108,9 +110,9 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
         </div>
       </section>
 
-      <Card className="border-amber-400/20 bg-amber-400/5">
+      <Card className="border-app-warning-border bg-app-warning-soft">
         <CardContent className="pt-6">
-          <p className="text-sm leading-7 text-amber-200/80">{copy.disclaimer}</p>
+          <p className="text-sm leading-7 text-app-warning">{copy.disclaimer}</p>
         </CardContent>
       </Card>
 
@@ -146,16 +148,16 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
           </dl>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-              <p className="text-xs text-slate-500">{copy.fields.datasetId}</p>
-              <p dir="ltr" className="mt-2 font-mono text-xs break-all text-slate-300">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+              <p className="text-xs text-app-muted">{copy.fields.datasetId}</p>
+              <p dir="ltr" className="mt-2 text-xs font-semibold break-all text-app-foreground">
                 {run.source_dataset_id}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-              <p className="text-xs text-slate-500">{copy.fields.planId}</p>
-              <p dir="ltr" className="mt-2 font-mono text-xs break-all text-slate-300">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+              <p className="text-xs text-app-muted">{copy.fields.planId}</p>
+              <p dir="ltr" className="mt-2 text-xs font-semibold break-all text-app-foreground">
                 {run.plan_id}
               </p>
             </div>
@@ -313,7 +315,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
           </dl>
 
           <div>
-            <p className="text-xs text-slate-500">{copy.fields.parameters}</p>
+            <p className="text-xs text-app-muted">{copy.fields.parameters}</p>
 
             <div className="mt-3 flex flex-wrap gap-2">
               {run.strategy_parameters.map((parameter) => (

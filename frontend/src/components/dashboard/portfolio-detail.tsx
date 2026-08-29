@@ -85,7 +85,7 @@ function pnlClassName(value: string | null): string {
     return 'text-red-300';
   }
 
-  return 'text-slate-200';
+  return 'text-app-foreground';
 }
 
 export default function PortfolioDetail({
@@ -159,20 +159,20 @@ export default function PortfolioDetail({
       <section>
         <Link
           href={`/${locale}/portfolios`}
-          className="text-sm font-medium text-cyan-300 hover:text-cyan-200"
+          className="text-sm font-medium text-app-accent transition hover:opacity-80"
         >
           {locale === 'fa' ? '→' : '←'} {copy.back}
         </Link>
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
-            <p dir="ltr" className="mt-2 font-mono text-xs text-slate-500">
+            <p dir="ltr" className="mt-2 text-xs font-semibold text-app-muted">
               {portfolio.portfolio_id}
             </p>
           </div>
@@ -186,7 +186,7 @@ export default function PortfolioDetail({
           </div>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
       </section>
@@ -194,7 +194,7 @@ export default function PortfolioDetail({
       <Card>
         <CardHeader>
           <CardTitle>{copy.fields.portfolioId}</CardTitle>
-          <CardDescription dir="ltr" className="font-mono text-xs break-all">
+          <CardDescription dir="ltr" className="text-xs font-semibold break-all">
             {portfolio.portfolio_id}
           </CardDescription>
         </CardHeader>
@@ -205,9 +205,12 @@ export default function PortfolioDetail({
               [copy.fields.cash, portfolio.cash],
               [copy.fields.equity, portfolio.equity],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                <dt className="text-xs text-slate-500">{label}</dt>
-                <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+              <div
+                key={label}
+                className="rounded-xl border border-app-border bg-app-surface-muted p-3"
+              >
+                <dt className="text-xs text-app-muted">{label}</dt>
+                <dd dir="ltr" className="mt-2 text-left text-sm font-semibold text-app-foreground">
                   {formatDecimal(value, locale)}
                 </dd>
               </div>
@@ -216,50 +219,53 @@ export default function PortfolioDetail({
 
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.realizedPnl}</dt>
+              <dt className="text-xs text-app-muted">{copy.fields.realizedPnl}</dt>
               <dd
                 dir="ltr"
-                className={`mt-1 text-left font-mono text-sm ${pnlClassName(portfolio.realized_pnl)}`}
+                className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.realized_pnl)}`}
               >
                 {formatDecimal(portfolio.realized_pnl, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.unrealizedPnl}</dt>
+              <dt className="text-xs text-app-muted">{copy.fields.unrealizedPnl}</dt>
               <dd
                 dir="ltr"
-                className={`mt-1 text-left font-mono text-sm ${pnlClassName(portfolio.unrealized_pnl)}`}
+                className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.unrealized_pnl)}`}
               >
                 {formatDecimal(portfolio.unrealized_pnl, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.feesPaid}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+              <dt className="text-xs text-app-muted">{copy.fields.feesPaid}</dt>
+              <dd dir="ltr" className="mt-1 text-left text-sm font-semibold text-app-foreground">
                 {formatDecimal(portfolio.fees_paid, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.feeRate}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+              <dt className="text-xs text-app-muted">{copy.fields.feeRate}</dt>
+              <dd dir="ltr" className="mt-1 text-left text-sm font-semibold text-app-foreground">
                 {formatDecimal(portfolio.fee_rate, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.datasetId}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-xs break-all text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.datasetId}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
                 {portfolio.dataset_id}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.createdAt}</dt>
-              <dd className="mt-1 text-sm text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
+              <dd className="mt-1 text-sm text-app-foreground">
                 {formatDate(portfolio.created_at, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.updatedAt}</dt>
-              <dd className="mt-1 text-sm text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.updatedAt}</dt>
+              <dd className="mt-1 text-sm text-app-foreground">
                 {formatDate(portfolio.updated_at, locale)}
               </dd>
             </div>
@@ -269,14 +275,14 @@ export default function PortfolioDetail({
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">{copy.positionsTitle}</h2>
-          <p className="mt-1 text-sm text-slate-400">{copy.positionsDescription}</p>
+          <h2 className="text-xl font-semibold text-app-foreground">{copy.positionsTitle}</h2>
+          <p className="mt-1 text-sm text-app-muted">{copy.positionsDescription}</p>
         </div>
 
         <div className="relative min-h-40" aria-busy={positionsLoading}>
           {positionsLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-              <Spinner label={copy.loading} className="text-cyan-400" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+              <Spinner label={copy.loading} className="text-app-accent" />
             </div>
           ) : null}
 
@@ -289,7 +295,7 @@ export default function PortfolioDetail({
             />
           ) : positions.items.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-sm text-slate-400">
+              <CardContent className="py-8 text-sm text-app-muted">
                 {copy.positionsEmpty}
               </CardContent>
             </Card>
@@ -303,7 +309,7 @@ export default function PortfolioDetail({
                         <CardTitle>
                           {position.pair.base_asset}/{position.pair.quote_asset}
                         </CardTitle>
-                        <CardDescription dir="ltr" className="mt-2 font-mono text-xs">
+                        <CardDescription dir="ltr" className="mt-2 text-xs font-semibold">
                           {position.position_id}
                         </CardDescription>
                       </div>
@@ -320,56 +326,68 @@ export default function PortfolioDetail({
                   <CardContent>
                     <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.quantity}</dt>
-                        <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                        <dt className="text-xs text-app-muted">{copy.fields.quantity}</dt>
+                        <dd
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
                           {formatDecimal(position.quantity, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.entryPrice}</dt>
-                        <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                        <dt className="text-xs text-app-muted">{copy.fields.entryPrice}</dt>
+                        <dd
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
                           {formatDecimal(position.entry_price, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.currentPrice}</dt>
-                        <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                        <dt className="text-xs text-app-muted">{copy.fields.currentPrice}</dt>
+                        <dd
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
                           {formatDecimal(position.current_price, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.exitPrice}</dt>
-                        <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                        <dt className="text-xs text-app-muted">{copy.fields.exitPrice}</dt>
+                        <dd
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
                           {formatDecimal(position.exit_price, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.unrealizedPnl}</dt>
+                        <dt className="text-xs text-app-muted">{copy.fields.unrealizedPnl}</dt>
                         <dd
                           dir="ltr"
-                          className={`mt-1 text-left font-mono text-sm ${pnlClassName(position.unrealized_pnl)}`}
+                          className={`mt-1 text-left text-sm font-semibold ${pnlClassName(position.unrealized_pnl)}`}
                         >
                           {formatDecimal(position.unrealized_pnl, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.realizedPnl}</dt>
+                        <dt className="text-xs text-app-muted">{copy.fields.realizedPnl}</dt>
                         <dd
                           dir="ltr"
-                          className={`mt-1 text-left font-mono text-sm ${pnlClassName(position.realized_pnl)}`}
+                          className={`mt-1 text-left text-sm font-semibold ${pnlClassName(position.realized_pnl)}`}
                         >
                           {formatDecimal(position.realized_pnl, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.openedAt}</dt>
-                        <dd className="mt-1 text-sm text-slate-300">
+                        <dt className="text-xs text-app-muted">{copy.fields.openedAt}</dt>
+                        <dd className="mt-1 text-sm text-app-foreground">
                           {formatDate(position.opened_at, locale)}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-xs text-slate-500">{copy.fields.closedAt}</dt>
-                        <dd className="mt-1 text-sm text-slate-300">
+                        <dt className="text-xs text-app-muted">{copy.fields.closedAt}</dt>
+                        <dd className="mt-1 text-sm text-app-foreground">
                           {formatDate(position.closed_at, locale)}
                         </dd>
                       </div>
@@ -397,14 +415,14 @@ export default function PortfolioDetail({
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold text-white">{copy.timelineTitle}</h2>
-          <p className="mt-1 text-sm text-slate-400">{copy.timelineDescription}</p>
+          <h2 className="text-xl font-semibold text-app-foreground">{copy.timelineTitle}</h2>
+          <p className="mt-1 text-sm text-app-muted">{copy.timelineDescription}</p>
         </div>
 
         <div className="relative min-h-40" aria-busy={timelineLoading}>
           {timelineLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-              <Spinner label={copy.loading} className="text-cyan-400" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+              <Spinner label={copy.loading} className="text-app-accent" />
             </div>
           ) : null}
 
@@ -417,7 +435,7 @@ export default function PortfolioDetail({
             />
           ) : timeline.items.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-sm text-slate-400">
+              <CardContent className="py-8 text-sm text-app-muted">
                 {copy.timelineEmpty}
               </CardContent>
             </Card>
@@ -427,36 +445,42 @@ export default function PortfolioDetail({
                 <Card key={event.event_id}>
                   <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-5">
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.eventNumber}</p>
-                      <p className="mt-1 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.eventNumber}</p>
+                      <p className="mt-1 text-sm text-app-foreground">
                         {formatNumber(event.sequence_number, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-app-muted">
                         {copy.timelineEvents[event.event_type]}
                       </p>
-                      <p className="mt-1 text-sm text-slate-300">
+                      <p className="mt-1 text-sm text-app-foreground">
                         {formatDate(event.occurred_at, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.eventEquity}</p>
-                      <p dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.eventEquity}</p>
+                      <p
+                        dir="ltr"
+                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(event.equity, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.eventPrice}</p>
-                      <p dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.eventPrice}</p>
+                      <p
+                        dir="ltr"
+                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(event.price, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.eventRealizedPnl}</p>
+                      <p className="text-xs text-app-muted">{copy.fields.eventRealizedPnl}</p>
                       <p
                         dir="ltr"
-                        className={`mt-1 text-left font-mono text-sm ${pnlClassName(event.realized_pnl)}`}
+                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(event.realized_pnl)}`}
                       >
                         {formatDecimal(event.realized_pnl, locale)}
                       </p>

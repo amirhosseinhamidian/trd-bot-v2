@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -7,7 +9,12 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
 
 from trd_bot.core.config import Settings
-from trd_bot.db import create_database_engine
+from trd_bot.db import (
+    SqlAlchemySimulatedPortfolioRepository,
+    create_database_engine,
+    create_session_factory,
+)
+from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -77,5 +84,37 @@ def test_postgresql_connection_and_migrations() -> None:
             "walk_forward_executions",
             "walk_forward_runs",
         }.issubset(table_names)
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_simulated_portfolio_with_timeline_persists_in_postgresql() -> None:
+    database_url = get_test_database_url()
+    alembic_config = build_alembic_config(database_url)
+
+    command.upgrade(alembic_config, "head")
+
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+
+    portfolio = SimulatedPortfolioLedger().create(
+        mode=SimulationMode.PAPER,
+        dataset_id="dataset-postgresql-portfolio-test",
+        starting_cash=Decimal("10000"),
+        fee_rate=Decimal("0.001"),
+        created_at=datetime.now(UTC),
+    )
+
+    try:
+        with factory() as session:
+            repository = SqlAlchemySimulatedPortfolioRepository(session)
+
+            repository.save(portfolio)
+
+            stored = repository.get(portfolio.portfolio_id)
+
+            assert stored == portfolio
+            assert repository.count_timeline(portfolio.portfolio_id) == 1
     finally:
         engine.dispose()

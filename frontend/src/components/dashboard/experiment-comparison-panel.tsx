@@ -90,7 +90,7 @@ export default function ExperimentComparisonPanel({
   }
 
   return (
-    <Card dir={direction} className="border-cyan-400/15">
+    <Card dir={direction} className="border-app-accent-border">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -105,7 +105,7 @@ export default function ExperimentComparisonPanel({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <p className="text-sm leading-6 text-slate-500">{copy.selectionHint}</p>
+        <p className="text-sm leading-6 text-app-muted">{copy.selectionHint}</p>
 
         {selectedExperiments.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -161,12 +161,12 @@ export default function ExperimentComparisonPanel({
         </div>
 
         {!canCompare ? (
-          <p className="text-sm text-amber-300">{copy.insufficientSelection}</p>
+          <p className="text-sm text-app-warning">{copy.insufficientSelection}</p>
         ) : null}
 
         {hasError ? (
-          <div role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-            <p className="text-sm text-red-300">{copy.error}</p>
+          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+            <p className="text-sm text-red-500">{copy.error}</p>
 
             <Button
               className="mt-4"
@@ -180,12 +180,12 @@ export default function ExperimentComparisonPanel({
         ) : null}
 
         {result ? (
-          <div className="space-y-4 border-t border-slate-800 pt-6">
+          <div className="space-y-4 border-t border-app-border pt-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-semibold text-white">{copy.resultTitle}</h3>
+                <h3 className="text-base font-semibold text-app-foreground">{copy.resultTitle}</h3>
 
-                <p className="mt-1 text-sm leading-6 text-slate-500">{copy.resultDescription}</p>
+                <p className="mt-1 text-sm leading-6 text-app-muted">{copy.resultDescription}</p>
               </div>
 
               <Badge variant="warning">{copy.rankingDirections[result.ranking_direction]}</Badge>
@@ -209,7 +209,7 @@ export default function ExperimentComparisonPanel({
                   return (
                     <TableRow
                       key={entry.experiment.experiment_id}
-                      className={isFirst ? 'bg-cyan-400/5' : undefined}
+                      className={isFirst ? 'bg-app-accent-soft' : undefined}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export default function ExperimentComparisonPanel({
 
                       <TableCell
                         dir="ltr"
-                        className="max-w-64 truncate text-left font-mono text-xs"
+                        className="max-w-64 truncate text-left text-xs font-semibold"
                         title={entry.experiment.experiment_id}
                       >
                         {entry.experiment.experiment_id}
@@ -241,7 +241,7 @@ export default function ExperimentComparisonPanel({
                         </div>
                       </TableCell>
 
-                      <TableCell dir="ltr" className="font-mono">
+                      <TableCell dir="ltr" className="font-extrabold">
                         {formatPercent(entry.metric_value, locale)}
                       </TableCell>
                     </TableRow>
@@ -250,7 +250,7 @@ export default function ExperimentComparisonPanel({
               </TableBody>
             </Table>
 
-            <p className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm text-amber-200/80">
+            <p className="rounded-xl border border-app-warning-border bg-app-warning-soft p-4 text-sm text-app-warning">
               {copy.historicalOnly}
             </p>
           </div>

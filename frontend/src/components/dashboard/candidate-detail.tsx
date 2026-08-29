@@ -105,22 +105,22 @@ export default function CandidateDetail({
       <section>
         <Link
           href={`/${locale}/candidates`}
-          className="text-sm font-medium text-cyan-300 hover:text-cyan-200"
+          className="text-sm font-medium text-app-accent transition hover:opacity-80"
         >
           {locale === 'fa' ? '→' : '←'} {copy.back}
         </Link>
 
         <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {snapshot.pair.base_asset}/{snapshot.pair.quote_asset}
             </h1>
 
-            <p dir="ltr" className="mt-2 font-mono text-xs text-slate-500">
+            <p dir="ltr" className="mt-2 text-xs font-semibold text-app-muted">
               {snapshot.candidate_id}
             </p>
           </div>
@@ -147,21 +147,21 @@ export default function CandidateDetail({
 
         <CardContent className="space-y-6">
           <dl className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-              <dt className="text-xs text-slate-500">{copy.fields.confidence}</dt>
-              <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.confidence}</dt>
+              <dd dir="ltr" className="mt-2 text-left text-sm font-semibold text-app-foreground">
                 {formatDecimal(snapshot.confidence, locale)}
               </dd>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-              <dt className="text-xs text-slate-500">{copy.fields.signalScore}</dt>
-              <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.signalScore}</dt>
+              <dd dir="ltr" className="mt-2 text-left text-sm font-semibold text-app-foreground">
                 {formatDecimal(snapshot.signal_score, locale)}
               </dd>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-              <dt className="text-xs text-slate-500">{copy.fields.occurrences}</dt>
-              <dd className="mt-2 text-sm text-slate-200">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.occurrences}</dt>
+              <dd className="mt-2 text-sm text-app-foreground">
                 {formatNumber(candidate.occurrence_count, locale)}
               </dd>
             </div>
@@ -169,74 +169,86 @@ export default function CandidateDetail({
 
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.datasetId}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-xs break-all text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.datasetId}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
                 {snapshot.dataset_id}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.experimentId}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-xs break-all text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.experimentId}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
                 {snapshot.experiment_id}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.signalId}</dt>
-              <dd dir="ltr" className="mt-1 text-left font-mono text-xs break-all text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.signalId}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
                 {snapshot.signal_id}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.timeframe}</dt>
-              <dd className="mt-1 text-sm text-slate-200">{snapshot.timeframe}</dd>
+              <dt className="text-xs text-app-muted">{copy.fields.timeframe}</dt>
+              <dd className="mt-1 text-sm text-app-foreground">{snapshot.timeframe}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.createdAt}</dt>
-              <dd className="mt-1 text-sm text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
+              <dd className="mt-1 text-sm text-app-foreground">
                 {formatDate(snapshot.created_at, locale)}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">{copy.fields.validUntil}</dt>
-              <dd className="mt-1 text-sm text-slate-300">
+              <dt className="text-xs text-app-muted">{copy.fields.validUntil}</dt>
+              <dd className="mt-1 text-sm text-app-foreground">
                 {formatDate(snapshot.valid_until, locale)}
               </dd>
             </div>
           </dl>
 
-          <div className="grid gap-3 border-t border-slate-800 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 border-t border-app-border pt-5 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="text-xs text-slate-500">{copy.fields.replay}</p>
-              <p className="mt-2 text-sm text-slate-200">
+              <p className="text-xs text-app-muted">{copy.fields.replay}</p>
+              <p className="mt-2 text-sm text-app-foreground">
                 {latest.replay_status
                   ? copy.replayStatuses[latest.replay_status]
                   : copy.notEvaluated}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">{copy.fields.risk}</p>
-              <p className="mt-2 text-sm text-slate-200">
+              <p className="text-xs text-app-muted">{copy.fields.risk}</p>
+              <p className="mt-2 text-sm text-app-foreground">
                 {latest.risk_decision
                   ? copy.riskDecisions[latest.risk_decision]
                   : copy.notEvaluated}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">{copy.fields.positionId}</p>
-              <p dir="ltr" className="mt-2 text-left font-mono text-xs break-all text-slate-300">
+              <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
+              <p
+                dir="ltr"
+                className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+              >
                 {latest.position_id ?? '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-500">{copy.fields.exitReason}</p>
-              <p className="mt-2 text-sm text-slate-200">
+              <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
+              <p className="mt-2 text-sm text-app-foreground">
                 {latest.exit_reason ? copy.exitReasons[latest.exit_reason] : '—'}
               </p>
             </div>
             {latest.skip_reason ? (
               <div>
-                <p className="text-xs text-slate-500">{copy.fields.skipReason}</p>
-                <p className="mt-2 text-sm text-slate-200">
+                <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
+                <p className="mt-2 text-sm text-app-foreground">
                   {copy.skipReasons[latest.skip_reason]}
                 </p>
               </div>
@@ -247,14 +259,14 @@ export default function CandidateDetail({
 
       <section>
         <div>
-          <h2 className="text-xl font-semibold text-white">{copy.lineageTitle}</h2>
-          <p className="mt-2 text-sm text-slate-400">{copy.lineageDescription}</p>
+          <h2 className="text-xl font-semibold text-app-foreground">{copy.lineageTitle}</h2>
+          <p className="mt-2 text-sm text-app-muted">{copy.lineageDescription}</p>
         </div>
 
         <div className="relative mt-5 min-h-48" aria-busy={isLoading}>
           {isLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-              <Spinner size="lg" label={copy.lineageLoading} className="text-cyan-400" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+              <Spinner size="lg" label={copy.lineageLoading} className="text-app-accent" />
             </div>
           ) : null}
 
@@ -271,72 +283,75 @@ export default function CandidateDetail({
                 <Card key={occurrence.journal_id}>
                   <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-4">
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.journal}</p>
+                      <p className="text-xs text-app-muted">{copy.fields.journal}</p>
                       <p
                         dir="ltr"
-                        className="mt-2 text-left font-mono text-xs break-all text-slate-300"
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
                       >
                         {occurrence.journal_id}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.recordedAt}</p>
-                      <p className="mt-2 text-sm text-slate-300">
+                      <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {formatDate(occurrence.recorded_at, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.rank}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.rank}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {formatNumber(occurrence.rank, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.rankingScore}</p>
-                      <p dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                      <p
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(occurrence.ranking_score, locale)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.occurrence}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.occurrence}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {copy.occurrenceTypes[occurrence.occurrence_type]}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.replay}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.replay}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {occurrence.replay_status
                           ? copy.replayStatuses[occurrence.replay_status]
                           : copy.notEvaluated}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.risk}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.risk}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {occurrence.risk_decision
                           ? copy.riskDecisions[occurrence.risk_decision]
                           : copy.notEvaluated}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.skipReason}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {occurrence.skip_reason ? copy.skipReasons[occurrence.skip_reason] : '—'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.positionId}</p>
+                      <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
                       <p
                         dir="ltr"
-                        className="mt-2 text-left font-mono text-xs break-all text-slate-300"
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
                       >
                         {occurrence.position_id ?? '—'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.exitReason}</p>
-                      <p className="mt-2 text-sm text-slate-200">
+                      <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
                         {occurrence.exit_reason ? copy.exitReasons[occurrence.exit_reason] : '—'}
                       </p>
                     </div>
@@ -348,7 +363,7 @@ export default function CandidateDetail({
         </div>
 
         {!hasError && lineage.total > 0 ? (
-          <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+          <div className="mt-4 rounded-2xl border border-app-border bg-app-surface px-5 py-4">
             <Pagination
               total={lineage.total}
               limit={lineage.limit}

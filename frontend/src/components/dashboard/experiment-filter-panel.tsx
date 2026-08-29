@@ -91,7 +91,7 @@ export default function ExperimentFilterPanel({
             value={filters.datasetId}
             maxLength={100}
             disabled={isLoading}
-            className="text-left font-mono"
+            className="text-left"
             onChange={(event) => updateFilter('datasetId', event.target.value)}
           />
 

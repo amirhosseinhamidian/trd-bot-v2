@@ -93,7 +93,7 @@ export default function WalkForwardFilterPanel({
             value={filters.sourceDatasetId}
             maxLength={100}
             disabled={isLoading}
-            className="text-left font-mono"
+            className="text-left font-semibold"
             onChange={(event) => updateFilter('sourceDatasetId', event.target.value)}
           />
 
@@ -104,7 +104,7 @@ export default function WalkForwardFilterPanel({
             value={filters.planId}
             maxLength={100}
             disabled={isLoading}
-            className="text-left font-mono"
+            className="text-left font-semibold"
             onChange={(event) => updateFilter('planId', event.target.value)}
           />
 

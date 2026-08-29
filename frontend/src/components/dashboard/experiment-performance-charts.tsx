@@ -99,9 +99,9 @@ export function ExperimentPerformanceCharts({
       <CardContent className="space-y-8">
         <section>
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-200">{copy.equityChart}</h3>
+            <h3 className="text-base font-semibold text-app-foreground">{copy.equityChart}</h3>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">{copy.equityChartDescription}</p>
+            <p className="mt-1 text-sm leading-6 text-app-muted">{copy.equityChartDescription}</p>
           </div>
 
           <HistoricalLineChart
@@ -114,11 +114,11 @@ export function ExperimentPerformanceCharts({
           />
         </section>
 
-        <section className="border-t border-slate-800 pt-8">
+        <section className="border-t border-app-border pt-8">
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-200">{copy.drawdownChart}</h3>
+            <h3 className="text-base font-semibold text-app-foreground">{copy.drawdownChart}</h3>
 
-            <p className="mt-1 text-sm leading-6 text-slate-500">{copy.drawdownChartDescription}</p>
+            <p className="mt-1 text-sm leading-6 text-app-muted">{copy.drawdownChartDescription}</p>
           </div>
 
           <HistoricalLineChart
