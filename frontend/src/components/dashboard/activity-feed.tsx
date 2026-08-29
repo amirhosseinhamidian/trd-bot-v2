@@ -159,7 +159,7 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
 
         <div className="flex flex-col gap-4">
           <div>
-            <p className="mb-2 text-xs text-slate-500">{copy.typeFilter}</p>
+            <p className="mb-2 text-xs text-app-muted">{copy.typeFilter}</p>
 
             <div className="flex flex-wrap gap-2">
               {typeOptions.map((option) => {
@@ -198,8 +198,8 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
 
       <CardContent className="relative min-h-52">
         {isLoading ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-slate-950/60 backdrop-blur-sm">
-            <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
           </div>
         ) : null}
 
@@ -207,8 +207,8 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
           <EmptyState
             title={copy.errorTitle}
             description={copy.errorDescription}
-            className="border-red-400/20 bg-red-400/5"
-            icon={<span className="font-bold text-red-300">!</span>}
+            className="border-red-500/20 bg-red-500/10"
+            icon={<span className="font-bold text-red-500">!</span>}
             action={
               <Button variant="danger" size="sm" onClick={() => void loadActivity(page.offset)}>
                 {copy.retry}
@@ -218,7 +218,7 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
         ) : page.items.length === 0 ? (
           <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
         ) : (
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-app-border">
             {page.items.map((item) => (
               <div
                 key={`${item.activity_type}-${item.resource_id}-${item.created_at}`}
@@ -228,22 +228,25 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="info">{activityLabels[item.activity_type]}</Badge>
 
-                    <p className="truncate text-sm font-medium text-slate-200">{item.label}</p>
+                    <p className="truncate text-sm font-medium text-app-foreground">{item.label}</p>
                   </div>
 
                   {item.strategy_name ? (
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-app-muted">
                       {item.strategy_name}
                       {item.strategy_version ? ` · v${item.strategy_version}` : ''}
                     </p>
                   ) : null}
 
-                  <p dir="ltr" className="mt-2 truncate text-left font-mono text-xs text-slate-600">
+                  <p
+                    dir="ltr"
+                    className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
+                  >
                     {item.resource_id}
                   </p>
                 </div>
 
-                <time dateTime={item.created_at} className="shrink-0 text-xs text-slate-500">
+                <time dateTime={item.created_at} className="shrink-0 text-xs text-app-muted">
                   {formatDate(item.created_at, locale)}
                 </time>
               </div>
@@ -252,8 +255,8 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
         )}
       </CardContent>
 
-      <div className="border-t border-slate-800 px-6 py-4">
-        <div className="mb-4 text-xs text-slate-500">
+      <div className="border-t border-app-border px-6 py-4">
+        <div className="mb-4 text-xs text-app-muted">
           {copy.total}: {formatNumber(page.total, locale)}
         </div>
 

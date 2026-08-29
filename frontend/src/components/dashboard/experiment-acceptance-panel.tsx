@@ -185,31 +185,31 @@ export function ExperimentAcceptancePanel({
         </div>
 
         {selectedPreset ? (
-          <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+          <div className="space-y-4 rounded-2xl border border-app-border bg-app-surface-muted p-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-200">{copy.thresholds}</h3>
+              <h3 className="text-sm font-semibold text-app-foreground">{copy.thresholds}</h3>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">{selectedPreset.description}</p>
+              <p className="mt-2 text-sm leading-6 text-app-muted">{selectedPreset.description}</p>
             </div>
 
             <dl className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-800 p-3">
-                <dt className="text-xs text-slate-500">{copy.minimumTrades}</dt>
-                <dd className="mt-2 font-semibold text-slate-200">
+              <div className="rounded-xl border border-app-border p-3">
+                <dt className="text-xs text-app-muted">{copy.minimumTrades}</dt>
+                <dd className="mt-2 font-semibold text-app-foreground">
                   {formatInteger(selectedPreset.policy.minimum_total_trades, locale)}
                 </dd>
               </div>
 
-              <div className="rounded-xl border border-slate-800 p-3">
-                <dt className="text-xs text-slate-500">{copy.minimumExcessReturn}</dt>
-                <dd className="mt-2 font-semibold text-slate-200">
+              <div className="rounded-xl border border-app-border p-3">
+                <dt className="text-xs text-app-muted">{copy.minimumExcessReturn}</dt>
+                <dd className="mt-2 font-semibold text-app-foreground">
                   {formatPercent(selectedPreset.policy.minimum_excess_return, locale)}
                 </dd>
               </div>
 
-              <div className="rounded-xl border border-slate-800 p-3">
-                <dt className="text-xs text-slate-500">{copy.maximumDrawdown}</dt>
-                <dd className="mt-2 font-semibold text-slate-200">
+              <div className="rounded-xl border border-app-border p-3">
+                <dt className="text-xs text-app-muted">{copy.maximumDrawdown}</dt>
+                <dd className="mt-2 font-semibold text-app-foreground">
                   {formatPercent(selectedPreset.policy.maximum_drawdown_fraction, locale)}
                 </dd>
               </div>
@@ -218,8 +218,8 @@ export function ExperimentAcceptancePanel({
         ) : null}
 
         {hasError ? (
-          <div role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-            <p className="text-sm text-red-300">{copy.error}</p>
+          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+            <p className="text-sm text-red-500">{copy.error}</p>
 
             <Button
               className="mt-4"
@@ -233,9 +233,9 @@ export function ExperimentAcceptancePanel({
         ) : null}
 
         {report ? (
-          <div className="space-y-4 border-t border-slate-800 pt-6">
+          <div className="space-y-4 border-t border-app-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-base font-semibold text-white">{copy.result}</h3>
+              <h3 className="text-base font-semibold text-app-foreground">{copy.result}</h3>
 
               <div className="flex flex-wrap items-center gap-3">
                 <Badge variant={outcomeVariant(report.report.acceptance.outcome)}>
@@ -257,23 +257,23 @@ export function ExperimentAcceptancePanel({
             {hasDownloadError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-sm text-red-300"
+                className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-500"
               >
                 {copy.downloadError}
               </p>
             ) : null}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <p className="text-xs text-emerald-300">{copy.passedChecks}</p>
-                <p className="mt-2 text-xl font-bold text-emerald-200">
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                <p className="text-xs text-emerald-600">{copy.passedChecks}</p>
+                <p className="mt-2 text-xl font-bold text-emerald-600">
                   {formatInteger(report.report.passed_checks, locale)}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-                <p className="text-xs text-red-300">{copy.failedChecks}</p>
-                <p className="mt-2 text-xl font-bold text-red-200">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                <p className="text-xs text-red-500">{copy.failedChecks}</p>
+                <p className="mt-2 text-xl font-bold text-red-600">
                   {formatInteger(report.report.failed_checks, locale)}
                 </p>
               </div>
@@ -283,10 +283,12 @@ export function ExperimentAcceptancePanel({
               {report.report.acceptance.checks.map((check) => (
                 <div
                   key={check.name}
-                  className="grid gap-4 rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:grid-cols-[1fr_auto_auto]"
+                  className="grid gap-4 rounded-xl border border-app-border bg-app-surface-muted p-4 sm:grid-cols-[1fr_auto_auto]"
                 >
                   <div>
-                    <p className="text-sm font-medium text-slate-200">{copy.checks[check.name]}</p>
+                    <p className="text-sm font-medium text-app-foreground">
+                      {copy.checks[check.name]}
+                    </p>
 
                     <Badge className="mt-2" variant={check.passed ? 'success' : 'danger'}>
                       {check.passed ? copy.passed : copy.failed}
@@ -294,15 +296,15 @@ export function ExperimentAcceptancePanel({
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">{copy.actualValue}</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-200">
+                    <p className="text-xs text-app-muted">{copy.actualValue}</p>
+                    <p className="mt-2 text-sm font-semibold text-app-foreground">
                       {formatCheckValue(check, check.actual_value, locale)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">{copy.thresholdValue}</p>
-                    <p className="mt-2 text-sm font-semibold text-slate-200">
+                    <p className="text-xs text-app-muted">{copy.thresholdValue}</p>
+                    <p className="mt-2 text-sm font-semibold text-app-foreground">
                       {formatCheckValue(check, check.threshold_value, locale)}
                     </p>
                   </div>
@@ -310,7 +312,7 @@ export function ExperimentAcceptancePanel({
               ))}
             </div>
 
-            <p className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm leading-6 text-amber-200/80">
+            <p className="rounded-xl border border-app-warning-border bg-app-warning-soft p-4 text-sm leading-6 text-app-warning">
               {copy.historicalOnly}
             </p>
           </div>

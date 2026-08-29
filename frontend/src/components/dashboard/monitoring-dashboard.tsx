@@ -105,11 +105,11 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
       <section>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
           </div>
@@ -119,7 +119,7 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
           </Badge>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
 
@@ -142,31 +142,33 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
               {summary.latest_metrics.map((sample) => (
                 <article
                   key={sample.sample_id}
-                  className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5"
+                  className="rounded-2xl border border-app-border bg-app-surface-muted p-5"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <p className="text-sm leading-6 font-medium text-slate-300">
+                    <p className="text-sm leading-6 font-medium text-app-foreground">
                       {copy.metrics[sample.metric_name]}
                     </p>
 
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400" />
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-app-accent" />
                   </div>
 
-                  <p dir="ltr" className="mt-5 text-left text-2xl font-bold text-white">
+                  <p dir="ltr" className="mt-5 text-left text-2xl font-bold text-app-foreground">
                     {formatMetricValue(sample, locale)}
                   </p>
 
-                  <dl className="mt-5 space-y-2 border-t border-slate-800 pt-4 text-xs">
+                  <dl className="mt-5 space-y-2 border-t border-app-border pt-4 text-xs">
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.source}</dt>
-                      <dd dir="ltr" className="text-slate-300">
+                      <dt className="text-app-muted">{copy.source}</dt>
+                      <dd dir="ltr" className="text-app-foreground">
                         {sample.source}
                       </dd>
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
-                      <dt className="text-slate-500">{copy.recordedAt}</dt>
-                      <dd className="text-slate-300">{formatDate(sample.recorded_at, locale)}</dd>
+                      <dt className="text-app-muted">{copy.recordedAt}</dt>
+                      <dd className="text-app-foreground">
+                        {formatDate(sample.recorded_at, locale)}
+                      </dd>
                     </div>
                   </dl>
                 </article>
@@ -193,7 +195,7 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
               {summary.active_recommendations.map((recommendation) => (
                 <article
                   key={recommendation.recommendation_id}
-                  className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5"
+                  className="rounded-2xl border border-app-border bg-app-surface-muted p-5"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <Badge variant={severityVariants[recommendation.severity]}>
@@ -205,11 +207,11 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
                     ) : null}
                   </div>
 
-                  <h3 className="mt-5 text-base leading-7 font-semibold text-white">
+                  <h3 className="mt-5 text-base leading-7 font-semibold text-app-foreground">
                     {removeDemoPrefix(recommendation.title)}
                   </h3>
 
-                  <p className="mt-3 text-sm text-slate-400">
+                  <p className="mt-3 text-sm text-app-muted">
                     {copy.candidates[recommendation.candidate]}
                   </p>
                 </article>

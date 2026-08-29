@@ -134,7 +134,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
       <section>
         <Link
           href={`/${locale}/datasets`}
-          className="inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-cyan-300"
+          className="inline-flex items-center gap-2 text-sm text-app-muted transition hover:text-app-accent"
         >
           <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span>
           {copy.back}
@@ -142,11 +142,11 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
 
         <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 truncate text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 truncate text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {dataset.name}
             </h1>
           </div>
@@ -172,16 +172,16 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
             {metadata.map((item) => (
               <div
                 key={item.label}
-                className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
+                className="rounded-xl border border-app-border bg-app-surface-muted p-4"
               >
-                <dt className="text-xs text-slate-500">{item.label}</dt>
+                <dt className="text-xs text-app-muted">{item.label}</dt>
 
                 <dd
                   dir={item.ltr ? 'ltr' : undefined}
                   className={
                     item.ltr
-                      ? 'mt-2 truncate text-left font-mono text-sm text-slate-200'
-                      : 'mt-2 truncate text-sm font-medium text-slate-200'
+                      ? 'mt-2 truncate text-left text-sm font-semibold text-app-foreground'
+                      : 'mt-2 truncate text-sm font-medium text-app-foreground'
                   }
                   title={item.value}
                 >
@@ -192,25 +192,25 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
           </dl>
 
           <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-              <p className="text-xs text-slate-500">{copy.metadata.dataPeriod}</p>
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+              <p className="text-xs text-app-muted">{copy.metadata.dataPeriod}</p>
 
-              <p className="mt-2 text-sm leading-7 text-slate-300">
+              <p className="mt-2 text-sm leading-7 text-app-foreground">
                 {formatDate(dataset.start_time, locale)}
 
-                <span className="mx-2 text-slate-700">—</span>
+                <span className="mx-2 text-app-subtle">—</span>
 
                 {formatDate(dataset.end_time, locale)}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-              <p className="text-xs text-slate-500">{copy.metadata.checksum}</p>
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+              <p className="text-xs text-app-muted">{copy.metadata.checksum}</p>
 
               <p
                 dir="ltr"
                 title={dataset.checksum}
-                className="mt-2 truncate text-left font-mono text-xs text-slate-500"
+                className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
               >
                 {dataset.checksum}
               </p>
@@ -233,8 +233,8 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
 
         <CardContent className="relative min-h-64">
           {isLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-slate-950/70 backdrop-blur-sm">
-              <Spinner size="lg" label={copy.candles.loading} className="text-cyan-400" />
+            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-app-overlay backdrop-blur-sm">
+              <Spinner size="lg" label={copy.candles.loading} className="text-app-accent" />
             </div>
           ) : null}
 
@@ -242,8 +242,8 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
             <EmptyState
               title={copy.candles.errorTitle}
               description={copy.candles.errorDescription}
-              className="border-red-400/20 bg-red-400/5"
-              icon={<span className="font-bold text-red-300">!</span>}
+              className="border-red-500/20 bg-red-500/10"
+              icon={<span className="font-bold text-red-500">!</span>}
               action={
                 <Button
                   size="sm"
@@ -280,23 +280,23 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
 
                       <TableCell>{formatDate(candle.close_time, locale)}</TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-mono">
+                      <TableCell dir="ltr" className="text-left font-semibold">
                         {candle.open_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-mono text-emerald-300">
+                      <TableCell dir="ltr" className="text-left font-semibold text-emerald-500">
                         {candle.high_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-mono text-red-300">
+                      <TableCell dir="ltr" className="text-left font-semibold text-red-500">
                         {candle.low_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-mono">
+                      <TableCell dir="ltr" className="text-left font-semibold">
                         {candle.close_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-mono">
+                      <TableCell dir="ltr" className="text-left font-semibold">
                         {candle.volume}
                       </TableCell>
 

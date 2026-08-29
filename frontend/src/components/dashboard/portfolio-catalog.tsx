@@ -71,7 +71,7 @@ function pnlClassName(value: string): string {
     return 'text-red-300';
   }
 
-  return 'text-slate-200';
+  return 'text-app-foreground';
 }
 
 export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatalogProps) {
@@ -112,11 +112,11 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
       <section>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
           </div>
@@ -130,15 +130,15 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
           </div>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
       </section>
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-            <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
           </div>
         ) : null}
 
@@ -155,7 +155,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
           <div className="grid gap-4 xl:grid-cols-2">
             {page.items.map((portfolio) => (
               <Card key={portfolio.portfolio_id} className="overflow-hidden">
-                <CardHeader className="border-b border-slate-800">
+                <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <CardTitle>{copy.modes[portfolio.mode]}</CardTitle>
@@ -163,7 +163,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
                       <CardDescription
                         dir="ltr"
                         title={portfolio.portfolio_id}
-                        className="mt-2 truncate text-left font-mono text-xs"
+                        className="mt-2 truncate text-left text-xs font-semibold"
                       >
                         {portfolio.portfolio_id}
                       </CardDescription>
@@ -177,23 +177,32 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
 
                 <CardContent className="space-y-6 pt-6">
                   <dl className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.startingCash}</dt>
-                      <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.startingCash}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(portfolio.starting_cash, locale)}
                       </dd>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.cash}</dt>
-                      <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.cash}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(portfolio.cash, locale)}
                       </dd>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.equity}</dt>
-                      <dd dir="ltr" className="mt-2 text-left font-mono text-sm text-cyan-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.equity}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-accent"
+                      >
                         {formatDecimal(portfolio.equity, locale)}
                       </dd>
                     </div>
@@ -201,28 +210,31 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
 
                   <dl className="grid gap-3 sm:grid-cols-3">
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.realizedPnl}</dt>
+                      <dt className="text-xs text-app-muted">{copy.fields.realizedPnl}</dt>
                       <dd
                         dir="ltr"
-                        className={`mt-1 text-left font-mono text-sm ${pnlClassName(portfolio.realized_pnl)}`}
+                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.realized_pnl)}`}
                       >
                         {formatDecimal(portfolio.realized_pnl, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.unrealizedPnl}</dt>
+                      <dt className="text-xs text-app-muted">{copy.fields.unrealizedPnl}</dt>
                       <dd
                         dir="ltr"
-                        className={`mt-1 text-left font-mono text-sm ${pnlClassName(portfolio.unrealized_pnl)}`}
+                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.unrealized_pnl)}`}
                       >
                         {formatDecimal(portfolio.unrealized_pnl, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.feesPaid}</dt>
-                      <dd dir="ltr" className="mt-1 text-left font-mono text-sm text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.feesPaid}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                      >
                         {formatDecimal(portfolio.fees_paid, locale)}
                       </dd>
                     </div>
@@ -230,44 +242,44 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
 
                   <dl className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.positions}</dt>
-                      <dd className="mt-1 text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.positions}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(portfolio.position_count, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.timelineEvents}</dt>
-                      <dd className="mt-1 text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.timelineEvents}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(portfolio.event_count, locale)}
                       </dd>
                     </div>
                   </dl>
 
-                  <div className="grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-2">
+                  <div className="grid gap-3 border-t border-app-border pt-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.datasetId}</p>
+                      <p className="text-xs text-app-muted">{copy.fields.datasetId}</p>
                       <p
                         dir="ltr"
                         title={portfolio.dataset_id}
-                        className="mt-2 truncate text-left font-mono text-xs text-slate-400"
+                        className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
                       >
                         {portfolio.dataset_id}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.updatedAt}</p>
-                      <p className="mt-2 text-xs text-slate-400">
+                      <p className="text-xs text-app-muted">{copy.fields.updatedAt}</p>
+                      <p className="mt-2 text-xs text-app-muted">
                         {formatDate(portfolio.updated_at, locale)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex border-t border-slate-800 pt-4">
+                  <div className="flex border-t border-app-border pt-4">
                     <Link
                       href={`/${locale}/portfolios/${encodeURIComponent(portfolio.portfolio_id)}`}
-                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-800 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                     >
                       <span>{copy.viewDetails}</span>
                       <span aria-hidden="true">{locale === 'fa' ? '←' : '→'}</span>
@@ -281,7 +293,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
       </section>
 
       {!hasError && page.total > 0 ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
             total={page.total}
             limit={page.limit}

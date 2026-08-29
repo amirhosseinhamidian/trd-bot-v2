@@ -78,9 +78,9 @@ function formatDate(value: string, locale: ExperimentDetailLocale): string {
 
 function Metric({ label, value }: MetricProps) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="mt-2 text-lg font-semibold text-slate-100">{value}</dd>
+    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+      <dt className="text-sm text-app-muted">{label}</dt>
+      <dd className="mt-2 text-lg font-semibold text-app-foreground">{value}</dd>
     </div>
   );
 }
@@ -131,18 +131,18 @@ export function ExperimentDetail({
         <div>
           <Link
             href={`/${locale}/experiments`}
-            className="text-sm font-medium text-cyan-300 transition hover:text-cyan-200"
+            className="text-sm font-medium text-app-accent transition hover:text-app-accent"
           >
             ← {copy.back}
           </Link>
 
-          <p className="mt-5 text-sm font-medium text-cyan-300">{copy.eyebrow}</p>
+          <p className="mt-5 text-sm font-medium text-app-accent">{copy.eyebrow}</p>
 
-          <h1 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
+          <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
             {experiment.strategy_name}
           </h1>
 
-          <p dir="ltr" className="mt-2 font-mono text-sm break-all text-slate-500">
+          <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
             {experiment.experiment_id}
           </p>
         </div>
@@ -152,16 +152,16 @@ export function ExperimentDetail({
 
           <Link
             href={rerunHref}
-            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-2.5 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-400/15 hover:text-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:outline-none"
+            className="inline-flex min-h-10 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
           >
             {copy.runAgain}
           </Link>
         </div>
       </div>
 
-      <Card className="border-amber-400/20 bg-amber-400/5">
+      <Card className="border-app-warning-border bg-app-warning-soft">
         <CardContent className="pt-6">
-          <p className="text-sm leading-7 text-amber-200/80">{copy.disclaimer}</p>
+          <p className="text-sm leading-7 text-app-warning">{copy.disclaimer}</p>
         </CardContent>
       </Card>
 
@@ -184,9 +184,9 @@ export function ExperimentDetail({
 
             <Metric label={copy.createdAt} value={formatDate(experiment.created_at, locale)} />
 
-            <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:col-span-2">
-              <dt className="text-sm text-slate-500">{copy.datasetId}</dt>
-              <dd dir="ltr" className="mt-2 font-mono text-sm font-medium break-all text-slate-200">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 sm:col-span-2">
+              <dt className="text-sm text-app-muted">{copy.datasetId}</dt>
+              <dd dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-foreground">
                 {experiment.dataset_id}
               </dd>
             </div>
@@ -287,23 +287,20 @@ export function ExperimentDetail({
               {experiment.parameters.map((parameter) => (
                 <div
                   key={parameter.name}
-                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
+                  className="rounded-xl border border-app-border bg-app-surface-muted p-4"
                 >
-                  <dt dir="ltr" className="font-mono text-xs break-all text-slate-500">
+                  <dt dir="ltr" className="text-xs font-semibold break-all text-app-muted">
                     {parameter.name}
                   </dt>
 
-                  <dd
-                    dir="ltr"
-                    className="mt-2 font-mono text-sm font-semibold break-all text-cyan-200"
-                  >
+                  <dd dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-accent">
                     {parameter.value}
                   </dd>
                 </div>
               ))}
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">{copy.unavailable}</p>
+            <p className="text-sm text-app-muted">{copy.unavailable}</p>
           )}
         </CardContent>
       </Card>

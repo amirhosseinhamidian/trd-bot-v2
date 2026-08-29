@@ -17,13 +17,13 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 focus-visible:ring-cyan-400',
+  primary: 'bg-cyan-400 text-slate-950 hover:bg-cyan-300 focus-visible:ring-cyan-500',
   secondary:
-    'border border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-600 hover:bg-slate-800 focus-visible:ring-slate-500',
+    'border border-app-border bg-app-surface text-app-foreground hover:bg-app-hover focus-visible:ring-app-subtle',
   ghost:
-    'bg-transparent text-slate-400 hover:bg-slate-900 hover:text-white focus-visible:ring-slate-500',
+    'bg-transparent text-app-muted hover:bg-app-hover hover:text-app-foreground focus-visible:ring-app-subtle',
   danger:
-    'border border-red-400/30 bg-red-400/10 text-red-300 hover:bg-red-400/20 focus-visible:ring-red-400',
+    'border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/15 focus-visible:ring-red-500',
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         aria-busy={isLoading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+          'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
           variants[variant],
           sizes[size],
           fullWidth && 'w-full',

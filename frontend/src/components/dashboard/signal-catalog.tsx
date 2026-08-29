@@ -159,11 +159,11 @@ export default function SignalCatalog({
       <section>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
           </div>
@@ -177,11 +177,11 @@ export default function SignalCatalog({
           </div>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
 
-        <p className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-sm leading-7 text-amber-200/80">
+        <p className="mt-5 rounded-2xl border border-app-warning-border bg-app-warning-soft p-4 text-sm leading-7 text-app-warning">
           {copy.disclaimer}
         </p>
       </section>
@@ -196,8 +196,8 @@ export default function SignalCatalog({
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-            <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
           </div>
         ) : null}
 
@@ -219,14 +219,14 @@ export default function SignalCatalog({
           <div className="grid gap-4 lg:grid-cols-2">
             {page.items.map((signal) => (
               <Card key={signal.signal_id} className="overflow-hidden">
-                <CardHeader className="border-b border-slate-800">
+                <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <CardTitle>{signal.strategy_name}</CardTitle>
 
                       <CardDescription
                         dir="ltr"
-                        className="mt-2 truncate text-left font-mono text-xs"
+                        className="mt-2 truncate text-left text-xs font-semibold"
                       >
                         {signal.signal_id}
                       </CardDescription>
@@ -240,23 +240,23 @@ export default function SignalCatalog({
 
                 <CardContent className="space-y-6 pt-6">
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                      <p className="text-xs text-slate-500">{copy.fields.score}</p>
-                      <p dir="ltr" className="mt-2 text-left text-xl font-bold text-white">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                      <p className="text-xs text-app-muted">{copy.fields.score}</p>
+                      <p dir="ltr" className="mt-2 text-left text-xl font-bold text-app-foreground">
                         {formatDecimal(signal.score, locale)}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                      <p className="text-xs text-slate-500">{copy.fields.pair}</p>
-                      <p dir="ltr" className="mt-2 text-left font-semibold text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                      <p className="text-xs text-app-muted">{copy.fields.pair}</p>
+                      <p dir="ltr" className="mt-2 text-left font-semibold text-app-foreground">
                         {signal.pair.base_asset}/{signal.pair.quote_asset}
                       </p>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                      <p className="text-xs text-slate-500">{copy.fields.timeframe}</p>
-                      <p dir="ltr" className="mt-2 text-left font-semibold text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                      <p className="text-xs text-app-muted">{copy.fields.timeframe}</p>
+                      <p dir="ltr" className="mt-2 text-left font-semibold text-app-foreground">
                         {signal.timeframe}
                       </p>
                     </div>
@@ -264,41 +264,41 @@ export default function SignalCatalog({
 
                   <dl className="grid gap-4 text-sm sm:grid-cols-2">
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.candleOpen}</dt>
-                      <dd className="mt-1 text-slate-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.candleOpen}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatDate(signal.candle_open_time, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.candleClose}</dt>
-                      <dd className="mt-1 text-slate-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.candleClose}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatDate(signal.candle_close_time, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.generatedAt}</dt>
-                      <dd className="mt-1 text-slate-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.generatedAt}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatDate(signal.generated_at, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.strategy}</dt>
-                      <dd dir="ltr" className="mt-1 text-left text-slate-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.strategy}</dt>
+                      <dd dir="ltr" className="mt-1 text-left text-app-foreground">
                         {signal.strategy_name} v{signal.strategy_version}
                       </dd>
                     </div>
                   </dl>
 
-                  <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-                    <p className="text-xs text-slate-500">{copy.fields.reason}</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-300">{signal.reason}</p>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                    <p className="text-xs text-app-muted">{copy.fields.reason}</p>
+                    <p className="mt-2 text-sm leading-7 text-app-foreground">{signal.reason}</p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">{copy.fields.features}</p>
+                    <p className="text-xs text-app-muted">{copy.fields.features}</p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       {signal.features.map((feature) => (
@@ -309,12 +309,12 @@ export default function SignalCatalog({
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-800 pt-4">
-                    <p className="text-xs text-slate-500">{copy.fields.dataset}</p>
+                  <div className="border-t border-app-border pt-4">
+                    <p className="text-xs text-app-muted">{copy.fields.dataset}</p>
                     <p
                       dir="ltr"
                       title={signal.dataset_id}
-                      className="mt-2 truncate text-left font-mono text-xs text-slate-400"
+                      className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
                     >
                       {signal.dataset_id}
                     </p>
@@ -327,7 +327,7 @@ export default function SignalCatalog({
       </section>
 
       {experiments.length > 0 && !hasError && page.total > 0 ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
             total={page.total}
             limit={page.limit}

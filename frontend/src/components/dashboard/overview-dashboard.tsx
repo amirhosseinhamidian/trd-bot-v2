@@ -77,22 +77,22 @@ export default function OverviewDashboard({
       <section>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.overview.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.overview.title}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs font-medium text-emerald-300">
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-500">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
             {copy.overview.connected}
           </div>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.overview.description}
         </p>
       </section>
@@ -101,14 +101,16 @@ export default function OverviewDashboard({
         {cards.map((card) => (
           <article
             key={card.label}
-            className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg shadow-black/10"
+            className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-lg shadow-black/10"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-400">{card.label}</p>
+              <p className="text-sm text-app-muted">{card.label}</p>
               <span className={`h-2.5 w-2.5 rounded-full ${card.accent}`} />
             </div>
 
-            <p className="mt-5 text-3xl font-bold text-white">{formatNumber(card.value, locale)}</p>
+            <p className="mt-5 text-3xl font-bold text-app-foreground">
+              {formatNumber(card.value, locale)}
+            </p>
           </article>
         ))}
       </section>
@@ -116,15 +118,17 @@ export default function OverviewDashboard({
       <section className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
         <ActivityFeed locale={locale} initialPage={activityPage} />
 
-        <article className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-          <h2 className="text-lg font-semibold text-white">{copy.overview.stages.title}</h2>
+        <article className="rounded-2xl border border-app-border bg-app-surface p-6">
+          <h2 className="text-lg font-semibold text-app-foreground">
+            {copy.overview.stages.title}
+          </h2>
 
-          <p className="mt-1 text-sm text-slate-500">{copy.overview.stages.description}</p>
+          <p className="mt-1 text-sm text-app-muted">{copy.overview.stages.description}</p>
 
-          <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-4">
-            <p className="text-xs text-cyan-400">{copy.overview.stages.current}</p>
+          <div className="mt-6 rounded-xl border border-app-accent-border bg-app-accent-soft p-4">
+            <p className="text-xs text-app-accent">{copy.overview.stages.current}</p>
 
-            <p className="mt-2 font-semibold text-cyan-200">
+            <p className="mt-2 font-semibold text-app-accent">
               {stageLabels[overview.research_stage]}
             </p>
           </div>
@@ -138,12 +142,14 @@ export default function OverviewDashboard({
                   <span
                     className={[
                       'h-3 w-3 shrink-0 rounded-full',
-                      isCompleted ? 'bg-emerald-400' : 'bg-slate-700',
+                      isCompleted ? 'bg-emerald-400' : 'bg-app-border',
                     ].join(' ')}
                   />
 
                   <span
-                    className={isCompleted ? 'text-sm text-slate-200' : 'text-sm text-slate-600'}
+                    className={
+                      isCompleted ? 'text-sm text-app-foreground' : 'text-sm text-app-subtle'
+                    }
                   >
                     {stageLabels[stage]}
                   </span>
@@ -154,25 +160,25 @@ export default function OverviewDashboard({
         </article>
       </section>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <h2 className="text-lg font-semibold text-white">{copy.overview.latest.title}</h2>
+      <section className="rounded-2xl border border-app-border bg-app-surface p-6">
+        <h2 className="text-lg font-semibold text-app-foreground">{copy.overview.latest.title}</h2>
 
-        <p className="mt-1 text-sm text-slate-500">{copy.overview.latest.description}</p>
+        <p className="mt-1 text-sm text-app-muted">{copy.overview.latest.description}</p>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <article className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
-            <p className="text-sm font-medium text-violet-300">{copy.overview.latest.dataset}</p>
+          <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+            <p className="text-sm font-medium text-violet-500">{copy.overview.latest.dataset}</p>
 
             {overview.latest_dataset ? (
               <div className="mt-4 space-y-3">
-                <p className="font-semibold text-white">{overview.latest_dataset.name}</p>
+                <p className="font-semibold text-app-foreground">{overview.latest_dataset.name}</p>
 
-                <p dir="ltr" className="text-left text-sm text-slate-400">
+                <p dir="ltr" className="text-left text-sm text-app-muted">
                   {overview.latest_dataset.pair.base_asset}/
                   {overview.latest_dataset.pair.quote_asset}
                 </p>
 
-                <div className="flex justify-between gap-4 text-xs text-slate-500">
+                <div className="flex justify-between gap-4 text-xs text-app-muted">
                   <span>
                     {copy.overview.latest.candles}:{' '}
                     {formatNumber(overview.latest_dataset.candle_count, locale)}
@@ -183,24 +189,24 @@ export default function OverviewDashboard({
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-600">{copy.overview.latest.noData}</p>
+              <p className="mt-4 text-sm text-app-subtle">{copy.overview.latest.noData}</p>
             )}
           </article>
 
-          <article className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
-            <p className="text-sm font-medium text-cyan-300">{copy.overview.latest.experiment}</p>
+          <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+            <p className="text-sm font-medium text-app-accent">{copy.overview.latest.experiment}</p>
 
             {overview.latest_experiment ? (
               <div className="mt-4 space-y-3">
-                <p className="font-semibold text-white">
+                <p className="font-semibold text-app-foreground">
                   {overview.latest_experiment.strategy_name}
                 </p>
 
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-app-muted">
                   v{overview.latest_experiment.strategy_version}
                 </p>
 
-                <div className="space-y-2 text-xs text-slate-500">
+                <div className="space-y-2 text-xs text-app-muted">
                   <div className="flex justify-between gap-4">
                     <span>{copy.overview.latest.trades}</span>
                     <span>{formatNumber(overview.latest_experiment.total_trades, locale)}</span>
@@ -220,24 +226,24 @@ export default function OverviewDashboard({
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-600">{copy.overview.latest.noData}</p>
+              <p className="mt-4 text-sm text-app-subtle">{copy.overview.latest.noData}</p>
             )}
           </article>
 
-          <article className="rounded-2xl border border-slate-800 bg-slate-950/50 p-5">
-            <p className="text-sm font-medium text-blue-300">{copy.overview.latest.walkForward}</p>
+          <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+            <p className="text-sm font-medium text-blue-500">{copy.overview.latest.walkForward}</p>
 
             {overview.latest_walk_forward_run ? (
               <div className="mt-4 space-y-3">
-                <p className="font-semibold text-white">
+                <p className="font-semibold text-app-foreground">
                   {overview.latest_walk_forward_run.strategy_name}
                 </p>
 
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-app-muted">
                   v{overview.latest_walk_forward_run.strategy_version}
                 </p>
 
-                <div className="space-y-2 text-xs text-slate-500">
+                <div className="space-y-2 text-xs text-app-muted">
                   <div className="flex justify-between gap-4">
                     <span>{copy.overview.latest.folds}</span>
                     <span>
@@ -257,7 +263,7 @@ export default function OverviewDashboard({
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-600">{copy.overview.latest.noData}</p>
+              <p className="mt-4 text-sm text-app-subtle">{copy.overview.latest.noData}</p>
             )}
           </article>
         </div>

@@ -411,10 +411,10 @@ export default function ExperimentRunForm({
 
   return (
     <Card>
-      <CardHeader className="border-b border-slate-800">
+      <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.22em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
@@ -432,11 +432,11 @@ export default function ExperimentRunForm({
       <CardContent className="pt-6">
         {isLoadingDatasets ? (
           <div className="flex min-h-32 items-center justify-center">
-            <Spinner label={copy.states.loadingDatasets} className="text-cyan-400" />
+            <Spinner label={copy.states.loadingDatasets} className="text-app-accent" />
           </div>
         ) : hasDatasetError ? (
-          <div role="alert" className="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5">
-            <p className="text-sm text-rose-200">{copy.states.datasetLoadError}</p>
+          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <p className="text-sm text-rose-600">{copy.states.datasetLoadError}</p>
 
             <Button
               type="button"
@@ -448,8 +448,8 @@ export default function ExperimentRunForm({
             </Button>
           </div>
         ) : datasets.length === 0 ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5">
-            <p className="text-sm leading-7 text-slate-400">{copy.states.noDatasets}</p>
+          <div className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+            <p className="text-sm leading-7 text-app-muted">{copy.states.noDatasets}</p>
           </div>
         ) : (
           <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
@@ -572,27 +572,27 @@ export default function ExperimentRunForm({
             </div>
 
             {selectedDataset ? (
-              <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/5 p-5">
-                <p className="font-semibold text-cyan-100">{copy.selectedDataset.title}</p>
+              <div className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5">
+                <p className="font-semibold text-app-accent">{copy.selectedDataset.title}</p>
 
                 <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
                   <div>
-                    <dt className="text-slate-500">{copy.selectedDataset.pair}</dt>
-                    <dd dir="ltr" className="mt-1 text-slate-200">
+                    <dt className="text-app-muted">{copy.selectedDataset.pair}</dt>
+                    <dd dir="ltr" className="mt-1 text-app-foreground">
                       {selectedDataset.pair.base_asset}/{selectedDataset.pair.quote_asset}
                     </dd>
                   </div>
 
                   <div>
-                    <dt className="text-slate-500">{copy.selectedDataset.timeframe}</dt>
-                    <dd dir="ltr" className="mt-1 text-slate-200">
+                    <dt className="text-app-muted">{copy.selectedDataset.timeframe}</dt>
+                    <dd dir="ltr" className="mt-1 text-app-foreground">
                       {selectedDataset.timeframe}
                     </dd>
                   </div>
 
                   <div>
-                    <dt className="text-slate-500">{copy.selectedDataset.candles}</dt>
-                    <dd className="mt-1 text-slate-200">
+                    <dt className="text-app-muted">{copy.selectedDataset.candles}</dt>
+                    <dd className="mt-1 text-app-foreground">
                       {new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(
                         selectedDataset.candle_count,
                       )}
@@ -600,8 +600,8 @@ export default function ExperimentRunForm({
                   </div>
 
                   <div>
-                    <dt className="text-slate-500">{copy.selectedDataset.source}</dt>
-                    <dd className="mt-1 truncate text-slate-200">{selectedDataset.source}</dd>
+                    <dt className="text-app-muted">{copy.selectedDataset.source}</dt>
+                    <dd className="mt-1 truncate text-app-foreground">{selectedDataset.source}</dd>
                   </div>
                 </dl>
               </div>
@@ -611,7 +611,7 @@ export default function ExperimentRunForm({
               <div
                 role="status"
                 aria-live="polite"
-                className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"
+                className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -619,21 +619,21 @@ export default function ExperimentRunForm({
                       label={
                         execution.status === 'queued' ? copy.states.queued : copy.states.running
                       }
-                      className="text-cyan-400"
+                      className="text-app-accent"
                     />
 
-                    <p className="text-sm font-medium text-cyan-100">
+                    <p className="text-sm font-medium text-app-accent">
                       {execution.status === 'queued' ? copy.states.queued : copy.states.running}
                     </p>
                   </div>
 
-                  <span dir="ltr" className="font-mono text-sm font-semibold text-cyan-300">
+                  <span dir="ltr" className="text-sm font-semibold text-app-accent">
                     {execution.progress_percent}%
                   </span>
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-slate-400">
+                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
                     <span>{copy.states.progress}</span>
 
                     <span dir="ltr">{execution.execution_id}</span>
@@ -645,10 +645,10 @@ export default function ExperimentRunForm({
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={execution.progress_percent}
-                    className="h-2 overflow-hidden rounded-full bg-slate-800"
+                    className="h-2 overflow-hidden rounded-full bg-app-border"
                   >
                     <div
-                      className="h-full rounded-full bg-cyan-400 transition-[width] duration-500 ease-out"
+                      className="h-full rounded-full bg-app-accent transition-[width] duration-500 ease-out"
                       style={{
                         width: `${execution.progress_percent}%`,
                       }}
@@ -661,7 +661,7 @@ export default function ExperimentRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-400/20 bg-rose-400/5 px-4 py-3 text-sm text-rose-200"
+                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-600"
               >
                 {formError}
               </p>
@@ -670,13 +670,13 @@ export default function ExperimentRunForm({
             {createdExperimentId ? (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
               >
-                <p className="text-sm text-emerald-200">{copy.states.success}</p>
+                <p className="text-sm text-emerald-600">{copy.states.success}</p>
 
                 <Link
                   href={`/${locale}/experiments/${encodeURIComponent(createdExperimentId)}`}
-                  className="text-sm font-semibold text-emerald-300 transition hover:text-emerald-200"
+                  className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
                 >
                   {copy.actions.viewResult}
                 </Link>

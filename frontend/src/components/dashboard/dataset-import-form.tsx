@@ -266,7 +266,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
 
   return (
     <Card>
-      <CardHeader className="border-b border-slate-800">
+      <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle>{copy.title}</CardTitle>
@@ -384,33 +384,35 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
           {candles.length > 0 && firstCandle && lastCandle ? (
             <section
               aria-label={copy.previewTitle}
-              className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-5"
+              className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5"
             >
-              <h3 className="text-sm font-semibold text-cyan-200">{copy.previewTitle}</h3>
+              <h3 className="text-sm font-semibold text-app-accent">{copy.previewTitle}</h3>
 
               <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <dt className="text-xs text-slate-500">{copy.previewFile}</dt>
-                  <dd dir="ltr" className="mt-2 truncate text-left text-slate-200">
+                  <dt className="text-xs text-app-muted">{copy.previewFile}</dt>
+                  <dd dir="ltr" className="mt-2 truncate text-left text-app-foreground">
                     {fileName}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-xs text-slate-500">{copy.previewCandles}</dt>
-                  <dd className="mt-2 text-slate-200">{formatNumber(candles.length, locale)}</dd>
+                  <dt className="text-xs text-app-muted">{copy.previewCandles}</dt>
+                  <dd className="mt-2 text-app-foreground">
+                    {formatNumber(candles.length, locale)}
+                  </dd>
                 </div>
 
                 <div>
-                  <dt className="text-xs text-slate-500">{copy.previewStart}</dt>
-                  <dd className="mt-2 text-slate-200">
+                  <dt className="text-xs text-app-muted">{copy.previewStart}</dt>
+                  <dd className="mt-2 text-app-foreground">
                     {formatDate(firstCandle.open_time, locale)}
                   </dd>
                 </div>
 
                 <div>
-                  <dt className="text-xs text-slate-500">{copy.previewEnd}</dt>
-                  <dd className="mt-2 text-slate-200">
+                  <dt className="text-xs text-app-muted">{copy.previewEnd}</dt>
+                  <dd className="mt-2 text-app-foreground">
                     {formatDate(lastCandle.close_time, locale)}
                   </dd>
                 </div>
@@ -421,7 +423,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
           {submitError ? (
             <p
               role="alert"
-              className="rounded-xl border border-red-400/20 bg-red-400/5 p-4 text-sm text-red-300"
+              className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500"
             >
               {submitError}
             </p>
@@ -430,19 +432,22 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
           {createdDataset ? (
             <div
               role="status"
-              className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-5"
+              className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-5"
             >
-              <p className="font-semibold text-emerald-300">{copy.successTitle}</p>
+              <p className="font-semibold text-emerald-500">{copy.successTitle}</p>
 
-              <p className="mt-2 text-sm leading-6 text-slate-400">{copy.successDescription}</p>
+              <p className="mt-2 text-sm leading-6 text-app-muted">{copy.successDescription}</p>
 
-              <p dir="ltr" className="mt-3 text-left font-mono text-xs break-all text-slate-500">
+              <p
+                dir="ltr"
+                className="mt-3 text-left text-xs font-semibold break-all text-app-muted"
+              >
                 {createdDataset.dataset_id}
               </p>
 
               <Link
                 href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
-                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-400/30 px-4 py-2 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-400/10"
+                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10"
               >
                 {copy.viewDataset}
               </Link>

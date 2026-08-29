@@ -46,7 +46,7 @@ export function Select({
   return (
     <div className={cn('w-full', containerClassName)}>
       {label ? (
-        <label htmlFor={selectId} className="mb-2 block text-sm font-medium text-slate-300">
+        <label htmlFor={selectId} className="mb-2 block text-sm font-medium text-app-foreground">
           {label}
         </label>
       ) : null}
@@ -58,12 +58,12 @@ export function Select({
           aria-describedby={error || hint ? messageId : undefined}
           dir={dir}
           className={cn(
-            'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950 py-2.5 ps-3.5 pe-3 text-sm text-slate-200 transition outline-none',
-            'hover:border-slate-700',
-            'focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/10',
+            'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
+            'hover:bg-app-hover',
+            'focus:border-app-accent-border focus:ring-2 focus:ring-app-accent-soft',
             'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
-            'data-[placeholder]:text-slate-600',
-            error && 'border-red-400/50 focus:border-red-400 focus:ring-red-400/10',
+            'data-[placeholder]:text-app-subtle',
+            error && 'border-red-500/50 focus:border-red-500 focus:ring-red-500/10',
             className,
           )}
         >
@@ -74,7 +74,7 @@ export function Select({
               aria-hidden="true"
               viewBox="0 0 20 20"
               fill="currentColor"
-              className="h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200 group-data-[state=open]:rotate-180"
+              className="h-4 w-4 shrink-0 text-app-muted transition-transform duration-200 group-data-[state=open]:rotate-180"
             >
               <path
                 fillRule="evenodd"
@@ -94,11 +94,11 @@ export function Select({
             sideOffset={6}
             avoidCollisions={false}
             className={cn(
-              'trd-select-content z-100 max-h-72 w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-xl border border-slate-700 bg-slate-950 p-1 text-slate-200 shadow-2xl shadow-black/40',
+              'trd-select-content z-100 max-h-72 w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-xl border border-app-border bg-app-surface p-1 text-app-foreground shadow-2xl shadow-black/20',
               contentClassName,
             )}
           >
-            <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-slate-500">
+            <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-app-muted">
               <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
@@ -115,7 +115,7 @@ export function Select({
 
             <SelectPrimitive.Viewport className="max-h-64">{children}</SelectPrimitive.Viewport>
 
-            <SelectPrimitive.ScrollDownButton className="flex h-7 items-center justify-center text-slate-500">
+            <SelectPrimitive.ScrollDownButton className="flex h-7 items-center justify-center text-app-muted">
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                 <path
                   fillRule="evenodd"
@@ -132,7 +132,7 @@ export function Select({
         <p
           id={messageId}
           role={error ? 'alert' : undefined}
-          className={cn('mt-2 text-xs', error ? 'text-red-300' : 'text-slate-500')}
+          className={cn('mt-2 text-xs', error ? 'text-red-500' : 'text-app-muted')}
         >
           {error ?? hint}
         </p>
@@ -150,9 +150,9 @@ export const SelectOption = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex min-h-10 cursor-pointer items-center rounded-lg py-2.5 ps-3 pe-9 text-sm text-slate-300 transition outline-none select-none',
-      'data-[highlighted]:bg-cyan-400/10 data-[highlighted]:text-cyan-200',
-      'data-[state=checked]:text-cyan-300',
+      'relative flex min-h-10 cursor-pointer items-center rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
+      'data-[highlighted]:bg-app-accent-soft data-[highlighted]:text-app-accent',
+      'data-[state=checked]:text-app-accent',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       className,
     )}
@@ -160,7 +160,7 @@ export const SelectOption = forwardRef<
   >
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
 
-    <SelectPrimitive.ItemIndicator className="absolute end-3 flex items-center text-cyan-400">
+    <SelectPrimitive.ItemIndicator className="absolute end-3 flex items-center text-app-accent">
       <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
         <path
           fillRule="evenodd"

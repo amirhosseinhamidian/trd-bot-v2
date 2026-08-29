@@ -146,11 +146,11 @@ export default function WalkForwardCatalog({
       <section>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-cyan-400 uppercase">
+            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
               {copy.title}
             </h1>
           </div>
@@ -164,7 +164,7 @@ export default function WalkForwardCatalog({
           </div>
         </div>
 
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
           {copy.description}
         </p>
       </section>
@@ -175,8 +175,8 @@ export default function WalkForwardCatalog({
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-slate-950/70 backdrop-blur-sm">
-            <Spinner size="lg" label={copy.loading} className="text-cyan-400" />
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
           </div>
         ) : null}
 
@@ -193,14 +193,14 @@ export default function WalkForwardCatalog({
           <div className="grid gap-4 xl:grid-cols-2">
             {page.items.map((run) => (
               <Card key={run.execution_id} className="overflow-hidden">
-                <CardHeader className="border-b border-slate-800">
+                <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
                       <CardTitle>{run.strategy_name}</CardTitle>
 
                       <CardDescription
                         dir="ltr"
-                        className="mt-2 truncate text-left font-mono text-xs"
+                        className="mt-2 truncate text-left text-xs font-semibold"
                       >
                         {run.execution_id}
                       </CardDescription>
@@ -213,59 +213,59 @@ export default function WalkForwardCatalog({
                 <CardContent className="space-y-6 pt-6">
                   <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.version}</dt>
-                      <dd dir="ltr" className="mt-1 text-left text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.version}</dt>
+                      <dd dir="ltr" className="mt-1 text-left text-app-foreground">
                         {run.strategy_version}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.horizon}</dt>
-                      <dd className="mt-1 text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.horizon}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(run.horizon_candles, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.totalFolds}</dt>
-                      <dd className="mt-1 text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.totalFolds}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(run.total_folds, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.totalSignals}</dt>
-                      <dd className="mt-1 text-slate-200">
+                      <dt className="text-xs text-app-muted">{copy.fields.totalSignals}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(run.total_signals, locale)}
                       </dd>
                     </div>
                   </dl>
 
                   <dl className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.strategyReturn}</dt>
-                      <dd className="mt-2 font-mono text-sm text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.strategyReturn}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
                         {formatPercent(run.average_strategy_return, locale)}
                       </dd>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.benchmarkReturn}</dt>
-                      <dd className="mt-2 font-mono text-sm text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.benchmarkReturn}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
                         {formatPercent(run.average_benchmark_return, locale)}
                       </dd>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.excessReturn}</dt>
-                      <dd className="mt-2 font-mono text-sm text-cyan-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.excessReturn}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-accent">
                         {formatPercent(run.average_excess_return, locale)}
                       </dd>
                     </div>
 
-                    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                      <dt className="text-xs text-slate-500">{copy.fields.worstDrawdown}</dt>
-                      <dd className="mt-2 font-mono text-sm text-slate-200">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.worstDrawdown}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
                         {formatPercent(run.worst_max_drawdown_fraction, locale)}
                       </dd>
                     </div>
@@ -273,34 +273,34 @@ export default function WalkForwardCatalog({
 
                   <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.strategyWins}</dt>
-                      <dd className="mt-1 text-emerald-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.strategyWins}</dt>
+                      <dd className="mt-1 text-emerald-500">
                         {formatNumber(run.strategy_wins, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.benchmarkWins}</dt>
-                      <dd className="mt-1 text-amber-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.benchmarkWins}</dt>
+                      <dd className="mt-1 text-app-warning">
                         {formatNumber(run.benchmark_wins, locale)}
                       </dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.ties}</dt>
-                      <dd className="mt-1 text-slate-300">{formatNumber(run.ties, locale)}</dd>
+                      <dt className="text-xs text-app-muted">{copy.fields.ties}</dt>
+                      <dd className="mt-1 text-app-foreground">{formatNumber(run.ties, locale)}</dd>
                     </div>
 
                     <div>
-                      <dt className="text-xs text-slate-500">{copy.fields.foldsWithTrades}</dt>
-                      <dd className="mt-1 text-slate-300">
+                      <dt className="text-xs text-app-muted">{copy.fields.foldsWithTrades}</dt>
+                      <dd className="mt-1 text-app-foreground">
                         {formatNumber(run.folds_with_trades, locale)}
                       </dd>
                     </div>
                   </dl>
 
                   <div>
-                    <p className="text-xs text-slate-500">{copy.fields.parameters}</p>
+                    <p className="text-xs text-app-muted">{copy.fields.parameters}</p>
 
                     <div className="mt-2 flex flex-wrap gap-2">
                       {run.strategy_parameters.map((parameter) => (
@@ -311,29 +311,29 @@ export default function WalkForwardCatalog({
                     </div>
                   </div>
 
-                  <div className="grid gap-3 border-t border-slate-800 pt-4 sm:grid-cols-2">
+                  <div className="grid gap-3 border-t border-app-border pt-4 sm:grid-cols-2">
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.datasetId}</p>
+                      <p className="text-xs text-app-muted">{copy.fields.datasetId}</p>
                       <p
                         dir="ltr"
                         title={run.source_dataset_id}
-                        className="mt-2 truncate text-left font-mono text-xs text-slate-400"
+                        className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
                       >
                         {run.source_dataset_id}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-xs text-slate-500">{copy.fields.createdAt}</p>
-                      <p className="mt-2 text-xs text-slate-400">
+                      <p className="text-xs text-app-muted">{copy.fields.createdAt}</p>
+                      <p className="mt-2 text-xs text-app-muted">
                         {formatDate(run.created_at, locale)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex border-t border-slate-800 pt-4">
+                  <div className="flex border-t border-app-border pt-4">
                     <Link
                       href={`/${locale}/walk-forward/${encodeURIComponent(run.execution_id)}`}
-                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/40 hover:bg-slate-800 hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                     >
                       <span>{copy.viewDetails}</span>
 
@@ -348,7 +348,7 @@ export default function WalkForwardCatalog({
       </section>
 
       {!hasError && page.total > 0 ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
             total={page.total}
             limit={page.limit}

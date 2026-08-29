@@ -28,8 +28,8 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           type="checkbox"
           disabled={disabled}
           className={cn(
-            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-700 bg-slate-950 accent-cyan-400',
-            'focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none',
+            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-app-border bg-app-surface accent-cyan-500',
+            'focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
             'disabled:cursor-not-allowed',
             className,
           )}
@@ -37,10 +37,10 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         />
 
         <span>
-          <span className="block text-sm font-medium text-slate-300">{label}</span>
+          <span className="block text-sm font-medium text-app-foreground">{label}</span>
 
           {description ? (
-            <span className="mt-1 block text-xs leading-5 text-slate-500">{description}</span>
+            <span className="mt-1 block text-xs leading-5 text-app-muted">{description}</span>
           ) : null}
         </span>
       </label>

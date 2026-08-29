@@ -16,7 +16,7 @@ export const Table = forwardRef<HTMLTableElement, TableProps>(
   ({ className, containerClassName, ...props }, ref) => (
     <div
       className={cn(
-        'relative w-full overflow-x-auto rounded-xl border border-slate-800',
+        'relative w-full overflow-x-auto rounded-xl border border-app-border bg-app-surface',
         containerClassName,
       )}
     >
@@ -33,7 +33,7 @@ export const TableHeader = forwardRef<
 >(({ className, ...props }, ref) => (
   <thead
     ref={ref}
-    className={cn('border-b border-slate-800 bg-slate-950/80', className)}
+    className={cn('border-b border-app-border bg-app-surface-muted', className)}
     {...props}
   />
 ));
@@ -44,14 +44,14 @@ export const TableBody = forwardRef<
   HTMLTableSectionElement,
   HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <tbody ref={ref} className={cn('divide-y divide-slate-800', className)} {...props} />
+  <tbody ref={ref} className={cn('divide-y divide-app-border', className)} {...props} />
 ));
 
 TableBody.displayName = 'TableBody';
 
 export const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElement>>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn('transition-colors hover:bg-slate-800/30', className)} {...props} />
+    <tr ref={ref} className={cn('transition-colors hover:bg-app-hover', className)} {...props} />
   ),
 );
 
@@ -62,7 +62,7 @@ export const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLT
     <th
       ref={ref}
       className={cn(
-        'h-11 px-4 text-start text-xs font-medium whitespace-nowrap text-slate-500',
+        'h-11 px-4 text-start text-xs font-medium whitespace-nowrap text-app-muted',
         className,
       )}
       {...props}
@@ -76,7 +76,7 @@ export const TableCell = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLT
   ({ className, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn('px-4 py-3 text-sm whitespace-nowrap text-slate-300', className)}
+      className={cn('px-4 py-3 text-sm whitespace-nowrap text-app-foreground', className)}
       {...props}
     />
   ),
