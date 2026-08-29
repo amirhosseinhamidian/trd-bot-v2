@@ -413,7 +413,7 @@ export default function ExperimentRunForm({
     <Card>
       <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
               {copy.eyebrow}
             </p>
@@ -441,7 +441,7 @@ export default function ExperimentRunForm({
             <Button
               type="button"
               variant="secondary"
-              className="mt-4"
+              className="mt-4 w-full sm:w-auto"
               onClick={() => void loadDatasets()}
             >
               {copy.actions.retryDatasets}
@@ -454,7 +454,7 @@ export default function ExperimentRunForm({
         ) : (
           <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="md:col-span-2">
+              <div className="min-w-0 md:col-span-2">
                 <Select
                   dir={direction}
                   label={copy.fields.dataset}
@@ -599,7 +599,7 @@ export default function ExperimentRunForm({
                     </dd>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <dt className="text-app-muted">{copy.selectedDataset.source}</dt>
                     <dd className="mt-1 truncate text-app-foreground">{selectedDataset.source}</dd>
                   </div>
@@ -633,10 +633,12 @@ export default function ExperimentRunForm({
                 </div>
 
                 <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
+                  <div className="mb-2 flex flex-col items-start gap-2 text-xs text-app-muted sm:flex-row sm:items-center sm:justify-between">
                     <span>{copy.states.progress}</span>
 
-                    <span dir="ltr">{execution.execution_id}</span>
+                    <span dir="ltr" className="w-full text-left break-all sm:w-auto sm:text-end">
+                      {execution.execution_id}
+                    </span>
                   </div>
 
                   <div
@@ -661,7 +663,7 @@ export default function ExperimentRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-600"
+                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm break-words text-rose-600"
               >
                 {formError}
               </p>
@@ -670,13 +672,15 @@ export default function ExperimentRunForm({
             {createdExperimentId ? (
               <div
                 role="status"
-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
+                className="flex flex-col items-stretch gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <p className="text-sm text-emerald-600">{copy.states.success}</p>
+                <p className="min-w-0 text-sm break-words text-emerald-600">
+                  {copy.states.success}
+                </p>
 
                 <Link
                   href={`/${locale}/experiments/${encodeURIComponent(createdExperimentId)}`}
-                  className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                  className="inline-flex w-full items-center justify-center rounded-md text-center text-sm font-semibold text-emerald-600 transition hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
                 >
                   {copy.actions.viewResult}
                 </Link>
@@ -690,6 +694,7 @@ export default function ExperimentRunForm({
                 execution?.status === 'queued' ? copy.actions.queued : copy.actions.running
               }
               disabled={isFormDisabled}
+              className="w-full sm:w-auto"
             >
               {copy.actions.run}
             </Button>

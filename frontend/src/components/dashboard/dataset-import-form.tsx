@@ -268,7 +268,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
     <Card>
       <CardHeader className="border-b border-app-border">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <CardTitle>{copy.title}</CardTitle>
             <CardDescription className="mt-2 max-w-2xl">{copy.description}</CardDescription>
           </div>
@@ -374,6 +374,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
               type="button"
               variant="secondary"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={downloadTemplate}
               disabled={isSubmitting}
             >
@@ -389,7 +390,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
               <h3 className="text-sm font-semibold text-app-accent">{copy.previewTitle}</h3>
 
               <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div>
+                <div className="min-w-0">
                   <dt className="text-xs text-app-muted">{copy.previewFile}</dt>
                   <dd dir="ltr" className="mt-2 truncate text-left text-app-foreground">
                     {fileName}
@@ -447,7 +448,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
 
               <Link
                 href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
-                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10"
+                className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-center text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
               >
                 {copy.viewDataset}
               </Link>

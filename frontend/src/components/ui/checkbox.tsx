@@ -28,7 +28,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           type="checkbox"
           disabled={disabled}
           className={cn(
-            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-app-border bg-app-surface accent-cyan-500',
+            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-app-border bg-app-surface accent-app-accent',
             'focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
             'disabled:cursor-not-allowed',
             className,

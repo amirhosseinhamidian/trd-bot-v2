@@ -134,7 +134,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
       <section>
         <Link
           href={`/${locale}/datasets`}
-          className="inline-flex items-center gap-2 text-sm text-app-muted transition hover:text-app-accent"
+          className="inline-flex items-center gap-2 rounded-sm text-sm text-app-muted transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
         >
           <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span>
           {copy.back}
@@ -256,7 +256,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
             />
           ) : (
             <>
-              <Table>
+              <Table scrollLabel={copy.candles.scrollLabel} className="min-w-[58rem]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{copy.candles.row}</TableHead>

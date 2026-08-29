@@ -131,7 +131,7 @@ export function ExperimentDetail({
         <div>
           <Link
             href={`/${locale}/experiments`}
-            className="text-sm font-medium text-app-accent transition hover:text-app-accent"
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
             ← {copy.back}
           </Link>

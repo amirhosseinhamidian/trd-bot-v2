@@ -191,7 +191,7 @@ export default function ExperimentComparisonPanel({
               <Badge variant="warning">{copy.rankingDirections[result.ranking_direction]}</Badge>
             </div>
 
-            <Table>
+            <Table scrollLabel={copy.tableScrollLabel} className="min-w-[44rem]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{copy.fields.position}</TableHead>

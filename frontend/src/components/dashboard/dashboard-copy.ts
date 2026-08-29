@@ -20,6 +20,9 @@ export type DashboardCopy = {
   header: {
     researchMode: string;
     language: string;
+    navigation: string;
+    openNavigation: string;
+    closeNavigation: string;
   };
   overview: {
     eyebrow: string;
@@ -104,6 +107,9 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     header: {
       researchMode: 'حالت پژوهشی — بدون اجرای معامله واقعی',
       language: 'English',
+      navigation: 'ناوبری داشبورد',
+      openNavigation: 'باز کردن ناوبری',
+      closeNavigation: 'بستن ناوبری',
     },
     overview: {
       eyebrow: 'Research workspace',
@@ -187,6 +193,9 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     header: {
       researchMode: 'Research mode — no live trade execution',
       language: 'فارسی',
+      navigation: 'Dashboard navigation',
+      openNavigation: 'Open navigation',
+      closeNavigation: 'Close navigation',
     },
     overview: {
       eyebrow: 'Research workspace',

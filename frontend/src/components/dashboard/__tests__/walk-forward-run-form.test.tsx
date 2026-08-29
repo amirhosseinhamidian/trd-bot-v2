@@ -154,6 +154,12 @@ describe('WalkForwardRunForm', () => {
 
     render(<WalkForwardRunForm locale="en" />);
 
+    expect(
+      await screen.findByRole('button', {
+        name: 'Queue historical walk-forward',
+      }),
+    ).toHaveClass('w-full', 'sm:w-auto');
+
     await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
 
     const estimateRegion = screen.getByText('Estimated execution').parentElement;

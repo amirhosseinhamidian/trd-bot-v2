@@ -19,6 +19,7 @@ export type ExperimentComparisonCopy = {
   resultTitle: string;
   resultDescription: string;
   firstHistoricalRank: string;
+  tableScrollLabel: string;
   fields: {
     position: string;
     experiment: string;
@@ -59,6 +60,8 @@ const copies: Record<DashboardLocale, ExperimentComparisonCopy> = {
     resultDescription:
       'رتبه اول فقط بهترین نتیجه تاریخی در معیار انتخاب‌شده است و پیشنهاد معامله محسوب نمی‌شود.',
     firstHistoricalRank: 'رتبه اول تاریخی',
+    tableScrollLabel:
+      'جدول رتبه‌بندی آزمایش‌های تاریخی؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
     fields: {
       position: 'رتبه',
       experiment: 'Experiment',
@@ -97,6 +100,8 @@ const copies: Record<DashboardLocale, ExperimentComparisonCopy> = {
     resultDescription:
       'The first position only represents the highest historical rank for the selected metric and is not a trade recommendation.',
     firstHistoricalRank: 'First historical rank',
+    tableScrollLabel:
+      'Historical experiment ranking table; scroll horizontally to view all columns',
     fields: {
       position: 'Position',
       experiment: 'Experiment',

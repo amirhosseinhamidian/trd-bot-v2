@@ -13,6 +13,7 @@ export type WalkForwardDetailCopy = {
   stabilityDescription: string;
   folds: string;
   foldsDescription: string;
+  foldsTableScrollLabel: string;
   configuration: string;
   configurationDescription: string;
   fields: {
@@ -83,6 +84,8 @@ const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
     stabilityDescription: 'توزیع و پراکندگی بازده در Foldهای خارج از نمونه.',
     folds: 'جزئیات Foldها',
     foldsDescription: 'نتیجه مستقل هر پنجره Test در شبیه‌سازی تاریخی.',
+    foldsTableScrollLabel:
+      'جدول جزئیات Foldهای Walk-forward؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
     configuration: 'تنظیمات اجرا',
     configurationDescription: 'پنجره‌های زمانی و پارامترهای استفاده‌شده برای بازتولید این اجرا.',
     fields: {
@@ -151,6 +154,8 @@ const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
     stabilityDescription: 'Return distribution and dispersion across out-of-sample folds.',
     folds: 'Fold details',
     foldsDescription: 'Independent results for every historical test window.',
+    foldsTableScrollLabel:
+      'Walk-forward fold details table; scroll horizontally to view all columns',
     configuration: 'Execution configuration',
     configurationDescription:
       'Window and strategy parameters required to reproduce this execution.',

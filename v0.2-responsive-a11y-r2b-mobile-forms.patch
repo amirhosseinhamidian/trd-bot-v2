@@ -1,0 +1,381 @@
+diff --git a/frontend/src/components/ui/select.tsx b/frontend/src/components/ui/select.tsx
+--- a/frontend/src/components/ui/select.tsx
++++ b/frontend/src/components/ui/select.tsx
+@@ -58,7 +58,7 @@
+           aria-describedby={error || hint ? messageId : undefined}
+           dir={dir}
+           className={cn(
+-            'flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
++            'flex min-h-11 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
+             'hover:bg-app-hover',
+             'focus:border-app-accent-border focus:ring-2 focus:ring-app-accent-soft',
+             'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+@@ -67,7 +67,7 @@
+             className,
+           )}
+         >
+-          <SelectPrimitive.Value placeholder={placeholder} />
++          <SelectPrimitive.Value className="min-w-0 flex-1 truncate text-start" placeholder={placeholder} />
+ 
+           <SelectPrimitive.Icon asChild>
+             <svg
+@@ -150,7 +150,7 @@
+   <SelectPrimitive.Item
+     ref={ref}
+     className={cn(
+-      'relative flex min-h-10 cursor-pointer items-center rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
++      'relative flex min-h-10 min-w-0 cursor-pointer items-center overflow-hidden rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
+       'data-[highlighted]:bg-app-accent-soft data-[highlighted]:text-app-accent',
+       'data-[state=checked]:text-app-accent',
+       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
+@@ -158,7 +158,7 @@
+     )}
+     {...props}
+   >
+-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
++    <SelectPrimitive.ItemText className="block min-w-0 truncate">{children}</SelectPrimitive.ItemText>
+ 
+     <SelectPrimitive.ItemIndicator className="absolute end-3 flex items-center text-app-accent">
+       <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+diff --git a/frontend/src/components/dashboard/dataset-import-form.tsx b/frontend/src/components/dashboard/dataset-import-form.tsx
+--- a/frontend/src/components/dashboard/dataset-import-form.tsx
++++ b/frontend/src/components/dashboard/dataset-import-form.tsx
+@@ -268,7 +268,7 @@
+     <Card>
+       <CardHeader className="border-b border-app-border">
+         <div className="flex flex-wrap items-start justify-between gap-4">
+-          <div>
++          <div className="min-w-0 flex-1">
+             <CardTitle>{copy.title}</CardTitle>
+             <CardDescription className="mt-2 max-w-2xl">{copy.description}</CardDescription>
+           </div>
+@@ -374,6 +374,7 @@
+               type="button"
+               variant="secondary"
+               size="sm"
++              className="w-full sm:w-auto"
+               onClick={downloadTemplate}
+               disabled={isSubmitting}
+             >
+@@ -389,7 +390,7 @@
+               <h3 className="text-sm font-semibold text-app-accent">{copy.previewTitle}</h3>
+ 
+               <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+-                <div>
++                <div className="min-w-0">
+                   <dt className="text-xs text-app-muted">{copy.previewFile}</dt>
+                   <dd dir="ltr" className="mt-2 truncate text-left text-app-foreground">
+                     {fileName}
+@@ -447,7 +448,7 @@
+ 
+               <Link
+                 href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
+-                className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10"
++                className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-center text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10 sm:w-auto"
+               >
+                 {copy.viewDataset}
+               </Link>
+diff --git a/frontend/src/components/dashboard/experiment-run-form.tsx b/frontend/src/components/dashboard/experiment-run-form.tsx
+--- a/frontend/src/components/dashboard/experiment-run-form.tsx
++++ b/frontend/src/components/dashboard/experiment-run-form.tsx
+@@ -413,7 +413,7 @@
+     <Card>
+       <CardHeader className="border-b border-app-border">
+         <div className="flex flex-wrap items-start justify-between gap-4">
+-          <div>
++          <div className="min-w-0 flex-1">
+             <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
+               {copy.eyebrow}
+             </p>
+@@ -441,7 +441,7 @@
+             <Button
+               type="button"
+               variant="secondary"
+-              className="mt-4"
++              className="mt-4 w-full sm:w-auto"
+               onClick={() => void loadDatasets()}
+             >
+               {copy.actions.retryDatasets}
+@@ -454,7 +454,7 @@
+         ) : (
+           <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
+             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-              <div className="md:col-span-2">
++              <div className="min-w-0 md:col-span-2">
+                 <Select
+                   dir={direction}
+                   label={copy.fields.dataset}
+@@ -599,7 +599,7 @@
+                     </dd>
+                   </div>
+ 
+-                  <div>
++                  <div className="min-w-0">
+                     <dt className="text-app-muted">{copy.selectedDataset.source}</dt>
+                     <dd className="mt-1 truncate text-app-foreground">{selectedDataset.source}</dd>
+                   </div>
+@@ -633,10 +633,12 @@
+                 </div>
+ 
+                 <div className="mt-4">
+-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
++                  <div className="mb-2 flex flex-col items-start gap-2 text-xs text-app-muted sm:flex-row sm:items-center sm:justify-between">
+                     <span>{copy.states.progress}</span>
+ 
+-                    <span dir="ltr">{execution.execution_id}</span>
++                    <span dir="ltr" className="w-full break-all text-left sm:w-auto sm:text-end">
++                      {execution.execution_id}
++                    </span>
+                   </div>
+ 
+                   <div
+@@ -661,7 +663,7 @@
+             {formError ? (
+               <p
+                 role="alert"
+-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-600"
++                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm break-words text-rose-600"
+               >
+                 {formError}
+               </p>
+@@ -670,13 +672,13 @@
+             {createdExperimentId ? (
+               <div
+                 role="status"
+-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
++                className="flex flex-col items-stretch gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+               >
+-                <p className="text-sm text-emerald-600">{copy.states.success}</p>
++                <p className="min-w-0 text-sm break-words text-emerald-600">{copy.states.success}</p>
+ 
+                 <Link
+                   href={`/${locale}/experiments/${encodeURIComponent(createdExperimentId)}`}
+-                  className="text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
++                  className="inline-flex w-full items-center justify-center text-center text-sm font-semibold text-emerald-600 transition hover:text-emerald-700 sm:w-auto"
+                 >
+                   {copy.actions.viewResult}
+                 </Link>
+@@ -690,6 +692,7 @@
+                 execution?.status === 'queued' ? copy.actions.queued : copy.actions.running
+               }
+               disabled={isFormDisabled}
++              className="w-full sm:w-auto"
+             >
+               {copy.actions.run}
+             </Button>
+diff --git a/frontend/src/components/dashboard/walk-forward-run-form.tsx b/frontend/src/components/dashboard/walk-forward-run-form.tsx
+--- a/frontend/src/components/dashboard/walk-forward-run-form.tsx
++++ b/frontend/src/components/dashboard/walk-forward-run-form.tsx
+@@ -482,7 +482,7 @@
+     <Card>
+       <CardHeader className="border-b border-app-border">
+         <div className="flex flex-wrap items-start justify-between gap-4">
+-          <div>
++          <div className="min-w-0 flex-1">
+             <p className="text-xs font-semibold tracking-[0.22em] text-app-accent uppercase">
+               {copy.eyebrow}
+             </p>
+@@ -506,7 +506,7 @@
+             <Button
+               type="button"
+               variant="secondary"
+-              className="mt-4"
++              className="mt-4 w-full sm:w-auto"
+               onClick={() => void loadDatasets()}
+             >
+               {copy.actions.retryDatasets}
+@@ -519,7 +519,7 @@
+         ) : (
+           <form onSubmit={(event) => void submitForm(event)} className="space-y-6">
+             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+-              <div className="md:col-span-2">
++              <div className="min-w-0 md:col-span-2">
+                 <Select
+                   dir={direction}
+                   label={copy.fields.dataset}
+@@ -603,8 +603,8 @@
+                 aria-live="polite"
+                 className="rounded-2xl border border-app-accent-border bg-app-accent-soft p-5"
+               >
+-                <div className="flex flex-wrap items-center justify-between gap-3">
+-                  <div className="flex items-center gap-3">
++                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
++                  <div className="flex min-w-0 items-center gap-3">
+                     <Spinner
+                       label={
+                         execution.status === 'queued' ? copy.states.queued : copy.states.running
+@@ -621,7 +621,7 @@
+                 </div>
+ 
+                 <div className="mt-4">
+-                  <div className="mb-2 flex items-center justify-between gap-4 text-xs text-app-muted">
++                  <div className="mb-2 flex flex-col items-start gap-1 text-xs text-app-muted sm:flex-row sm:items-center sm:justify-between">
+                     <span>{copy.states.progress}</span>
+                     <span>
+                       {copy.states.foldsCompleted}:{' '}
+@@ -642,7 +642,7 @@
+                       style={{ width: execution.progress_percent + '%' }}
+                     />
+                   </div>
+-                  <p dir="ltr" className="mt-3 truncate text-xs font-semibold text-app-muted">
++                  <p dir="ltr" className="mt-3 text-left text-xs font-semibold break-all text-app-muted">
+                     {execution.execution_id}
+                   </p>
+                 </div>
+@@ -652,7 +652,7 @@
+             {formError ? (
+               <p
+                 role="alert"
+-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-500"
++                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm break-words text-rose-500"
+               >
+                 {formError}
+               </p>
+@@ -661,12 +661,12 @@
+             {createdRunId ? (
+               <div
+                 role="status"
+-                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3"
++                className="flex flex-col items-stretch gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+               >
+-                <p className="text-sm text-emerald-500">{copy.states.success}</p>
++                <p className="min-w-0 text-sm break-words text-emerald-500">{copy.states.success}</p>
+                 <Link
+                   href={'/' + locale + '/walk-forward/' + encodeURIComponent(createdRunId)}
+-                  className="text-sm font-semibold text-emerald-500 transition hover:opacity-80"
++                  className="inline-flex w-full items-center justify-center text-center text-sm font-semibold text-emerald-500 transition hover:opacity-80 sm:w-auto"
+                 >
+                   {copy.actions.viewResult}
+                 </Link>
+@@ -680,6 +680,7 @@
+                 execution?.status === 'queued' ? copy.actions.queuing : copy.actions.running
+               }
+               disabled={isFormDisabled}
++              className="w-full sm:w-auto"
+             >
+               {copy.actions.run}
+             </Button>
+diff --git a/frontend/src/components/dashboard/__tests__/dataset-import-form.test.tsx b/frontend/src/components/dashboard/__tests__/dataset-import-form.test.tsx
+--- a/frontend/src/components/dashboard/__tests__/dataset-import-form.test.tsx
++++ b/frontend/src/components/dashboard/__tests__/dataset-import-form.test.tsx
+@@ -136,4 +136,51 @@
+       }),
+     ).toHaveAttribute('href', '/en/datasets/dataset-1234567890abcdef');
+   });
++
++  it('keeps secondary and success actions usable on narrow screens', async () => {
++    mocks.parseDatasetCsv.mockReturnValue([candle]);
++    mocks.createDataset.mockResolvedValue(createdDataset);
++
++    const user = userEvent.setup();
++
++    render(<DatasetImportForm locale="en" />);
++
++    expect(
++      screen.getByRole('button', {
++        name: 'Download CSV template',
++      }),
++    ).toHaveClass('w-full', 'sm:w-auto');
++
++    await user.type(screen.getByLabelText('Dataset name'), 'BTC historical');
++    await user.type(screen.getByLabelText('Data source'), 'manual-import');
++    await user.type(screen.getByLabelText('Base asset'), 'btc');
++    await user.type(screen.getByLabelText('Quote asset'), 'usdt');
++
++    const file = new File(['csv contents'], 'a-very-long-historical-dataset-file-name.csv', {
++      type: 'text/csv',
++    });
++
++    Object.defineProperty(file, 'text', {
++      value: vi.fn().mockResolvedValue('csv contents'),
++    });
++
++    await user.upload(screen.getByLabelText('CSV file'), file);
++
++    await waitFor(() => {
++      expect(mocks.parseDatasetCsv).toHaveBeenCalledWith('csv contents', '1h');
++    });
++
++    await user.click(
++      screen.getByRole('button', {
++        name: 'Import dataset',
++      }),
++    );
++
++    const viewLink = await screen.findByRole('link', {
++      name: 'View dataset',
++    });
++
++    expect(viewLink).toHaveClass('w-full', 'sm:w-auto');
++  });
++
+ });
+diff --git a/frontend/src/components/dashboard/__tests__/experiment-run-form.test.tsx b/frontend/src/components/dashboard/__tests__/experiment-run-form.test.tsx
+--- a/frontend/src/components/dashboard/__tests__/experiment-run-form.test.tsx
++++ b/frontend/src/components/dashboard/__tests__/experiment-run-form.test.tsx
+@@ -162,6 +162,12 @@
+ 
+     const datasetSelect = await screen.findByLabelText('Dataset');
+ 
++    expect(
++      screen.getByRole('button', {
++        name: 'Run historical backtest',
++      }),
++    ).toHaveClass('w-full', 'sm:w-auto');
++
+     await user.selectOptions(datasetSelect, dataset.dataset_id);
+ 
+     await user.click(
+diff --git a/frontend/src/components/dashboard/__tests__/walk-forward-run-form.test.tsx b/frontend/src/components/dashboard/__tests__/walk-forward-run-form.test.tsx
+--- a/frontend/src/components/dashboard/__tests__/walk-forward-run-form.test.tsx
++++ b/frontend/src/components/dashboard/__tests__/walk-forward-run-form.test.tsx
+@@ -154,6 +154,12 @@
+ 
+     render(<WalkForwardRunForm locale="en" />);
+ 
++    expect(
++      await screen.findByRole('button', {
++        name: 'Queue historical walk-forward',
++      }),
++    ).toHaveClass('w-full', 'sm:w-auto');
++
+     await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
+ 
+     const estimateRegion = screen.getByText('Estimated execution').parentElement;
+diff --git a/frontend/src/components/ui/__tests__/select.test.tsx b/frontend/src/components/ui/__tests__/select.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/frontend/src/components/ui/__tests__/select.test.tsx
+@@ -0,0 +1,32 @@
++import { render, screen } from '@testing-library/react';
++import { describe, expect, it, vi } from 'vitest';
++
++import { Select, SelectOption } from '@/components/ui/select';
++
++describe('Select', () => {
++  it('constrains long selected values inside the trigger', () => {
++    render(
++      <Select
++        label="Dataset"
++        value="dataset-long"
++        onValueChange={vi.fn()}
++      >
++        <SelectOption value="dataset-long">
++          A very long historical dataset name · BTC/USDT · 1h
++        </SelectOption>
++      </Select>,
++    );
++
++    const trigger = screen.getByRole('combobox', {
++      name: 'Dataset',
++    });
++
++    expect(trigger).toHaveClass('min-w-0', 'overflow-hidden');
++
++    const selectedValue = screen.getByText(
++      'A very long historical dataset name · BTC/USDT · 1h',
++    );
++
++    expect(selectedValue).toHaveClass('min-w-0', 'flex-1', 'truncate');
++  });
++});

@@ -136,4 +136,50 @@ describe('DatasetImportForm', () => {
       }),
     ).toHaveAttribute('href', '/en/datasets/dataset-1234567890abcdef');
   });
+
+  it('keeps secondary and success actions usable on narrow screens', async () => {
+    mocks.parseDatasetCsv.mockReturnValue([candle]);
+    mocks.createDataset.mockResolvedValue(createdDataset);
+
+    const user = userEvent.setup();
+
+    render(<DatasetImportForm locale="en" />);
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Download CSV template',
+      }),
+    ).toHaveClass('w-full', 'sm:w-auto');
+
+    await user.type(screen.getByLabelText('Dataset name'), 'BTC historical');
+    await user.type(screen.getByLabelText('Data source'), 'manual-import');
+    await user.type(screen.getByLabelText('Base asset'), 'btc');
+    await user.type(screen.getByLabelText('Quote asset'), 'usdt');
+
+    const file = new File(['csv contents'], 'a-very-long-historical-dataset-file-name.csv', {
+      type: 'text/csv',
+    });
+
+    Object.defineProperty(file, 'text', {
+      value: vi.fn().mockResolvedValue('csv contents'),
+    });
+
+    await user.upload(screen.getByLabelText('CSV file'), file);
+
+    await waitFor(() => {
+      expect(mocks.parseDatasetCsv).toHaveBeenCalledWith('csv contents', '1h');
+    });
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Import dataset',
+      }),
+    );
+
+    const viewLink = await screen.findByRole('link', {
+      name: 'View dataset',
+    });
+
+    expect(viewLink).toHaveClass('w-full', 'sm:w-auto');
+  });
 });

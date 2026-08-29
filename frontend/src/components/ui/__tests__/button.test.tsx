@@ -17,7 +17,12 @@ describe('Button', () => {
       }),
     );
 
+    const button = screen.getByRole('button', {
+      name: 'Run test',
+    });
+
     expect(onClick).toHaveBeenCalledOnce();
+    expect(button).toHaveClass('bg-app-accent', 'text-app-background');
   });
 
   it('is disabled while loading', () => {
