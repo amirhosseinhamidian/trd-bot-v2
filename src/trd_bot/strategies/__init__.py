@@ -6,6 +6,7 @@ from trd_bot.strategies.registry import (
     StrategyRegistry,
     build_default_strategy_registry,
 )
+from trd_bot.strategies.rsi_threshold import RSIThresholdStrategy
 from trd_bot.strategies.signals import (
     SignalDirection,
     StrategyFeature,
@@ -16,6 +17,7 @@ from trd_bot.strategies.signals import (
 __all__ = [
     "BaseStrategy",
     "EMACrossoverStrategy",
+    "RSIThresholdStrategy",
     "SignalDirection",
     "StrategyDefinition",
     "StrategyFeature",

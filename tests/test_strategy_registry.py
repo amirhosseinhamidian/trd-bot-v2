@@ -5,6 +5,7 @@ import pytest
 
 from trd_bot.strategies import (
     EMACrossoverStrategy,
+    RSIThresholdStrategy,
     StrategyDefinition,
     StrategyRegistry,
     build_default_strategy_registry,
@@ -38,7 +39,45 @@ def test_registry_lists_definitions_deterministically() -> None:
 
     assert [(definition.name, definition.version) for definition in definitions] == [
         ("ema-crossover", "1.0.0"),
+        ("rsi-threshold", "1.0.0"),
     ]
+
+
+def test_default_registry_builds_rsi_threshold() -> None:
+    registry = build_default_strategy_registry()
+
+    strategy = registry.create(
+        name="rsi-threshold",
+        version="1.0.0",
+        parameters={
+            "period": 14,
+            "oversold_threshold": Decimal("30"),
+            "overbought_threshold": Decimal("70"),
+        },
+    )
+
+    assert isinstance(strategy, RSIThresholdStrategy)
+    assert strategy.period == 14
+    assert strategy.oversold_threshold == Decimal("30")
+    assert strategy.overbought_threshold == Decimal("70")
+
+
+def test_rsi_factory_accepts_integer_thresholds_without_floats() -> None:
+    registry = build_default_strategy_registry()
+
+    strategy = registry.create(
+        name="rsi-threshold",
+        version="1.0.0",
+        parameters={
+            "period": 14,
+            "oversold_threshold": 30,
+            "overbought_threshold": 70,
+        },
+    )
+
+    assert isinstance(strategy, RSIThresholdStrategy)
+    assert strategy.oversold_threshold == Decimal("30")
+    assert strategy.overbought_threshold == Decimal("70")
 
 
 def test_registry_rejects_unknown_strategy_version() -> None:

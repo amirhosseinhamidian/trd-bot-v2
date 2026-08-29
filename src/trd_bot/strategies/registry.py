@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.ema_crossover import EMACrossoverStrategy
+from trd_bot.strategies.rsi_threshold import RSIThresholdStrategy
 
 StrategyParameterValue = str | int | Decimal | bool
 StrategyFactory = Callable[[Mapping[str, StrategyParameterValue]], BaseStrategy]
@@ -128,6 +129,24 @@ def _require_int_parameter(
     return value
 
 
+def _require_decimal_parameter(
+    parameters: Mapping[str, StrategyParameterValue],
+    name: str,
+) -> Decimal:
+    value = parameters[name]
+
+    if isinstance(value, bool):
+        raise ValueError(f"strategy parameter {name!r} must be a decimal")
+
+    if isinstance(value, Decimal):
+        return value
+
+    if isinstance(value, int):
+        return Decimal(value)
+
+    raise ValueError(f"strategy parameter {name!r} must be a decimal")
+
+
 def _build_ema_crossover(
     parameters: Mapping[str, StrategyParameterValue],
 ) -> BaseStrategy:
@@ -147,6 +166,33 @@ def _build_ema_crossover(
     )
 
 
+def _build_rsi_threshold(
+    parameters: Mapping[str, StrategyParameterValue],
+) -> BaseStrategy:
+    _require_exact_parameters(
+        parameters,
+        expected=frozenset(
+            {
+                "period",
+                "oversold_threshold",
+                "overbought_threshold",
+            }
+        ),
+    )
+
+    return RSIThresholdStrategy(
+        period=_require_int_parameter(parameters, "period"),
+        oversold_threshold=_require_decimal_parameter(
+            parameters,
+            "oversold_threshold",
+        ),
+        overbought_threshold=_require_decimal_parameter(
+            parameters,
+            "overbought_threshold",
+        ),
+    )
+
+
 def build_default_strategy_registry() -> StrategyRegistry:
     """Build the registry used by historical research execution runners."""
 
@@ -157,6 +203,13 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="ema-crossover",
             version="1.0.0",
             factory=_build_ema_crossover,
+        )
+    )
+    registry.register(
+        StrategyDefinition(
+            name="rsi-threshold",
+            version="1.0.0",
+            factory=_build_rsi_threshold,
         )
     )
 
