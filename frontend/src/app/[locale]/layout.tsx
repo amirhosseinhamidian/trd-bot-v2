@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import localFont from 'next/font/local';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import DashboardShell from '@/components/layout/dashboard-shell';
+import { THEME_BOOTSTRAP_SCRIPT } from '@/components/theme/theme';
 
 import '../globals.css';
 
@@ -35,9 +37,12 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   }
 
   return (
-    <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'}>
+    <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <body className={`${vazirmatn.variable} font-sans antialiased`}>
         <DashboardShell locale={locale}>{children}</DashboardShell>
+        <Script id="trd-theme-bootstrap" strategy="beforeInteractive">
+          {THEME_BOOTSTRAP_SCRIPT}
+        </Script>
       </body>
     </html>
   );
