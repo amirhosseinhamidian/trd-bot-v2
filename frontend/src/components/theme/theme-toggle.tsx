@@ -3,29 +3,32 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-
-const THEME_STORAGE_KEY = 'trd-theme';
-const THEME_CHANGE_EVENT = 'trd-theme-change';
-
-type Theme = 'dark' | 'light';
+import {
+  DEFAULT_THEME,
+  THEME_CHANGE_EVENT,
+  THEME_STORAGE_KEY,
+  applyTheme,
+  getAppliedTheme,
+  getStoredTheme,
+  resolveTheme,
+  setStoredTheme,
+  type Theme,
+} from '@/components/theme/theme';
 
 type ThemeToggleProps = {
   locale: DashboardLocale;
 };
 
-function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') {
-    return 'dark';
-  }
-
-  return window.localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
-}
-
 function subscribeToTheme(onStoreChange: () => void): () => void {
   function handleStorage(event: StorageEvent): void {
-    if (event.key === THEME_STORAGE_KEY) {
-      onStoreChange();
+    if (event.key !== THEME_STORAGE_KEY && event.key !== null) {
+      return;
     }
+
+    const nextTheme = event.key === null ? DEFAULT_THEME : resolveTheme(event.newValue);
+
+    applyTheme(nextTheme);
+    onStoreChange();
   }
 
   window.addEventListener('storage', handleStorage);
@@ -37,26 +40,22 @@ function subscribeToTheme(onStoreChange: () => void): () => void {
   };
 }
 
-function applyTheme(theme: Theme): void {
-  document.documentElement.dataset.theme = theme;
-  document.documentElement.style.colorScheme = theme;
-}
-
 function getServerTheme(): Theme {
-  return 'dark';
+  return DEFAULT_THEME;
 }
 
 export default function ThemeToggle({ locale }: ThemeToggleProps) {
-  const theme = useSyncExternalStore<Theme>(subscribeToTheme, getStoredTheme, getServerTheme);
+  const theme = useSyncExternalStore<Theme>(subscribeToTheme, getAppliedTheme, getServerTheme);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    applyTheme(getStoredTheme());
+  }, []);
 
   function toggleTheme(): void {
     const nextTheme: Theme = theme === 'dark' ? 'light' : 'dark';
 
-    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    applyTheme(nextTheme);
+    setStoredTheme(nextTheme);
     window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   }
 
@@ -74,7 +73,7 @@ export default function ThemeToggle({ locale }: ThemeToggleProps) {
       type="button"
       aria-label={label}
       title={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-lg text-app-muted transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-lg text-app-muted transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
       onClick={toggleTheme}
     >
       <span aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>
