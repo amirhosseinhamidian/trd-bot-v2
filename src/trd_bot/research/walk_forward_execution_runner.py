@@ -16,7 +16,7 @@ from trd_bot.research.walk_forward_runs import (
     WalkForwardRunBuilder,
     WalkForwardRunRegistry,
 )
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import StrategyRegistry, build_default_strategy_registry
 
 
 class WalkForwardExecutionRunner:
@@ -32,6 +32,7 @@ class WalkForwardExecutionRunner:
         materializer: WalkForwardDatasetMaterializer | None = None,
         executor: WalkForwardExecutor | None = None,
         state_machine: WalkForwardExecutionStateMachine | None = None,
+        strategy_registry: StrategyRegistry | None = None,
     ) -> None:
         self._executions = executions
         self._datasets = datasets
@@ -40,6 +41,7 @@ class WalkForwardExecutionRunner:
         self._materializer = materializer or WalkForwardDatasetMaterializer()
         self._executor = executor or WalkForwardExecutor()
         self._state_machine = state_machine or WalkForwardExecutionStateMachine()
+        self._strategy_registry = strategy_registry or build_default_strategy_registry()
 
     def run(
         self,
@@ -83,9 +85,13 @@ class WalkForwardExecutionRunner:
             )
 
             parameters = running.parameters
-            strategy = EMACrossoverStrategy(
-                fast_period=parameters.fast_period,
-                slow_period=parameters.slow_period,
+            strategy = self._strategy_registry.create(
+                name=running.strategy_name,
+                version=running.strategy_version,
+                parameters={
+                    "fast_period": parameters.fast_period,
+                    "slow_period": parameters.slow_period,
+                },
             )
 
             def save_fold_progress(

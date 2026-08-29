@@ -125,6 +125,43 @@ def test_runs_queued_execution_to_success() -> None:
     assert stored_experiment.strategy_name == "ema-crossover"
 
 
+def test_marks_execution_failed_for_unregistered_strategy_identity() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryExperimentExecutionRepository()
+    dataset = DatasetBuilder().build(
+        name="Unknown strategy dataset",
+        candles=build_dataset_candles(),
+    )
+
+    dataset_repository.save(dataset)
+
+    queued = (
+        ExperimentExecutionBuilder()
+        .build(
+            dataset_id=dataset.dataset_id,
+            parameters=build_parameters(),
+        )
+        .model_copy(
+            update={
+                "strategy_version": "9.9.9",
+            }
+        )
+    )
+
+    execution_repository.save(queued)
+
+    runner = ExperimentExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        experiments=InMemoryExperimentRegistry(),
+    )
+
+    completed = runner.run(queued.execution_id)
+
+    assert completed.status is ExperimentExecutionStatus.FAILED
+    assert completed.error_code == "execution_failed"
+
+
 def test_marks_execution_failed_when_dataset_is_missing() -> None:
     execution_repository = InMemoryExperimentExecutionRepository()
 

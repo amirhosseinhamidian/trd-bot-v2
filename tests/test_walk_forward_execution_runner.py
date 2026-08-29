@@ -186,6 +186,32 @@ def test_runs_queued_walk_forward_execution_to_success() -> None:
     ]
 
 
+def test_marks_walk_forward_execution_failed_for_unregistered_strategy_identity() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryWalkForwardExecutionRepository()
+    dataset = build_dataset()
+
+    dataset_repository.save(dataset)
+
+    queued = build_queued_execution(dataset).model_copy(
+        update={
+            "strategy_version": "9.9.9",
+        }
+    )
+    execution_repository.save(queued)
+
+    runner = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=InMemoryWalkForwardRunRegistry(),
+    )
+
+    completed = runner.run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.FAILED
+    assert completed.error_code == "execution_failed"
+
+
 def test_marks_walk_forward_execution_failed_when_dataset_is_missing() -> None:
     execution_repository = InMemoryWalkForwardExecutionRepository()
     queued = WalkForwardExecutionBuilder().build(

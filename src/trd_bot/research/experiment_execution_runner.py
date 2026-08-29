@@ -14,7 +14,7 @@ from trd_bot.research.experiments import (
     ExperimentRegistry,
 )
 from trd_bot.research.pipeline import ResearchPipeline
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import StrategyRegistry, build_default_strategy_registry
 
 
 def _canonical_decimal(value: Decimal) -> str:
@@ -31,11 +31,13 @@ class ExperimentExecutionRunner:
         datasets: DatasetRepository,
         experiments: ExperimentRegistry,
         state_machine: ExperimentExecutionStateMachine | None = None,
+        strategy_registry: StrategyRegistry | None = None,
     ) -> None:
         self._executions = executions
         self._datasets = datasets
         self._experiments = experiments
         self._state_machine = state_machine or ExperimentExecutionStateMachine()
+        self._strategy_registry = strategy_registry or build_default_strategy_registry()
 
     def run(
         self,
@@ -73,9 +75,13 @@ class ExperimentExecutionRunner:
         try:
             parameters = running.parameters
 
-            strategy = EMACrossoverStrategy(
-                fast_period=parameters.fast_period,
-                slow_period=parameters.slow_period,
+            strategy = self._strategy_registry.create(
+                name=running.strategy_name,
+                version=running.strategy_version,
+                parameters={
+                    "fast_period": parameters.fast_period,
+                    "slow_period": parameters.slow_period,
+                },
             )
 
             result = ResearchPipeline().run(
