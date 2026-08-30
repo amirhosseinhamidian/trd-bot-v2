@@ -4,8 +4,11 @@ import type { ResearchStrategyMetadata } from '@/lib/api/types';
 import {
   findStrategyMetadata,
   findStrategyParameterMetadata,
+  getExecutableResearchStrategies,
   getStrategyParameterDefault,
+  getStrategyParameterInputProps,
   isExecutableResearchStrategyName,
+  isStrategyParameterValueValid,
 } from '@/lib/strategies/catalog';
 
 const catalog: ResearchStrategyMetadata[] = [
@@ -50,6 +53,24 @@ const catalog: ResearchStrategyMetadata[] = [
         minimum_exclusive: false,
         maximum_exclusive: false,
       },
+      {
+        name: 'oversold_threshold',
+        kind: 'decimal',
+        default_value: '30',
+        minimum: '0',
+        maximum: '50',
+        minimum_exclusive: true,
+        maximum_exclusive: true,
+      },
+      {
+        name: 'overbought_threshold',
+        kind: 'decimal',
+        default_value: '70',
+        minimum: '50',
+        maximum: '100',
+        minimum_exclusive: true,
+        maximum_exclusive: true,
+      },
     ],
   },
 ];
@@ -65,10 +86,47 @@ describe('strategy catalog helpers', () => {
     expect(strategy ? getStrategyParameterDefault(strategy, 'fast_period') : null).toBe('9');
   });
 
-  it('does not claim unknown catalog strategies are executable yet', () => {
-    expect(isExecutableResearchStrategyName('ema-crossover')).toBe(true);
-    expect(isExecutableResearchStrategyName('rsi-threshold')).toBe(true);
+  it('filters catalog entries to frontend-executable strategies', () => {
+    const result = getExecutableResearchStrategies([
+      ...catalog,
+      {
+        name: 'future-strategy',
+        version: '2.0.0',
+        display_name: 'Future Strategy',
+        description: 'Not executable by this frontend yet.',
+        parameters: [],
+      },
+    ]);
+
+    expect(result.map((strategy) => strategy.name)).toEqual(['ema-crossover', 'rsi-threshold']);
     expect(isExecutableResearchStrategyName('future-strategy')).toBe(false);
+  });
+
+  it('validates integer and exclusive decimal bounds from metadata', () => {
+    const ema = catalog[0];
+    const rsi = catalog[1];
+
+    expect(isStrategyParameterValueValid(ema, 'fast_period', '9')).toBe(true);
+    expect(isStrategyParameterValueValid(ema, 'fast_period', '2.5')).toBe(false);
+    expect(isStrategyParameterValueValid(ema, 'fast_period', '1')).toBe(false);
+
+    expect(isStrategyParameterValueValid(rsi, 'oversold_threshold', '30')).toBe(true);
+    expect(isStrategyParameterValueValid(rsi, 'oversold_threshold', '0')).toBe(false);
+    expect(isStrategyParameterValueValid(rsi, 'oversold_threshold', '50')).toBe(false);
+  });
+
+  it('derives numeric input hints from parameter metadata', () => {
+    const rsi = catalog[1];
+
+    expect(getStrategyParameterInputProps(rsi, 'period')).toEqual({
+      min: '2',
+      step: 1,
+    });
+    expect(getStrategyParameterInputProps(rsi, 'oversold_threshold')).toEqual({
+      min: '0',
+      max: '50',
+      step: 'any',
+    });
   });
 
   it('returns null for missing metadata instead of inventing defaults', () => {

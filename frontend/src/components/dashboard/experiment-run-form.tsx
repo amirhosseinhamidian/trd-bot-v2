@@ -25,17 +25,28 @@ import {
   createRsiThresholdExperimentExecution,
   getDatasets,
   getExperimentExecution,
+  getResearchStrategies,
 } from '@/lib/api/client';
 import type {
   CreatedResearchExperiment,
   DatasetSummary,
   ExperimentExecution,
+  ResearchStrategyMetadata,
   ResearchStrategyName,
   StoredDatasetEMACrossoverRequest,
   StoredDatasetRSIThresholdRequest,
 } from '@/lib/api/types';
 
 import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
+import {
+  findStrategyMetadata,
+  getExecutableResearchStrategies,
+  getStrategyParameterDefault,
+  getStrategyParameterInputProps,
+  isExecutableResearchStrategyName,
+  isStrategyParameterValueValid,
+} from '@/lib/strategies/catalog';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type ExperimentRunFormProps = {
   locale: DashboardLocale;
@@ -62,11 +73,11 @@ type FormValues = {
 const INITIAL_VALUES: FormValues = {
   datasetId: '',
   strategyName: 'ema-crossover',
-  fastPeriod: '9',
-  slowPeriod: '21',
-  rsiPeriod: '14',
-  oversoldThreshold: '30',
-  overboughtThreshold: '70',
+  fastPeriod: '',
+  slowPeriod: '',
+  rsiPeriod: '',
+  oversoldThreshold: '',
+  overboughtThreshold: '',
   horizonCandles: '1',
   startingBalance: '10000',
   allocationFraction: '0.10',
@@ -96,46 +107,64 @@ function fetchAvailableDatasets() {
 }
 
 function buildInitialFormValues(initialValues?: ExperimentRunInitialValues): FormValues {
-  const mergedValues: FormValues = {
+  return {
     ...INITIAL_VALUES,
     ...initialValues,
   };
+}
 
-  if (mergedValues.strategyName === 'ema-crossover') {
-    const fastPeriod = Number(mergedValues.fastPeriod);
-    const slowPeriod = Number(mergedValues.slowPeriod);
-
-    if (
-      !Number.isInteger(fastPeriod) ||
-      !Number.isInteger(slowPeriod) ||
-      slowPeriod <= fastPeriod
-    ) {
-      mergedValues.fastPeriod = INITIAL_VALUES.fastPeriod;
-      mergedValues.slowPeriod = INITIAL_VALUES.slowPeriod;
-    }
-  } else {
-    const rsiPeriod = Number(mergedValues.rsiPeriod);
-    const oversoldThreshold = Number(mergedValues.oversoldThreshold);
-    const overboughtThreshold = Number(mergedValues.overboughtThreshold);
-
-    if (!Number.isInteger(rsiPeriod) || rsiPeriod < 2) {
-      mergedValues.rsiPeriod = INITIAL_VALUES.rsiPeriod;
-    }
-
-    if (!Number.isFinite(oversoldThreshold) || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
-      mergedValues.oversoldThreshold = INITIAL_VALUES.oversoldThreshold;
-    }
-
-    if (
-      !Number.isFinite(overboughtThreshold) ||
-      overboughtThreshold <= 50 ||
-      overboughtThreshold >= 100
-    ) {
-      mergedValues.overboughtThreshold = INITIAL_VALUES.overboughtThreshold;
-    }
+function resolveStrategyParameterValue(
+  strategy: ResearchStrategyMetadata,
+  parameterName: string,
+  currentValue: string,
+): string {
+  if (isStrategyParameterValueValid(strategy, parameterName, currentValue)) {
+    return currentValue;
   }
 
-  return mergedValues;
+  return getStrategyParameterDefault(strategy, parameterName) ?? '';
+}
+
+function applyStrategyCatalogDefaults(
+  values: FormValues,
+  catalog: ResearchStrategyMetadata[],
+): FormValues {
+  const strategy = findStrategyMetadata(catalog, values.strategyName);
+
+  if (strategy === null) {
+    return values;
+  }
+
+  if (values.strategyName === 'ema-crossover') {
+    let fastPeriod = resolveStrategyParameterValue(strategy, 'fast_period', values.fastPeriod);
+    let slowPeriod = resolveStrategyParameterValue(strategy, 'slow_period', values.slowPeriod);
+
+    if (Number(slowPeriod) <= Number(fastPeriod)) {
+      fastPeriod = getStrategyParameterDefault(strategy, 'fast_period') ?? '';
+      slowPeriod = getStrategyParameterDefault(strategy, 'slow_period') ?? '';
+    }
+
+    return {
+      ...values,
+      fastPeriod,
+      slowPeriod,
+    };
+  }
+
+  return {
+    ...values,
+    rsiPeriod: resolveStrategyParameterValue(strategy, 'period', values.rsiPeriod),
+    oversoldThreshold: resolveStrategyParameterValue(
+      strategy,
+      'oversold_threshold',
+      values.oversoldThreshold,
+    ),
+    overboughtThreshold: resolveStrategyParameterValue(
+      strategy,
+      'overbought_threshold',
+      values.overboughtThreshold,
+    ),
+  };
 }
 
 function parseInteger(value: string): number | null {
@@ -173,9 +202,12 @@ export default function ExperimentRunForm({
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
 
   const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
+  const [strategies, setStrategies] = useState<ResearchStrategyMetadata[]>([]);
   const [values, setValues] = useState<FormValues>(() => buildInitialFormValues(initialValues));
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
   const [hasDatasetError, setHasDatasetError] = useState(false);
+  const [isLoadingStrategies, setIsLoadingStrategies] = useState(true);
+  const [hasStrategyError, setHasStrategyError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(() => Boolean(initialExecutionId));
   const [formError, setFormError] = useState<string | null>(null);
   const [createdExperimentId, setCreatedExperimentId] = useState<string | null>(null);
@@ -186,6 +218,11 @@ export default function ExperimentRunForm({
   const selectedDataset = useMemo(
     () => datasets.find((dataset) => dataset.dataset_id === values.datasetId) ?? null,
     [datasets, values.datasetId],
+  );
+
+  const selectedStrategy = useMemo(
+    () => findStrategyMetadata(strategies, values.strategyName),
+    [strategies, values.strategyName],
   );
 
   const loadDatasets = useCallback(async (): Promise<void> => {
@@ -199,6 +236,27 @@ export default function ExperimentRunForm({
       setHasDatasetError(true);
     } finally {
       setIsLoadingDatasets(false);
+    }
+  }, []);
+
+  const loadStrategies = useCallback(async (): Promise<void> => {
+    setIsLoadingStrategies(true);
+    setHasStrategyError(false);
+
+    try {
+      const result = getExecutableResearchStrategies(await getResearchStrategies());
+
+      if (result.length === 0) {
+        setHasStrategyError(true);
+        return;
+      }
+
+      setStrategies(result);
+      setValues((currentValues) => applyStrategyCatalogDefaults(currentValues, result));
+    } catch {
+      setHasStrategyError(true);
+    } finally {
+      setIsLoadingStrategies(false);
     }
   }, []);
 
@@ -230,6 +288,10 @@ export default function ExperimentRunForm({
     };
   }, []);
 
+  useEffect(() => {
+    void loadStrategies();
+  }, [loadStrategies]);
+
   const stopPolling = useCallback((): void => {
     pollingControllerRef.current?.abort();
     pollingControllerRef.current = null;
@@ -254,6 +316,27 @@ export default function ExperimentRunForm({
     stopPolling();
   }
 
+  function updateStrategyName(value: string): void {
+    if (!isExecutableResearchStrategyName(value)) {
+      return;
+    }
+
+    setValues((currentValues) =>
+      applyStrategyCatalogDefaults(
+        {
+          ...currentValues,
+          strategyName: value,
+        },
+        strategies,
+      ),
+    );
+
+    setFormError(null);
+    setCreatedExperimentId(null);
+    setExecution(null);
+    stopPolling();
+  }
+
   function buildRequest(): BuiltExperimentRequest | null {
     const horizonCandles = parseInteger(values.horizonCandles);
     const startingBalance = parseDecimal(values.startingBalance);
@@ -263,6 +346,11 @@ export default function ExperimentRunForm({
 
     if (!values.datasetId || selectedDataset === null) {
       setFormError(copy.errors.datasetRequired);
+      return null;
+    }
+
+    if (selectedStrategy === null) {
+      setFormError(copy.errors.strategyUnavailable);
       return null;
     }
 
@@ -304,12 +392,18 @@ export default function ExperimentRunForm({
       const fastPeriod = parseInteger(values.fastPeriod);
       const slowPeriod = parseInteger(values.slowPeriod);
 
-      if (fastPeriod === null || fastPeriod < 2) {
+      if (
+        fastPeriod === null ||
+        !isStrategyParameterValueValid(selectedStrategy, 'fast_period', values.fastPeriod)
+      ) {
         setFormError(copy.errors.invalidFastPeriod);
         return null;
       }
 
-      if (slowPeriod === null || slowPeriod < 3) {
+      if (
+        slowPeriod === null ||
+        !isStrategyParameterValueValid(selectedStrategy, 'slow_period', values.slowPeriod)
+      ) {
         setFormError(copy.errors.invalidSlowPeriod);
         return null;
       }
@@ -338,17 +432,34 @@ export default function ExperimentRunForm({
     const oversoldThreshold = parseDecimal(values.oversoldThreshold);
     const overboughtThreshold = parseDecimal(values.overboughtThreshold);
 
-    if (rsiPeriod === null || rsiPeriod < 2) {
+    if (
+      rsiPeriod === null ||
+      !isStrategyParameterValueValid(selectedStrategy, 'period', values.rsiPeriod)
+    ) {
       setFormError(copy.errors.invalidRsiPeriod);
       return null;
     }
 
-    if (oversoldThreshold === null || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
+    if (
+      oversoldThreshold === null ||
+      !isStrategyParameterValueValid(
+        selectedStrategy,
+        'oversold_threshold',
+        values.oversoldThreshold,
+      )
+    ) {
       setFormError(copy.errors.invalidOversoldThreshold);
       return null;
     }
 
-    if (overboughtThreshold === null || overboughtThreshold <= 50 || overboughtThreshold >= 100) {
+    if (
+      overboughtThreshold === null ||
+      !isStrategyParameterValueValid(
+        selectedStrategy,
+        'overbought_threshold',
+        values.overboughtThreshold,
+      )
+    ) {
       setFormError(copy.errors.invalidOverboughtThreshold);
       return null;
     }
@@ -497,10 +608,35 @@ export default function ExperimentRunForm({
 
   const isFormDisabled =
     isLoadingDatasets ||
+    isLoadingStrategies ||
     hasDatasetError ||
+    hasStrategyError ||
     datasets.length === 0 ||
+    strategies.length === 0 ||
+    selectedStrategy === null ||
     isSubmitting ||
     isExecutionActive;
+
+  const fastPeriodInputProps =
+    selectedStrategy === null
+      ? { step: 1 as const }
+      : getStrategyParameterInputProps(selectedStrategy, 'fast_period');
+  const slowPeriodInputProps =
+    selectedStrategy === null
+      ? { step: 1 as const }
+      : getStrategyParameterInputProps(selectedStrategy, 'slow_period');
+  const rsiPeriodInputProps =
+    selectedStrategy === null
+      ? { step: 1 as const }
+      : getStrategyParameterInputProps(selectedStrategy, 'period');
+  const oversoldThresholdInputProps =
+    selectedStrategy === null
+      ? { step: 'any' as const }
+      : getStrategyParameterInputProps(selectedStrategy, 'oversold_threshold');
+  const overboughtThresholdInputProps =
+    selectedStrategy === null
+      ? { step: 'any' as const }
+      : getStrategyParameterInputProps(selectedStrategy, 'overbought_threshold');
 
   return (
     <Card>
@@ -523,9 +659,14 @@ export default function ExperimentRunForm({
       </CardHeader>
 
       <CardContent className="pt-6">
-        {isLoadingDatasets ? (
+        {isLoadingDatasets || isLoadingStrategies ? (
           <div className="flex min-h-32 items-center justify-center">
-            <Spinner label={copy.states.loadingDatasets} className="text-app-accent" />
+            <Spinner
+              label={
+                isLoadingDatasets ? copy.states.loadingDatasets : copy.states.loadingStrategies
+              }
+              className="text-app-accent"
+            />
           </div>
         ) : hasDatasetError ? (
           <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
@@ -538,6 +679,19 @@ export default function ExperimentRunForm({
               onClick={() => void loadDatasets()}
             >
               {copy.actions.retryDatasets}
+            </Button>
+          </div>
+        ) : hasStrategyError ? (
+          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <p className="text-sm text-rose-600">{copy.states.strategyLoadError}</p>
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-4 w-full sm:w-auto"
+              onClick={() => void loadStrategies()}
+            >
+              {copy.actions.retryStrategies}
             </Button>
           </div>
         ) : datasets.length === 0 ? (
@@ -571,12 +725,13 @@ export default function ExperimentRunForm({
                 label={copy.fields.strategy}
                 value={values.strategyName}
                 disabled={isFormDisabled}
-                onValueChange={(value) =>
-                  updateValue('strategyName', value as ResearchStrategyName)
-                }
+                onValueChange={updateStrategyName}
               >
-                <SelectOption value="ema-crossover">{copy.strategy.emaCrossover}</SelectOption>
-                <SelectOption value="rsi-threshold">{copy.strategy.rsiThreshold}</SelectOption>
+                {strategies.map((strategy) => (
+                  <SelectOption key={`${strategy.name}@${strategy.version}`} value={strategy.name}>
+                    {getStrategyDisplayName(strategy.name, locale)} · v{strategy.version}
+                  </SelectOption>
+                ))}
               </Select>
 
               <Input
@@ -598,8 +753,9 @@ export default function ExperimentRunForm({
                     type="number"
                     label={copy.fields.fastPeriod}
                     value={values.fastPeriod}
-                    min={2}
-                    step={1}
+                    min={fastPeriodInputProps.min}
+                    max={fastPeriodInputProps.max}
+                    step={fastPeriodInputProps.step}
                     disabled={isFormDisabled}
                     className="text-left"
                     onChange={(event) => updateValue('fastPeriod', event.target.value)}
@@ -610,8 +766,9 @@ export default function ExperimentRunForm({
                     type="number"
                     label={copy.fields.slowPeriod}
                     value={values.slowPeriod}
-                    min={3}
-                    step={1}
+                    min={slowPeriodInputProps.min}
+                    max={slowPeriodInputProps.max}
+                    step={slowPeriodInputProps.step}
                     disabled={isFormDisabled}
                     className="text-left"
                     onChange={(event) => updateValue('slowPeriod', event.target.value)}
@@ -624,8 +781,9 @@ export default function ExperimentRunForm({
                     type="number"
                     label={copy.fields.rsiPeriod}
                     value={values.rsiPeriod}
-                    min={2}
-                    step={1}
+                    min={rsiPeriodInputProps.min}
+                    max={rsiPeriodInputProps.max}
+                    step={rsiPeriodInputProps.step}
                     disabled={isFormDisabled}
                     className="text-left"
                     onChange={(event) => updateValue('rsiPeriod', event.target.value)}
@@ -636,9 +794,9 @@ export default function ExperimentRunForm({
                     type="number"
                     label={copy.fields.oversoldThreshold}
                     value={values.oversoldThreshold}
-                    min="0.000001"
-                    max="49.999999"
-                    step="any"
+                    min={oversoldThresholdInputProps.min}
+                    max={oversoldThresholdInputProps.max}
+                    step={oversoldThresholdInputProps.step}
                     disabled={isFormDisabled}
                     className="text-left"
                     onChange={(event) => updateValue('oversoldThreshold', event.target.value)}
@@ -649,9 +807,9 @@ export default function ExperimentRunForm({
                     type="number"
                     label={copy.fields.overboughtThreshold}
                     value={values.overboughtThreshold}
-                    min="50.000001"
-                    max="99.999999"
-                    step="any"
+                    min={overboughtThresholdInputProps.min}
+                    max={overboughtThresholdInputProps.max}
+                    step={overboughtThresholdInputProps.step}
                     disabled={isFormDisabled}
                     className="text-left"
                     onChange={(event) => updateValue('overboughtThreshold', event.target.value)}

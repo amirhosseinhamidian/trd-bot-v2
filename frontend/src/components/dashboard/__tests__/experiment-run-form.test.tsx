@@ -10,10 +10,12 @@ import type {
   ExperimentExecution,
   ExperimentExecutionStatus,
   Page,
+  ResearchStrategyMetadata,
 } from '@/lib/api/types';
 
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
+  getStrategies: vi.fn(),
   createExecution: vi.fn(),
   createRsiExecution: vi.fn(),
   getExecution: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
   return {
     ...actual,
     getDatasets: apiMocks.getDatasets,
+    getResearchStrategies: apiMocks.getStrategies,
     createEmaCrossoverExperimentExecution: apiMocks.createExecution,
     createRsiThresholdExperimentExecution: apiMocks.createRsiExecution,
     getExperimentExecution: apiMocks.getExecution,
@@ -82,6 +85,70 @@ vi.mock('@/components/ui', async (importOriginal) => {
     ),
   };
 });
+
+const strategyCatalog: ResearchStrategyMetadata[] = [
+  {
+    name: 'ema-crossover',
+    version: '1.0.0',
+    display_name: 'EMA Crossover',
+    description: 'Historical EMA research strategy.',
+    parameters: [
+      {
+        name: 'fast_period',
+        kind: 'integer',
+        default_value: '9',
+        minimum: '2',
+        maximum: null,
+        minimum_exclusive: false,
+        maximum_exclusive: false,
+      },
+      {
+        name: 'slow_period',
+        kind: 'integer',
+        default_value: '21',
+        minimum: '3',
+        maximum: null,
+        minimum_exclusive: false,
+        maximum_exclusive: false,
+      },
+    ],
+  },
+  {
+    name: 'rsi-threshold',
+    version: '1.0.0',
+    display_name: 'RSI Threshold',
+    description: 'Historical RSI research strategy.',
+    parameters: [
+      {
+        name: 'period',
+        kind: 'integer',
+        default_value: '14',
+        minimum: '2',
+        maximum: null,
+        minimum_exclusive: false,
+        maximum_exclusive: false,
+      },
+      {
+        name: 'oversold_threshold',
+        kind: 'decimal',
+        default_value: '30',
+        minimum: '0',
+        maximum: '50',
+        minimum_exclusive: true,
+        maximum_exclusive: true,
+      },
+      {
+        name: 'overbought_threshold',
+        kind: 'decimal',
+        default_value: '70',
+        minimum: '50',
+        maximum: '100',
+        minimum_exclusive: true,
+        maximum_exclusive: true,
+      },
+    ],
+  },
+];
 
 const dataset: DatasetSummary = {
   dataset_id: 'dataset-btc-usdt-1h',
@@ -166,6 +233,7 @@ function buildRsiExecution(
 describe('ExperimentRunForm', () => {
   beforeEach(() => {
     apiMocks.getDatasets.mockReset();
+    apiMocks.getStrategies.mockReset();
     apiMocks.createExecution.mockReset();
     apiMocks.createRsiExecution.mockReset();
     apiMocks.getExecution.mockReset();
@@ -173,6 +241,7 @@ describe('ExperimentRunForm', () => {
     navigationMocks.replace.mockReset();
 
     apiMocks.getDatasets.mockResolvedValue(datasetPage);
+    apiMocks.getStrategies.mockResolvedValue(strategyCatalog);
   });
 
   it('queues an execution, persists its ID, polls its status and opens the result', async () => {
@@ -346,6 +415,48 @@ describe('ExperimentRunForm', () => {
     ).not.toBeInTheDocument();
 
     expect(navigationMocks.push).not.toHaveBeenCalled();
+  });
+
+  it('uses catalog defaults for strategy-specific fields', async () => {
+    const user = userEvent.setup();
+
+    apiMocks.getStrategies.mockResolvedValue([
+      {
+        ...strategyCatalog[0],
+        parameters: strategyCatalog[0].parameters.map((parameter) =>
+          parameter.name === 'fast_period'
+            ? { ...parameter, default_value: '8' }
+            : parameter.name === 'slow_period'
+              ? { ...parameter, default_value: '20' }
+              : parameter,
+        ),
+      },
+      {
+        ...strategyCatalog[1],
+        parameters: strategyCatalog[1].parameters.map((parameter) =>
+          parameter.name === 'period'
+            ? { ...parameter, default_value: '13' }
+            : parameter.name === 'oversold_threshold'
+              ? { ...parameter, default_value: '25' }
+              : parameter.name === 'overbought_threshold'
+                ? { ...parameter, default_value: '75' }
+                : parameter,
+        ),
+      },
+    ]);
+
+    render(<ExperimentRunForm locale="en" />);
+
+    await screen.findByLabelText('Strategy');
+
+    expect(screen.getByLabelText('Fast EMA period')).toHaveValue(8);
+    expect(screen.getByLabelText('Slow EMA period')).toHaveValue(20);
+
+    await user.selectOptions(screen.getByLabelText('Strategy'), 'rsi-threshold');
+
+    expect(screen.getByLabelText('RSI period')).toHaveValue(13);
+    expect(screen.getByLabelText('Oversold threshold')).toHaveValue(25);
+    expect(screen.getByLabelText('Overbought threshold')).toHaveValue(75);
   });
 
   it('rejects a slow EMA period that is not greater than the fast period', async () => {

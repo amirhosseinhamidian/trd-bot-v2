@@ -24,16 +24,27 @@ import {
   createEmaCrossoverWalkForwardExecution,
   createRsiThresholdWalkForwardExecution,
   getDatasets,
+  getResearchStrategies,
   getWalkForwardExecution,
 } from '@/lib/api/client';
 import type {
   DatasetSummary,
+  ResearchStrategyMetadata,
   ResearchStrategyName,
   StoredDatasetEMACrossoverWalkForwardRequest,
   StoredDatasetRSIThresholdWalkForwardRequest,
   WalkForwardExecution,
   WalkForwardMode,
 } from '@/lib/api/types';
+import {
+  findStrategyMetadata,
+  getExecutableResearchStrategies,
+  getStrategyParameterDefault,
+  getStrategyParameterInputProps,
+  isExecutableResearchStrategyName,
+  isStrategyParameterValueValid,
+} from '@/lib/strategies/catalog';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { estimateWalkForwardFoldCount } from '@/lib/walk-forward/fold-estimate';
 
 type WalkForwardRunFormProps = {
@@ -64,7 +75,7 @@ type FormValues = {
 type NumericField = {
   key: Exclude<keyof FormValues, 'datasetId' | 'strategyName' | 'mode'>;
   label: string;
-  min: number | string;
+  min?: number | string;
   max?: number | string;
   step: number | string;
 };
@@ -73,11 +84,11 @@ const INITIAL_VALUES: FormValues = {
   datasetId: '',
   strategyName: 'ema-crossover',
   mode: 'rolling',
-  fastPeriod: '9',
-  slowPeriod: '21',
-  rsiPeriod: '14',
-  oversoldThreshold: '30',
-  overboughtThreshold: '70',
+  fastPeriod: '',
+  slowPeriod: '',
+  rsiPeriod: '',
+  oversoldThreshold: '',
+  overboughtThreshold: '',
   horizonCandles: '1',
   trainCandles: '120',
   testCandles: '24',
@@ -110,6 +121,60 @@ function fetchAvailableDatasets() {
   });
 }
 
+function resolveStrategyParameterValue(
+  strategy: ResearchStrategyMetadata,
+  parameterName: string,
+  currentValue: string,
+): string {
+  if (isStrategyParameterValueValid(strategy, parameterName, currentValue)) {
+    return currentValue;
+  }
+
+  return getStrategyParameterDefault(strategy, parameterName) ?? '';
+}
+
+function applyStrategyCatalogDefaults(
+  values: FormValues,
+  catalog: ResearchStrategyMetadata[],
+): FormValues {
+  const strategy = findStrategyMetadata(catalog, values.strategyName);
+
+  if (strategy === null) {
+    return values;
+  }
+
+  if (values.strategyName === 'ema-crossover') {
+    let fastPeriod = resolveStrategyParameterValue(strategy, 'fast_period', values.fastPeriod);
+    let slowPeriod = resolveStrategyParameterValue(strategy, 'slow_period', values.slowPeriod);
+
+    if (Number(slowPeriod) <= Number(fastPeriod)) {
+      fastPeriod = getStrategyParameterDefault(strategy, 'fast_period') ?? '';
+      slowPeriod = getStrategyParameterDefault(strategy, 'slow_period') ?? '';
+    }
+
+    return {
+      ...values,
+      fastPeriod,
+      slowPeriod,
+    };
+  }
+
+  return {
+    ...values,
+    rsiPeriod: resolveStrategyParameterValue(strategy, 'period', values.rsiPeriod),
+    oversoldThreshold: resolveStrategyParameterValue(
+      strategy,
+      'oversold_threshold',
+      values.oversoldThreshold,
+    ),
+    overboughtThreshold: resolveStrategyParameterValue(
+      strategy,
+      'overbought_threshold',
+      values.overboughtThreshold,
+    ),
+  };
+}
+
 function parseInteger(value: string): number | null {
   if (!value.trim()) {
     return null;
@@ -137,9 +202,12 @@ export default function WalkForwardRunForm({
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
 
   const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
+  const [strategies, setStrategies] = useState<ResearchStrategyMetadata[]>([]);
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
   const [hasDatasetError, setHasDatasetError] = useState(false);
+  const [isLoadingStrategies, setIsLoadingStrategies] = useState(true);
+  const [hasStrategyError, setHasStrategyError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(() => Boolean(initialExecutionId));
   const [formError, setFormError] = useState<string | null>(null);
   const [execution, setExecution] = useState<WalkForwardExecution | null>(null);
@@ -150,6 +218,11 @@ export default function WalkForwardRunForm({
   const selectedDataset = useMemo(
     () => datasets.find((dataset) => dataset.dataset_id === values.datasetId) ?? null,
     [datasets, values.datasetId],
+  );
+
+  const selectedStrategy = useMemo(
+    () => findStrategyMetadata(strategies, values.strategyName),
+    [strategies, values.strategyName],
   );
 
   const estimatedFolds = useMemo(() => {
@@ -185,7 +258,7 @@ export default function WalkForwardRunForm({
     values.trainCandles,
   ]);
 
-  async function loadDatasets(): Promise<void> {
+  const loadDatasets = useCallback(async (): Promise<void> => {
     setIsLoadingDatasets(true);
     setHasDatasetError(false);
 
@@ -197,7 +270,28 @@ export default function WalkForwardRunForm({
     } finally {
       setIsLoadingDatasets(false);
     }
-  }
+  }, []);
+
+  const loadStrategies = useCallback(async (): Promise<void> => {
+    setIsLoadingStrategies(true);
+    setHasStrategyError(false);
+
+    try {
+      const result = getExecutableResearchStrategies(await getResearchStrategies());
+
+      if (result.length === 0) {
+        setHasStrategyError(true);
+        return;
+      }
+
+      setStrategies(result);
+      setValues((currentValues) => applyStrategyCatalogDefaults(currentValues, result));
+    } catch {
+      setHasStrategyError(true);
+    } finally {
+      setIsLoadingStrategies(false);
+    }
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -225,6 +319,10 @@ export default function WalkForwardRunForm({
     };
   }, []);
 
+  useEffect(() => {
+    void loadStrategies();
+  }, [loadStrategies]);
+
   const stopPolling = useCallback((): void => {
     pollingControllerRef.current?.abort();
     pollingControllerRef.current = null;
@@ -248,6 +346,26 @@ export default function WalkForwardRunForm({
     stopPolling();
   }
 
+  function updateStrategyName(value: string): void {
+    if (!isExecutableResearchStrategyName(value)) {
+      return;
+    }
+
+    setValues((currentValues) =>
+      applyStrategyCatalogDefaults(
+        {
+          ...currentValues,
+          strategyName: value,
+        },
+        strategies,
+      ),
+    );
+    setFormError(null);
+    setExecution(null);
+    setCreatedRunId(null);
+    stopPolling();
+  }
+
   function buildRequest(): BuiltWalkForwardRequest | null {
     const horizonCandles = parseInteger(values.horizonCandles);
     const trainCandles = parseInteger(values.trainCandles);
@@ -261,6 +379,10 @@ export default function WalkForwardRunForm({
 
     if (!values.datasetId || selectedDataset === null) {
       setFormError(copy.errors.datasetRequired);
+      return null;
+    }
+    if (selectedStrategy === null) {
+      setFormError(copy.errors.strategyUnavailable);
       return null;
     }
     if (horizonCandles === null || horizonCandles < 1) {
@@ -334,11 +456,17 @@ export default function WalkForwardRunForm({
       const fastPeriod = parseInteger(values.fastPeriod);
       const slowPeriod = parseInteger(values.slowPeriod);
 
-      if (fastPeriod === null || fastPeriod < 2) {
+      if (
+        fastPeriod === null ||
+        !isStrategyParameterValueValid(selectedStrategy, 'fast_period', values.fastPeriod)
+      ) {
         setFormError(copy.errors.invalidFastPeriod);
         return null;
       }
-      if (slowPeriod === null || slowPeriod < 3) {
+      if (
+        slowPeriod === null ||
+        !isStrategyParameterValueValid(selectedStrategy, 'slow_period', values.slowPeriod)
+      ) {
         setFormError(copy.errors.invalidSlowPeriod);
         return null;
       }
@@ -361,15 +489,32 @@ export default function WalkForwardRunForm({
     const oversoldThreshold = parseDecimal(values.oversoldThreshold);
     const overboughtThreshold = parseDecimal(values.overboughtThreshold);
 
-    if (rsiPeriod === null || rsiPeriod < 2) {
+    if (
+      rsiPeriod === null ||
+      !isStrategyParameterValueValid(selectedStrategy, 'period', values.rsiPeriod)
+    ) {
       setFormError(copy.errors.invalidRsiPeriod);
       return null;
     }
-    if (oversoldThreshold === null || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
+    if (
+      oversoldThreshold === null ||
+      !isStrategyParameterValueValid(
+        selectedStrategy,
+        'oversold_threshold',
+        values.oversoldThreshold,
+      )
+    ) {
       setFormError(copy.errors.invalidOversoldThreshold);
       return null;
     }
-    if (overboughtThreshold === null || overboughtThreshold <= 50 || overboughtThreshold >= 100) {
+    if (
+      overboughtThreshold === null ||
+      !isStrategyParameterValueValid(
+        selectedStrategy,
+        'overbought_threshold',
+        values.overboughtThreshold,
+      )
+    ) {
       setFormError(copy.errors.invalidOverboughtThreshold);
       return null;
     }
@@ -510,32 +655,54 @@ export default function WalkForwardRunForm({
   const isExecutionActive = execution?.status === 'queued' || execution?.status === 'running';
   const isFormDisabled =
     isLoadingDatasets ||
+    isLoadingStrategies ||
     hasDatasetError ||
+    hasStrategyError ||
     datasets.length === 0 ||
+    strategies.length === 0 ||
+    selectedStrategy === null ||
     isSubmitting ||
     isExecutionActive;
   const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
   const strategyFields: NumericField[] =
     values.strategyName === 'ema-crossover'
       ? [
-          { key: 'fastPeriod', label: copy.fields.fastPeriod, min: 2, step: 1 },
-          { key: 'slowPeriod', label: copy.fields.slowPeriod, min: 3, step: 1 },
+          {
+            key: 'fastPeriod',
+            label: copy.fields.fastPeriod,
+            ...(selectedStrategy === null
+              ? { min: 0, step: 1 }
+              : getStrategyParameterInputProps(selectedStrategy, 'fast_period')),
+          },
+          {
+            key: 'slowPeriod',
+            label: copy.fields.slowPeriod,
+            ...(selectedStrategy === null
+              ? { min: 0, step: 1 }
+              : getStrategyParameterInputProps(selectedStrategy, 'slow_period')),
+          },
         ]
       : [
-          { key: 'rsiPeriod', label: copy.fields.rsiPeriod, min: 2, step: 1 },
+          {
+            key: 'rsiPeriod',
+            label: copy.fields.rsiPeriod,
+            ...(selectedStrategy === null
+              ? { min: 0, step: 1 }
+              : getStrategyParameterInputProps(selectedStrategy, 'period')),
+          },
           {
             key: 'oversoldThreshold',
             label: copy.fields.oversoldThreshold,
-            min: '0.000001',
-            max: '49.999999',
-            step: 'any',
+            ...(selectedStrategy === null
+              ? { min: 0, step: 'any' }
+              : getStrategyParameterInputProps(selectedStrategy, 'oversold_threshold')),
           },
           {
             key: 'overboughtThreshold',
             label: copy.fields.overboughtThreshold,
-            min: '50.000001',
-            max: '99.999999',
-            step: 'any',
+            ...(selectedStrategy === null
+              ? { min: 0, step: 'any' }
+              : getStrategyParameterInputProps(selectedStrategy, 'overbought_threshold')),
           },
         ];
 
@@ -582,9 +749,14 @@ export default function WalkForwardRunForm({
       </CardHeader>
 
       <CardContent className="pt-6">
-        {isLoadingDatasets ? (
+        {isLoadingDatasets || isLoadingStrategies ? (
           <div className="flex min-h-32 items-center justify-center">
-            <Spinner label={copy.states.loadingDatasets} className="text-app-accent" />
+            <Spinner
+              label={
+                isLoadingDatasets ? copy.states.loadingDatasets : copy.states.loadingStrategies
+              }
+              className="text-app-accent"
+            />
           </div>
         ) : hasDatasetError ? (
           <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
@@ -596,6 +768,18 @@ export default function WalkForwardRunForm({
               onClick={() => void loadDatasets()}
             >
               {copy.actions.retryDatasets}
+            </Button>
+          </div>
+        ) : hasStrategyError ? (
+          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
+            <p className="text-sm text-rose-500">{copy.states.strategyLoadError}</p>
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-4 w-full sm:w-auto"
+              onClick={() => void loadStrategies()}
+            >
+              {copy.actions.retryStrategies}
             </Button>
           </div>
         ) : datasets.length === 0 ? (
@@ -628,12 +812,13 @@ export default function WalkForwardRunForm({
                 label={copy.fields.strategy}
                 value={values.strategyName}
                 disabled={isFormDisabled}
-                onValueChange={(value) =>
-                  updateValue('strategyName', value as ResearchStrategyName)
-                }
+                onValueChange={updateStrategyName}
               >
-                <SelectOption value="ema-crossover">{copy.strategy.emaCrossover}</SelectOption>
-                <SelectOption value="rsi-threshold">{copy.strategy.rsiThreshold}</SelectOption>
+                {strategies.map((strategy) => (
+                  <SelectOption key={`${strategy.name}@${strategy.version}`} value={strategy.name}>
+                    {getStrategyDisplayName(strategy.name, locale)} · v{strategy.version}
+                  </SelectOption>
+                ))}
               </Select>
 
               <Select
