@@ -117,6 +117,22 @@ def build_execution_payload(
     }
 
 
+def build_rsi_execution_payload(
+    dataset_id: str,
+) -> dict[str, object]:
+    return {
+        "dataset_id": dataset_id,
+        "period": 14,
+        "oversold_threshold": "30",
+        "overbought_threshold": "70",
+        "horizon_candles": 1,
+        "starting_balance": "10000",
+        "allocation_fraction": "0.10",
+        "fee_rate": "0.001",
+        "slippage_rate": "0.0005",
+    }
+
+
 def test_creates_queued_experiment_execution(
     execution_repository: InMemoryExperimentExecutionRepository,
     execution_task_calls: list[str],
@@ -144,6 +160,34 @@ def test_creates_queued_experiment_execution(
 
     assert stored is not None
     assert stored.status.value == "queued"
+    assert execution_task_calls == [body["execution_id"]]
+
+
+def test_creates_queued_rsi_experiment_execution(
+    execution_repository: InMemoryExperimentExecutionRepository,
+    execution_task_calls: list[str],
+) -> None:
+    dataset_id = create_dataset()
+
+    response = client.post(
+        "/api/v1/research/experiment-executions/rsi-threshold",
+        json=build_rsi_execution_payload(dataset_id),
+    )
+
+    assert response.status_code == 202
+
+    body = response.json()
+
+    assert body["strategy_name"] == "rsi-threshold"
+    assert body["strategy_version"] == "1.0.0"
+    assert body["parameters"]["period"] == 14
+    assert body["parameters"]["oversold_threshold"] == "30"
+    assert body["parameters"]["overbought_threshold"] == "70"
+
+    stored = execution_repository.get(body["execution_id"])
+
+    assert stored is not None
+    assert stored.strategy_name == "rsi-threshold"
     assert execution_task_calls == [body["execution_id"]]
 
 

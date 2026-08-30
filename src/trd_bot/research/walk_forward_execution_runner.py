@@ -88,10 +88,7 @@ class WalkForwardExecutionRunner:
             strategy = self._strategy_registry.create(
                 name=running.strategy_name,
                 version=running.strategy_version,
-                parameters={
-                    "fast_period": parameters.fast_period,
-                    "slow_period": parameters.slow_period,
-                },
+                parameters=parameters.strategy_parameters(),
             )
 
             def save_fold_progress(
@@ -114,15 +111,12 @@ class WalkForwardExecutionRunner:
                 dataset=dataset,
                 materialization=materialization,
                 strategy=strategy,
-                strategy_parameters=(
+                strategy_parameters=tuple(
                     ExperimentParameter(
-                        name="fast_period",
-                        value=str(parameters.fast_period),
-                    ),
-                    ExperimentParameter(
-                        name="slow_period",
-                        value=str(parameters.slow_period),
-                    ),
+                        name=name,
+                        value=value,
+                    )
+                    for name, value in parameters.strategy_parameter_pairs()
                 ),
                 horizon_candles=parameters.horizon_candles,
                 backtest_config=BacktestConfig(

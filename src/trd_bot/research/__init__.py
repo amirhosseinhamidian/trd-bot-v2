@@ -85,6 +85,8 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecutionStateMachine,
     ExperimentExecutionStatus,
     InMemoryExperimentExecutionRepository,
+    RSIThresholdExecutionParameters,
+    StrategyExecutionParameters,
 )
 from trd_bot.research.experiment_reports import (
     ExperimentResearchReport,
@@ -273,6 +275,7 @@ __all__ = [
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "PresetExperimentResearchReport",
+    "RSIThresholdExecutionParameters",
     "ResearchActivityBuilder",
     "ResearchActivityItem",
     "ResearchActivityType",
@@ -285,6 +288,7 @@ __all__ = [
     "SignalEvaluator",
     "SignalOutcome",
     "StrategyEvaluationSummary",
+    "StrategyExecutionParameters",
     "StrategyReportBuilder",
     "WalkForwardConfig",
     "WalkForwardDatasetMaterializer",

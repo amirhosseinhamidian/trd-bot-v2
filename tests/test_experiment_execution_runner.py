@@ -16,6 +16,7 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecutionBuilder,
     ExperimentExecutionStatus,
     InMemoryExperimentExecutionRepository,
+    RSIThresholdExecutionParameters,
 )
 from trd_bot.research.experiments import InMemoryExperimentRegistry
 
@@ -123,6 +124,52 @@ def test_runs_queued_execution_to_success() -> None:
     assert stored_experiment is not None
     assert stored_experiment.dataset_id == dataset.dataset_id
     assert stored_experiment.strategy_name == "ema-crossover"
+
+
+def test_runs_queued_rsi_execution_to_success() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryExperimentExecutionRepository()
+    experiment_registry = InMemoryExperimentRegistry()
+
+    dataset = DatasetBuilder().build(
+        name="RSI runner historical dataset",
+        candles=build_dataset_candles(),
+    )
+    dataset_repository.save(dataset)
+
+    queued = ExperimentExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=RSIThresholdExecutionParameters(
+            period=2,
+            oversold_threshold=Decimal("30"),
+            overbought_threshold=Decimal("70"),
+            horizon_candles=1,
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
+    )
+    execution_repository.save(queued)
+
+    completed = ExperimentExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        experiments=experiment_registry,
+    ).run(queued.execution_id)
+
+    assert completed.status is ExperimentExecutionStatus.SUCCEEDED
+    assert completed.experiment_id is not None
+
+    stored_experiment = experiment_registry.get(completed.experiment_id)
+
+    assert stored_experiment is not None
+    assert stored_experiment.strategy_name == "rsi-threshold"
+    assert {parameter.name for parameter in stored_experiment.parameters} >= {
+        "period",
+        "oversold_threshold",
+        "overbought_threshold",
+    }
 
 
 def test_marks_execution_failed_for_unregistered_strategy_identity() -> None:

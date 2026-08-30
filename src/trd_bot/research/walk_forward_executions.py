@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.research.experiment_executions import (
-    EMACrossoverExecutionParameters,
+    StrategyExecutionParameters,
 )
 from trd_bot.research.walk_forward import WalkForwardConfig
 
@@ -60,7 +60,7 @@ class WalkForwardExecution(BaseModel):
     strategy_name: str = Field(min_length=1, max_length=100)
     strategy_version: str = Field(min_length=1, max_length=30)
 
-    parameters: EMACrossoverExecutionParameters
+    parameters: StrategyExecutionParameters
     walk_forward_config: WalkForwardConfig
 
     total_folds: int = Field(ge=1)
@@ -203,7 +203,7 @@ class WalkForwardExecutionBuilder:
         self,
         *,
         dataset_id: str,
-        parameters: EMACrossoverExecutionParameters,
+        parameters: StrategyExecutionParameters,
         walk_forward_config: WalkForwardConfig,
         total_folds: int,
         now: datetime | None = None,
@@ -217,8 +217,8 @@ class WalkForwardExecutionBuilder:
             status=WalkForwardExecutionStatus.QUEUED,
             progress_percent=0,
             dataset_id=dataset_id,
-            strategy_name="ema-crossover",
-            strategy_version="1.0.0",
+            strategy_name=parameters.strategy_name,
+            strategy_version=parameters.strategy_version,
             parameters=parameters,
             walk_forward_config=walk_forward_config,
             total_folds=total_folds,

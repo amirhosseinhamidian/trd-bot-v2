@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.research.datasets import DatasetRepository
 from trd_bot.research.experiment_executions import (
@@ -15,10 +13,6 @@ from trd_bot.research.experiments import (
 )
 from trd_bot.research.pipeline import ResearchPipeline
 from trd_bot.strategies import StrategyRegistry, build_default_strategy_registry
-
-
-def _canonical_decimal(value: Decimal) -> str:
-    return format(value.normalize(), "f")
 
 
 class ExperimentExecutionRunner:
@@ -78,10 +72,7 @@ class ExperimentExecutionRunner:
             strategy = self._strategy_registry.create(
                 name=running.strategy_name,
                 version=running.strategy_version,
-                parameters={
-                    "fast_period": parameters.fast_period,
-                    "slow_period": parameters.slow_period,
-                },
+                parameters=parameters.strategy_parameters(),
             )
 
             result = ResearchPipeline().run(
@@ -105,31 +96,12 @@ class ExperimentExecutionRunner:
 
             experiment = ExperimentBuilder().build(
                 result=result,
-                parameters=(
+                parameters=tuple(
                     ExperimentParameter(
-                        name="fast_period",
-                        value=str(parameters.fast_period),
-                    ),
-                    ExperimentParameter(
-                        name="slow_period",
-                        value=str(parameters.slow_period),
-                    ),
-                    ExperimentParameter(
-                        name="starting_balance",
-                        value=_canonical_decimal(parameters.starting_balance),
-                    ),
-                    ExperimentParameter(
-                        name="allocation_fraction",
-                        value=_canonical_decimal(parameters.allocation_fraction),
-                    ),
-                    ExperimentParameter(
-                        name="fee_rate",
-                        value=_canonical_decimal(parameters.fee_rate),
-                    ),
-                    ExperimentParameter(
-                        name="slippage_rate",
-                        value=_canonical_decimal(parameters.slippage_rate),
-                    ),
+                        name=name,
+                        value=value,
+                    )
+                    for name, value in parameters.experiment_parameter_pairs()
                 ),
             )
 

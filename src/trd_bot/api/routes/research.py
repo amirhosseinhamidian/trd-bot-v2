@@ -61,6 +61,7 @@ from trd_bot.research import (
     ResearchExperiment,
     ResearchPipeline,
     ResearchPipelineResult,
+    RSIThresholdExecutionParameters,
     WalkForwardConfig,
     WalkForwardDatasetMaterializer,
     WalkForwardExecutionResult,
@@ -187,6 +188,35 @@ class StoredDatasetEMACrossoverResearchRequest(BaseModel):
     slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
 
 
+class StoredDatasetRSIThresholdResearchRequest(BaseModel):
+    """Request for running RSI research against an already stored dataset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+
+    period: int = Field(default=14, ge=2)
+    oversold_threshold: Decimal = Field(
+        default=Decimal("30"),
+        gt=0,
+        lt=50,
+    )
+    overbought_threshold: Decimal = Field(
+        default=Decimal("70"),
+        gt=50,
+        lt=100,
+    )
+    horizon_candles: int = Field(default=1, ge=1)
+
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
 class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
     """Request for an offline EMA walk-forward execution."""
 
@@ -201,6 +231,18 @@ class StoredDatasetEMACrossoverWalkForwardRequest(
     StoredDatasetEMACrossoverResearchRequest,
 ):
     """Request for walk-forward analysis against a stored dataset."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetRSIThresholdWalkForwardRequest(
+    StoredDatasetRSIThresholdResearchRequest,
+):
+    """Request for RSI walk-forward analysis against a stored dataset."""
 
     train_candles: int = Field(default=100, ge=2)
     test_candles: int = Field(default=20, ge=1)
@@ -356,7 +398,7 @@ def _canonical_decimal(value: Decimal) -> str:
     return format(value.normalize(), "f")
 
 
-def _build_execution_parameters(
+def _build_ema_execution_parameters(
     request: StoredDatasetEMACrossoverResearchRequest,
 ) -> EMACrossoverExecutionParameters:
     try:
@@ -376,8 +418,33 @@ def _build_execution_parameters(
         ) from error
 
 
+def _build_rsi_execution_parameters(
+    request: StoredDatasetRSIThresholdResearchRequest,
+) -> RSIThresholdExecutionParameters:
+    try:
+        return RSIThresholdExecutionParameters(
+            period=request.period,
+            oversold_threshold=request.oversold_threshold,
+            overbought_threshold=request.overbought_threshold,
+            horizon_candles=request.horizon_candles,
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="invalid RSI execution parameters",
+        ) from error
+
+
 def _build_walk_forward_config(
-    request: (EMACrossoverWalkForwardRequest | StoredDatasetEMACrossoverWalkForwardRequest),
+    request: (
+        EMACrossoverWalkForwardRequest
+        | StoredDatasetEMACrossoverWalkForwardRequest
+        | StoredDatasetRSIThresholdWalkForwardRequest
+    ),
 ) -> WalkForwardConfig:
     try:
         return WalkForwardConfig(
@@ -835,7 +902,50 @@ def create_ema_crossover_experiment_execution(
 
     execution = ExperimentExecutionBuilder().build(
         dataset_id=dataset.dataset_id,
-        parameters=_build_execution_parameters(request),
+        parameters=_build_ema_execution_parameters(request),
+    )
+
+    try:
+        stored_execution = executions.save(execution)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="experiment execution could not be stored",
+        ) from error
+
+    background_tasks.add_task(
+        execution_task,
+        stored_execution.execution_id,
+    )
+
+    return stored_execution
+
+
+@router.post(
+    "/experiment-executions/rsi-threshold",
+    response_model=ExperimentExecution,
+    status_code=202,
+)
+def create_rsi_threshold_experiment_execution(
+    request: StoredDatasetRSIThresholdResearchRequest,
+    background_tasks: BackgroundTasks,
+    executions: ExperimentExecutionRepositoryDependency,
+    datasets: DatasetRepositoryDependency,
+    execution_task: ExperimentExecutionTaskDependency,
+) -> ExperimentExecution:
+    """Queue a historical RSI experiment execution."""
+
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    execution = ExperimentExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=_build_rsi_execution_parameters(request),
     )
 
     try:
@@ -939,7 +1049,65 @@ def create_ema_crossover_walk_forward_execution(
 
     execution = WalkForwardExecutionBuilder().build(
         dataset_id=dataset.dataset_id,
-        parameters=_build_execution_parameters(request),
+        parameters=_build_ema_execution_parameters(request),
+        walk_forward_config=walk_forward_config,
+        total_folds=len(plan.folds),
+    )
+
+    try:
+        stored_execution = executions.save(execution)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=409,
+            detail="walk-forward execution could not be stored",
+        ) from error
+
+    background_tasks.add_task(
+        execution_task,
+        stored_execution.execution_id,
+    )
+
+    return stored_execution
+
+
+@router.post(
+    "/walk-forward-executions/rsi-threshold",
+    response_model=WalkForwardExecution,
+    status_code=202,
+)
+def create_rsi_threshold_walk_forward_execution(
+    request: StoredDatasetRSIThresholdWalkForwardRequest,
+    background_tasks: BackgroundTasks,
+    executions: WalkForwardExecutionRepositoryDependency,
+    datasets: DatasetRepositoryDependency,
+    execution_task: WalkForwardExecutionTaskDependency,
+) -> WalkForwardExecution:
+    """Queue RSI walk-forward analysis for a stored historical dataset."""
+
+    dataset = datasets.get(request.dataset_id)
+
+    if dataset is None:
+        raise HTTPException(
+            status_code=404,
+            detail="dataset not found",
+        )
+
+    walk_forward_config = _build_walk_forward_config(request)
+
+    try:
+        plan = WalkForwardPlanner().plan(
+            dataset=dataset,
+            config=walk_forward_config,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=str(error),
+        ) from error
+
+    execution = WalkForwardExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=_build_rsi_execution_parameters(request),
         walk_forward_config=walk_forward_config,
         total_folds=len(plan.folds),
     )

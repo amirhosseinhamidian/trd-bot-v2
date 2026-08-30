@@ -11,6 +11,7 @@ from trd_bot.research.datasets import (
 )
 from trd_bot.research.experiment_executions import (
     EMACrossoverExecutionParameters,
+    RSIThresholdExecutionParameters,
 )
 from trd_bot.research.walk_forward import (
     WalkForwardConfig,
@@ -184,6 +185,57 @@ def test_runs_queued_walk_forward_execution_to_success() -> None:
         66,
         99,
     ]
+
+
+def test_runs_queued_rsi_walk_forward_execution_to_success() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryWalkForwardExecutionRepository()
+    run_registry = InMemoryWalkForwardRunRegistry()
+    dataset = build_dataset()
+
+    dataset_repository.save(dataset)
+
+    config = build_walk_forward_config()
+    plan = WalkForwardPlanner().plan(
+        dataset=dataset,
+        config=config,
+    )
+
+    queued = WalkForwardExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=RSIThresholdExecutionParameters(
+            period=2,
+            oversold_threshold=Decimal("30"),
+            overbought_threshold=Decimal("70"),
+            horizon_candles=1,
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
+        walk_forward_config=config,
+        total_folds=len(plan.folds),
+    )
+    execution_repository.save(queued)
+
+    completed = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=run_registry,
+    ).run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
+    assert completed.walk_forward_run_id is not None
+
+    stored_run = run_registry.get(completed.walk_forward_run_id)
+
+    assert stored_run is not None
+    assert stored_run.result.strategy_name == "rsi-threshold"
+    assert {parameter.name for parameter in stored_run.result.strategy_parameters} == {
+        "period",
+        "oversold_threshold",
+        "overbought_threshold",
+    }
 
 
 def test_marks_walk_forward_execution_failed_for_unregistered_strategy_identity() -> None:
