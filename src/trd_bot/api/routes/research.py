@@ -82,7 +82,11 @@ from trd_bot.research.walk_forward_executions import (
     WalkForwardExecutionBuilder,
     WalkForwardExecutionRepository,
 )
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import (
+    EMACrossoverStrategy,
+    StrategyMetadata,
+    build_default_strategy_registry,
+)
 from trd_bot.strategies.signals import StrategySignal
 
 router = APIRouter(
@@ -129,6 +133,16 @@ WalkForwardExecutionTaskDependency = Annotated[
     WalkForwardExecutionTask,
     Depends(get_walk_forward_execution_task),
 ]
+
+
+@router.get(
+    "/strategies",
+    response_model=tuple[StrategyMetadata, ...],
+)
+def list_research_strategies() -> tuple[StrategyMetadata, ...]:
+    """List versioned strategies available for historical research execution."""
+
+    return build_default_strategy_registry().list_metadata()
 
 
 @dataclass(frozen=True, slots=True)

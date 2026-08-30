@@ -4,12 +4,14 @@ import {
   createDataset,
   getExperimentPerformanceSeries,
   getExperimentSignals,
+  getResearchStrategies,
 } from '@/lib/api/client';
 import type {
   DatasetImportRequest,
   DatasetSummary,
   ExperimentPerformanceSeries,
   Page,
+  ResearchStrategyMetadata,
   StrategySignal,
 } from '@/lib/api/types';
 
@@ -64,6 +66,48 @@ afterEach(() => {
 });
 
 describe('research API client', () => {
+  it('retrieves the read-only strategy metadata catalog', async () => {
+    const catalog: ResearchStrategyMetadata[] = [
+      {
+        name: 'rsi-threshold',
+        version: '1.0.0',
+        display_name: 'RSI Threshold',
+        description: 'Historical RSI research strategy.',
+        parameters: [
+          {
+            name: 'period',
+            kind: 'integer',
+            default_value: '14',
+            minimum: '2',
+            maximum: null,
+            minimum_exclusive: false,
+            maximum_exclusive: false,
+          },
+        ],
+      },
+    ];
+
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(catalog));
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await getResearchStrategies();
+
+    expect(result).toEqual(catalog);
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+
+    expect(requestUrl).toContain('/api/v1/research/strategies');
+    expect(requestInit).toMatchObject({
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+  });
+
   it('creates a historical dataset with a JSON request', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(importedDataset, 201));
 

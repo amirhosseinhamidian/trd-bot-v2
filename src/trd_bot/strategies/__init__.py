@@ -1,5 +1,10 @@
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.ema_crossover import EMACrossoverStrategy
+from trd_bot.strategies.metadata import (
+    StrategyMetadata,
+    StrategyParameterKind,
+    StrategyParameterMetadata,
+)
 from trd_bot.strategies.registry import (
     StrategyDefinition,
     StrategyParameterValue,
@@ -21,6 +26,9 @@ __all__ = [
     "SignalDirection",
     "StrategyDefinition",
     "StrategyFeature",
+    "StrategyMetadata",
+    "StrategyParameterKind",
+    "StrategyParameterMetadata",
     "StrategyParameterValue",
     "StrategyRegistry",
     "StrategySignal",

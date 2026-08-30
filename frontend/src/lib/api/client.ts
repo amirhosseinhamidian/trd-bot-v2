@@ -23,6 +23,7 @@ import type {
   ResearchActivityItem,
   ResearchActivityType,
   ResearchOverview,
+  ResearchStrategyMetadata,
   SimulatedPortfolio,
   SimulatedPortfolioSummary,
   SimulatedPosition,
@@ -270,6 +271,10 @@ export async function getDatasetCandles(
 
 export async function getDataset(datasetId: string): Promise<DatasetSnapshot> {
   return getJson<DatasetSnapshot>(`/api/v1/research/datasets/${encodeURIComponent(datasetId)}`);
+}
+
+export async function getResearchStrategies(): Promise<ResearchStrategyMetadata[]> {
+  return getJson<ResearchStrategyMetadata[]>('/api/v1/research/strategies');
 }
 
 export async function createEmaCrossoverExperimentExecution(

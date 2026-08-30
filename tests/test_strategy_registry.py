@@ -43,6 +43,34 @@ def test_registry_lists_definitions_deterministically() -> None:
     ]
 
 
+def test_default_registry_exposes_versioned_parameter_metadata() -> None:
+    metadata = build_default_strategy_registry().list_metadata()
+
+    assert [item.name for item in metadata] == [
+        "ema-crossover",
+        "rsi-threshold",
+    ]
+
+    ema, rsi = metadata
+
+    assert ema.display_name == "EMA Crossover"
+    assert [(item.name, item.default_value) for item in ema.parameters] == [
+        ("fast_period", "9"),
+        ("slow_period", "21"),
+    ]
+
+    assert rsi.display_name == "RSI Threshold"
+    assert [item.name for item in rsi.parameters] == [
+        "period",
+        "oversold_threshold",
+        "overbought_threshold",
+    ]
+    assert rsi.parameters[1].minimum == "0"
+    assert rsi.parameters[1].maximum == "50"
+    assert rsi.parameters[1].minimum_exclusive is True
+    assert rsi.parameters[1].maximum_exclusive is True
+
+
 def test_default_registry_builds_rsi_threshold() -> None:
     registry = build_default_strategy_registry()
 
@@ -152,6 +180,24 @@ def test_registry_rejects_duplicate_definition() -> None:
         match="already registered",
     ):
         registry.register(definition)
+
+
+def test_definition_rejects_mismatched_metadata_identity() -> None:
+    metadata = build_default_strategy_registry().list_metadata()[0]
+
+    with pytest.raises(
+        ValueError,
+        match="metadata name",
+    ):
+        StrategyDefinition(
+            name="different-strategy",
+            version=metadata.version,
+            factory=lambda _parameters: EMACrossoverStrategy(
+                fast_period=2,
+                slow_period=3,
+            ),
+            metadata=metadata,
+        )
 
 
 def test_definition_rejects_factory_identity_mismatch() -> None:

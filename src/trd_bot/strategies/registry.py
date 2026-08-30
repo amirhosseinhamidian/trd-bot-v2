@@ -4,6 +4,11 @@ from decimal import Decimal
 
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.ema_crossover import EMACrossoverStrategy
+from trd_bot.strategies.metadata import (
+    StrategyMetadata,
+    StrategyParameterKind,
+    StrategyParameterMetadata,
+)
 from trd_bot.strategies.rsi_threshold import RSIThresholdStrategy
 
 StrategyParameterValue = str | int | Decimal | bool
@@ -17,6 +22,7 @@ class StrategyDefinition:
     name: str
     version: str
     factory: StrategyFactory
+    metadata: StrategyMetadata | None = None
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -24,6 +30,13 @@ class StrategyDefinition:
 
         if not self.version.strip():
             raise ValueError("strategy definition version cannot be empty")
+
+        if self.metadata is not None:
+            if self.metadata.name != self.name:
+                raise ValueError("strategy metadata name does not match the definition")
+
+            if self.metadata.version != self.version:
+                raise ValueError("strategy metadata version does not match the definition")
 
     def create(
         self,
@@ -99,6 +112,13 @@ class StrategyRegistry:
 
     def list_definitions(self) -> tuple[StrategyDefinition, ...]:
         return tuple(self._definitions[key] for key in sorted(self._definitions))
+
+    def list_metadata(self) -> tuple[StrategyMetadata, ...]:
+        return tuple(
+            definition.metadata
+            for definition in self.list_definitions()
+            if definition.metadata is not None
+        )
 
 
 def _require_exact_parameters(
@@ -203,6 +223,29 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="ema-crossover",
             version="1.0.0",
             factory=_build_ema_crossover,
+            metadata=StrategyMetadata(
+                name="ema-crossover",
+                version="1.0.0",
+                display_name="EMA Crossover",
+                description=(
+                    "Generate historical directional signals from fast and slow "
+                    "exponential moving-average crossovers."
+                ),
+                parameters=(
+                    StrategyParameterMetadata(
+                        name="fast_period",
+                        kind=StrategyParameterKind.INTEGER,
+                        default_value="9",
+                        minimum="2",
+                    ),
+                    StrategyParameterMetadata(
+                        name="slow_period",
+                        kind=StrategyParameterKind.INTEGER,
+                        default_value="21",
+                        minimum="3",
+                    ),
+                ),
+            ),
         )
     )
     registry.register(
@@ -210,6 +253,41 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="rsi-threshold",
             version="1.0.0",
             factory=_build_rsi_threshold,
+            metadata=StrategyMetadata(
+                name="rsi-threshold",
+                version="1.0.0",
+                display_name="RSI Threshold",
+                description=(
+                    "Generate historical mean-reversion signals when RSI enters "
+                    "configured extreme regions."
+                ),
+                parameters=(
+                    StrategyParameterMetadata(
+                        name="period",
+                        kind=StrategyParameterKind.INTEGER,
+                        default_value="14",
+                        minimum="2",
+                    ),
+                    StrategyParameterMetadata(
+                        name="oversold_threshold",
+                        kind=StrategyParameterKind.DECIMAL,
+                        default_value="30",
+                        minimum="0",
+                        maximum="50",
+                        minimum_exclusive=True,
+                        maximum_exclusive=True,
+                    ),
+                    StrategyParameterMetadata(
+                        name="overbought_threshold",
+                        kind=StrategyParameterKind.DECIMAL,
+                        default_value="70",
+                        minimum="50",
+                        maximum="100",
+                        minimum_exclusive=True,
+                        maximum_exclusive=True,
+                    ),
+                ),
+            ),
         )
     )
 
