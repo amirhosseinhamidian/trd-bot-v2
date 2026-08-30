@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { getResearchActivity } from '@/lib/api/client';
 import type { Page, ResearchActivityItem, ResearchActivityType } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 10;
 
@@ -219,38 +220,46 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
           <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
         ) : (
           <div className="divide-y divide-app-border">
-            {page.items.map((item) => (
-              <div
-                key={`${item.activity_type}-${item.resource_id}-${item.created_at}`}
-                className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="info">{activityLabels[item.activity_type]}</Badge>
+            {page.items.map((item) => {
+              const strategyDisplayName = item.strategy_name
+                ? getStrategyDisplayName(item.strategy_name, locale)
+                : null;
 
-                    <p className="truncate text-sm font-medium text-app-foreground">{item.label}</p>
+              return (
+                <div
+                  key={`${item.activity_type}-${item.resource_id}-${item.created_at}`}
+                  className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="info">{activityLabels[item.activity_type]}</Badge>
+
+                      <p
+                        className="truncate text-sm font-medium text-app-foreground"
+                        title={item.strategy_name ?? undefined}
+                      >
+                        {strategyDisplayName ?? item.label}
+                      </p>
+                    </div>
+
+                    {strategyDisplayName && item.strategy_version ? (
+                      <p className="mt-2 text-xs text-app-muted">v{item.strategy_version}</p>
+                    ) : null}
+
+                    <p
+                      dir="ltr"
+                      className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
+                    >
+                      {item.resource_id}
+                    </p>
                   </div>
 
-                  {item.strategy_name ? (
-                    <p className="mt-2 text-xs text-app-muted">
-                      {item.strategy_name}
-                      {item.strategy_version ? ` · v${item.strategy_version}` : ''}
-                    </p>
-                  ) : null}
-
-                  <p
-                    dir="ltr"
-                    className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
-                  >
-                    {item.resource_id}
-                  </p>
+                  <time dateTime={item.created_at} className="shrink-0 text-xs text-app-muted">
+                    {formatDate(item.created_at, locale)}
+                  </time>
                 </div>
-
-                <time dateTime={item.created_at} className="shrink-0 text-xs text-app-muted">
-                  {formatDate(item.created_at, locale)}
-                </time>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

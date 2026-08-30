@@ -1,6 +1,7 @@
 import ActivityFeed from '@/components/dashboard/activity-feed';
 import { type DashboardLocale, getDashboardCopy } from '@/components/dashboard/dashboard-copy';
 import type { Page, ResearchActivityItem, ResearchOverview, ResearchStage } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type OverviewDashboardProps = {
   locale: DashboardLocale;
@@ -198,8 +199,11 @@ export default function OverviewDashboard({
 
             {overview.latest_experiment ? (
               <div className="mt-4 space-y-3">
-                <p className="font-semibold text-app-foreground">
-                  {overview.latest_experiment.strategy_name}
+                <p
+                  className="font-semibold text-app-foreground"
+                  title={overview.latest_experiment.strategy_name}
+                >
+                  {getStrategyDisplayName(overview.latest_experiment.strategy_name, locale)}
                 </p>
 
                 <p className="text-sm text-app-muted">
@@ -235,8 +239,11 @@ export default function OverviewDashboard({
 
             {overview.latest_walk_forward_run ? (
               <div className="mt-4 space-y-3">
-                <p className="font-semibold text-app-foreground">
-                  {overview.latest_walk_forward_run.strategy_name}
+                <p
+                  className="font-semibold text-app-foreground"
+                  title={overview.latest_walk_forward_run.strategy_name}
+                >
+                  {getStrategyDisplayName(overview.latest_walk_forward_run.strategy_name, locale)}
                 </p>
 
                 <p className="text-sm text-app-muted">
