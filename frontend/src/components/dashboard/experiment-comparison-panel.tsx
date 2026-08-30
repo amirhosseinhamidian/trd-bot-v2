@@ -27,6 +27,7 @@ import type {
   ExperimentComparisonResult,
   ExperimentSummary,
 } from '@/lib/api/types';
+import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type ExperimentComparisonPanelProps = {
   locale: DashboardLocale;
@@ -115,7 +116,8 @@ export default function ExperimentComparisonPanel({
                 variant="neutral"
                 title={experiment.experiment_id}
               >
-                {experiment.strategy_name} · {experiment.experiment_id.slice(-6)}
+                {getStrategyDisplayName(experiment.strategy_name, locale)} ·{' '}
+                {experiment.experiment_id.slice(-6)}
               </Badge>
             ))}
           </div>
@@ -229,13 +231,15 @@ export default function ExperimentComparisonPanel({
                         {entry.experiment.experiment_id}
                       </TableCell>
 
-                      <TableCell>{entry.experiment.strategy_name}</TableCell>
+                      <TableCell title={entry.experiment.strategy_name}>
+                        {getStrategyDisplayName(entry.experiment.strategy_name, locale)}
+                      </TableCell>
 
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {entry.experiment.parameters.map((parameter) => (
                             <Badge key={parameter.name} variant="neutral">
-                              {parameter.name}={parameter.value}
+                              {formatStrategyParameter(parameter, locale)}
                             </Badge>
                           ))}
                         </div>

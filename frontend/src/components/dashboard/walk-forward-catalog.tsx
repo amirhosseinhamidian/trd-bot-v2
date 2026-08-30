@@ -24,6 +24,7 @@ import {
 } from '@/components/ui';
 import { getWalkForwardRuns, type WalkForwardRunFilters } from '@/lib/api/client';
 import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
+import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 12;
 
@@ -196,7 +197,9 @@ export default function WalkForwardCatalog({
                 <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <CardTitle>{run.strategy_name}</CardTitle>
+                      <CardTitle title={run.strategy_name}>
+                        {getStrategyDisplayName(run.strategy_name, locale)}
+                      </CardTitle>
 
                       <CardDescription
                         dir="ltr"
@@ -305,7 +308,7 @@ export default function WalkForwardCatalog({
                     <div className="mt-2 flex flex-wrap gap-2">
                       {run.strategy_parameters.map((parameter) => (
                         <Badge key={parameter.name} variant="neutral">
-                          {parameter.name}={parameter.value}
+                          {formatStrategyParameter(parameter, locale)}
                         </Badge>
                       ))}
                     </div>

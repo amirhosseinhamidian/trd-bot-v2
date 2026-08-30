@@ -28,6 +28,7 @@ import ExperimentComparisonPanel from '@/components/dashboard/experiment-compari
 import { getExperimentComparisonCopy } from '@/components/dashboard/experiment-comparison-copy';
 import ExperimentRunForm from '@/components/dashboard/experiment-run-form';
 import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
+import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 12;
 
@@ -335,7 +336,9 @@ export default function ExperimentCatalog({
                   <CardHeader className="border-b border-app-border">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <CardTitle>{experiment.strategy_name}</CardTitle>
+                        <CardTitle title={experiment.strategy_name}>
+                          {getStrategyDisplayName(experiment.strategy_name, locale)}
+                        </CardTitle>
 
                         <CardDescription
                           dir="ltr"
@@ -421,7 +424,7 @@ export default function ExperimentCatalog({
                       <div className="mt-2 flex flex-wrap gap-2">
                         {experiment.parameters.map((parameter) => (
                           <Badge key={parameter.name} variant="neutral">
-                            {parameter.name}={parameter.value}
+                            {formatStrategyParameter(parameter, locale)}
                           </Badge>
                         ))}
                       </div>

@@ -157,7 +157,7 @@ describe('ExperimentCatalog', () => {
       expect(screen.getByTestId('filter-instance')).toHaveTextContent('2');
     });
 
-    expect(await screen.findByText('ema-crossover')).toBeInTheDocument();
+    expect(await screen.findByText('EMA Crossover')).toBeInTheDocument();
 
     expect(screen.getByText('experiment-new')).toBeInTheDocument();
   });

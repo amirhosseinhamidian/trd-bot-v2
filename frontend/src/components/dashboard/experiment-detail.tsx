@@ -14,6 +14,7 @@ import type {
 import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
 import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
 import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
+import { getStrategyDisplayName, getStrategyParameterLabel } from '@/lib/strategies/presentation';
 
 type ExperimentDetailProps = {
   experiment: ExperimentSummary;
@@ -124,6 +125,7 @@ export function ExperimentDetail({
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const comparison = comparisonPresentation(experiment.comparison_outcome, locale);
   const rerunHref = buildExperimentRerunHref(experiment, locale);
+  const strategyDisplayName = getStrategyDisplayName(experiment.strategy_name, locale);
 
   return (
     <main dir={direction} className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -139,7 +141,7 @@ export function ExperimentDetail({
           <p className="mt-5 text-sm font-medium text-app-accent">{copy.eyebrow}</p>
 
           <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
-            {experiment.strategy_name}
+            {strategyDisplayName}
           </h1>
 
           <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
@@ -173,7 +175,7 @@ export function ExperimentDetail({
 
         <CardContent>
           <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Metric label={copy.strategy} value={experiment.strategy_name} />
+            <Metric label={copy.strategy} value={strategyDisplayName} />
 
             <Metric label={copy.version} value={experiment.strategy_version} />
 
@@ -290,7 +292,7 @@ export function ExperimentDetail({
                   className="rounded-xl border border-app-border bg-app-surface-muted p-4"
                 >
                   <dt dir="ltr" className="text-xs font-semibold break-all text-app-muted">
-                    {parameter.name}
+                    {getStrategyParameterLabel(parameter.name, locale)}
                   </dt>
 
                   <dd dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-accent">

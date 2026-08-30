@@ -22,6 +22,7 @@ import type {
   WalkForwardRunSummary,
   WalkForwardStabilityReport,
 } from '@/lib/api/types';
+import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type WalkForwardDetailProps = {
   locale: DashboardLocale;
@@ -82,6 +83,7 @@ function Metric({ label, value }: MetricProps) {
 export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailProps) {
   const copy = getWalkForwardDetailCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
+  const strategyDisplayName = getStrategyDisplayName(run.strategy_name, locale);
 
   return (
     <div dir={direction} className="space-y-6">
@@ -98,7 +100,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             <p className="text-sm font-medium text-app-accent">{copy.eyebrow}</p>
 
             <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
-              {run.strategy_name}
+              {strategyDisplayName}
             </h1>
 
             <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
@@ -124,7 +126,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
 
         <CardContent>
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label={copy.fields.strategy} value={run.strategy_name} />
+            <Metric label={copy.fields.strategy} value={strategyDisplayName} />
 
             <Metric label={copy.fields.version} value={run.strategy_version} />
 
@@ -320,7 +322,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             <div className="mt-3 flex flex-wrap gap-2">
               {run.strategy_parameters.map((parameter) => (
                 <Badge key={parameter.name} variant="neutral">
-                  {parameter.name}={parameter.value}
+                  {formatStrategyParameter(parameter, locale)}
                 </Badge>
               ))}
             </div>
