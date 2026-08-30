@@ -22,6 +22,7 @@ import {
 } from '@/components/ui';
 import { getExperimentSignals, type ExperimentSignalFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page, SignalDirection, StrategySignal } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 20;
 
@@ -222,7 +223,9 @@ export default function SignalCatalog({
                 <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <CardTitle>{signal.strategy_name}</CardTitle>
+                      <CardTitle title={signal.strategy_name}>
+                        {getStrategyDisplayName(signal.strategy_name, locale)}
+                      </CardTitle>
 
                       <CardDescription
                         dir="ltr"
@@ -287,7 +290,8 @@ export default function SignalCatalog({
                     <div>
                       <dt className="text-xs text-app-muted">{copy.fields.strategy}</dt>
                       <dd dir="ltr" className="mt-1 text-left text-app-foreground">
-                        {signal.strategy_name} v{signal.strategy_version}
+                        {getStrategyDisplayName(signal.strategy_name, locale)} v
+                        {signal.strategy_version}
                       </dd>
                     </div>
                   </dl>

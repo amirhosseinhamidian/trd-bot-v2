@@ -18,6 +18,7 @@ import {
 } from '@/components/ui';
 import { getCandidateLineage } from '@/lib/api/client';
 import type { CandidateJournalOccurrence, CandidateProjectionDetail, Page } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const LINEAGE_PAGE_SIZE = 10;
 
@@ -141,7 +142,9 @@ export default function CandidateDetail({
 
       <Card>
         <CardHeader>
-          <CardTitle>{snapshot.strategy_name}</CardTitle>
+          <CardTitle title={snapshot.strategy_name}>
+            {getStrategyDisplayName(snapshot.strategy_name, locale)}
+          </CardTitle>
           <CardDescription>{snapshot.strategy_version}</CardDescription>
         </CardHeader>
 
@@ -295,6 +298,13 @@ export default function CandidateDetail({
                       <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
                       <p className="mt-2 text-sm text-app-foreground">
                         {formatDate(occurrence.recorded_at, locale)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.strategy}</p>
+                      <p className="mt-2 text-sm text-app-foreground">
+                        {getStrategyDisplayName(occurrence.candidate.strategy_name, locale)} ·{' '}
+                        {occurrence.candidate.strategy_version}
                       </p>
                     </div>
                     <div>

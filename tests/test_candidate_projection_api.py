@@ -78,6 +78,8 @@ def test_list_candidate_projections_returns_attempted_candidates() -> None:
     assert payload["total"] == len(expected_ids)
     assert returned_ids == expected_ids
     assert all("trade_plan" not in item for item in payload["items"])
+    assert all(item["strategy_name"] for item in payload["items"])
+    assert all(item["strategy_version"] for item in payload["items"])
 
 
 def test_list_candidate_projections_uses_repository_pagination() -> None:
@@ -107,6 +109,13 @@ def test_get_candidate_projection_returns_complete_candidate_snapshot() -> None:
     payload = response.json()
     assert payload["candidate"]["candidate_id"] == candidate_id
     assert payload["candidate"]["status"] == "selected"
+    assert payload["candidate"]["strategy_name"]
+    assert payload["candidate"]["strategy_version"]
+    assert payload["latest"]["candidate"]["strategy_name"] == payload["candidate"]["strategy_name"]
+    assert (
+        payload["latest"]["candidate"]["strategy_version"]
+        == payload["candidate"]["strategy_version"]
+    )
     assert payload["latest"]["selected"] is True
     assert payload["latest"]["position_id"] == entries[0].position_id
 
@@ -126,6 +135,8 @@ def test_candidate_lineage_returns_persisted_occurrences() -> None:
     assert payload["total"] == 1
     assert payload["count"] == 1
     assert payload["items"][0]["candidate"]["candidate_id"] == candidate_id
+    assert payload["items"][0]["candidate"]["strategy_name"]
+    assert payload["items"][0]["candidate"]["strategy_version"]
 
 
 def test_candidate_projection_returns_404_for_unknown_id() -> None:

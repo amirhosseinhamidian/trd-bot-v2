@@ -19,6 +19,7 @@ import {
 } from '@/components/ui';
 import { getCandidateProjections } from '@/lib/api/client';
 import type { CandidateProjectionSummary, Page } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 12;
 
@@ -209,7 +210,8 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                     <div>
                       <dt className="text-xs text-app-muted">{copy.fields.strategy}</dt>
                       <dd className="mt-1 text-sm text-app-foreground">
-                        {candidate.strategy_name} · {candidate.strategy_version}
+                        {getStrategyDisplayName(candidate.strategy_name, locale)} ·{' '}
+                        {candidate.strategy_version}
                       </dd>
                     </div>
 

@@ -30,8 +30,8 @@ function makeOccurrence(journalId: string, recordedAt: string): CandidateJournal
         market_type: 'spot',
       },
       timeframe: '1h',
-      strategy_name: 'ema-rsi',
-      strategy_version: '1',
+      strategy_name: 'rsi-threshold',
+      strategy_version: '1.0.0',
       confidence: '0.82',
       signal_score: '0.74',
       created_at: '2026-08-26T10:00:00Z',
@@ -136,6 +136,8 @@ describe('CandidateDetail', () => {
     expect(screen.getByText('Research lineage')).toBeInTheDocument();
     expect(screen.getByText('journal-initial')).toBeInTheDocument();
     expect(screen.getByText('Research only')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'RSI Threshold' })).toBeInTheDocument();
+    expect(screen.getByText('RSI Threshold · 1.0.0')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Next' }));
 
