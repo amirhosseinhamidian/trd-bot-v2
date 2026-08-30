@@ -61,10 +61,10 @@ export interface DatasetImportRequest {
   candles: DatasetImportCandle[];
 }
 
-export interface StoredDatasetEMACrossoverRequest {
+export type ResearchStrategyName = 'ema-crossover' | 'rsi-threshold';
+
+export interface StoredDatasetHistoricalExecutionRequest {
   dataset_id: string;
-  fast_period: number;
-  slow_period: number;
   horizon_candles: number;
   starting_balance: string;
   allocation_fraction: string;
@@ -72,7 +72,18 @@ export interface StoredDatasetEMACrossoverRequest {
   slippage_rate: string;
 }
 
-export interface StoredDatasetEMACrossoverWalkForwardRequest extends StoredDatasetEMACrossoverRequest {
+export interface StoredDatasetEMACrossoverRequest extends StoredDatasetHistoricalExecutionRequest {
+  fast_period: number;
+  slow_period: number;
+}
+
+export interface StoredDatasetRSIThresholdRequest extends StoredDatasetHistoricalExecutionRequest {
+  period: number;
+  oversold_threshold: string;
+  overbought_threshold: string;
+}
+
+export interface WalkForwardExecutionRequest {
   train_candles: number;
   test_candles: number;
   step_candles: number;
@@ -80,17 +91,35 @@ export interface StoredDatasetEMACrossoverWalkForwardRequest extends StoredDatas
   mode: WalkForwardMode;
 }
 
+export interface StoredDatasetEMACrossoverWalkForwardRequest
+  extends StoredDatasetEMACrossoverRequest, WalkForwardExecutionRequest {}
+
+export interface StoredDatasetRSIThresholdWalkForwardRequest
+  extends StoredDatasetRSIThresholdRequest, WalkForwardExecutionRequest {}
+
 export type ExperimentExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
-export interface ExperimentExecutionParameters {
-  fast_period: number;
-  slow_period: number;
+export interface HistoricalExecutionParameters {
   horizon_candles: number;
   starting_balance: string;
   allocation_fraction: string;
   fee_rate: string;
   slippage_rate: string;
 }
+
+export interface EMACrossoverExecutionParameters extends HistoricalExecutionParameters {
+  fast_period: number;
+  slow_period: number;
+}
+
+export interface RSIThresholdExecutionParameters extends HistoricalExecutionParameters {
+  period: number;
+  oversold_threshold: string;
+  overbought_threshold: string;
+}
+
+export type ExperimentExecutionParameters =
+  EMACrossoverExecutionParameters | RSIThresholdExecutionParameters;
 
 export interface ExperimentExecution {
   execution_id: string;
@@ -101,7 +130,7 @@ export interface ExperimentExecution {
   status: ExperimentExecutionStatus;
   progress_percent: number;
   dataset_id: string;
-  strategy_name: string;
+  strategy_name: ResearchStrategyName;
   strategy_version: string;
   parameters: ExperimentExecutionParameters;
   experiment_id: string | null;
@@ -120,7 +149,7 @@ export interface WalkForwardExecution {
   status: WalkForwardExecutionStatus;
   progress_percent: number;
   dataset_id: string;
-  strategy_name: string;
+  strategy_name: ResearchStrategyName;
   strategy_version: string;
   parameters: ExperimentExecutionParameters;
   walk_forward_config: WalkForwardConfig;

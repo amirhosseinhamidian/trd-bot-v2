@@ -35,8 +35,10 @@ import type {
   StrategySignal,
   CreatedResearchExperiment,
   StoredDatasetEMACrossoverRequest,
+  StoredDatasetRSIThresholdRequest,
   ExperimentExecution,
   StoredDatasetEMACrossoverWalkForwardRequest,
+  StoredDatasetRSIThresholdWalkForwardRequest,
   WalkForwardExecution,
 } from '@/lib/api/types';
 
@@ -279,6 +281,15 @@ export async function createEmaCrossoverExperimentExecution(
   );
 }
 
+export async function createRsiThresholdExperimentExecution(
+  request: StoredDatasetRSIThresholdRequest,
+): Promise<ExperimentExecution> {
+  return postJson<ExperimentExecution>(
+    '/api/v1/research/experiment-executions/rsi-threshold',
+    request,
+  );
+}
+
 export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {
   return getJson<ExperimentExecution>(
     `/api/v1/research/experiment-executions/${encodeURIComponent(executionId)}`,
@@ -290,6 +301,15 @@ export async function createEmaCrossoverWalkForwardExecution(
 ): Promise<WalkForwardExecution> {
   return postJson<WalkForwardExecution>(
     '/api/v1/research/walk-forward-executions/ema-crossover',
+    request,
+  );
+}
+
+export async function createRsiThresholdWalkForwardExecution(
+  request: StoredDatasetRSIThresholdWalkForwardRequest,
+): Promise<WalkForwardExecution> {
+  return postJson<WalkForwardExecution>(
+    '/api/v1/research/walk-forward-executions/rsi-threshold',
     request,
   );
 }

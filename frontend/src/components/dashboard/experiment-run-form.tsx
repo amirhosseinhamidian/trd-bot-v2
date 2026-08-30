@@ -22,6 +22,7 @@ import {
 import {
   ApiRequestError,
   createEmaCrossoverExperimentExecution,
+  createRsiThresholdExperimentExecution,
   getDatasets,
   getExperimentExecution,
 } from '@/lib/api/client';
@@ -29,7 +30,9 @@ import type {
   CreatedResearchExperiment,
   DatasetSummary,
   ExperimentExecution,
+  ResearchStrategyName,
   StoredDatasetEMACrossoverRequest,
+  StoredDatasetRSIThresholdRequest,
 } from '@/lib/api/types';
 
 import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
@@ -43,8 +46,12 @@ type ExperimentRunFormProps = {
 
 type FormValues = {
   datasetId: string;
+  strategyName: ResearchStrategyName;
   fastPeriod: string;
   slowPeriod: string;
+  rsiPeriod: string;
+  oversoldThreshold: string;
+  overboughtThreshold: string;
   horizonCandles: string;
   startingBalance: string;
   allocationFraction: string;
@@ -54,14 +61,28 @@ type FormValues = {
 
 const INITIAL_VALUES: FormValues = {
   datasetId: '',
+  strategyName: 'ema-crossover',
   fastPeriod: '9',
   slowPeriod: '21',
+  rsiPeriod: '14',
+  oversoldThreshold: '30',
+  overboughtThreshold: '70',
   horizonCandles: '1',
   startingBalance: '10000',
   allocationFraction: '0.10',
   feeRate: '0.001',
   slippageRate: '0.0005',
 };
+
+type BuiltExperimentRequest =
+  | {
+      strategyName: 'ema-crossover';
+      request: StoredDatasetEMACrossoverRequest;
+    }
+  | {
+      strategyName: 'rsi-threshold';
+      request: StoredDatasetRSIThresholdRequest;
+    };
 
 const POLLING_INTERVAL_MS = 1000;
 
@@ -80,12 +101,38 @@ function buildInitialFormValues(initialValues?: ExperimentRunInitialValues): For
     ...initialValues,
   };
 
-  const fastPeriod = Number(mergedValues.fastPeriod);
-  const slowPeriod = Number(mergedValues.slowPeriod);
+  if (mergedValues.strategyName === 'ema-crossover') {
+    const fastPeriod = Number(mergedValues.fastPeriod);
+    const slowPeriod = Number(mergedValues.slowPeriod);
 
-  if (!Number.isInteger(fastPeriod) || !Number.isInteger(slowPeriod) || slowPeriod <= fastPeriod) {
-    mergedValues.fastPeriod = INITIAL_VALUES.fastPeriod;
-    mergedValues.slowPeriod = INITIAL_VALUES.slowPeriod;
+    if (
+      !Number.isInteger(fastPeriod) ||
+      !Number.isInteger(slowPeriod) ||
+      slowPeriod <= fastPeriod
+    ) {
+      mergedValues.fastPeriod = INITIAL_VALUES.fastPeriod;
+      mergedValues.slowPeriod = INITIAL_VALUES.slowPeriod;
+    }
+  } else {
+    const rsiPeriod = Number(mergedValues.rsiPeriod);
+    const oversoldThreshold = Number(mergedValues.oversoldThreshold);
+    const overboughtThreshold = Number(mergedValues.overboughtThreshold);
+
+    if (!Number.isInteger(rsiPeriod) || rsiPeriod < 2) {
+      mergedValues.rsiPeriod = INITIAL_VALUES.rsiPeriod;
+    }
+
+    if (!Number.isFinite(oversoldThreshold) || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
+      mergedValues.oversoldThreshold = INITIAL_VALUES.oversoldThreshold;
+    }
+
+    if (
+      !Number.isFinite(overboughtThreshold) ||
+      overboughtThreshold <= 50 ||
+      overboughtThreshold >= 100
+    ) {
+      mergedValues.overboughtThreshold = INITIAL_VALUES.overboughtThreshold;
+    }
   }
 
   return mergedValues;
@@ -207,11 +254,8 @@ export default function ExperimentRunForm({
     stopPolling();
   }
 
-  function buildRequest(): StoredDatasetEMACrossoverRequest | null {
-    const fastPeriod = parseInteger(values.fastPeriod);
-    const slowPeriod = parseInteger(values.slowPeriod);
+  function buildRequest(): BuiltExperimentRequest | null {
     const horizonCandles = parseInteger(values.horizonCandles);
-
     const startingBalance = parseDecimal(values.startingBalance);
     const allocationFraction = parseDecimal(values.allocationFraction);
     const feeRate = parseDecimal(values.feeRate);
@@ -219,21 +263,6 @@ export default function ExperimentRunForm({
 
     if (!values.datasetId || selectedDataset === null) {
       setFormError(copy.errors.datasetRequired);
-      return null;
-    }
-
-    if (fastPeriod === null || fastPeriod < 2) {
-      setFormError(copy.errors.invalidFastPeriod);
-      return null;
-    }
-
-    if (slowPeriod === null || slowPeriod < 3) {
-      setFormError(copy.errors.invalidSlowPeriod);
-      return null;
-    }
-
-    if (slowPeriod <= fastPeriod) {
-      setFormError(copy.errors.slowMustBeGreater);
       return null;
     }
 
@@ -262,20 +291,81 @@ export default function ExperimentRunForm({
       return null;
     }
 
-    if (selectedDataset.candle_count < slowPeriod + horizonCandles) {
-      setFormError(copy.errors.insufficientCandles);
-      return null;
-    }
-
-    return {
+    const sharedRequest = {
       dataset_id: selectedDataset.dataset_id,
-      fast_period: fastPeriod,
-      slow_period: slowPeriod,
       horizon_candles: horizonCandles,
       starting_balance: values.startingBalance.trim(),
       allocation_fraction: values.allocationFraction.trim(),
       fee_rate: values.feeRate.trim(),
       slippage_rate: values.slippageRate.trim(),
+    };
+
+    if (values.strategyName === 'ema-crossover') {
+      const fastPeriod = parseInteger(values.fastPeriod);
+      const slowPeriod = parseInteger(values.slowPeriod);
+
+      if (fastPeriod === null || fastPeriod < 2) {
+        setFormError(copy.errors.invalidFastPeriod);
+        return null;
+      }
+
+      if (slowPeriod === null || slowPeriod < 3) {
+        setFormError(copy.errors.invalidSlowPeriod);
+        return null;
+      }
+
+      if (slowPeriod <= fastPeriod) {
+        setFormError(copy.errors.slowMustBeGreater);
+        return null;
+      }
+
+      if (selectedDataset.candle_count < slowPeriod + horizonCandles) {
+        setFormError(copy.errors.insufficientCandles);
+        return null;
+      }
+
+      return {
+        strategyName: 'ema-crossover',
+        request: {
+          ...sharedRequest,
+          fast_period: fastPeriod,
+          slow_period: slowPeriod,
+        },
+      };
+    }
+
+    const rsiPeriod = parseInteger(values.rsiPeriod);
+    const oversoldThreshold = parseDecimal(values.oversoldThreshold);
+    const overboughtThreshold = parseDecimal(values.overboughtThreshold);
+
+    if (rsiPeriod === null || rsiPeriod < 2) {
+      setFormError(copy.errors.invalidRsiPeriod);
+      return null;
+    }
+
+    if (oversoldThreshold === null || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
+      setFormError(copy.errors.invalidOversoldThreshold);
+      return null;
+    }
+
+    if (overboughtThreshold === null || overboughtThreshold <= 50 || overboughtThreshold >= 100) {
+      setFormError(copy.errors.invalidOverboughtThreshold);
+      return null;
+    }
+
+    if (selectedDataset.candle_count < rsiPeriod + horizonCandles + 1) {
+      setFormError(copy.errors.insufficientCandles);
+      return null;
+    }
+
+    return {
+      strategyName: 'rsi-threshold',
+      request: {
+        ...sharedRequest,
+        period: rsiPeriod,
+        oversold_threshold: values.oversoldThreshold.trim(),
+        overbought_threshold: values.overboughtThreshold.trim(),
+      },
     };
   }
 
@@ -356,9 +446,9 @@ export default function ExperimentRunForm({
   async function submitForm(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
-    const request = buildRequest();
+    const builtRequest = buildRequest();
 
-    if (request === null) {
+    if (builtRequest === null) {
       return;
     }
 
@@ -370,7 +460,10 @@ export default function ExperimentRunForm({
     setExecution(null);
 
     try {
-      const queuedExecution = await createEmaCrossoverExperimentExecution(request);
+      const queuedExecution =
+        builtRequest.strategyName === 'ema-crossover'
+          ? await createEmaCrossoverExperimentExecution(builtRequest.request)
+          : await createRsiThresholdExperimentExecution(builtRequest.request);
 
       setExecution(queuedExecution);
 
@@ -476,11 +569,14 @@ export default function ExperimentRunForm({
               <Select
                 dir={direction}
                 label={copy.fields.strategy}
-                value="ema-crossover"
+                value={values.strategyName}
                 disabled={isFormDisabled}
-                onValueChange={() => undefined}
+                onValueChange={(value) =>
+                  updateValue('strategyName', value as ResearchStrategyName)
+                }
               >
                 <SelectOption value="ema-crossover">{copy.strategy.emaCrossover}</SelectOption>
+                <SelectOption value="rsi-threshold">{copy.strategy.rsiThreshold}</SelectOption>
               </Select>
 
               <Input
@@ -495,29 +591,73 @@ export default function ExperimentRunForm({
                 onChange={(event) => updateValue('horizonCandles', event.target.value)}
               />
 
-              <Input
-                dir="ltr"
-                type="number"
-                label={copy.fields.fastPeriod}
-                value={values.fastPeriod}
-                min={2}
-                step={1}
-                disabled={isFormDisabled}
-                className="text-left"
-                onChange={(event) => updateValue('fastPeriod', event.target.value)}
-              />
+              {values.strategyName === 'ema-crossover' ? (
+                <>
+                  <Input
+                    dir="ltr"
+                    type="number"
+                    label={copy.fields.fastPeriod}
+                    value={values.fastPeriod}
+                    min={2}
+                    step={1}
+                    disabled={isFormDisabled}
+                    className="text-left"
+                    onChange={(event) => updateValue('fastPeriod', event.target.value)}
+                  />
 
-              <Input
-                dir="ltr"
-                type="number"
-                label={copy.fields.slowPeriod}
-                value={values.slowPeriod}
-                min={3}
-                step={1}
-                disabled={isFormDisabled}
-                className="text-left"
-                onChange={(event) => updateValue('slowPeriod', event.target.value)}
-              />
+                  <Input
+                    dir="ltr"
+                    type="number"
+                    label={copy.fields.slowPeriod}
+                    value={values.slowPeriod}
+                    min={3}
+                    step={1}
+                    disabled={isFormDisabled}
+                    className="text-left"
+                    onChange={(event) => updateValue('slowPeriod', event.target.value)}
+                  />
+                </>
+              ) : (
+                <>
+                  <Input
+                    dir="ltr"
+                    type="number"
+                    label={copy.fields.rsiPeriod}
+                    value={values.rsiPeriod}
+                    min={2}
+                    step={1}
+                    disabled={isFormDisabled}
+                    className="text-left"
+                    onChange={(event) => updateValue('rsiPeriod', event.target.value)}
+                  />
+
+                  <Input
+                    dir="ltr"
+                    type="number"
+                    label={copy.fields.oversoldThreshold}
+                    value={values.oversoldThreshold}
+                    min="0.000001"
+                    max="49.999999"
+                    step="any"
+                    disabled={isFormDisabled}
+                    className="text-left"
+                    onChange={(event) => updateValue('oversoldThreshold', event.target.value)}
+                  />
+
+                  <Input
+                    dir="ltr"
+                    type="number"
+                    label={copy.fields.overboughtThreshold}
+                    value={values.overboughtThreshold}
+                    min="50.000001"
+                    max="99.999999"
+                    step="any"
+                    disabled={isFormDisabled}
+                    className="text-left"
+                    onChange={(event) => updateValue('overboughtThreshold', event.target.value)}
+                  />
+                </>
+              )}
 
               <Input
                 dir="ltr"

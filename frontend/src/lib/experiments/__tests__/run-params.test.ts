@@ -56,6 +56,42 @@ const experiment: ExperimentSummary = {
   comparison_outcome: 'strategy',
 };
 
+const rsiExperiment: ExperimentSummary = {
+  ...experiment,
+  experiment_id: 'experiment-rsi-btc',
+  strategy_name: 'rsi-threshold',
+  parameters: [
+    {
+      name: 'period',
+      value: '14',
+    },
+    {
+      name: 'oversold_threshold',
+      value: '30',
+    },
+    {
+      name: 'overbought_threshold',
+      value: '70',
+    },
+    {
+      name: 'starting_balance',
+      value: '25000',
+    },
+    {
+      name: 'allocation_fraction',
+      value: '0.20',
+    },
+    {
+      name: 'fee_rate',
+      value: '0.002',
+    },
+    {
+      name: 'slippage_rate',
+      value: '0.0008',
+    },
+  ],
+};
+
 describe('experiment run parameters', () => {
   it('builds a localized rerun URL from an experiment', () => {
     const href = buildExperimentRerunHref(experiment, 'en');
@@ -67,6 +103,7 @@ describe('experiment run parameters', () => {
     expect(Object.fromEntries(url.searchParams.entries())).toEqual({
       dataset_id: 'dataset-btc-usdt-1h',
       horizon_candles: '3',
+      strategy: 'ema-crossover',
       fast_period: '12',
       slow_period: '34',
       starting_balance: '25000',
@@ -76,10 +113,48 @@ describe('experiment run parameters', () => {
     });
   });
 
+  it('builds an RSI rerun URL with strategy-specific parameters', () => {
+    const href = buildExperimentRerunHref(rsiExperiment, 'fa');
+    const url = new URL(href, 'http://localhost');
+
+    expect(url.pathname).toBe('/fa/experiments');
+    expect(Object.fromEntries(url.searchParams.entries())).toEqual({
+      dataset_id: 'dataset-btc-usdt-1h',
+      horizon_candles: '3',
+      strategy: 'rsi-threshold',
+      rsi_period: '14',
+      oversold_threshold: '30',
+      overbought_threshold: '70',
+      starting_balance: '25000',
+      allocation_fraction: '0.20',
+      fee_rate: '0.002',
+      slippage_rate: '0.0008',
+    });
+  });
+
+  it('parses valid RSI rerun values', () => {
+    expect(
+      parseExperimentRunSearchParams({
+        dataset_id: 'dataset-btc-usdt-1h',
+        strategy: 'rsi-threshold',
+        rsi_period: '14',
+        oversold_threshold: '30',
+        overbought_threshold: '70',
+      }),
+    ).toEqual({
+      datasetId: 'dataset-btc-usdt-1h',
+      strategyName: 'rsi-threshold',
+      rsiPeriod: '14',
+      oversoldThreshold: '30',
+      overboughtThreshold: '70',
+    });
+  });
+
   it('parses valid rerun values', () => {
     expect(
       parseExperimentRunSearchParams({
         dataset_id: 'dataset-btc-usdt-1h',
+        strategy: 'ema-crossover',
         fast_period: '12',
         slow_period: '34',
         horizon_candles: '3',
@@ -90,6 +165,7 @@ describe('experiment run parameters', () => {
       }),
     ).toEqual({
       datasetId: 'dataset-btc-usdt-1h',
+      strategyName: 'ema-crossover',
       fastPeriod: '12',
       slowPeriod: '34',
       horizonCandles: '3',
@@ -104,8 +180,12 @@ describe('experiment run parameters', () => {
     expect(
       parseExperimentRunSearchParams({
         dataset_id: '   ',
+        strategy: 'unknown',
         fast_period: '1',
         slow_period: '2',
+        rsi_period: '1',
+        oversold_threshold: '50',
+        overbought_threshold: '50',
         horizon_candles: '0',
         starting_balance: '-100',
         allocation_fraction: '2',

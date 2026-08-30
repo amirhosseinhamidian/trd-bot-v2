@@ -15,6 +15,7 @@ import type {
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
   createExecution: vi.fn(),
+  createRsiExecution: vi.fn(),
   getExecution: vi.fn(),
 }));
 
@@ -30,6 +31,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
     ...actual,
     getDatasets: apiMocks.getDatasets,
     createEmaCrossoverExperimentExecution: apiMocks.createExecution,
+    createRsiThresholdExperimentExecution: apiMocks.createRsiExecution,
     getExperimentExecution: apiMocks.getExecution,
   };
 });
@@ -140,10 +142,32 @@ function buildExecution(
   };
 }
 
+function buildRsiExecution(
+  status: ExperimentExecutionStatus,
+  progressPercent: number,
+  experimentId: string | null = null,
+): ExperimentExecution {
+  return {
+    ...buildExecution(status, progressPercent, experimentId),
+    strategy_name: 'rsi-threshold',
+    parameters: {
+      period: 14,
+      oversold_threshold: '30',
+      overbought_threshold: '70',
+      horizon_candles: 1,
+      starting_balance: '10000',
+      allocation_fraction: '0.10',
+      fee_rate: '0.001',
+      slippage_rate: '0.0005',
+    },
+  };
+}
+
 describe('ExperimentRunForm', () => {
   beforeEach(() => {
     apiMocks.getDatasets.mockReset();
     apiMocks.createExecution.mockReset();
+    apiMocks.createRsiExecution.mockReset();
     apiMocks.getExecution.mockReset();
     navigationMocks.push.mockReset();
     navigationMocks.replace.mockReset();
@@ -349,6 +373,48 @@ describe('ExperimentRunForm', () => {
     );
 
     expect(apiMocks.createExecution).not.toHaveBeenCalled();
+  });
+
+  it('switches to RSI fields and queues an RSI threshold execution', async () => {
+    const user = userEvent.setup();
+
+    apiMocks.createRsiExecution.mockResolvedValue(buildRsiExecution('queued', 0));
+    apiMocks.getExecution.mockResolvedValue(
+      buildRsiExecution('succeeded', 100, 'experiment-rsi-btc'),
+    );
+
+    render(<ExperimentRunForm locale="en" />);
+
+    await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
+    await user.selectOptions(screen.getByLabelText('Strategy'), 'rsi-threshold');
+
+    expect(screen.queryByLabelText('Fast EMA period')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Slow EMA period')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('RSI period')).toHaveValue(14);
+    expect(screen.getByLabelText('Oversold threshold')).toHaveValue(30);
+    expect(screen.getByLabelText('Overbought threshold')).toHaveValue(70);
+
+    await user.click(screen.getByRole('button', { name: 'Run historical backtest' }));
+
+    await waitFor(() => {
+      expect(apiMocks.createRsiExecution).toHaveBeenCalledWith({
+        dataset_id: dataset.dataset_id,
+        period: 14,
+        oversold_threshold: '30',
+        overbought_threshold: '70',
+        horizon_candles: 1,
+        starting_balance: '10000',
+        allocation_fraction: '0.10',
+        fee_rate: '0.001',
+        slippage_rate: '0.0005',
+      });
+    });
+
+    expect(apiMocks.createExecution).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(navigationMocks.push).toHaveBeenCalledWith('/en/experiments/experiment-rsi-btc');
+    });
   });
 
   it('shows a safe message when the selected dataset no longer exists', async () => {

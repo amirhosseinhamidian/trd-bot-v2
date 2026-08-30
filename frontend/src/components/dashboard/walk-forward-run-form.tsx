@@ -22,12 +22,15 @@ import {
 import {
   ApiRequestError,
   createEmaCrossoverWalkForwardExecution,
+  createRsiThresholdWalkForwardExecution,
   getDatasets,
   getWalkForwardExecution,
 } from '@/lib/api/client';
 import type {
   DatasetSummary,
+  ResearchStrategyName,
   StoredDatasetEMACrossoverWalkForwardRequest,
+  StoredDatasetRSIThresholdWalkForwardRequest,
   WalkForwardExecution,
   WalkForwardMode,
 } from '@/lib/api/types';
@@ -40,9 +43,13 @@ type WalkForwardRunFormProps = {
 
 type FormValues = {
   datasetId: string;
+  strategyName: ResearchStrategyName;
   mode: WalkForwardMode;
   fastPeriod: string;
   slowPeriod: string;
+  rsiPeriod: string;
+  oversoldThreshold: string;
+  overboughtThreshold: string;
   horizonCandles: string;
   trainCandles: string;
   testCandles: string;
@@ -55,7 +62,7 @@ type FormValues = {
 };
 
 type NumericField = {
-  key: Exclude<keyof FormValues, 'datasetId' | 'mode'>;
+  key: Exclude<keyof FormValues, 'datasetId' | 'strategyName' | 'mode'>;
   label: string;
   min: number | string;
   max?: number | string;
@@ -64,9 +71,13 @@ type NumericField = {
 
 const INITIAL_VALUES: FormValues = {
   datasetId: '',
+  strategyName: 'ema-crossover',
   mode: 'rolling',
   fastPeriod: '9',
   slowPeriod: '21',
+  rsiPeriod: '14',
+  oversoldThreshold: '30',
+  overboughtThreshold: '70',
   horizonCandles: '1',
   trainCandles: '120',
   testCandles: '24',
@@ -77,6 +88,16 @@ const INITIAL_VALUES: FormValues = {
   feeRate: '0.001',
   slippageRate: '0.0005',
 };
+
+type BuiltWalkForwardRequest =
+  | {
+      strategyName: 'ema-crossover';
+      request: StoredDatasetEMACrossoverWalkForwardRequest;
+    }
+  | {
+      strategyName: 'rsi-threshold';
+      request: StoredDatasetRSIThresholdWalkForwardRequest;
+    };
 
 const POLLING_INTERVAL_MS = 1000;
 
@@ -227,9 +248,7 @@ export default function WalkForwardRunForm({
     stopPolling();
   }
 
-  function buildRequest(): StoredDatasetEMACrossoverWalkForwardRequest | null {
-    const fastPeriod = parseInteger(values.fastPeriod);
-    const slowPeriod = parseInteger(values.slowPeriod);
+  function buildRequest(): BuiltWalkForwardRequest | null {
     const horizonCandles = parseInteger(values.horizonCandles);
     const trainCandles = parseInteger(values.trainCandles);
     const testCandles = parseInteger(values.testCandles);
@@ -242,18 +261,6 @@ export default function WalkForwardRunForm({
 
     if (!values.datasetId || selectedDataset === null) {
       setFormError(copy.errors.datasetRequired);
-      return null;
-    }
-    if (fastPeriod === null || fastPeriod < 2) {
-      setFormError(copy.errors.invalidFastPeriod);
-      return null;
-    }
-    if (slowPeriod === null || slowPeriod < 3) {
-      setFormError(copy.errors.invalidSlowPeriod);
-      return null;
-    }
-    if (slowPeriod <= fastPeriod) {
-      setFormError(copy.errors.slowMustBeGreater);
       return null;
     }
     if (horizonCandles === null || horizonCandles < 1) {
@@ -309,10 +316,8 @@ export default function WalkForwardRunForm({
       return null;
     }
 
-    return {
+    const sharedRequest = {
       dataset_id: selectedDataset.dataset_id,
-      fast_period: fastPeriod,
-      slow_period: slowPeriod,
       horizon_candles: horizonCandles,
       train_candles: trainCandles,
       test_candles: testCandles,
@@ -323,6 +328,60 @@ export default function WalkForwardRunForm({
       allocation_fraction: values.allocationFraction.trim(),
       fee_rate: values.feeRate.trim(),
       slippage_rate: values.slippageRate.trim(),
+    };
+
+    if (values.strategyName === 'ema-crossover') {
+      const fastPeriod = parseInteger(values.fastPeriod);
+      const slowPeriod = parseInteger(values.slowPeriod);
+
+      if (fastPeriod === null || fastPeriod < 2) {
+        setFormError(copy.errors.invalidFastPeriod);
+        return null;
+      }
+      if (slowPeriod === null || slowPeriod < 3) {
+        setFormError(copy.errors.invalidSlowPeriod);
+        return null;
+      }
+      if (slowPeriod <= fastPeriod) {
+        setFormError(copy.errors.slowMustBeGreater);
+        return null;
+      }
+
+      return {
+        strategyName: 'ema-crossover',
+        request: {
+          ...sharedRequest,
+          fast_period: fastPeriod,
+          slow_period: slowPeriod,
+        },
+      };
+    }
+
+    const rsiPeriod = parseInteger(values.rsiPeriod);
+    const oversoldThreshold = parseDecimal(values.oversoldThreshold);
+    const overboughtThreshold = parseDecimal(values.overboughtThreshold);
+
+    if (rsiPeriod === null || rsiPeriod < 2) {
+      setFormError(copy.errors.invalidRsiPeriod);
+      return null;
+    }
+    if (oversoldThreshold === null || oversoldThreshold <= 0 || oversoldThreshold >= 50) {
+      setFormError(copy.errors.invalidOversoldThreshold);
+      return null;
+    }
+    if (overboughtThreshold === null || overboughtThreshold <= 50 || overboughtThreshold >= 100) {
+      setFormError(copy.errors.invalidOverboughtThreshold);
+      return null;
+    }
+
+    return {
+      strategyName: 'rsi-threshold',
+      request: {
+        ...sharedRequest,
+        period: rsiPeriod,
+        oversold_threshold: values.oversoldThreshold.trim(),
+        overbought_threshold: values.overboughtThreshold.trim(),
+      },
     };
   }
 
@@ -401,9 +460,9 @@ export default function WalkForwardRunForm({
 
   async function submitForm(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const request = buildRequest();
+    const builtRequest = buildRequest();
 
-    if (request === null) {
+    if (builtRequest === null) {
       return;
     }
 
@@ -414,7 +473,11 @@ export default function WalkForwardRunForm({
     setCreatedRunId(null);
 
     try {
-      const queuedExecution = await createEmaCrossoverWalkForwardExecution(request);
+      const queuedExecution =
+        builtRequest.strategyName === 'ema-crossover'
+          ? await createEmaCrossoverWalkForwardExecution(builtRequest.request)
+          : await createRsiThresholdWalkForwardExecution(builtRequest.request);
+
       setExecution(queuedExecution);
       replace(
         '/' +
@@ -452,9 +515,32 @@ export default function WalkForwardRunForm({
     isSubmitting ||
     isExecutionActive;
   const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
+  const strategyFields: NumericField[] =
+    values.strategyName === 'ema-crossover'
+      ? [
+          { key: 'fastPeriod', label: copy.fields.fastPeriod, min: 2, step: 1 },
+          { key: 'slowPeriod', label: copy.fields.slowPeriod, min: 3, step: 1 },
+        ]
+      : [
+          { key: 'rsiPeriod', label: copy.fields.rsiPeriod, min: 2, step: 1 },
+          {
+            key: 'oversoldThreshold',
+            label: copy.fields.oversoldThreshold,
+            min: '0.000001',
+            max: '49.999999',
+            step: 'any',
+          },
+          {
+            key: 'overboughtThreshold',
+            label: copy.fields.overboughtThreshold,
+            min: '50.000001',
+            max: '99.999999',
+            step: 'any',
+          },
+        ];
+
   const numericFields: NumericField[] = [
-    { key: 'fastPeriod', label: copy.fields.fastPeriod, min: 2, step: 1 },
-    { key: 'slowPeriod', label: copy.fields.slowPeriod, min: 3, step: 1 },
+    ...strategyFields,
     { key: 'horizonCandles', label: copy.fields.horizonCandles, min: 1, step: 1 },
     { key: 'trainCandles', label: copy.fields.trainCandles, min: 2, step: 1 },
     { key: 'testCandles', label: copy.fields.testCandles, min: 1, step: 1 },
@@ -540,11 +626,14 @@ export default function WalkForwardRunForm({
               <Select
                 dir={direction}
                 label={copy.fields.strategy}
-                value="ema-crossover"
+                value={values.strategyName}
                 disabled={isFormDisabled}
-                onValueChange={() => undefined}
+                onValueChange={(value) =>
+                  updateValue('strategyName', value as ResearchStrategyName)
+                }
               >
                 <SelectOption value="ema-crossover">{copy.strategy.emaCrossover}</SelectOption>
+                <SelectOption value="rsi-threshold">{copy.strategy.rsiThreshold}</SelectOption>
               </Select>
 
               <Select

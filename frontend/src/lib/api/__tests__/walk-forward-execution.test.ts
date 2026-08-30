@@ -3,10 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   API_BASE_URL,
   createEmaCrossoverWalkForwardExecution,
+  createRsiThresholdWalkForwardExecution,
   getWalkForwardExecution,
 } from '@/lib/api/client';
 import type {
   StoredDatasetEMACrossoverWalkForwardRequest,
+  StoredDatasetRSIThresholdWalkForwardRequest,
   WalkForwardExecution,
 } from '@/lib/api/types';
 
@@ -60,6 +62,38 @@ const execution: WalkForwardExecution = {
   error_message: null,
 };
 
+const rsiRequest: StoredDatasetRSIThresholdWalkForwardRequest = {
+  dataset_id: 'dataset-btc-usdt-1h',
+  period: 14,
+  oversold_threshold: '30',
+  overbought_threshold: '70',
+  horizon_candles: 1,
+  starting_balance: '10000',
+  allocation_fraction: '0.10',
+  fee_rate: '0.001',
+  slippage_rate: '0.0005',
+  train_candles: 120,
+  test_candles: 24,
+  step_candles: 24,
+  gap_candles: 0,
+  mode: 'rolling',
+};
+
+const rsiExecution: WalkForwardExecution = {
+  ...execution,
+  strategy_name: 'rsi-threshold',
+  parameters: {
+    period: rsiRequest.period,
+    oversold_threshold: rsiRequest.oversold_threshold,
+    overbought_threshold: rsiRequest.overbought_threshold,
+    horizon_candles: rsiRequest.horizon_candles,
+    starting_balance: rsiRequest.starting_balance,
+    allocation_fraction: rsiRequest.allocation_fraction,
+    fee_rate: rsiRequest.fee_rate,
+    slippage_rate: rsiRequest.slippage_rate,
+  },
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -97,6 +131,30 @@ describe('walk-forward execution client', () => {
       expect.objectContaining({
         Accept: 'application/json',
         'Content-Type': 'application/json',
+      }),
+    );
+  });
+
+  it('queues an RSI threshold walk-forward execution', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(rsiExecution), {
+        status: 202,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    );
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(createRsiThresholdWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiExecution);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE_URL}/api/v1/research/walk-forward-executions/rsi-threshold`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(rsiRequest),
+        cache: 'no-store',
       }),
     );
   });

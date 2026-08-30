@@ -3,7 +3,7 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 const copies = {
   en: {
     eyebrow: 'Historical backtest',
-    title: 'Run an EMA crossover experiment',
+    title: 'Run a historical strategy experiment',
     description:
       'Select a stored historical dataset and configure the research parameters. This operation does not place real orders.',
     historicalOnly: 'Historical research only',
@@ -13,6 +13,9 @@ const copies = {
       strategy: 'Strategy',
       fastPeriod: 'Fast EMA period',
       slowPeriod: 'Slow EMA period',
+      rsiPeriod: 'RSI period',
+      oversoldThreshold: 'Oversold threshold',
+      overboughtThreshold: 'Overbought threshold',
       horizonCandles: 'Evaluation horizon',
       startingBalance: 'Starting balance',
       allocationFraction: 'Allocation fraction',
@@ -21,6 +24,7 @@ const copies = {
     },
     strategy: {
       emaCrossover: 'EMA crossover',
+      rsiThreshold: 'RSI threshold',
     },
     selectedDataset: {
       title: 'Selected dataset',
@@ -50,6 +54,9 @@ const copies = {
       invalidFastPeriod: 'Fast EMA period must be an integer greater than or equal to 2.',
       invalidSlowPeriod: 'Slow EMA period must be an integer greater than or equal to 3.',
       slowMustBeGreater: 'Slow EMA period must be greater than the fast EMA period.',
+      invalidRsiPeriod: 'RSI period must be an integer greater than or equal to 2.',
+      invalidOversoldThreshold: 'Oversold threshold must be greater than 0 and less than 50.',
+      invalidOverboughtThreshold: 'Overbought threshold must be greater than 50 and less than 100.',
       invalidHorizon: 'Evaluation horizon must be a positive integer.',
       invalidStartingBalance: 'Starting balance must be greater than zero.',
       invalidAllocation: 'Allocation fraction must be greater than 0 and at most 1.',
@@ -68,7 +75,7 @@ const copies = {
   },
   fa: {
     eyebrow: 'بک‌تست تاریخی',
-    title: 'اجرای آزمایش تقاطع EMA',
+    title: 'اجرای آزمایش تاریخی استراتژی',
     description:
       'یک دیتاست تاریخی ذخیره‌شده را انتخاب و پارامترهای پژوهش را تنظیم کنید. این عملیات هیچ سفارش واقعی ثبت نمی‌کند.',
     historicalOnly: 'فقط پژوهش تاریخی',
@@ -78,6 +85,9 @@ const copies = {
       strategy: 'استراتژی',
       fastPeriod: 'دوره EMA سریع',
       slowPeriod: 'دوره EMA آهسته',
+      rsiPeriod: 'دوره RSI',
+      oversoldThreshold: 'آستانه اشباع فروش',
+      overboughtThreshold: 'آستانه اشباع خرید',
       horizonCandles: 'افق ارزیابی',
       startingBalance: 'موجودی اولیه شبیه‌سازی',
       allocationFraction: 'سهم تخصیص',
@@ -86,6 +96,7 @@ const copies = {
     },
     strategy: {
       emaCrossover: 'تقاطع EMA',
+      rsiThreshold: 'آستانه RSI',
     },
     selectedDataset: {
       title: 'دیتاست انتخاب‌شده',
@@ -115,6 +126,9 @@ const copies = {
       invalidFastPeriod: 'دوره EMA سریع باید عدد صحیح و حداقل ۲ باشد.',
       invalidSlowPeriod: 'دوره EMA آهسته باید عدد صحیح و حداقل ۳ باشد.',
       slowMustBeGreater: 'دوره EMA آهسته باید از دوره EMA سریع بزرگ‌تر باشد.',
+      invalidRsiPeriod: 'دوره RSI باید عدد صحیح و حداقل ۲ باشد.',
+      invalidOversoldThreshold: 'آستانه اشباع فروش باید بزرگ‌تر از صفر و کوچک‌تر از ۵۰ باشد.',
+      invalidOverboughtThreshold: 'آستانه اشباع خرید باید بزرگ‌تر از ۵۰ و کوچک‌تر از ۱۰۰ باشد.',
       invalidHorizon: 'افق ارزیابی باید یک عدد صحیح مثبت باشد.',
       invalidStartingBalance: 'موجودی اولیه باید بزرگ‌تر از صفر باشد.',
       invalidAllocation: 'سهم تخصیص باید بزرگ‌تر از صفر و حداکثر برابر ۱ باشد.',

@@ -10,6 +10,7 @@ import type { DatasetSummary, Page, WalkForwardExecution } from '@/lib/api/types
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
   createExecution: vi.fn(),
+  createRsiExecution: vi.fn(),
   getExecution: vi.fn(),
 }));
 
@@ -25,6 +26,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
     ...actual,
     getDatasets: apiMocks.getDatasets,
     createEmaCrossoverWalkForwardExecution: apiMocks.createExecution,
+    createRsiThresholdWalkForwardExecution: apiMocks.createRsiExecution,
     getWalkForwardExecution: apiMocks.getExecution,
   };
 });
@@ -137,10 +139,26 @@ const queuedExecution: WalkForwardExecution = {
   error_message: null,
 };
 
+const queuedRsiExecution: WalkForwardExecution = {
+  ...queuedExecution,
+  strategy_name: 'rsi-threshold',
+  parameters: {
+    period: 14,
+    oversold_threshold: '30',
+    overbought_threshold: '70',
+    horizon_candles: 1,
+    starting_balance: '10000',
+    allocation_fraction: '0.10',
+    fee_rate: '0.001',
+    slippage_rate: '0.0005',
+  },
+};
+
 describe('WalkForwardRunForm', () => {
   beforeEach(() => {
     apiMocks.getDatasets.mockReset();
     apiMocks.createExecution.mockReset();
+    apiMocks.createRsiExecution.mockReset();
     apiMocks.getExecution.mockReset();
     navigationMocks.push.mockReset();
     navigationMocks.replace.mockReset();
@@ -194,6 +212,46 @@ describe('WalkForwardRunForm', () => {
       '/en/walk-forward?execution=walk-forward-job-1234567890abcdef',
     );
     expect(screen.getByText('The walk-forward execution is waiting to start.')).toBeInTheDocument();
+  });
+
+  it('switches to RSI fields and queues an RSI threshold walk-forward execution', async () => {
+    const user = userEvent.setup();
+
+    apiMocks.createRsiExecution.mockResolvedValue(queuedRsiExecution);
+
+    render(<WalkForwardRunForm locale="en" />);
+
+    await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
+    await user.selectOptions(screen.getByLabelText('Strategy'), 'rsi-threshold');
+
+    expect(screen.queryByLabelText('Fast EMA period')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Slow EMA period')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('RSI period')).toHaveValue(14);
+    expect(screen.getByLabelText('Oversold threshold')).toHaveValue(30);
+    expect(screen.getByLabelText('Overbought threshold')).toHaveValue(70);
+
+    await user.click(screen.getByRole('button', { name: 'Queue historical walk-forward' }));
+
+    await waitFor(() => {
+      expect(apiMocks.createRsiExecution).toHaveBeenCalledWith({
+        dataset_id: dataset.dataset_id,
+        period: 14,
+        oversold_threshold: '30',
+        overbought_threshold: '70',
+        horizon_candles: 1,
+        train_candles: 120,
+        test_candles: 24,
+        step_candles: 24,
+        gap_candles: 0,
+        mode: 'rolling',
+        starting_balance: '10000',
+        allocation_fraction: '0.10',
+        fee_rate: '0.001',
+        slippage_rate: '0.0005',
+      });
+    });
+
+    expect(apiMocks.createExecution).not.toHaveBeenCalled();
   });
 
   it('submits expanding mode', async () => {

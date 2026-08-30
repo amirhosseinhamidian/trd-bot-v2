@@ -3,7 +3,7 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 const copies = {
   en: {
     eyebrow: 'Historical walk-forward execution',
-    title: 'Run EMA crossover walk-forward analysis',
+    title: 'Run historical strategy walk-forward analysis',
     description:
       'Configure chronological train and test windows for a stored historical dataset. This operation never places real orders.',
     historicalOnly: 'Historical research only',
@@ -14,6 +14,9 @@ const copies = {
       mode: 'Window mode',
       fastPeriod: 'Fast EMA period',
       slowPeriod: 'Slow EMA period',
+      rsiPeriod: 'RSI period',
+      oversoldThreshold: 'Oversold threshold',
+      overboughtThreshold: 'Overbought threshold',
       horizonCandles: 'Evaluation horizon',
       trainCandles: 'Train candles',
       testCandles: 'Test candles',
@@ -26,6 +29,7 @@ const copies = {
     },
     strategy: {
       emaCrossover: 'EMA crossover',
+      rsiThreshold: 'RSI threshold',
     },
     modes: {
       rolling: 'Rolling',
@@ -59,6 +63,9 @@ const copies = {
       invalidFastPeriod: 'Fast EMA period must be an integer greater than or equal to 2.',
       invalidSlowPeriod: 'Slow EMA period must be an integer greater than or equal to 3.',
       slowMustBeGreater: 'Slow EMA period must be greater than the fast EMA period.',
+      invalidRsiPeriod: 'RSI period must be an integer greater than or equal to 2.',
+      invalidOversoldThreshold: 'Oversold threshold must be greater than 0 and less than 50.',
+      invalidOverboughtThreshold: 'Overbought threshold must be greater than 50 and less than 100.',
       invalidHorizon: 'Evaluation horizon must be a positive integer.',
       invalidTrain: 'Train candles must be an integer greater than or equal to 2.',
       invalidTest: 'Test candles must be a positive integer.',
@@ -82,7 +89,7 @@ const copies = {
   },
   fa: {
     eyebrow: 'اجرای تاریخی Walk-forward',
-    title: 'اجرای تحلیل Walk-forward تقاطع EMA',
+    title: 'اجرای تحلیل تاریخی Walk-forward استراتژی',
     description:
       'پنجره‌های زمانی Train و Test را برای یک دیتاست تاریخی تنظیم کنید. این عملیات هیچ سفارش واقعی ثبت نمی‌کند.',
     historicalOnly: 'فقط پژوهش تاریخی',
@@ -93,6 +100,9 @@ const copies = {
       mode: 'نوع پنجره',
       fastPeriod: 'دوره EMA سریع',
       slowPeriod: 'دوره EMA آهسته',
+      rsiPeriod: 'دوره RSI',
+      oversoldThreshold: 'آستانه اشباع فروش',
+      overboughtThreshold: 'آستانه اشباع خرید',
       horizonCandles: 'افق ارزیابی',
       trainCandles: 'کندل‌های Train',
       testCandles: 'کندل‌های Test',
@@ -105,6 +115,7 @@ const copies = {
     },
     strategy: {
       emaCrossover: 'تقاطع EMA',
+      rsiThreshold: 'آستانه RSI',
     },
     modes: {
       rolling: 'غلتان',
@@ -138,6 +149,9 @@ const copies = {
       invalidFastPeriod: 'دوره EMA سریع باید عدد صحیح و حداقل ۲ باشد.',
       invalidSlowPeriod: 'دوره EMA آهسته باید عدد صحیح و حداقل ۳ باشد.',
       slowMustBeGreater: 'دوره EMA آهسته باید از دوره EMA سریع بزرگ‌تر باشد.',
+      invalidRsiPeriod: 'دوره RSI باید عدد صحیح و حداقل ۲ باشد.',
+      invalidOversoldThreshold: 'آستانه اشباع فروش باید بزرگ‌تر از صفر و کوچک‌تر از ۵۰ باشد.',
+      invalidOverboughtThreshold: 'آستانه اشباع خرید باید بزرگ‌تر از ۵۰ و کوچک‌تر از ۱۰۰ باشد.',
       invalidHorizon: 'افق ارزیابی باید یک عدد صحیح مثبت باشد.',
       invalidTrain: 'تعداد کندل Train باید عدد صحیح و حداقل ۲ باشد.',
       invalidTest: 'تعداد کندل Test باید یک عدد صحیح مثبت باشد.',
