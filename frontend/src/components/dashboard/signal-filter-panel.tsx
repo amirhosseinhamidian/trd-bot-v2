@@ -20,6 +20,7 @@ import type {
   ExperimentSummary,
   SignalDirection,
 } from '@/lib/api/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 export type SignalFilterValues = {
   experimentId: string;
@@ -102,7 +103,8 @@ export default function SignalFilterPanel({
           >
             {experiments.map((experiment) => (
               <SelectOption key={experiment.experiment_id} value={experiment.experiment_id}>
-                {experiment.strategy_name} · {experiment.experiment_id.slice(-6)}
+                {getStrategyDisplayName(experiment.strategy_name, locale)} · v
+                {experiment.strategy_version} · {experiment.experiment_id.slice(-6)}
               </SelectOption>
             ))}
           </Select>

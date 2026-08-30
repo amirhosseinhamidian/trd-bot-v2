@@ -19,7 +19,7 @@ class ExperimentExecutionStatus(StrEnum):
 class HistoricalExecutionParameters(BaseModel):
     """Shared reproducible inputs for one historical strategy execution."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     horizon_candles: int = Field(ge=1)
 

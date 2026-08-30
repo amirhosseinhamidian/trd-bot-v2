@@ -74,6 +74,19 @@ def test_builds_queued_rsi_execution_and_round_trips_parameters() -> None:
     assert restored.parameters == parameters
 
 
+def test_execution_parameters_reject_foreign_strategy_fields(
+    parameters: EMACrossoverExecutionParameters,
+) -> None:
+    payload = parameters.model_dump()
+    payload["period"] = 14
+
+    with pytest.raises(
+        ValidationError,
+        match="Extra inputs are not permitted",
+    ):
+        EMACrossoverExecutionParameters.model_validate(payload)
+
+
 def test_rejects_invalid_ema_period_relationship() -> None:
     with pytest.raises(
         ValidationError,

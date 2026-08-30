@@ -116,8 +116,8 @@ export default function ExperimentComparisonPanel({
                 variant="neutral"
                 title={experiment.experiment_id}
               >
-                {getStrategyDisplayName(experiment.strategy_name, locale)} ·{' '}
-                {experiment.experiment_id.slice(-6)}
+                {getStrategyDisplayName(experiment.strategy_name, locale)} · v
+                {experiment.strategy_version} · {experiment.experiment_id.slice(-6)}
               </Badge>
             ))}
           </div>

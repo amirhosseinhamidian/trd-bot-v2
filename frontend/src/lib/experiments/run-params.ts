@@ -92,18 +92,19 @@ function getStrategyName(value: string | string[] | undefined): ResearchStrategy
 export function buildExperimentRerunHref(
   experiment: ExperimentSummary,
   locale: 'fa' | 'en',
-): string {
+): string | null {
+  if (
+    experiment.strategy_name !== 'ema-crossover' &&
+    experiment.strategy_name !== 'rsi-threshold'
+  ) {
+    return null;
+  }
+
   const params = new URLSearchParams();
 
   params.set('dataset_id', experiment.dataset_id);
   params.set('horizon_candles', String(experiment.horizon_candles));
-
-  if (
-    experiment.strategy_name === 'ema-crossover' ||
-    experiment.strategy_name === 'rsi-threshold'
-  ) {
-    params.set('strategy', experiment.strategy_name);
-  }
+  params.set('strategy', experiment.strategy_name);
 
   const strategyParameterMappings =
     experiment.strategy_name === 'rsi-threshold'

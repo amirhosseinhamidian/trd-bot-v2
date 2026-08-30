@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -189,6 +189,46 @@ def test_creates_queued_rsi_experiment_execution(
     assert stored is not None
     assert stored.strategy_name == "rsi-threshold"
     assert execution_task_calls == [body["execution_id"]]
+
+
+@pytest.mark.parametrize(
+    ("path", "payload_builder", "foreign_fields"),
+    [
+        (
+            "/api/v1/research/experiment-executions/ema-crossover",
+            build_execution_payload,
+            {
+                "period": 14,
+                "oversold_threshold": "30",
+                "overbought_threshold": "70",
+            },
+        ),
+        (
+            "/api/v1/research/experiment-executions/rsi-threshold",
+            build_rsi_execution_payload,
+            {
+                "fast_period": 9,
+                "slow_period": 21,
+            },
+        ),
+    ],
+)
+def test_rejects_foreign_strategy_parameters(
+    path: str,
+    payload_builder: Callable[[str], dict[str, object]],
+    foreign_fields: dict[str, object],
+) -> None:
+    dataset_id = create_dataset()
+
+    payload = payload_builder(dataset_id)
+    payload.update(foreign_fields)
+
+    response = client.post(
+        path,
+        json=payload,
+    )
+
+    assert response.status_code == 422
 
 
 def test_returns_experiment_execution() -> None:

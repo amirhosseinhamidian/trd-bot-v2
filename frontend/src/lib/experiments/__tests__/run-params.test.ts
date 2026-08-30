@@ -96,7 +96,9 @@ describe('experiment run parameters', () => {
   it('builds a localized rerun URL from an experiment', () => {
     const href = buildExperimentRerunHref(experiment, 'en');
 
-    const url = new URL(href, 'http://localhost');
+    expect(href).not.toBeNull();
+
+    const url = new URL(href ?? '', 'http://localhost');
 
     expect(url.pathname).toBe('/en/experiments');
 
@@ -115,7 +117,10 @@ describe('experiment run parameters', () => {
 
   it('builds an RSI rerun URL with strategy-specific parameters', () => {
     const href = buildExperimentRerunHref(rsiExperiment, 'fa');
-    const url = new URL(href, 'http://localhost');
+
+    expect(href).not.toBeNull();
+
+    const url = new URL(href ?? '', 'http://localhost');
 
     expect(url.pathname).toBe('/fa/experiments');
     expect(Object.fromEntries(url.searchParams.entries())).toEqual({
@@ -130,6 +135,26 @@ describe('experiment run parameters', () => {
       fee_rate: '0.002',
       slippage_rate: '0.0008',
     });
+  });
+
+  it('does not create an EMA fallback rerun for an unsupported strategy', () => {
+    expect(
+      buildExperimentRerunHref(
+        {
+          ...experiment,
+          experiment_id: 'experiment-future-btc',
+          strategy_name: 'future-strategy',
+          strategy_version: '2.0.0',
+          parameters: [
+            {
+              name: 'future_period',
+              value: '12',
+            },
+          ],
+        },
+        'en',
+      ),
+    ).toBeNull();
   });
 
   it('parses valid RSI rerun values', () => {
