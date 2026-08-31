@@ -1,6 +1,10 @@
 from trd_bot.market_data.providers import (
+    BinancePublicMarketDataProvider,
     InMemoryMarketDataProvider,
     MarketDataProvider,
+    MarketDataProviderError,
+    MarketDataProviderMetadata,
+    MarketDataProviderResponseError,
 )
 from trd_bot.market_data.quality import (
     DataIssueCode,
@@ -10,10 +14,14 @@ from trd_bot.market_data.quality import (
 )
 
 __all__ = [
+    "BinancePublicMarketDataProvider",
     "DataIssueCode",
     "DataQualityIssue",
     "DataQualityReport",
     "InMemoryMarketDataProvider",
     "MarketDataProvider",
+    "MarketDataProviderError",
+    "MarketDataProviderMetadata",
+    "MarketDataProviderResponseError",
     "MarketDataQualityChecker",
 ]
