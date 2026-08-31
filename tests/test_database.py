@@ -147,7 +147,8 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
 
     engine = create_database_engine(database_url)
     try:
-        table_names = set(inspect(engine).get_table_names())
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
         assert {
             "alembic_version",
             "architecture_recommendations",
@@ -165,6 +166,19 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "walk_forward_executions",
             "walk_forward_runs",
         }.issubset(table_names)
+
+        import_columns = {
+            column["name"] for column in inspector.get_columns("market_data_imports")
+        }
+        assert {
+            "operation",
+            "source_dataset_id",
+            "root_import_id",
+            "parent_import_id",
+            "version_number",
+            "content_changed",
+        }.issubset(import_columns)
+
         command.check(config)
     finally:
         engine.dispose()

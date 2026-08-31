@@ -387,6 +387,34 @@ export async function getMarketDataImport(
   );
 }
 
+export interface MarketDataImportVersionFilters {
+  limit?: number;
+  offset?: number;
+}
+
+export async function getMarketDataImportVersions(
+  connectionId: string,
+  importId: string,
+  filters: MarketDataImportVersionFilters = {},
+): Promise<Page<MarketDataImportRecord>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 5));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<MarketDataImportRecord>>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}/versions?${params.toString()}`,
+  );
+}
+
+export async function refreshMarketDataImport(
+  connectionId: string,
+  importId: string,
+): Promise<MarketDataImportRecord> {
+  return postJson<MarketDataImportRecord>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}/refresh`,
+  );
+}
+
 export async function createExperimentExecution(
   request: StoredDatasetStrategyExecutionRequest,
 ): Promise<ExperimentExecution> {

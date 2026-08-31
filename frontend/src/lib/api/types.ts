@@ -80,6 +80,8 @@ export interface HistoricalDatasetImportPreview {
 
 export type MarketDataImportStatus = 'succeeded' | 'failed';
 
+export type MarketDataImportOperation = 'import' | 'refresh';
+
 export interface MarketDataImportRecord {
   import_id: string;
   connection_id: string;
@@ -96,6 +98,12 @@ export interface MarketDataImportRecord {
   dataset_id: string | null;
   error_code: string | null;
   error_message: string | null;
+  operation: MarketDataImportOperation;
+  source_dataset_id: string | null;
+  root_import_id: string | null;
+  parent_import_id: string | null;
+  version_number: number | null;
+  content_changed: boolean | null;
 }
 
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';

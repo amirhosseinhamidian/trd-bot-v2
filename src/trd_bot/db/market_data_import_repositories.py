@@ -5,6 +5,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from trd_bot.db.models import MarketDataImportRow
 from trd_bot.market_data.import_history import (
+    MarketDataImportOperation,
     MarketDataImportRecord,
     MarketDataImportStatus,
 )
@@ -42,6 +43,12 @@ class SqlAlchemyMarketDataImportRepository:
                 dataset_id=record.dataset_id,
                 error_code=record.error_code,
                 error_message=record.error_message,
+                operation=record.operation.value,
+                source_dataset_id=record.source_dataset_id,
+                root_import_id=record.root_import_id,
+                parent_import_id=record.parent_import_id,
+                version_number=record.version_number,
+                content_changed=record.content_changed,
                 payload_json=record.model_dump_json(),
             )
         )
@@ -61,18 +68,27 @@ class SqlAlchemyMarketDataImportRepository:
         row = self._session.get(MarketDataImportRow, import_id)
         if row is None:
             return None
-        return MarketDataImportRecord.model_validate_json(row.payload_json)
+        return self._record_from_row(row)
 
     def count(
         self,
         *,
         connection_id: str | None = None,
         status: MarketDataImportStatus | None = None,
+        root_import_id: str | None = None,
+        dataset_id: str | None = None,
     ) -> int:
         value = self._session.scalar(
             select(func.count())
             .select_from(MarketDataImportRow)
-            .where(*self._conditions(connection_id=connection_id, status=status))
+            .where(
+                *self._conditions(
+                    connection_id=connection_id,
+                    status=status,
+                    root_import_id=root_import_id,
+                    dataset_id=dataset_id,
+                )
+            )
         )
         return int(value or 0)
 
@@ -83,6 +99,8 @@ class SqlAlchemyMarketDataImportRepository:
         offset: int,
         connection_id: str | None = None,
         status: MarketDataImportStatus | None = None,
+        root_import_id: str | None = None,
+        dataset_id: str | None = None,
     ) -> tuple[MarketDataImportRecord, ...]:
         if limit <= 0:
             raise ValueError("limit must be greater than zero")
@@ -91,7 +109,14 @@ class SqlAlchemyMarketDataImportRepository:
 
         rows = self._session.scalars(
             select(MarketDataImportRow)
-            .where(*self._conditions(connection_id=connection_id, status=status))
+            .where(
+                *self._conditions(
+                    connection_id=connection_id,
+                    status=status,
+                    root_import_id=root_import_id,
+                    dataset_id=dataset_id,
+                )
+            )
             .order_by(
                 MarketDataImportRow.created_at.desc(),
                 MarketDataImportRow.import_id.desc(),
@@ -100,17 +125,58 @@ class SqlAlchemyMarketDataImportRepository:
             .limit(limit)
         ).all()
 
-        return tuple(MarketDataImportRecord.model_validate_json(row.payload_json) for row in rows)
+        return tuple(self._record_from_row(row) for row in rows)
+
+    def get_latest_successful_version(
+        self,
+        root_import_id: str,
+    ) -> MarketDataImportRecord | None:
+        row = self._session.scalar(
+            select(MarketDataImportRow)
+            .where(
+                MarketDataImportRow.root_import_id == root_import_id,
+                MarketDataImportRow.status == MarketDataImportStatus.SUCCEEDED.value,
+                MarketDataImportRow.version_number.is_not(None),
+            )
+            .order_by(
+                MarketDataImportRow.version_number.desc(),
+                MarketDataImportRow.created_at.desc(),
+                MarketDataImportRow.import_id.desc(),
+            )
+            .limit(1)
+        )
+        return self._record_from_row(row) if row is not None else None
+
+    @staticmethod
+    def _record_from_row(row: MarketDataImportRow) -> MarketDataImportRecord:
+        payload = MarketDataImportRecord.model_validate_json(row.payload_json).model_dump()
+        payload.update(
+            {
+                "operation": MarketDataImportOperation(row.operation),
+                "source_dataset_id": row.source_dataset_id,
+                "root_import_id": row.root_import_id,
+                "parent_import_id": row.parent_import_id,
+                "version_number": row.version_number,
+                "content_changed": row.content_changed,
+            }
+        )
+        return MarketDataImportRecord.model_validate(payload)
 
     @staticmethod
     def _conditions(
         *,
         connection_id: str | None,
         status: MarketDataImportStatus | None,
+        root_import_id: str | None,
+        dataset_id: str | None,
     ) -> tuple[ColumnElement[bool], ...]:
         conditions: list[ColumnElement[bool]] = []
         if connection_id is not None:
             conditions.append(MarketDataImportRow.connection_id == connection_id)
         if status is not None:
             conditions.append(MarketDataImportRow.status == status.value)
+        if root_import_id is not None:
+            conditions.append(MarketDataImportRow.root_import_id == root_import_id)
+        if dataset_id is not None:
+            conditions.append(MarketDataImportRow.dataset_id == dataset_id)
         return tuple(conditions)

@@ -5,6 +5,7 @@ import pytest
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.market_data.import_history import (
     InMemoryMarketDataImportRepository,
+    MarketDataImportOperation,
     MarketDataImportRecord,
     MarketDataImportStatus,
 )
@@ -55,6 +56,65 @@ def test_import_record_enforces_outcome_consistency() -> None:
             status=MarketDataImportStatus.SUCCEEDED,
             candle_count=2,
         )
+
+
+def test_refresh_lineage_requires_complete_success_metadata() -> None:
+    with pytest.raises(ValueError, match="successful refresh must record whether content changed"):
+        MarketDataImportRecord(
+            import_id="market-data-import-refresh",
+            connection_id="market-data-connection-1",
+            provider_id="binance-public",
+            dataset_name="BTC history",
+            pair=PAIR,
+            timeframe=Timeframe.HOUR_1,
+            requested_start_time=START - timedelta(hours=2),
+            requested_end_time=START,
+            created_at=START,
+            completed_at=START + timedelta(seconds=1),
+            status=MarketDataImportStatus.SUCCEEDED,
+            candle_count=2,
+            dataset_id="dataset-refresh",
+            operation=MarketDataImportOperation.REFRESH,
+            source_dataset_id="dataset-source",
+            root_import_id="market-data-import-root",
+            parent_import_id="market-data-import-root",
+            version_number=2,
+        )
+
+
+def test_in_memory_history_tracks_latest_successful_version() -> None:
+    repository = InMemoryMarketDataImportRepository()
+    root_payload = build_record("market-data-import-root").model_dump()
+    root_payload.update(
+        {
+            "root_import_id": "market-data-import-root",
+            "version_number": 1,
+        }
+    )
+    root = MarketDataImportRecord.model_validate(root_payload)
+
+    refresh_payload = build_record(
+        "market-data-import-refresh",
+        created_at=START + timedelta(minutes=1),
+    ).model_dump()
+    refresh_payload.update(
+        {
+            "operation": MarketDataImportOperation.REFRESH,
+            "source_dataset_id": "dataset-1234567890abcdef",
+            "root_import_id": root.import_id,
+            "parent_import_id": root.import_id,
+            "version_number": 2,
+            "content_changed": False,
+        }
+    )
+    refresh = MarketDataImportRecord.model_validate(refresh_payload)
+
+    repository.save(root)
+    repository.save(refresh)
+
+    assert repository.count(root_import_id=root.import_id) == 2
+    assert repository.count(dataset_id="dataset-1234567890abcdef") == 2
+    assert repository.get_latest_successful_version(root.import_id) == refresh
 
 
 def test_in_memory_history_filters_and_orders_newest_first() -> None:

@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getDatasetDetailCopy } from '@/components/dashboard/dataset-detail-copy';
+import DatasetVersionHistory from '@/components/dashboard/dataset-version-history';
 import {
   Badge,
   Button,
@@ -292,6 +293,17 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
           ) : null}
         </CardContent>
       </Card>
+
+      {dataset.provenance.kind === 'market_data_import' &&
+      dataset.provenance.connection_id &&
+      dataset.provenance.import_id ? (
+        <DatasetVersionHistory
+          connectionId={dataset.provenance.connection_id}
+          importId={dataset.provenance.import_id}
+          currentDatasetId={dataset.dataset_id}
+          locale={locale}
+        />
+      ) : null}
 
       <Card>
         <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

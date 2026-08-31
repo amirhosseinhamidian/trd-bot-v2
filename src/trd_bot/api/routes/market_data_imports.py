@@ -22,6 +22,7 @@ from trd_bot.market_data import (
     MarketDataProviderUnavailableError,
 )
 from trd_bot.market_data.import_history import (
+    MarketDataImportOperation,
     MarketDataImportRecord,
     MarketDataImportRepository,
     MarketDataImportStatus,
@@ -64,6 +65,7 @@ class MarketDataImportHistoryParams(PaginationParams):
 
 
 ImportHistoryQuery = Annotated[MarketDataImportHistoryParams, Query()]
+VersionHistoryQuery = Annotated[PaginationParams, Query()]
 
 
 class HistoricalDatasetImportRequest(BaseModel):
@@ -118,6 +120,12 @@ def _save_import_history(
     candle_count: int,
     dataset_id: str | None = None,
     error: Exception | None = None,
+    operation: MarketDataImportOperation = MarketDataImportOperation.IMPORT,
+    source_dataset_id: str | None = None,
+    root_import_id: str | None = None,
+    parent_import_id: str | None = None,
+    version_number: int | None = None,
+    content_changed: bool | None = None,
 ) -> MarketDataImportRecord:
     error_message = None
     error_code = None
@@ -142,8 +150,36 @@ def _save_import_history(
             dataset_id=dataset_id,
             error_code=error_code,
             error_message=error_message,
+            operation=operation,
+            source_dataset_id=source_dataset_id,
+            root_import_id=root_import_id,
+            parent_import_id=parent_import_id,
+            version_number=version_number,
+            content_changed=content_changed,
         )
     )
+
+
+def _get_import_or_404(
+    *,
+    connection_id: str,
+    import_id: str,
+    connections: MarketDataConnectionRepository,
+    history: MarketDataImportRepository,
+) -> MarketDataImportRecord:
+    if connections.get(connection_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="market-data connection not found",
+        )
+
+    record = history.get(import_id)
+    if record is None or record.connection_id != connection_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="market-data import not found",
+        )
+    return record
 
 
 def _service(
@@ -325,6 +361,7 @@ async def import_historical_dataset(
             )
         _raise_fetch_error(error)
 
+    created_snapshot = dataset.provenance.import_id == import_id
     _save_import_history(
         repository=history,
         import_id=import_id,
@@ -335,6 +372,8 @@ async def import_historical_dataset(
         status_value=MarketDataImportStatus.SUCCEEDED,
         candle_count=dataset.candle_count,
         dataset_id=dataset.dataset_id,
+        root_import_id=import_id if created_snapshot else None,
+        version_number=1 if created_snapshot else None,
     )
     return DatasetSummary.from_dataset(dataset)
 
@@ -371,6 +410,174 @@ def list_historical_imports(
 
 
 @router.get(
+    "/{connection_id}/imports/{import_id}/versions",
+    response_model=Page[MarketDataImportRecord],
+)
+def list_historical_import_versions(
+    connection_id: str,
+    import_id: str,
+    connections: ConnectionRepositoryDependency,
+    history: ImportHistoryRepositoryDependency,
+    pagination: VersionHistoryQuery,
+) -> Page[MarketDataImportRecord]:
+    """Return newest-first version and refresh attempts for one dataset lineage."""
+
+    record = _get_import_or_404(
+        connection_id=connection_id,
+        import_id=import_id,
+        connections=connections,
+        history=history,
+    )
+    if record.root_import_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="market-data import does not identify a dataset version lineage",
+        )
+
+    records = history.list_page(
+        root_import_id=record.root_import_id,
+        limit=pagination.limit,
+        offset=pagination.offset,
+    )
+    return build_page(
+        records,
+        total=history.count(root_import_id=record.root_import_id),
+        pagination=pagination,
+    )
+
+
+@router.post(
+    "/{connection_id}/imports/{import_id}/refresh",
+    response_model=MarketDataImportRecord,
+    status_code=status.HTTP_201_CREATED,
+)
+async def refresh_historical_import(
+    connection_id: str,
+    import_id: str,
+    connections: ConnectionRepositoryDependency,
+    providers: ProviderCatalogDependency,
+    datasets: DatasetRepositoryDependency,
+    history: ImportHistoryRepositoryDependency,
+) -> MarketDataImportRecord:
+    """Re-fetch the latest immutable dataset version and record a new lineage event."""
+
+    source_record = _get_import_or_404(
+        connection_id=connection_id,
+        import_id=import_id,
+        connections=connections,
+        history=history,
+    )
+    if (
+        source_record.status is not MarketDataImportStatus.SUCCEEDED
+        or source_record.dataset_id is None
+        or source_record.root_import_id is None
+        or source_record.version_number is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="market-data import does not identify a refreshable dataset version",
+        )
+
+    latest = history.get_latest_successful_version(source_record.root_import_id)
+    if latest is None or latest.import_id != source_record.import_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="only the latest successful dataset version can be refreshed",
+        )
+
+    if datasets.get(source_record.dataset_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="source dataset not found",
+        )
+
+    refresh_id = f"market-data-import-{uuid4().hex}"
+    created_at = datetime.now(UTC)
+    request = HistoricalDatasetImportRequest(
+        name=source_record.dataset_name,
+        pair=source_record.pair,
+        timeframe=source_record.timeframe,
+        start_time=source_record.requested_start_time,
+        end_time=source_record.requested_end_time,
+    )
+    service = _service(
+        connections=connections,
+        providers=providers,
+        datasets=datasets,
+    )
+
+    try:
+        dataset = await service.import_dataset(
+            connection_id=connection_id,
+            import_id=refresh_id,
+            name=request.name,
+            pair=request.pair,
+            timeframe=request.timeframe,
+            start_time=request.start_time,
+            end_time=request.end_time,
+        )
+    except InvalidDatasetError as error:
+        _save_import_history(
+            repository=history,
+            import_id=refresh_id,
+            connection_id=connection_id,
+            provider_id=source_record.provider_id,
+            request=request,
+            created_at=created_at,
+            status_value=MarketDataImportStatus.FAILED,
+            candle_count=error.report.candles_checked,
+            error=error,
+            operation=MarketDataImportOperation.REFRESH,
+            source_dataset_id=source_record.dataset_id,
+            root_import_id=source_record.root_import_id,
+            parent_import_id=source_record.import_id,
+        )
+        _raise_quality_error(error)
+    except (
+        MarketDataConnectionNotFoundError,
+        MarketDataConnectionStateError,
+        MarketDataProviderUnavailableError,
+        HistoricalDatasetProviderCapabilityError,
+        HistoricalDatasetImportLimitError,
+        MarketDataProviderError,
+    ) as error:
+        _save_import_history(
+            repository=history,
+            import_id=refresh_id,
+            connection_id=connection_id,
+            provider_id=source_record.provider_id,
+            request=request,
+            created_at=created_at,
+            status_value=MarketDataImportStatus.FAILED,
+            candle_count=0,
+            error=error,
+            operation=MarketDataImportOperation.REFRESH,
+            source_dataset_id=source_record.dataset_id,
+            root_import_id=source_record.root_import_id,
+            parent_import_id=source_record.import_id,
+        )
+        _raise_fetch_error(error)
+
+    return _save_import_history(
+        repository=history,
+        import_id=refresh_id,
+        connection_id=connection_id,
+        provider_id=dataset.source,
+        request=request,
+        created_at=created_at,
+        status_value=MarketDataImportStatus.SUCCEEDED,
+        candle_count=dataset.candle_count,
+        dataset_id=dataset.dataset_id,
+        operation=MarketDataImportOperation.REFRESH,
+        source_dataset_id=source_record.dataset_id,
+        root_import_id=source_record.root_import_id,
+        parent_import_id=source_record.import_id,
+        version_number=source_record.version_number + 1,
+        content_changed=dataset.dataset_id != source_record.dataset_id,
+    )
+
+
+@router.get(
     "/{connection_id}/imports/{import_id}",
     response_model=MarketDataImportRecord,
 )
@@ -382,16 +589,9 @@ def get_historical_import(
 ) -> MarketDataImportRecord:
     """Return one immutable historical import audit record."""
 
-    if connections.get(connection_id) is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="market-data connection not found",
-        )
-
-    record = history.get(import_id)
-    if record is None or record.connection_id != connection_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="market-data import not found",
-        )
-    return record
+    return _get_import_or_404(
+        connection_id=connection_id,
+        import_id=import_id,
+        connections=connections,
+        history=history,
+    )

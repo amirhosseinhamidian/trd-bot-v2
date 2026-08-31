@@ -118,6 +118,12 @@ class MarketDataImportRow(DatabaseBase):
             "status",
             "created_at",
         ),
+        Index(
+            "ux_market_data_imports_root_version",
+            "root_import_id",
+            "version_number",
+            unique=True,
+        ),
     )
 
     import_id: Mapped[str] = mapped_column(String(100), primary_key=True)
@@ -145,6 +151,16 @@ class MarketDataImportRow(DatabaseBase):
     )
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    operation: Mapped[str] = mapped_column(String(20), server_default="import")
+    source_dataset_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    root_import_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    parent_import_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    version_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_changed: Mapped[bool | None] = mapped_column(nullable=True)
     payload_json: Mapped[str] = mapped_column(Text)
 
 

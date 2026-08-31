@@ -6,6 +6,8 @@ import type { DatasetDetailSummary, Page, OHLCVCandle } from '@/lib/api/types';
 
 vi.mock('@/lib/api/client', () => ({
   getDatasetCandles: vi.fn(),
+  getMarketDataImportVersions: vi.fn(),
+  refreshMarketDataImport: vi.fn(),
 }));
 
 const initialCandlesPage: Page<OHLCVCandle> = {
@@ -66,6 +68,9 @@ describe('DatasetDetail', () => {
     expect(screen.getAllByText('synthetic-public').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('market-data-import-1')).toBeInTheDocument();
 
+    expect(screen.getByRole('heading', { name: 'Version history' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Load version history' })).toBeInTheDocument();
+
     expect(screen.getByRole('heading', { name: 'Data quality' })).toBeInTheDocument();
     expect(screen.getByText('Passed')).toBeInTheDocument();
     expect(screen.getByText('Candles checked')).toBeInTheDocument();
@@ -100,5 +105,6 @@ describe('DatasetDetail', () => {
       screen.getByText('No persisted quality report is available for this legacy dataset.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('market-data-connection-1')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Version history' })).toBeNull();
   });
 });

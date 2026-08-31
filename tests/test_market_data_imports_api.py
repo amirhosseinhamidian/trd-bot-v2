@@ -201,6 +201,13 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert history_payload["total"] == 2
     assert history_payload["items"][0]["status"] == "succeeded"
     assert history_payload["items"][0]["dataset_id"] == first.json()["dataset_id"]
+    assert history_payload["items"][0]["root_import_id"] is None
+    assert history_payload["items"][0]["version_number"] is None
+
+    root_record = history_payload["items"][-1]
+    assert root_record["root_import_id"] == root_record["import_id"]
+    assert root_record["version_number"] == 1
+    assert root_record["operation"] == "import"
 
     import_id = history_payload["items"][0]["import_id"]
     detail = client.get(
@@ -221,6 +228,145 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert dataset_payload["provenance"]["import_id"] == history_payload["items"][-1]["import_id"]
     assert dataset_payload["quality_report"]["candles_checked"] == 2
     assert dataset_payload["quality_report"]["issues"] == []
+
+
+def test_refresh_without_content_change_records_new_version_without_new_snapshot(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, _ = historical_import_dependencies
+    import_response = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=request_payload(),
+    )
+    assert import_response.status_code == 201
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    root = history_response.json()["items"][0]
+
+    refreshed = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+
+    assert refreshed.status_code == 201
+    payload = refreshed.json()
+    assert payload["operation"] == "refresh"
+    assert payload["root_import_id"] == root["import_id"]
+    assert payload["parent_import_id"] == root["import_id"]
+    assert payload["version_number"] == 2
+    assert payload["source_dataset_id"] == root["dataset_id"]
+    assert payload["dataset_id"] == root["dataset_id"]
+    assert payload["content_changed"] is False
+    assert datasets.count() == 1
+
+    versions = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{payload['import_id']}/versions"
+    )
+    assert versions.status_code == 200
+    assert versions.json()["total"] == 2
+    assert versions.json()["items"][0]["version_number"] == 2
+    assert versions.json()["items"][1]["version_number"] == 1
+
+    stale = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+    assert stale.status_code == 409
+    assert stale.json()["detail"] == "only the latest successful dataset version can be refreshed"
+
+
+def test_refresh_with_changed_content_creates_new_immutable_snapshot(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, state = historical_import_dependencies
+    imported = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=request_payload(),
+    )
+    assert imported.status_code == 201
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    root = history_response.json()["items"][0]
+
+    state.candles = [
+        create_candle(0),
+        create_candle(1).model_copy(update={"close_price": Decimal("106")}),
+    ]
+
+    refreshed = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+
+    assert refreshed.status_code == 201
+    payload = refreshed.json()
+    assert payload["content_changed"] is True
+    assert payload["version_number"] == 2
+    assert payload["dataset_id"] != root["dataset_id"]
+    assert datasets.count() == 2
+
+    dataset_detail = client.get(
+        f"/api/v1/research/datasets/{payload['dataset_id']}/summary"
+    )
+    assert dataset_detail.status_code == 200
+    assert dataset_detail.json()["provenance"]["import_id"] == payload["import_id"]
+
+
+def test_failed_refresh_is_recorded_without_consuming_a_version_number(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, _, state = historical_import_dependencies
+    imported = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=request_payload(),
+    )
+    assert imported.status_code == 201
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    root = history_response.json()["items"][0]
+    state.fail_fetch = True
+
+    failed = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+
+    assert failed.status_code == 502
+
+    versions = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/versions"
+    )
+    assert versions.status_code == 200
+    assert versions.json()["total"] == 2
+    failed_record = versions.json()["items"][0]
+    assert failed_record["operation"] == "refresh"
+    assert failed_record["status"] == "failed"
+    assert failed_record["root_import_id"] == root["import_id"]
+    assert failed_record["parent_import_id"] == root["import_id"]
+    assert failed_record["source_dataset_id"] == root["dataset_id"]
+    assert failed_record["version_number"] is None
+    assert failed_record["content_changed"] is None
+
+    state.fail_fetch = False
+    retried = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+    assert retried.status_code == 201
+    assert retried.json()["version_number"] == 2
 
 
 def test_import_requires_enabled_connection(

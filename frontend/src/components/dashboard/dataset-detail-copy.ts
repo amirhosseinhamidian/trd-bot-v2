@@ -51,6 +51,33 @@ export type DatasetDetailCopy = {
     notRecordedDescription: string;
     issueTimestamp: string;
   };
+  versions: {
+    title: string;
+    description: string;
+    load: string;
+    reload: string;
+    refresh: string;
+    refreshing: string;
+    loading: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    errorTitle: string;
+    errorDescription: string;
+    refreshErrorTitle: string;
+    refreshErrorDescription: string;
+    retry: string;
+    version: string;
+    initialImport: string;
+    refreshOperation: string;
+    succeeded: string;
+    failed: string;
+    contentChanged: string;
+    contentUnchanged: string;
+    currentSnapshot: string;
+    openSnapshot: string;
+    openNewSnapshot: string;
+    completedAt: string;
+  };
   candles: {
     title: string;
     description: string;
@@ -136,6 +163,34 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       notRecordedDescription: 'برای این Dataset قدیمی گزارش کیفیت ذخیره نشده است.',
       issueTimestamp: 'زمان مسئله',
     },
+    versions: {
+      title: 'تاریخچه نسخه‌ها',
+      description: 'زنجیره تغییرناپذیر Import و Refresh برای این Dataset',
+      load: 'نمایش تاریخچه نسخه‌ها',
+      reload: 'به‌روزرسانی تاریخچه',
+      refresh: 'Refresh آخرین نسخه',
+      refreshing: 'در حال Refresh',
+      loading: 'در حال دریافت تاریخچه نسخه‌ها',
+      emptyTitle: 'تاریخچه نسخه‌ای وجود ندارد',
+      emptyDescription: 'برای این Dataset هنوز lineage قابل نمایش ثبت نشده است.',
+      errorTitle: 'دریافت تاریخچه نسخه‌ها ناموفق بود',
+      errorDescription: 'اتصال Backend را بررسی کرده و دوباره تلاش کنید.',
+      refreshErrorTitle: 'Refresh مجموعه‌داده ناموفق بود',
+      refreshErrorDescription:
+        'تلاش ناموفق در تاریخچه ثبت می‌شود؛ تاریخچه را دوباره بارگذاری کرده و وضعیت Connection را بررسی کنید.',
+      retry: 'تلاش مجدد',
+      version: 'نسخه',
+      initialImport: 'Import اولیه',
+      refreshOperation: 'Refresh',
+      succeeded: 'موفق',
+      failed: 'ناموفق',
+      contentChanged: 'محتوا تغییر کرد',
+      contentUnchanged: 'بدون تغییر محتوا',
+      currentSnapshot: 'Snapshot فعلی',
+      openSnapshot: 'مشاهده Snapshot',
+      openNewSnapshot: 'مشاهده Snapshot جدید',
+      completedAt: 'زمان تکمیل',
+    },
     candles: {
       title: 'کندل‌های تاریخی',
       description: 'داده OHLCV ذخیره‌شده در این Snapshot برای پژوهش و بک‌تست',
@@ -220,6 +275,34 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       passedDescription: 'No data-quality issues were recorded when this snapshot was created.',
       notRecordedDescription: 'No persisted quality report is available for this legacy dataset.',
       issueTimestamp: 'Issue timestamp',
+    },
+    versions: {
+      title: 'Version history',
+      description: 'Immutable import and refresh lineage for this dataset',
+      load: 'Load version history',
+      reload: 'Reload history',
+      refresh: 'Refresh latest version',
+      refreshing: 'Refreshing dataset',
+      loading: 'Loading version history',
+      emptyTitle: 'No version history',
+      emptyDescription: 'No displayable version lineage has been recorded for this dataset.',
+      errorTitle: 'Unable to load version history',
+      errorDescription: 'Check the backend connection and try again.',
+      refreshErrorTitle: 'Dataset refresh failed',
+      refreshErrorDescription:
+        'The failed attempt remains in immutable history. Reload the history and check the connection state.',
+      retry: 'Try again',
+      version: 'Version',
+      initialImport: 'Initial import',
+      refreshOperation: 'Refresh',
+      succeeded: 'Succeeded',
+      failed: 'Failed',
+      contentChanged: 'Content changed',
+      contentUnchanged: 'No content change',
+      currentSnapshot: 'Current snapshot',
+      openSnapshot: 'Open snapshot',
+      openNewSnapshot: 'Open new snapshot',
+      completedAt: 'Completed',
     },
     candles: {
       title: 'Historical candles',
