@@ -22,6 +22,9 @@ from trd_bot.domain.market_data import (
 from trd_bot.research import (
     DatasetBuilder,
     DatasetCatalogQuery,
+    DatasetDetailSummary,
+    DatasetProvenance,
+    DatasetProvenanceKind,
     DatasetRepository,
     DatasetSnapshot,
     DatasetSummary,
@@ -208,6 +211,7 @@ def import_dataset(
         dataset = DatasetBuilder().build(
             name=request.name,
             candles=candles,
+            provenance=DatasetProvenance(kind=DatasetProvenanceKind.MANUAL_UPLOAD),
         )
     except InvalidDatasetError as error:
         raise HTTPException(
@@ -258,12 +262,12 @@ def list_datasets(
 
 @router.get(
     "/{dataset_id}/summary",
-    response_model=DatasetSummary,
+    response_model=DatasetDetailSummary,
 )
 def get_dataset_summary(
     dataset_id: str,
     repository: DatasetRepositoryDependency,
-) -> DatasetSummary:
+) -> DatasetDetailSummary:
     """Return lightweight metadata for one historical dataset."""
 
     dataset = _get_dataset_or_404(
@@ -271,7 +275,7 @@ def get_dataset_summary(
         repository=repository,
     )
 
-    return DatasetSummary.from_dataset(dataset)
+    return DatasetDetailSummary.from_dataset(dataset)
 
 
 @router.get(

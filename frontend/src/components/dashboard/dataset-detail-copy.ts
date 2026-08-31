@@ -17,6 +17,40 @@ export type DatasetDetailCopy = {
     createdAt: string;
     checksum: string;
   };
+  provenance: {
+    title: string;
+    description: string;
+    connectionId: string;
+    providerId: string;
+    importId: string;
+    requestedRange: string;
+    kinds: {
+      legacy: string;
+      generated: string;
+      manual_upload: string;
+      market_data_import: string;
+    };
+    kindDescriptions: {
+      legacy: string;
+      generated: string;
+      manual_upload: string;
+      market_data_import: string;
+    };
+  };
+  quality: {
+    title: string;
+    description: string;
+    statuses: {
+      passed: string;
+      issues: string;
+      notRecorded: string;
+    };
+    candlesChecked: string;
+    issueCount: string;
+    passedDescription: string;
+    notRecordedDescription: string;
+    issueTimestamp: string;
+  };
   candles: {
     title: string;
     description: string;
@@ -68,6 +102,40 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       createdAt: 'زمان ایجاد',
       checksum: 'Checksum',
     },
+    provenance: {
+      title: 'منشأ مجموعه‌داده',
+      description: 'اطلاعات ثابت درباره نحوه ایجاد این Snapshot',
+      connectionId: 'شناسه Connection',
+      providerId: 'Provider',
+      importId: 'شناسه Import',
+      requestedRange: 'بازه درخواستی',
+      kinds: {
+        legacy: 'قدیمی / ثبت‌نشده',
+        generated: 'تولید داخلی',
+        manual_upload: 'ورودی دستی',
+        market_data_import: 'ورودی Market Data',
+      },
+      kindDescriptions: {
+        legacy: 'این Dataset پیش از ثبت metadata منشأ ساخته شده است.',
+        generated: 'این Dataset توسط یک جریان داخلی پژوهشی ساخته شده است.',
+        manual_upload: 'داده OHLCV این Dataset به‌صورت دستی به API پژوهش ارسال شده است.',
+        market_data_import: 'این Dataset از یک Connection خواندنی Market Data وارد شده است.',
+      },
+    },
+    quality: {
+      title: 'کیفیت داده',
+      description: 'نتیجه بررسی کیفیت ثبت‌شده هنگام ایجاد Snapshot',
+      statuses: {
+        passed: 'تأییدشده',
+        issues: 'نیازمند بررسی',
+        notRecorded: 'ثبت‌نشده',
+      },
+      candlesChecked: 'کندل‌های بررسی‌شده',
+      issueCount: 'تعداد مسائل',
+      passedDescription: 'در زمان ایجاد Snapshot هیچ مسئله کیفیتی ثبت نشده است.',
+      notRecordedDescription: 'برای این Dataset قدیمی گزارش کیفیت ذخیره نشده است.',
+      issueTimestamp: 'زمان مسئله',
+    },
     candles: {
       title: 'کندل‌های تاریخی',
       description: 'داده OHLCV ذخیره‌شده در این Snapshot برای پژوهش و بک‌تست',
@@ -116,6 +184,42 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       dataPeriod: 'Data period',
       createdAt: 'Created at',
       checksum: 'Checksum',
+    },
+    provenance: {
+      title: 'Dataset provenance',
+      description: 'Immutable metadata describing how this snapshot was created',
+      connectionId: 'Connection ID',
+      providerId: 'Provider',
+      importId: 'Import ID',
+      requestedRange: 'Requested range',
+      kinds: {
+        legacy: 'Legacy / not recorded',
+        generated: 'Internally generated',
+        manual_upload: 'Manual upload',
+        market_data_import: 'Market data import',
+      },
+      kindDescriptions: {
+        legacy: 'This dataset predates immutable provenance metadata.',
+        generated: 'This dataset was created by an internal research workflow.',
+        manual_upload:
+          'This dataset was created from OHLCV submitted manually to the research API.',
+        market_data_import:
+          'This dataset was imported from a configured read-only market-data connection.',
+      },
+    },
+    quality: {
+      title: 'Data quality',
+      description: 'Quality-check evidence recorded when this snapshot was created',
+      statuses: {
+        passed: 'Passed',
+        issues: 'Review required',
+        notRecorded: 'Not recorded',
+      },
+      candlesChecked: 'Candles checked',
+      issueCount: 'Issues',
+      passedDescription: 'No data-quality issues were recorded when this snapshot was created.',
+      notRecordedDescription: 'No persisted quality report is available for this legacy dataset.',
+      issueTimestamp: 'Issue timestamp',
     },
     candles: {
       title: 'Historical candles',

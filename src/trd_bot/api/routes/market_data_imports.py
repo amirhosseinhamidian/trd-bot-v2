@@ -282,6 +282,7 @@ async def import_historical_dataset(
     try:
         dataset = await service.import_dataset(
             connection_id=connection_id,
+            import_id=import_id,
             name=request.name,
             pair=request.pair,
             timeframe=request.timeframe,

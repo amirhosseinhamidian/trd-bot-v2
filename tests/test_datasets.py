@@ -5,7 +5,13 @@ import pytest
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data import DataIssueCode
-from trd_bot.research import DatasetBuilder, InvalidDatasetError
+from trd_bot.research import (
+    DatasetBuilder,
+    DatasetProvenance,
+    DatasetProvenanceKind,
+    DatasetSnapshot,
+    InvalidDatasetError,
+)
 
 PAIR = TradingPair(
     base_asset="BTC",
@@ -49,12 +55,34 @@ def test_dataset_is_created_from_valid_candles() -> None:
         ],
     )
 
+    assert dataset.schema_version == 2
     assert dataset.candle_count == 2
     assert dataset.source == "test-exchange"
     assert dataset.pair.symbol == "BTC/USDT"
     assert dataset.timeframe == Timeframe.HOUR_1
     assert dataset.dataset_id.startswith("dataset-")
     assert len(dataset.checksum) == 64
+    assert dataset.provenance.kind is DatasetProvenanceKind.GENERATED
+    assert dataset.quality_report is not None
+    assert dataset.quality_report.candles_checked == 2
+    assert dataset.quality_report.issues == ()
+
+
+def test_legacy_dataset_payload_remains_readable_without_v2_metadata() -> None:
+    dataset = DatasetBuilder().build(
+        name="Current dataset",
+        candles=[create_candle(10), create_candle(11)],
+    )
+    payload = dataset.model_dump(mode="json")
+    payload["schema_version"] = 1
+    payload.pop("provenance")
+    payload.pop("quality_report")
+
+    legacy = DatasetSnapshot.model_validate(payload)
+
+    assert legacy.schema_version == 1
+    assert legacy.provenance.kind is DatasetProvenanceKind.LEGACY
+    assert legacy.quality_report is None
 
 
 def test_dataset_checksum_is_deterministic() -> None:
@@ -72,10 +100,12 @@ def test_dataset_checksum_is_deterministic() -> None:
             create_candle(10, received_hour=15),
             create_candle(11, received_hour=15),
         ],
+        provenance=DatasetProvenance(kind=DatasetProvenanceKind.MANUAL_UPLOAD),
     )
 
     assert first_dataset.checksum == second_dataset.checksum
     assert first_dataset.dataset_id == second_dataset.dataset_id
+    assert first_dataset.provenance != second_dataset.provenance
 
 
 def test_invalid_dataset_is_rejected() -> None:

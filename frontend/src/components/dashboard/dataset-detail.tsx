@@ -24,12 +24,12 @@ import {
   TableRow,
 } from '@/components/ui';
 import { getDatasetCandles } from '@/lib/api/client';
-import type { DatasetSummary, OHLCVCandle, Page } from '@/lib/api/types';
+import type { DatasetDetailSummary, OHLCVCandle, Page } from '@/lib/api/types';
 
 const CANDLES_PER_PAGE = 25;
 
 type DatasetDetailProps = {
-  dataset: DatasetSummary;
+  dataset: DatasetDetailSummary;
   initialCandlesPage: Page<OHLCVCandle>;
   locale: DashboardLocale;
 };
@@ -85,6 +85,14 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
       }
     }
   }
+
+  const qualityIssues = dataset.quality_report?.issues ?? [];
+  const qualityStatus =
+    dataset.quality_report === null
+      ? 'notRecorded'
+      : qualityIssues.length === 0
+        ? 'passed'
+        : 'issues';
 
   const metadata = [
     {
@@ -216,6 +224,144 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>{copy.provenance.title}</CardTitle>
+            <CardDescription>{copy.provenance.description}</CardDescription>
+          </div>
+
+          <Badge variant={dataset.provenance.kind === 'market_data_import' ? 'info' : 'neutral'}>
+            {copy.provenance.kinds[dataset.provenance.kind]}
+          </Badge>
+        </CardHeader>
+
+        <CardContent>
+          <p className="text-sm leading-7 text-app-muted">
+            {copy.provenance.kindDescriptions[dataset.provenance.kind]}
+          </p>
+
+          {dataset.provenance.kind === 'market_data_import' ? (
+            <dl className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                <dt className="text-xs text-app-muted">{copy.provenance.connectionId}</dt>
+                <dd
+                  dir="ltr"
+                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                >
+                  {dataset.provenance.connection_id}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                <dt className="text-xs text-app-muted">{copy.provenance.providerId}</dt>
+                <dd
+                  dir="ltr"
+                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                >
+                  {dataset.provenance.provider_id}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                <dt className="text-xs text-app-muted">{copy.provenance.importId}</dt>
+                <dd
+                  dir="ltr"
+                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                >
+                  {dataset.provenance.import_id}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                <dt className="text-xs text-app-muted">{copy.provenance.requestedRange}</dt>
+                <dd className="mt-2 text-sm leading-7 text-app-foreground">
+                  {dataset.provenance.requested_start_time
+                    ? formatDate(dataset.provenance.requested_start_time, locale)
+                    : '—'}
+                  <span className="mx-2 text-app-subtle">—</span>
+                  {dataset.provenance.requested_end_time
+                    ? formatDate(dataset.provenance.requested_end_time, locale)
+                    : '—'}
+                </dd>
+              </div>
+            </dl>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle>{copy.quality.title}</CardTitle>
+            <CardDescription>{copy.quality.description}</CardDescription>
+          </div>
+
+          <Badge
+            variant={
+              qualityStatus === 'passed'
+                ? 'success'
+                : qualityStatus === 'issues'
+                  ? 'warning'
+                  : 'neutral'
+            }
+          >
+            {copy.quality.statuses[qualityStatus]}
+          </Badge>
+        </CardHeader>
+
+        <CardContent>
+          {dataset.quality_report === null ? (
+            <p className="text-sm leading-7 text-app-muted">
+              {copy.quality.notRecordedDescription}
+            </p>
+          ) : (
+            <>
+              <dl className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <dt className="text-xs text-app-muted">{copy.quality.candlesChecked}</dt>
+                  <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                    {formatNumber(dataset.quality_report.candles_checked, locale)}
+                  </dd>
+                </div>
+
+                <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <dt className="text-xs text-app-muted">{copy.quality.issueCount}</dt>
+                  <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                    {formatNumber(qualityIssues.length, locale)}
+                  </dd>
+                </div>
+              </dl>
+
+              {qualityIssues.length === 0 ? (
+                <p className="mt-5 text-sm leading-7 text-app-muted">
+                  {copy.quality.passedDescription}
+                </p>
+              ) : (
+                <ul className="mt-5 space-y-3">
+                  {qualityIssues.map((issue, index) => (
+                    <li
+                      key={`${issue.code}-${issue.timestamp ?? 'none'}-${index}`}
+                      className="rounded-xl border border-app-border bg-app-surface-muted p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Badge variant="warning">{issue.code}</Badge>
+                        {issue.timestamp ? (
+                          <span className="text-xs text-app-muted">
+                            {copy.quality.issueTimestamp}: {formatDate(issue.timestamp, locale)}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-3 text-sm leading-7 text-app-foreground">{issue.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 

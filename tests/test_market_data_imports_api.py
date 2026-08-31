@@ -209,6 +209,19 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert detail.status_code == 200
     assert detail.json()["import_id"] == import_id
 
+    dataset_detail = client.get(
+        f"/api/v1/research/datasets/{first.json()['dataset_id']}/summary"
+    )
+    assert dataset_detail.status_code == 200
+    dataset_payload = dataset_detail.json()
+    assert dataset_payload["schema_version"] == 2
+    assert dataset_payload["provenance"]["kind"] == "market_data_import"
+    assert dataset_payload["provenance"]["connection_id"] == CONNECTION_ID
+    assert dataset_payload["provenance"]["provider_id"] == "synthetic-public"
+    assert dataset_payload["provenance"]["import_id"] == history_payload["items"][-1]["import_id"]
+    assert dataset_payload["quality_report"]["candles_checked"] == 2
+    assert dataset_payload["quality_report"]["issues"] == []
+
 
 def test_import_requires_enabled_connection(
     historical_import_dependencies: tuple[

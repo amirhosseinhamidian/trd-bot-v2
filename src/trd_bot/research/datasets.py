@@ -20,6 +20,69 @@ from trd_bot.market_data.quality import (
 )
 
 
+class DatasetProvenanceKind(StrEnum):
+    """Creation origin recorded for one immutable dataset snapshot."""
+
+    LEGACY = "legacy"
+    GENERATED = "generated"
+    MANUAL_UPLOAD = "manual_upload"
+    MARKET_DATA_IMPORT = "market_data_import"
+
+
+class DatasetProvenance(BaseModel):
+    """Immutable creation provenance for one dataset snapshot."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: DatasetProvenanceKind
+    connection_id: str | None = Field(default=None, min_length=1, max_length=100)
+    provider_id: str | None = Field(default=None, min_length=1, max_length=100)
+    import_id: str | None = Field(default=None, min_length=1, max_length=100)
+    requested_start_time: datetime | None = None
+    requested_end_time: datetime | None = None
+
+    @field_validator("connection_id", "provider_id", "import_id")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("dataset provenance text cannot be empty")
+        return normalized
+
+    @field_validator("requested_start_time", "requested_end_time")
+    @classmethod
+    def normalize_optional_timestamp(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("dataset provenance timestamps must include timezone information")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_origin_details(self) -> Self:
+        import_details = (
+            self.connection_id,
+            self.provider_id,
+            self.import_id,
+            self.requested_start_time,
+            self.requested_end_time,
+        )
+
+        if self.kind is DatasetProvenanceKind.MARKET_DATA_IMPORT:
+            if any(value is None for value in import_details):
+                raise ValueError("market-data import provenance requires complete import details")
+            assert self.requested_start_time is not None
+            assert self.requested_end_time is not None
+            if self.requested_end_time <= self.requested_start_time:
+                raise ValueError("dataset provenance requested end time must be after start time")
+        elif any(value is not None for value in import_details):
+            raise ValueError("non-import dataset provenance cannot contain import details")
+
+        return self
+
+
 class DatasetSnapshot(BaseModel):
     """An immutable and validated market-data snapshot."""
 
@@ -36,6 +99,11 @@ class DatasetSnapshot(BaseModel):
     start_time: datetime
     end_time: datetime
     created_at: datetime
+
+    provenance: DatasetProvenance = Field(
+        default_factory=lambda: DatasetProvenance(kind=DatasetProvenanceKind.LEGACY)
+    )
+    quality_report: DataQualityReport | None = None
 
     candle_count: int = Field(gt=0)
     checksum: str = Field(min_length=64, max_length=64)
@@ -101,6 +169,31 @@ class DatasetSummary(BaseModel):
             created_at=dataset.created_at,
             candle_count=dataset.candle_count,
             checksum=dataset.checksum,
+        )
+
+
+class DatasetDetailSummary(DatasetSummary):
+    """Dataset detail metadata including immutable provenance and quality evidence."""
+
+    provenance: DatasetProvenance
+    quality_report: DataQualityReport | None
+
+    @classmethod
+    def from_dataset(cls, dataset: DatasetSnapshot) -> Self:
+        return cls(
+            dataset_id=dataset.dataset_id,
+            schema_version=dataset.schema_version,
+            name=dataset.name,
+            source=dataset.source,
+            pair=dataset.pair,
+            timeframe=dataset.timeframe,
+            start_time=dataset.start_time,
+            end_time=dataset.end_time,
+            created_at=dataset.created_at,
+            candle_count=dataset.candle_count,
+            checksum=dataset.checksum,
+            provenance=dataset.provenance,
+            quality_report=dataset.quality_report,
         )
 
 
@@ -359,6 +452,7 @@ class DatasetBuilder:
         candles: Sequence[OHLCVCandle],
         *,
         created_at: datetime | None = None,
+        provenance: DatasetProvenance | None = None,
     ) -> DatasetSnapshot:
         if created_at is not None and (created_at.tzinfo is None or created_at.utcoffset() is None):
             raise ValueError("created time must include timezone information")
@@ -372,6 +466,7 @@ class DatasetBuilder:
 
         return DatasetSnapshot(
             dataset_id=f"dataset-{checksum[:16]}",
+            schema_version=2,
             name=name,
             source=candles[0].source,
             pair=candles[0].pair,
@@ -379,6 +474,9 @@ class DatasetBuilder:
             start_time=candles[0].open_time,
             end_time=candles[-1].close_time,
             created_at=(created_at or datetime.now(UTC)).astimezone(UTC),
+            provenance=provenance
+            or DatasetProvenance(kind=DatasetProvenanceKind.GENERATED),
+            quality_report=report,
             candle_count=len(candles),
             checksum=checksum,
             candles=tuple(candles),

@@ -132,6 +132,22 @@ export interface DatasetSummary {
   checksum: string;
 }
 
+export type DatasetProvenanceKind = 'legacy' | 'generated' | 'manual_upload' | 'market_data_import';
+
+export interface DatasetProvenance {
+  kind: DatasetProvenanceKind;
+  connection_id: string | null;
+  provider_id: string | null;
+  import_id: string | null;
+  requested_start_time: string | null;
+  requested_end_time: string | null;
+}
+
+export interface DatasetDetailSummary extends DatasetSummary {
+  provenance: DatasetProvenance;
+  quality_report: MarketDataQualityReport | null;
+}
+
 export interface DatasetImportCandle {
   open_time: string;
   close_time: string;

@@ -16,6 +16,8 @@ from trd_bot.market_data import (
 )
 from trd_bot.research.datasets import (
     DatasetBuilder,
+    DatasetProvenance,
+    DatasetProvenanceKind,
     DatasetRepository,
     DatasetSnapshot,
     InvalidDatasetError,
@@ -104,13 +106,14 @@ class HistoricalDatasetImportService:
         self,
         *,
         connection_id: str,
+        import_id: str,
         name: str,
         pair: TradingPair,
         timeframe: Timeframe,
         start_time: datetime,
         end_time: datetime,
     ) -> DatasetSnapshot:
-        _, candles, quality_report = await self._fetch_and_check(
+        connection, candles, quality_report = await self._fetch_and_check(
             connection_id=connection_id,
             pair=pair,
             timeframe=timeframe,
@@ -124,6 +127,14 @@ class HistoricalDatasetImportService:
         dataset = DatasetBuilder(quality_checker=self._quality_checker).build(
             name=name,
             candles=candles,
+            provenance=DatasetProvenance(
+                kind=DatasetProvenanceKind.MARKET_DATA_IMPORT,
+                connection_id=connection.connection_id,
+                provider_id=connection.provider_id,
+                import_id=import_id,
+                requested_start_time=start_time,
+                requested_end_time=end_time,
+            ),
         )
         return self._datasets.save(dataset)
 
