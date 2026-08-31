@@ -4,6 +4,7 @@ import { type FormEvent, useState } from 'react';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getConnectionsCopy } from '@/components/dashboard/connections-copy';
+import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
 import {
   Badge,
   Button,
@@ -394,6 +395,16 @@ export default function MarketDataConnectionsPanel({
                         {copy.disable}
                       </Button>
                     </div>
+
+                    {connection.state === 'enabled' && connection.health_status === 'healthy' ? (
+                      <HistoricalDatasetImportForm
+                        connection={connection}
+                        locale={locale}
+                        provider={initialProviders.find(
+                          (provider) => provider.provider_id === connection.provider_id,
+                        )}
+                      />
+                    ) : null}
                   </CardContent>
                 </Card>
               );

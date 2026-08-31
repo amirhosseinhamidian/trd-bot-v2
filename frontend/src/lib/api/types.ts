@@ -36,6 +36,48 @@ export interface MarketDataConnectionCreateRequest {
   display_name: string;
 }
 
+export type MarketDataQualityIssueCode =
+  | 'empty_data'
+  | 'mixed_series'
+  | 'duplicate_timestamp'
+  | 'out_of_order'
+  | 'missing_candle'
+  | 'open_candle';
+
+export interface MarketDataQualityIssue {
+  code: MarketDataQualityIssueCode;
+  message: string;
+  timestamp: string | null;
+}
+
+export interface MarketDataQualityReport {
+  candles_checked: number;
+  issues: MarketDataQualityIssue[];
+}
+
+export interface HistoricalDatasetImportRequest {
+  name: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  start_time: string;
+  end_time: string;
+}
+
+export interface HistoricalDatasetImportPreview {
+  connection_id: string;
+  provider_id: string;
+  name: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  requested_start_time: string;
+  requested_end_time: string;
+  candle_count: number;
+  first_open_time: string | null;
+  last_close_time: string | null;
+  quality_report: MarketDataQualityReport;
+  ready_to_import: boolean;
+}
+
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
 
 export type DatasetSortDirection = 'asc' | 'desc';

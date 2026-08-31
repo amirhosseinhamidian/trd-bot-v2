@@ -15,6 +15,8 @@ import type {
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
   ExperimentPerformanceSeries,
+  HistoricalDatasetImportPreview,
+  HistoricalDatasetImportRequest,
   MarketDataConnection,
   MarketDataConnectionCreateRequest,
   MarketDataProviderSummary,
@@ -327,6 +329,26 @@ export async function disableMarketDataConnection(
 ): Promise<MarketDataConnection> {
   return postJson<MarketDataConnection>(
     `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/disable`,
+  );
+}
+
+export async function previewHistoricalDatasetImport(
+  connectionId: string,
+  request: HistoricalDatasetImportRequest,
+): Promise<HistoricalDatasetImportPreview> {
+  return postJson<HistoricalDatasetImportPreview>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/datasets/preview`,
+    request,
+  );
+}
+
+export async function importHistoricalDataset(
+  connectionId: string,
+  request: HistoricalDatasetImportRequest,
+): Promise<DatasetSummary> {
+  return postJson<DatasetSummary>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/datasets`,
+    request,
   );
 }
 

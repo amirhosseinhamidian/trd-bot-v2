@@ -1,0 +1,123 @@
+import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { MarketDataQualityIssueCode } from '@/lib/api/types';
+
+export type HistoricalImportCopy = {
+  title: string;
+  description: string;
+  datasetName: string;
+  datasetNamePlaceholder: string;
+  baseAsset: string;
+  quoteAsset: string;
+  timeframe: string;
+  marketType: string;
+  startTime: string;
+  endTime: string;
+  preview: string;
+  previewing: string;
+  importDataset: string;
+  importing: string;
+  previewTitle: string;
+  ready: string;
+  notReady: string;
+  candles: string;
+  requestedRange: string;
+  availableRange: string;
+  noCoverage: string;
+  qualityTitle: string;
+  qualityPassed: string;
+  qualityIssues: string;
+  importedTitle: string;
+  viewDataset: string;
+  invalidRange: string;
+  requestError: string;
+  providerMetadataMissing: string;
+  issueLabels: Record<MarketDataQualityIssueCode, string>;
+};
+
+const copies: Record<DashboardLocale, HistoricalImportCopy> = {
+  fa: {
+    title: 'ساخت Dataset از داده تاریخی',
+    description:
+      'یک بازه تاریخی عمومی را Preview کنید، گزارش کیفیت را ببینید و فقط در صورت معتبر بودن داده Dataset immutable بسازید.',
+    datasetName: 'نام Dataset',
+    datasetNamePlaceholder: 'مثلاً BTC / USDT — August 2026',
+    baseAsset: 'دارایی پایه',
+    quoteAsset: 'دارایی مظنه',
+    timeframe: 'تایم‌فریم',
+    marketType: 'نوع بازار',
+    startTime: 'شروع بازه',
+    endTime: 'پایان بازه',
+    preview: 'Preview داده',
+    previewing: 'در حال دریافت Preview',
+    importDataset: 'ساخت Dataset',
+    importing: 'در حال ساخت Dataset',
+    previewTitle: 'نتیجه Preview',
+    ready: 'آماده Import',
+    notReady: 'نیازمند اصلاح کیفیت',
+    candles: 'تعداد کندل',
+    requestedRange: 'بازه درخواستی',
+    availableRange: 'پوشش داده دریافت‌شده',
+    noCoverage: 'هیچ کندل معتبری در این بازه دریافت نشد.',
+    qualityTitle: 'گزارش کیفیت',
+    qualityPassed: 'هیچ مشکل کیفیتی پیدا نشد.',
+    qualityIssues: 'مشکلات کیفیت',
+    importedTitle: 'Dataset ساخته شد',
+    viewDataset: 'مشاهده Dataset',
+    invalidRange: 'زمان پایان باید بعد از زمان شروع باشد.',
+    requestError: 'دریافت داده یا ساخت Dataset ناموفق بود. ورودی‌ها و وضعیت Backend را بررسی کنید.',
+    providerMetadataMissing: 'Metadata مربوط به Provider این اتصال در دسترس نیست.',
+    issueLabels: {
+      empty_data: 'داده خالی',
+      mixed_series: 'سری داده ترکیبی',
+      duplicate_timestamp: 'زمان تکراری',
+      out_of_order: 'ترتیب زمانی نامعتبر',
+      missing_candle: 'کندل گمشده',
+      open_candle: 'کندل بسته‌نشده',
+    },
+  },
+  en: {
+    title: 'Build dataset from historical data',
+    description:
+      'Preview a public historical range, review its quality report, and create an immutable dataset only when the normalized data is valid.',
+    datasetName: 'Dataset name',
+    datasetNamePlaceholder: 'For example, BTC / USDT — August 2026',
+    baseAsset: 'Base asset',
+    quoteAsset: 'Quote asset',
+    timeframe: 'Timeframe',
+    marketType: 'Market type',
+    startTime: 'Range start',
+    endTime: 'Range end',
+    preview: 'Preview data',
+    previewing: 'Loading preview',
+    importDataset: 'Create dataset',
+    importing: 'Creating dataset',
+    previewTitle: 'Preview result',
+    ready: 'Ready to import',
+    notReady: 'Quality review required',
+    candles: 'Candles',
+    requestedRange: 'Requested range',
+    availableRange: 'Received data coverage',
+    noCoverage: 'No valid candles were received for this range.',
+    qualityTitle: 'Quality report',
+    qualityPassed: 'No quality issues were detected.',
+    qualityIssues: 'Quality issues',
+    importedTitle: 'Dataset created',
+    viewDataset: 'View dataset',
+    invalidRange: 'Range end must be after range start.',
+    requestError:
+      'Unable to fetch data or create the dataset. Check the inputs and backend status.',
+    providerMetadataMissing: 'Provider metadata for this connection is unavailable.',
+    issueLabels: {
+      empty_data: 'Empty data',
+      mixed_series: 'Mixed series',
+      duplicate_timestamp: 'Duplicate timestamp',
+      out_of_order: 'Out of order',
+      missing_candle: 'Missing candle',
+      open_candle: 'Open candle',
+    },
+  },
+};
+
+export function getHistoricalImportCopy(locale: DashboardLocale): HistoricalImportCopy {
+  return copies[locale];
+}

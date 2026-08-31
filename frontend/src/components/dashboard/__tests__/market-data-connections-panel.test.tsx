@@ -18,6 +18,8 @@ vi.mock('@/lib/api/client', () => ({
   disableMarketDataConnection: mocks.disableMarketDataConnection,
   enableMarketDataConnection: mocks.enableMarketDataConnection,
   getMarketDataConnections: mocks.getMarketDataConnections,
+  importHistoricalDataset: vi.fn(),
+  previewHistoricalDatasetImport: vi.fn(),
   testMarketDataConnection: mocks.testMarketDataConnection,
 }));
 

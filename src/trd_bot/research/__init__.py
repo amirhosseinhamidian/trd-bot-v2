@@ -107,6 +107,12 @@ from trd_bot.research.experiments import (
     build_experiment_id,
 )
 from trd_bot.research.exports import ExperimentReportCsvExporter
+from trd_bot.research.historical_dataset_imports import (
+    HistoricalDatasetImportLimitError,
+    HistoricalDatasetImportPreview,
+    HistoricalDatasetImportService,
+    HistoricalDatasetProviderCapabilityError,
+)
 from trd_bot.research.performance_series import (
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
@@ -267,6 +273,10 @@ __all__ = [
     "ExperimentSortDirection",
     "ExperimentSortField",
     "HistoricalBenchmarkContext",
+    "HistoricalDatasetImportLimitError",
+    "HistoricalDatasetImportPreview",
+    "HistoricalDatasetImportService",
+    "HistoricalDatasetProviderCapabilityError",
     "HistoricalDrawdownComparison",
     "HistoricalFoldReturnDirection",
     "HistoricalPerformanceSeries",
