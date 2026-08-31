@@ -61,7 +61,7 @@ export interface DatasetImportRequest {
   candles: DatasetImportCandle[];
 }
 
-export type ResearchStrategyName = 'ema-crossover' | 'rsi-threshold';
+export type ResearchStrategyName = 'ema-crossover' | 'rsi-threshold' | 'sma-crossover';
 
 export type StrategyParameterKind = 'integer' | 'decimal';
 
@@ -103,6 +103,11 @@ export interface StoredDatasetRSIThresholdRequest extends StoredDatasetHistorica
   overbought_threshold: string;
 }
 
+export interface StoredDatasetSMACrossoverRequest extends StoredDatasetHistoricalExecutionRequest {
+  fast_period: number;
+  slow_period: number;
+}
+
 export interface StoredDatasetEMACrossoverExecutionRequest extends StoredDatasetEMACrossoverRequest {
   strategy_name: 'ema-crossover';
   strategy_version: '1.0.0';
@@ -113,8 +118,15 @@ export interface StoredDatasetRSIThresholdExecutionRequest extends StoredDataset
   strategy_version: '1.0.0';
 }
 
+export interface StoredDatasetSMACrossoverExecutionRequest extends StoredDatasetSMACrossoverRequest {
+  strategy_name: 'sma-crossover';
+  strategy_version: '1.0.0';
+}
+
 export type StoredDatasetStrategyExecutionRequest =
-  StoredDatasetEMACrossoverExecutionRequest | StoredDatasetRSIThresholdExecutionRequest;
+  | StoredDatasetEMACrossoverExecutionRequest
+  | StoredDatasetRSIThresholdExecutionRequest
+  | StoredDatasetSMACrossoverExecutionRequest;
 
 export interface WalkForwardExecutionRequest {
   train_candles: number;
@@ -130,6 +142,9 @@ export interface StoredDatasetEMACrossoverWalkForwardRequest
 export interface StoredDatasetRSIThresholdWalkForwardRequest
   extends StoredDatasetRSIThresholdRequest, WalkForwardExecutionRequest {}
 
+export interface StoredDatasetSMACrossoverWalkForwardRequest
+  extends StoredDatasetSMACrossoverRequest, WalkForwardExecutionRequest {}
+
 export interface StoredDatasetEMACrossoverWalkForwardExecutionRequest extends StoredDatasetEMACrossoverWalkForwardRequest {
   strategy_name: 'ema-crossover';
   strategy_version: '1.0.0';
@@ -140,9 +155,15 @@ export interface StoredDatasetRSIThresholdWalkForwardExecutionRequest extends St
   strategy_version: '1.0.0';
 }
 
+export interface StoredDatasetSMACrossoverWalkForwardExecutionRequest extends StoredDatasetSMACrossoverWalkForwardRequest {
+  strategy_name: 'sma-crossover';
+  strategy_version: '1.0.0';
+}
+
 export type StoredDatasetStrategyWalkForwardExecutionRequest =
   | StoredDatasetEMACrossoverWalkForwardExecutionRequest
-  | StoredDatasetRSIThresholdWalkForwardExecutionRequest;
+  | StoredDatasetRSIThresholdWalkForwardExecutionRequest
+  | StoredDatasetSMACrossoverWalkForwardExecutionRequest;
 
 export type ExperimentExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
@@ -165,8 +186,15 @@ export interface RSIThresholdExecutionParameters extends HistoricalExecutionPara
   overbought_threshold: string;
 }
 
+export interface SMACrossoverExecutionParameters extends HistoricalExecutionParameters {
+  fast_period: number;
+  slow_period: number;
+}
+
 export type ExperimentExecutionParameters =
-  EMACrossoverExecutionParameters | RSIThresholdExecutionParameters;
+  | EMACrossoverExecutionParameters
+  | RSIThresholdExecutionParameters
+  | SMACrossoverExecutionParameters;
 
 export interface ExperimentExecution {
   execution_id: string;

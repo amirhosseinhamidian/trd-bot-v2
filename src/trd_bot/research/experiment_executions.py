@@ -4,7 +4,14 @@ from enum import StrEnum
 from typing import Protocol, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 
 class ExperimentExecutionStatus(StrEnum):
@@ -98,6 +105,14 @@ class EMACrossoverExecutionParameters(HistoricalExecutionParameters):
         return self
 
 
+class SMACrossoverExecutionParameters(EMACrossoverExecutionParameters):
+    """Reproducible input parameters for one stored-dataset SMA execution."""
+
+    @property
+    def strategy_name(self) -> str:
+        return "sma-crossover"
+
+
 class RSIThresholdExecutionParameters(HistoricalExecutionParameters):
     """Reproducible input parameters for one stored-dataset RSI execution."""
 
@@ -142,7 +157,33 @@ class RSIThresholdExecutionParameters(HistoricalExecutionParameters):
         )
 
 
-StrategyExecutionParameters = EMACrossoverExecutionParameters | RSIThresholdExecutionParameters
+StrategyExecutionParameters = (
+    EMACrossoverExecutionParameters
+    | RSIThresholdExecutionParameters
+    | SMACrossoverExecutionParameters
+)
+
+
+def _parse_strategy_execution_parameters(
+    value: object,
+    *,
+    strategy_name: str,
+    strategy_version: str,
+) -> StrategyExecutionParameters:
+    # Keep unsupported versions representable so the runner can transition them
+    # to a controlled failed state. Registry dispatch remains version-authoritative.
+    del strategy_version
+
+    if strategy_name == "ema-crossover":
+        return EMACrossoverExecutionParameters.model_validate(value)
+
+    if strategy_name == "rsi-threshold":
+        return RSIThresholdExecutionParameters.model_validate(value)
+
+    if strategy_name == "sma-crossover":
+        return SMACrossoverExecutionParameters.model_validate(value)
+
+    raise ValueError("unsupported strategy execution parameter identity")
 
 
 def _canonical_decimal(value: Decimal) -> str:
@@ -172,6 +213,25 @@ class ExperimentExecution(BaseModel):
     strategy_version: str = Field(min_length=1, max_length=30)
 
     parameters: StrategyExecutionParameters
+
+    @field_validator("parameters", mode="before")
+    @classmethod
+    def parameters_must_match_strategy(
+        cls,
+        value: object,
+        info: ValidationInfo,
+    ) -> StrategyExecutionParameters:
+        strategy_name = info.data.get("strategy_name")
+        strategy_version = info.data.get("strategy_version")
+
+        if not isinstance(strategy_name, str) or not isinstance(strategy_version, str):
+            raise ValueError("strategy identity must be validated before parameters")
+
+        return _parse_strategy_execution_parameters(
+            value,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
+        )
 
     experiment_id: str | None = Field(
         default=None,

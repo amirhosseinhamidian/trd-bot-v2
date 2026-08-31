@@ -18,11 +18,13 @@ from trd_bot.strategies.signals import (
     StrategySignal,
     build_signal_id,
 )
+from trd_bot.strategies.sma_crossover import SMACrossoverStrategy
 
 __all__ = [
     "BaseStrategy",
     "EMACrossoverStrategy",
     "RSIThresholdStrategy",
+    "SMACrossoverStrategy",
     "SignalDirection",
     "StrategyDefinition",
     "StrategyFeature",

@@ -3,10 +3,18 @@ from enum import StrEnum
 from typing import Protocol, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from trd_bot.research.experiment_executions import (
     StrategyExecutionParameters,
+    _parse_strategy_execution_parameters,
 )
 from trd_bot.research.walk_forward import WalkForwardConfig
 
@@ -62,6 +70,25 @@ class WalkForwardExecution(BaseModel):
 
     parameters: StrategyExecutionParameters
     walk_forward_config: WalkForwardConfig
+
+    @field_validator("parameters", mode="before")
+    @classmethod
+    def parameters_must_match_strategy(
+        cls,
+        value: object,
+        info: ValidationInfo,
+    ) -> StrategyExecutionParameters:
+        strategy_name = info.data.get("strategy_name")
+        strategy_version = info.data.get("strategy_version")
+
+        if not isinstance(strategy_name, str) or not isinstance(strategy_version, str):
+            raise ValueError("strategy identity must be validated before parameters")
+
+        return _parse_strategy_execution_parameters(
+            value,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
+        )
 
     total_folds: int = Field(ge=1)
     completed_folds: int = Field(ge=0)

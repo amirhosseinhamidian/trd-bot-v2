@@ -25,10 +25,17 @@ type ExecutableStrategyVersions = {
 const EXECUTABLE_STRATEGY_VERSIONS = {
   'ema-crossover': '1.0.0',
   'rsi-threshold': '1.0.0',
+  'sma-crossover': '1.0.0',
 } satisfies ExecutableStrategyVersions;
 
 export function isExecutableResearchStrategyName(name: string): name is ResearchStrategyName {
   return Object.prototype.hasOwnProperty.call(EXECUTABLE_STRATEGY_VERSIONS, name);
+}
+
+export function isMovingAverageCrossoverStrategyName(
+  name: string,
+): name is 'ema-crossover' | 'sma-crossover' {
+  return name === 'ema-crossover' || name === 'sma-crossover';
 }
 
 export function getExecutableResearchStrategies(

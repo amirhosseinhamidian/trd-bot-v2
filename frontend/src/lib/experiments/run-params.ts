@@ -1,4 +1,8 @@
 import type { ExperimentSummary, ResearchStrategyName } from '@/lib/api/types';
+import {
+  isExecutableResearchStrategyName,
+  isMovingAverageCrossoverStrategyName,
+} from '@/lib/strategies/catalog';
 
 export type ExperimentRunInitialValues = {
   datasetId?: string;
@@ -82,7 +86,7 @@ function getExperimentParameter(
 function getStrategyName(value: string | string[] | undefined): ResearchStrategyName | undefined {
   const strategyName = getFirstValue(value)?.trim();
 
-  if (strategyName === 'ema-crossover' || strategyName === 'rsi-threshold') {
+  if (strategyName && isExecutableResearchStrategyName(strategyName)) {
     return strategyName;
   }
 
@@ -94,8 +98,8 @@ export function buildExperimentRerunHref(
   locale: 'fa' | 'en',
 ): string | null {
   if (
-    experiment.strategy_name !== 'ema-crossover' &&
-    experiment.strategy_name !== 'rsi-threshold'
+    experiment.strategy_name !== 'rsi-threshold' &&
+    !isMovingAverageCrossoverStrategyName(experiment.strategy_name)
   ) {
     return null;
   }

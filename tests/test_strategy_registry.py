@@ -6,6 +6,7 @@ import pytest
 from trd_bot.strategies import (
     EMACrossoverStrategy,
     RSIThresholdStrategy,
+    SMACrossoverStrategy,
     StrategyDefinition,
     StrategyRegistry,
     build_default_strategy_registry,
@@ -40,6 +41,7 @@ def test_registry_lists_definitions_deterministically() -> None:
     assert [(definition.name, definition.version) for definition in definitions] == [
         ("ema-crossover", "1.0.0"),
         ("rsi-threshold", "1.0.0"),
+        ("sma-crossover", "1.0.0"),
     ]
 
 
@@ -49,9 +51,10 @@ def test_default_registry_exposes_versioned_parameter_metadata() -> None:
     assert [item.name for item in metadata] == [
         "ema-crossover",
         "rsi-threshold",
+        "sma-crossover",
     ]
 
-    ema, rsi = metadata
+    ema, rsi, sma = metadata
 
     assert ema.display_name == "EMA Crossover"
     assert [(item.name, item.default_value) for item in ema.parameters] == [
@@ -69,6 +72,12 @@ def test_default_registry_exposes_versioned_parameter_metadata() -> None:
     assert rsi.parameters[1].maximum == "50"
     assert rsi.parameters[1].minimum_exclusive is True
     assert rsi.parameters[1].maximum_exclusive is True
+
+    assert sma.display_name == "SMA Crossover"
+    assert [(item.name, item.default_value) for item in sma.parameters] == [
+        ("fast_period", "9"),
+        ("slow_period", "21"),
+    ]
 
 
 def test_default_registry_builds_rsi_threshold() -> None:
@@ -88,6 +97,23 @@ def test_default_registry_builds_rsi_threshold() -> None:
     assert strategy.period == 14
     assert strategy.oversold_threshold == Decimal("30")
     assert strategy.overbought_threshold == Decimal("70")
+
+
+def test_default_registry_builds_sma_crossover() -> None:
+    registry = build_default_strategy_registry()
+
+    strategy = registry.create(
+        name="sma-crossover",
+        version="1.0.0",
+        parameters={
+            "fast_period": 2,
+            "slow_period": 3,
+        },
+    )
+
+    assert isinstance(strategy, SMACrossoverStrategy)
+    assert strategy.fast_period == 2
+    assert strategy.slow_period == 3
 
 
 def test_rsi_factory_accepts_integer_thresholds_without_floats() -> None:

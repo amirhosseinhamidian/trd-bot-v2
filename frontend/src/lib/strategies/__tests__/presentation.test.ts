@@ -9,11 +9,12 @@ import {
 describe('strategy presentation', () => {
   it('presents registered strategy names without exposing implementation slugs as titles', () => {
     expect(getStrategyDisplayName('ema-crossover', 'en')).toBe('EMA Crossover');
+    expect(getStrategyDisplayName('sma-crossover', 'en')).toBe('SMA Crossover');
     expect(getStrategyDisplayName('rsi-threshold', 'fa')).toBe('RSI Threshold');
   });
 
-  it('localizes EMA and RSI parameter labels', () => {
-    expect(getStrategyParameterLabel('fast_period', 'en')).toBe('Fast EMA period');
+  it('localizes moving-average and RSI parameter labels', () => {
+    expect(getStrategyParameterLabel('fast_period', 'en')).toBe('Fast moving-average period');
     expect(getStrategyParameterLabel('period', 'en')).toBe('RSI period');
     expect(getStrategyParameterLabel('oversold_threshold', 'fa')).toBe('آستانه اشباع فروش');
   });

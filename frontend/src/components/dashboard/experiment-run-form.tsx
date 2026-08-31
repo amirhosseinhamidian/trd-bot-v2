@@ -42,6 +42,7 @@ import {
   getStrategyParameterDefault,
   getStrategyParameterInputProps,
   isExecutableResearchStrategyName,
+  isMovingAverageCrossoverStrategyName,
   isStrategyParameterValueValid,
 } from '@/lib/strategies/catalog';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
@@ -125,7 +126,7 @@ function applyStrategyCatalogDefaults(
     return values;
   }
 
-  if (values.strategyName === 'ema-crossover') {
+  if (isMovingAverageCrossoverStrategyName(values.strategyName)) {
     let fastPeriod = resolveStrategyParameterValue(strategy, 'fast_period', values.fastPeriod);
     let slowPeriod = resolveStrategyParameterValue(strategy, 'slow_period', values.slowPeriod);
 
@@ -378,7 +379,7 @@ export default function ExperimentRunForm({
       slippage_rate: values.slippageRate.trim(),
     };
 
-    if (values.strategyName === 'ema-crossover') {
+    if (isMovingAverageCrossoverStrategyName(values.strategyName)) {
       const fastPeriod = parseInteger(values.fastPeriod);
       const slowPeriod = parseInteger(values.slowPeriod);
 
@@ -408,12 +409,23 @@ export default function ExperimentRunForm({
         return null;
       }
 
-      return {
+      const strategyRequest = {
         ...sharedRequest,
-        strategy_name: 'ema-crossover',
-        strategy_version: '1.0.0',
+        strategy_version: '1.0.0' as const,
         fast_period: fastPeriod,
         slow_period: slowPeriod,
+      };
+
+      if (values.strategyName === 'sma-crossover') {
+        return {
+          ...strategyRequest,
+          strategy_name: 'sma-crossover',
+        };
+      }
+
+      return {
+        ...strategyRequest,
+        strategy_name: 'ema-crossover',
       };
     }
 
@@ -731,7 +743,7 @@ export default function ExperimentRunForm({
                 onChange={(event) => updateValue('horizonCandles', event.target.value)}
               />
 
-              {values.strategyName === 'ema-crossover' ? (
+              {isMovingAverageCrossoverStrategyName(values.strategyName) ? (
                 <>
                   <Input
                     dir="ltr"

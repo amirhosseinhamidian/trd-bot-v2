@@ -91,6 +91,12 @@ describe('strategy catalog helpers', () => {
       ...catalog,
       {
         ...catalog[0],
+        name: 'sma-crossover',
+        display_name: 'SMA Crossover',
+        description: 'Historical SMA research strategy.',
+      },
+      {
+        ...catalog[0],
         version: '2.0.0',
       },
       {
@@ -105,7 +111,9 @@ describe('strategy catalog helpers', () => {
     expect(result.map((strategy) => `${strategy.name}@${strategy.version}`)).toEqual([
       'ema-crossover@1.0.0',
       'rsi-threshold@1.0.0',
+      'sma-crossover@1.0.0',
     ]);
+    expect(isExecutableResearchStrategyName('sma-crossover')).toBe(true);
     expect(isExecutableResearchStrategyName('future-strategy')).toBe(false);
   });
 

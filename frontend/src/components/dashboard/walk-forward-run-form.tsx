@@ -40,6 +40,7 @@ import {
   getStrategyParameterDefault,
   getStrategyParameterInputProps,
   isExecutableResearchStrategyName,
+  isMovingAverageCrossoverStrategyName,
   isStrategyParameterValueValid,
 } from '@/lib/strategies/catalog';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
@@ -133,7 +134,7 @@ function applyStrategyCatalogDefaults(
     return values;
   }
 
-  if (values.strategyName === 'ema-crossover') {
+  if (isMovingAverageCrossoverStrategyName(values.strategyName)) {
     let fastPeriod = resolveStrategyParameterValue(strategy, 'fast_period', values.fastPeriod);
     let slowPeriod = resolveStrategyParameterValue(strategy, 'slow_period', values.slowPeriod);
 
@@ -442,7 +443,7 @@ export default function WalkForwardRunForm({
       slippage_rate: values.slippageRate.trim(),
     };
 
-    if (values.strategyName === 'ema-crossover') {
+    if (isMovingAverageCrossoverStrategyName(values.strategyName)) {
       const fastPeriod = parseInteger(values.fastPeriod);
       const slowPeriod = parseInteger(values.slowPeriod);
 
@@ -465,12 +466,23 @@ export default function WalkForwardRunForm({
         return null;
       }
 
-      return {
+      const strategyRequest = {
         ...sharedRequest,
-        strategy_name: 'ema-crossover',
-        strategy_version: '1.0.0',
+        strategy_version: '1.0.0' as const,
         fast_period: fastPeriod,
         slow_period: slowPeriod,
+      };
+
+      if (values.strategyName === 'sma-crossover') {
+        return {
+          ...strategyRequest,
+          strategy_name: 'sma-crossover',
+        };
+      }
+
+      return {
+        ...strategyRequest,
+        strategy_name: 'ema-crossover',
       };
     }
 
@@ -649,47 +661,46 @@ export default function WalkForwardRunForm({
     isSubmitting ||
     isExecutionActive;
   const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
-  const strategyFields: NumericField[] =
-    values.strategyName === 'ema-crossover'
-      ? [
-          {
-            key: 'fastPeriod',
-            label: copy.fields.fastPeriod,
-            ...(selectedStrategy === null
-              ? { min: 0, step: 1 }
-              : getStrategyParameterInputProps(selectedStrategy, 'fast_period')),
-          },
-          {
-            key: 'slowPeriod',
-            label: copy.fields.slowPeriod,
-            ...(selectedStrategy === null
-              ? { min: 0, step: 1 }
-              : getStrategyParameterInputProps(selectedStrategy, 'slow_period')),
-          },
-        ]
-      : [
-          {
-            key: 'rsiPeriod',
-            label: copy.fields.rsiPeriod,
-            ...(selectedStrategy === null
-              ? { min: 0, step: 1 }
-              : getStrategyParameterInputProps(selectedStrategy, 'period')),
-          },
-          {
-            key: 'oversoldThreshold',
-            label: copy.fields.oversoldThreshold,
-            ...(selectedStrategy === null
-              ? { min: 0, step: 'any' }
-              : getStrategyParameterInputProps(selectedStrategy, 'oversold_threshold')),
-          },
-          {
-            key: 'overboughtThreshold',
-            label: copy.fields.overboughtThreshold,
-            ...(selectedStrategy === null
-              ? { min: 0, step: 'any' }
-              : getStrategyParameterInputProps(selectedStrategy, 'overbought_threshold')),
-          },
-        ];
+  const strategyFields: NumericField[] = isMovingAverageCrossoverStrategyName(values.strategyName)
+    ? [
+        {
+          key: 'fastPeriod',
+          label: copy.fields.fastPeriod,
+          ...(selectedStrategy === null
+            ? { min: 0, step: 1 }
+            : getStrategyParameterInputProps(selectedStrategy, 'fast_period')),
+        },
+        {
+          key: 'slowPeriod',
+          label: copy.fields.slowPeriod,
+          ...(selectedStrategy === null
+            ? { min: 0, step: 1 }
+            : getStrategyParameterInputProps(selectedStrategy, 'slow_period')),
+        },
+      ]
+    : [
+        {
+          key: 'rsiPeriod',
+          label: copy.fields.rsiPeriod,
+          ...(selectedStrategy === null
+            ? { min: 0, step: 1 }
+            : getStrategyParameterInputProps(selectedStrategy, 'period')),
+        },
+        {
+          key: 'oversoldThreshold',
+          label: copy.fields.oversoldThreshold,
+          ...(selectedStrategy === null
+            ? { min: 0, step: 'any' }
+            : getStrategyParameterInputProps(selectedStrategy, 'oversold_threshold')),
+        },
+        {
+          key: 'overboughtThreshold',
+          label: copy.fields.overboughtThreshold,
+          ...(selectedStrategy === null
+            ? { min: 0, step: 'any' }
+            : getStrategyParameterInputProps(selectedStrategy, 'overbought_threshold')),
+        },
+      ];
 
   const numericFields: NumericField[] = [
     ...strategyFields,

@@ -10,6 +10,7 @@ from trd_bot.strategies.metadata import (
     StrategyParameterMetadata,
 )
 from trd_bot.strategies.rsi_threshold import RSIThresholdStrategy
+from trd_bot.strategies.sma_crossover import SMACrossoverStrategy
 
 StrategyParameterValue = str | int | Decimal | bool
 StrategyFactory = Callable[[Mapping[str, StrategyParameterValue]], BaseStrategy]
@@ -186,6 +187,25 @@ def _build_ema_crossover(
     )
 
 
+def _build_sma_crossover(
+    parameters: Mapping[str, StrategyParameterValue],
+) -> BaseStrategy:
+    _require_exact_parameters(
+        parameters,
+        expected=frozenset(
+            {
+                "fast_period",
+                "slow_period",
+            }
+        ),
+    )
+
+    return SMACrossoverStrategy(
+        fast_period=_require_int_parameter(parameters, "fast_period"),
+        slow_period=_require_int_parameter(parameters, "slow_period"),
+    )
+
+
 def _build_rsi_threshold(
     parameters: Mapping[str, StrategyParameterValue],
 ) -> BaseStrategy:
@@ -285,6 +305,38 @@ def build_default_strategy_registry() -> StrategyRegistry:
                         maximum="100",
                         minimum_exclusive=True,
                         maximum_exclusive=True,
+                    ),
+                ),
+            ),
+        )
+    )
+
+
+    registry.register(
+        StrategyDefinition(
+            name="sma-crossover",
+            version="1.0.0",
+            factory=_build_sma_crossover,
+            metadata=StrategyMetadata(
+                name="sma-crossover",
+                version="1.0.0",
+                display_name="SMA Crossover",
+                description=(
+                    "Generate historical directional signals from fast and slow "
+                    "simple moving-average crossovers."
+                ),
+                parameters=(
+                    StrategyParameterMetadata(
+                        name="fast_period",
+                        kind=StrategyParameterKind.INTEGER,
+                        default_value="9",
+                        minimum="2",
+                    ),
+                    StrategyParameterMetadata(
+                        name="slow_period",
+                        kind=StrategyParameterKind.INTEGER,
+                        default_value="21",
+                        minimum="3",
                     ),
                 ),
             ),

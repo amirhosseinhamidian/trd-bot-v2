@@ -8,6 +8,8 @@ from trd_bot.api.routes.research import (
     StoredDatasetEMACrossoverWalkForwardExecutionRequest,
     StoredDatasetRSIThresholdExecutionRequest,
     StoredDatasetRSIThresholdWalkForwardExecutionRequest,
+    StoredDatasetSMACrossoverExecutionRequest,
+    StoredDatasetSMACrossoverWalkForwardExecutionRequest,
 )
 from trd_bot.main import app
 from trd_bot.strategies import build_default_strategy_registry
@@ -25,9 +27,10 @@ def test_lists_versioned_research_strategy_metadata() -> None:
     assert [item["name"] for item in body] == [
         "ema-crossover",
         "rsi-threshold",
+        "sma-crossover",
     ]
 
-    ema, rsi = body
+    ema, rsi, sma = body
 
     assert ema["version"] == "1.0.0"
     assert ema["display_name"] == "EMA Crossover"
@@ -58,6 +61,13 @@ def test_lists_versioned_research_strategy_metadata() -> None:
     assert rsi["parameters"][1]["minimum_exclusive"] is True
     assert rsi["parameters"][1]["maximum_exclusive"] is True
 
+    assert sma["version"] == "1.0.0"
+    assert sma["display_name"] == "SMA Crossover"
+    assert [parameter["name"] for parameter in sma["parameters"]] == [
+        "fast_period",
+        "slow_period",
+    ]
+
 
 def _request_identity(request_model: type[BaseModel]) -> tuple[str, str]:
     name_values = get_args(request_model.model_fields["strategy_name"].annotation)
@@ -77,10 +87,12 @@ def test_execution_request_identities_match_strategy_catalog() -> None:
     experiment_identities = {
         _request_identity(StoredDatasetEMACrossoverExecutionRequest),
         _request_identity(StoredDatasetRSIThresholdExecutionRequest),
+        _request_identity(StoredDatasetSMACrossoverExecutionRequest),
     }
     walk_forward_identities = {
         _request_identity(StoredDatasetEMACrossoverWalkForwardExecutionRequest),
         _request_identity(StoredDatasetRSIThresholdWalkForwardExecutionRequest),
+        _request_identity(StoredDatasetSMACrossoverWalkForwardExecutionRequest),
     }
 
     assert experiment_identities == catalog_identities

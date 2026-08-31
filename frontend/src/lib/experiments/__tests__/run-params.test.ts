@@ -137,6 +137,50 @@ describe('experiment run parameters', () => {
     });
   });
 
+  it('builds an SMA rerun URL with moving-average parameters', () => {
+    const href = buildExperimentRerunHref(
+      {
+        ...experiment,
+        experiment_id: 'experiment-sma-btc',
+        strategy_name: 'sma-crossover',
+      },
+      'en',
+    );
+
+    expect(href).not.toBeNull();
+
+    const url = new URL(href ?? '', 'http://localhost');
+
+    expect(url.pathname).toBe('/en/experiments');
+    expect(Object.fromEntries(url.searchParams.entries())).toEqual({
+      dataset_id: 'dataset-btc-usdt-1h',
+      horizon_candles: '3',
+      strategy: 'sma-crossover',
+      fast_period: '12',
+      slow_period: '34',
+      starting_balance: '25000',
+      allocation_fraction: '0.20',
+      fee_rate: '0.002',
+      slippage_rate: '0.0008',
+    });
+  });
+
+  it('parses valid SMA rerun values', () => {
+    expect(
+      parseExperimentRunSearchParams({
+        dataset_id: 'dataset-btc-usdt-1h',
+        strategy: 'sma-crossover',
+        fast_period: '8',
+        slow_period: '20',
+      }),
+    ).toEqual({
+      datasetId: 'dataset-btc-usdt-1h',
+      strategyName: 'sma-crossover',
+      fastPeriod: '8',
+      slowPeriod: '20',
+    });
+  });
+
   it('does not create an EMA fallback rerun for an unsupported strategy', () => {
     expect(
       buildExperimentRerunHref(

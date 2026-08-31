@@ -86,6 +86,7 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecutionStatus,
     InMemoryExperimentExecutionRepository,
     RSIThresholdExecutionParameters,
+    SMACrossoverExecutionParameters,
     StrategyExecutionParameters,
 )
 from trd_bot.research.experiment_reports import (
@@ -283,6 +284,7 @@ __all__ = [
     "ResearchExperiment",
     "ResearchPipeline",
     "ResearchPipelineResult",
+    "SMACrossoverExecutionParameters",
     "SignalEvaluation",
     "SignalEvaluationReport",
     "SignalEvaluator",

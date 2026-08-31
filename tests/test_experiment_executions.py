@@ -11,6 +11,7 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecutionStateMachine,
     ExperimentExecutionStatus,
     RSIThresholdExecutionParameters,
+    SMACrossoverExecutionParameters,
 )
 
 
@@ -71,6 +72,30 @@ def test_builds_queued_rsi_execution_and_round_trips_parameters() -> None:
     assert execution.strategy_name == "rsi-threshold"
     assert execution.strategy_version == "1.0.0"
     assert isinstance(restored.parameters, RSIThresholdExecutionParameters)
+    assert restored.parameters == parameters
+
+
+def test_builds_queued_sma_execution_and_round_trips_parameters() -> None:
+    parameters = SMACrossoverExecutionParameters(
+        fast_period=9,
+        slow_period=21,
+        horizon_candles=1,
+        starting_balance=Decimal("10000"),
+        allocation_fraction=Decimal("0.10"),
+        fee_rate=Decimal("0.001"),
+        slippage_rate=Decimal("0.0005"),
+    )
+
+    execution = ExperimentExecutionBuilder().build(
+        dataset_id="dataset-1234567890abcdef",
+        parameters=parameters,
+        now=datetime(2026, 8, 31, 8, 30, tzinfo=UTC),
+    )
+
+    restored = ExperimentExecution.model_validate_json(execution.model_dump_json())
+
+    assert execution.strategy_name == "sma-crossover"
+    assert isinstance(restored.parameters, SMACrossoverExecutionParameters)
     assert restored.parameters == parameters
 
 

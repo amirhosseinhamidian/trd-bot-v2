@@ -100,6 +100,6 @@ describe('ExperimentComparisonPanel', () => {
 
     expect(await screen.findByText('RSI period=14')).toBeInTheDocument();
     expect(screen.getByText('Oversold threshold=30')).toBeInTheDocument();
-    expect(screen.getByText('Fast EMA period=9')).toBeInTheDocument();
+    expect(screen.getByText('Fast moving-average period=9')).toBeInTheDocument();
   });
 });

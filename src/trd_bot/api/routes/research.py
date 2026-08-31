@@ -62,6 +62,7 @@ from trd_bot.research import (
     ResearchPipeline,
     ResearchPipelineResult,
     RSIThresholdExecutionParameters,
+    SMACrossoverExecutionParameters,
     StrategyExecutionParameters,
     WalkForwardConfig,
     WalkForwardDatasetMaterializer,
@@ -203,6 +204,26 @@ class StoredDatasetEMACrossoverResearchRequest(BaseModel):
     slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
 
 
+class StoredDatasetSMACrossoverResearchRequest(BaseModel):
+    """Request for running SMA research against an already stored dataset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+
+    fast_period: int = Field(default=9, ge=2)
+    slow_period: int = Field(default=21, ge=3)
+    horizon_candles: int = Field(default=1, ge=1)
+
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
 class StoredDatasetRSIThresholdResearchRequest(BaseModel):
     """Request for running RSI research against an already stored dataset."""
 
@@ -241,6 +262,15 @@ class StoredDatasetEMACrossoverExecutionRequest(
     strategy_version: Literal["1.0.0"]
 
 
+class StoredDatasetSMACrossoverExecutionRequest(
+    StoredDatasetSMACrossoverResearchRequest,
+):
+    """Versioned SMA request accepted by generic experiment execution dispatch."""
+
+    strategy_name: Literal["sma-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
 class StoredDatasetRSIThresholdExecutionRequest(
     StoredDatasetRSIThresholdResearchRequest,
 ):
@@ -251,7 +281,9 @@ class StoredDatasetRSIThresholdExecutionRequest(
 
 
 StoredDatasetStrategyExecutionRequest = Annotated[
-    StoredDatasetEMACrossoverExecutionRequest | StoredDatasetRSIThresholdExecutionRequest,
+    StoredDatasetEMACrossoverExecutionRequest
+    | StoredDatasetRSIThresholdExecutionRequest
+    | StoredDatasetSMACrossoverExecutionRequest,
     Field(discriminator="strategy_name"),
 ]
 
@@ -270,6 +302,18 @@ class StoredDatasetEMACrossoverWalkForwardRequest(
     StoredDatasetEMACrossoverResearchRequest,
 ):
     """Request for walk-forward analysis against a stored dataset."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetSMACrossoverWalkForwardRequest(
+    StoredDatasetSMACrossoverResearchRequest,
+):
+    """Request for SMA walk-forward analysis against a stored dataset."""
 
     train_candles: int = Field(default=100, ge=2)
     test_candles: int = Field(default=20, ge=1)
@@ -299,6 +343,15 @@ class StoredDatasetEMACrossoverWalkForwardExecutionRequest(
     strategy_version: Literal["1.0.0"]
 
 
+class StoredDatasetSMACrossoverWalkForwardExecutionRequest(
+    StoredDatasetSMACrossoverWalkForwardRequest,
+):
+    """Versioned SMA request accepted by generic walk-forward dispatch."""
+
+    strategy_name: Literal["sma-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
 class StoredDatasetRSIThresholdWalkForwardExecutionRequest(
     StoredDatasetRSIThresholdWalkForwardRequest,
 ):
@@ -310,7 +363,8 @@ class StoredDatasetRSIThresholdWalkForwardExecutionRequest(
 
 StoredDatasetStrategyWalkForwardExecutionRequest = Annotated[
     StoredDatasetEMACrossoverWalkForwardExecutionRequest
-    | StoredDatasetRSIThresholdWalkForwardExecutionRequest,
+    | StoredDatasetRSIThresholdWalkForwardExecutionRequest
+    | StoredDatasetSMACrossoverWalkForwardExecutionRequest,
     Field(discriminator="strategy_name"),
 ]
 
@@ -482,6 +536,26 @@ def _build_ema_execution_parameters(
         ) from error
 
 
+def _build_sma_execution_parameters(
+    request: StoredDatasetSMACrossoverResearchRequest,
+) -> SMACrossoverExecutionParameters:
+    try:
+        return SMACrossoverExecutionParameters(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+            horizon_candles=request.horizon_candles,
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="invalid SMA execution parameters",
+        ) from error
+
+
 def _build_rsi_execution_parameters(
     request: StoredDatasetRSIThresholdResearchRequest,
 ) -> RSIThresholdExecutionParameters:
@@ -504,10 +578,17 @@ def _build_rsi_execution_parameters(
 
 
 def _build_strategy_execution_parameters(
-    request: StoredDatasetEMACrossoverResearchRequest | StoredDatasetRSIThresholdResearchRequest,
+    request: (
+        StoredDatasetEMACrossoverResearchRequest
+        | StoredDatasetRSIThresholdResearchRequest
+        | StoredDatasetSMACrossoverResearchRequest
+    ),
 ) -> StrategyExecutionParameters:
     if isinstance(request, StoredDatasetEMACrossoverResearchRequest):
         return _build_ema_execution_parameters(request)
+
+    if isinstance(request, StoredDatasetSMACrossoverResearchRequest):
+        return _build_sma_execution_parameters(request)
 
     return _build_rsi_execution_parameters(request)
 
@@ -517,6 +598,7 @@ def _build_walk_forward_config(
         EMACrossoverWalkForwardRequest
         | StoredDatasetEMACrossoverWalkForwardRequest
         | StoredDatasetRSIThresholdWalkForwardRequest
+        | StoredDatasetSMACrossoverWalkForwardRequest
     ),
 ) -> WalkForwardConfig:
     try:

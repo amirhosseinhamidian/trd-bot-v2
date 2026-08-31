@@ -296,8 +296,8 @@ describe('WalkForwardRunForm', () => {
     await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
     await user.selectOptions(screen.getByLabelText('Strategy'), 'rsi-threshold');
 
-    expect(screen.queryByLabelText('Fast EMA period')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Slow EMA period')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Fast moving-average period')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Slow moving-average period')).not.toBeInTheDocument();
     expect(screen.getByLabelText('RSI period')).toHaveValue(14);
     expect(screen.getByLabelText('Oversold threshold')).toHaveValue(30);
     expect(screen.getByLabelText('Overbought threshold')).toHaveValue(70);
@@ -312,6 +312,54 @@ describe('WalkForwardRunForm', () => {
         period: 14,
         oversold_threshold: '30',
         overbought_threshold: '70',
+        horizon_candles: 1,
+        train_candles: 120,
+        test_candles: 24,
+        step_candles: 24,
+        gap_candles: 0,
+        mode: 'rolling',
+        starting_balance: '10000',
+        allocation_fraction: '0.10',
+        fee_rate: '0.001',
+        slippage_rate: '0.0005',
+      });
+    });
+  });
+
+  it('queues an SMA crossover walk-forward execution with moving-average parameters', async () => {
+    const user = userEvent.setup();
+
+    apiMocks.getStrategies.mockResolvedValue([
+      ...strategyCatalog,
+      {
+        ...strategyCatalog[0],
+        name: 'sma-crossover',
+        display_name: 'SMA Crossover',
+        description: 'Historical SMA research strategy.',
+      },
+    ]);
+    apiMocks.createExecution.mockResolvedValue({
+      ...queuedExecution,
+      strategy_name: 'sma-crossover',
+    });
+
+    render(<WalkForwardRunForm locale="en" />);
+
+    await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
+    await user.selectOptions(screen.getByLabelText('Strategy'), 'sma-crossover');
+
+    expect(screen.getByLabelText('Fast moving-average period')).toHaveValue(9);
+    expect(screen.getByLabelText('Slow moving-average period')).toHaveValue(21);
+
+    await user.click(screen.getByRole('button', { name: 'Queue historical walk-forward' }));
+
+    await waitFor(() => {
+      expect(apiMocks.createExecution).toHaveBeenCalledWith({
+        dataset_id: dataset.dataset_id,
+        strategy_name: 'sma-crossover',
+        strategy_version: '1.0.0',
+        fast_period: 9,
+        slow_period: 21,
         horizon_candles: 1,
         train_candles: 120,
         test_candles: 24,
@@ -358,8 +406,8 @@ describe('WalkForwardRunForm', () => {
 
     await screen.findByLabelText('Strategy');
 
-    expect(screen.getByLabelText('Fast EMA period')).toHaveValue(8);
-    expect(screen.getByLabelText('Slow EMA period')).toHaveValue(20);
+    expect(screen.getByLabelText('Fast moving-average period')).toHaveValue(8);
+    expect(screen.getByLabelText('Slow moving-average period')).toHaveValue(20);
 
     await user.selectOptions(screen.getByLabelText('Strategy'), 'rsi-threshold');
 

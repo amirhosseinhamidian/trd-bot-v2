@@ -4,22 +4,24 @@ export type StrategyPresentationLocale = 'fa' | 'en';
 
 const STRATEGY_NAMES: Record<
   StrategyPresentationLocale,
-  Record<'ema-crossover' | 'rsi-threshold', string>
+  Record<'ema-crossover' | 'rsi-threshold' | 'sma-crossover', string>
 > = {
   fa: {
     'ema-crossover': 'EMA Crossover',
     'rsi-threshold': 'RSI Threshold',
+    'sma-crossover': 'SMA Crossover',
   },
   en: {
     'ema-crossover': 'EMA Crossover',
     'rsi-threshold': 'RSI Threshold',
+    'sma-crossover': 'SMA Crossover',
   },
 };
 
 const PARAMETER_LABELS: Record<StrategyPresentationLocale, Partial<Record<string, string>>> = {
   fa: {
-    fast_period: 'دوره سریع EMA',
-    slow_period: 'دوره کند EMA',
+    fast_period: 'دوره میانگین متحرک سریع',
+    slow_period: 'دوره میانگین متحرک آهسته',
     period: 'دوره RSI',
     oversold_threshold: 'آستانه اشباع فروش',
     overbought_threshold: 'آستانه اشباع خرید',
@@ -29,8 +31,8 @@ const PARAMETER_LABELS: Record<StrategyPresentationLocale, Partial<Record<string
     slippage_rate: 'نرخ لغزش شبیه‌سازی‌شده',
   },
   en: {
-    fast_period: 'Fast EMA period',
-    slow_period: 'Slow EMA period',
+    fast_period: 'Fast moving-average period',
+    slow_period: 'Slow moving-average period',
     period: 'RSI period',
     oversold_threshold: 'Oversold threshold',
     overbought_threshold: 'Overbought threshold',
@@ -45,7 +47,11 @@ export function getStrategyDisplayName(
   strategyName: string,
   locale: StrategyPresentationLocale,
 ): string {
-  if (strategyName === 'ema-crossover' || strategyName === 'rsi-threshold') {
+  if (
+    strategyName === 'ema-crossover' ||
+    strategyName === 'rsi-threshold' ||
+    strategyName === 'sma-crossover'
+  ) {
     return STRATEGY_NAMES[locale][strategyName];
   }
 
