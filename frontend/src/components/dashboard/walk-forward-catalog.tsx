@@ -25,12 +25,14 @@ import {
 import { getWalkForwardRuns, type WalkForwardRunFilters } from '@/lib/api/client';
 import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
 
 const PAGE_SIZE = 12;
 
 type WalkForwardCatalogProps = {
   initialPage: Page<WalkForwardRunSummary>;
   locale: DashboardLocale;
+  initialRunValues?: WalkForwardRunInitialValues;
   initialExecutionId?: string;
 };
 
@@ -94,6 +96,7 @@ function buildWalkForwardFilters(filters: WalkForwardFilterValues): WalkForwardR
 export default function WalkForwardCatalog({
   initialPage,
   locale,
+  initialRunValues,
   initialExecutionId,
 }: WalkForwardCatalogProps) {
   const copy = getWalkForwardCopy(locale);
@@ -170,7 +173,11 @@ export default function WalkForwardCatalog({
         </p>
       </section>
 
-      <WalkForwardRunForm locale={locale} initialExecutionId={initialExecutionId} />
+      <WalkForwardRunForm
+        locale={locale}
+        initialValues={initialRunValues}
+        initialExecutionId={initialExecutionId}
+      />
 
       <WalkForwardFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
 

@@ -5,8 +5,16 @@ import WalkForwardCatalog from '@/components/dashboard/walk-forward-catalog';
 import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
 
 vi.mock('@/components/dashboard/walk-forward-run-form', () => ({
-  default: function MockWalkForwardRunForm() {
-    return <div data-testid="walk-forward-run-form" />;
+  default: function MockWalkForwardRunForm({
+    initialValues,
+  }: {
+    initialValues?: { strategyName?: string };
+  }) {
+    return (
+      <div data-testid="walk-forward-run-form">
+        {initialValues?.strategyName ?? 'no-initial-strategy'}
+      </div>
+    );
   },
 }));
 
@@ -76,6 +84,18 @@ const page: Page<WalkForwardRunSummary> = {
 };
 
 describe('WalkForwardCatalog', () => {
+  it('passes strategy preselection into the run form', () => {
+    render(
+      <WalkForwardCatalog
+        locale="en"
+        initialPage={page}
+        initialRunValues={{ strategyName: 'rsi-threshold' }}
+      />,
+    );
+
+    expect(screen.getByTestId('walk-forward-run-form')).toHaveTextContent('rsi-threshold');
+  });
+
   it('presents RSI strategy identity and localized parameter labels', () => {
     render(<WalkForwardCatalog locale="en" initialPage={page} />);
 

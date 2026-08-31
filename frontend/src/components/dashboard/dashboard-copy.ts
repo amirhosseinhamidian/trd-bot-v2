@@ -8,6 +8,7 @@ export type DashboardCopy = {
   navigation: {
     overview: string;
     experiments: string;
+    strategies: string;
     datasets: string;
     connections: string;
     walkForward: string;
@@ -96,6 +97,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     navigation: {
       overview: 'نمای کلی',
       experiments: 'آزمایش‌ها',
+      strategies: 'استراتژی‌ها',
       datasets: 'مجموعه‌داده‌ها',
       connections: 'اتصال‌های داده',
       walkForward: 'تحلیل Walk-forward',
@@ -183,6 +185,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     navigation: {
       overview: 'Overview',
       experiments: 'Experiments',
+      strategies: 'Strategies',
       datasets: 'Datasets',
       connections: 'Data connections',
       walkForward: 'Walk-forward analysis',

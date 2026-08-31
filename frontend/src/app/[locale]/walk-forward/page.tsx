@@ -4,6 +4,7 @@ import WalkForwardCatalog from '@/components/dashboard/walk-forward-catalog';
 import { getWalkForwardRuns } from '@/lib/api/client';
 import {
   parseWalkForwardExecutionId,
+  parseWalkForwardRunSearchParams,
   type WalkForwardRunSearchParams,
 } from '@/lib/walk-forward/run-params';
 
@@ -23,6 +24,7 @@ export default async function WalkForwardPage({ params, searchParams }: WalkForw
 
   const resolvedSearchParams = await searchParams;
   const initialExecutionId = parseWalkForwardExecutionId(resolvedSearchParams);
+  const initialRunValues = parseWalkForwardRunSearchParams(resolvedSearchParams);
 
   const initialPage = await getWalkForwardRuns({
     sortBy: 'created_at',
@@ -35,6 +37,7 @@ export default async function WalkForwardPage({ params, searchParams }: WalkForw
     <WalkForwardCatalog
       locale={locale}
       initialPage={initialPage}
+      initialRunValues={initialRunValues}
       initialExecutionId={initialExecutionId}
     />
   );

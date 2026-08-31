@@ -286,6 +286,25 @@ describe('WalkForwardRunForm', () => {
     expect(screen.getByText('The walk-forward execution is waiting to start.')).toBeInTheDocument();
   });
 
+  it('applies an initial strategy selection from navigation search params', async () => {
+    render(
+      <WalkForwardRunForm
+        locale="en"
+        initialValues={{
+          strategyName: 'rsi-threshold',
+        }}
+      />,
+    );
+
+    await screen.findByLabelText('Strategy');
+
+    expect(screen.getByLabelText('Strategy')).toHaveValue('rsi-threshold');
+    expect(screen.getByLabelText('RSI period')).toHaveValue(14);
+    expect(screen.getByLabelText('Oversold threshold')).toHaveValue(30);
+    expect(screen.getByLabelText('Overbought threshold')).toHaveValue(70);
+    expect(screen.queryByLabelText('Fast moving-average period')).not.toBeInTheDocument();
+  });
+
   it('switches to RSI fields and queues an RSI threshold walk-forward execution', async () => {
     const user = userEvent.setup();
 

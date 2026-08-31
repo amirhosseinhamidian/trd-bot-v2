@@ -55,6 +55,12 @@ describe('DashboardShell mobile navigation', () => {
         name: 'Overview',
       }),
     ).toHaveAttribute('aria-current', 'page');
+
+    expect(
+      screen.getByRole('link', {
+        name: 'Strategies',
+      }),
+    ).toHaveAttribute('href', '/en/strategies');
   });
 
   it('moves focus into the sidebar and restores it after Escape', async () => {

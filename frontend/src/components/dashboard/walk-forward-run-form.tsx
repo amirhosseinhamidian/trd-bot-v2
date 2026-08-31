@@ -45,9 +45,11 @@ import {
 } from '@/lib/strategies/catalog';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { estimateWalkForwardFoldCount } from '@/lib/walk-forward/fold-estimate';
+import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
 
 type WalkForwardRunFormProps = {
   locale: DashboardLocale;
+  initialValues?: WalkForwardRunInitialValues;
   initialExecutionId?: string;
 };
 
@@ -186,6 +188,7 @@ function parseDecimal(value: string): number | null {
 
 export default function WalkForwardRunForm({
   locale,
+  initialValues,
   initialExecutionId,
 }: WalkForwardRunFormProps) {
   const copy = getWalkForwardRunCopy(locale);
@@ -194,7 +197,12 @@ export default function WalkForwardRunForm({
 
   const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
   const [strategies, setStrategies] = useState<ResearchStrategyMetadata[]>([]);
-  const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
+  const [values, setValues] = useState<FormValues>(() => ({
+    ...INITIAL_VALUES,
+    ...(initialValues?.strategyName === undefined
+      ? {}
+      : { strategyName: initialValues.strategyName }),
+  }));
   const [isLoadingDatasets, setIsLoadingDatasets] = useState(true);
   const [hasDatasetError, setHasDatasetError] = useState(false);
   const [isLoadingStrategies, setIsLoadingStrategies] = useState(true);

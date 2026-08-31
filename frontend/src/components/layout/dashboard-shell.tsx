@@ -74,6 +74,12 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       enabled: true,
     },
     {
+      key: 'strategies',
+      label: copy.navigation.strategies,
+      href: `/${locale}/strategies`,
+      enabled: true,
+    },
+    {
       key: 'datasets',
       label: copy.navigation.datasets,
       href: `/${locale}/datasets`,
