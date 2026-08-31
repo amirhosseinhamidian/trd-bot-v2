@@ -15,8 +15,10 @@ from trd_bot.market_data.providers import (
     InMemoryMarketDataProvider,
     MarketDataProvider,
     MarketDataProviderError,
+    MarketDataProviderHttpError,
     MarketDataProviderMetadata,
     MarketDataProviderResponseError,
+    MarketDataRetryPolicy,
 )
 from trd_bot.market_data.quality import (
     DataIssueCode,
@@ -42,8 +44,10 @@ __all__ = [
     "MarketDataProvider",
     "MarketDataProviderCatalog",
     "MarketDataProviderError",
+    "MarketDataProviderHttpError",
     "MarketDataProviderMetadata",
     "MarketDataProviderResponseError",
     "MarketDataProviderUnavailableError",
     "MarketDataQualityChecker",
+    "MarketDataRetryPolicy",
 ]

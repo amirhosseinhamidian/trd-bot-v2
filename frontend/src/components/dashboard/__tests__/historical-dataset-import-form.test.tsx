@@ -98,8 +98,16 @@ describe('HistoricalDatasetImportForm', () => {
     const user = userEvent.setup();
     mocks.previewHistoricalDatasetImport.mockResolvedValue(preview);
     mocks.importHistoricalDataset.mockResolvedValue(dataset);
+    const onImported = vi.fn();
 
-    render(<HistoricalDatasetImportForm connection={connection} locale="en" provider={provider} />);
+    render(
+      <HistoricalDatasetImportForm
+        connection={connection}
+        locale="en"
+        provider={provider}
+        onImported={onImported}
+      />,
+    );
 
     fillValidForm();
     await user.click(screen.getByRole('button', { name: 'Preview data' }));
@@ -132,6 +140,7 @@ describe('HistoricalDatasetImportForm', () => {
       'href',
       `/en/datasets/${dataset.dataset_id}`,
     );
+    expect(onImported).toHaveBeenCalledTimes(1);
   });
 
   it('shows quality issues and keeps import disabled when preview is invalid', async () => {

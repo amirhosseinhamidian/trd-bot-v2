@@ -79,6 +79,75 @@ class MarketDataConnectionRow(DatabaseBase):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class MarketDataImportRow(DatabaseBase):
+    """Immutable audit row for one historical market-data dataset import attempt."""
+
+    __tablename__ = "market_data_imports"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('succeeded', 'failed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "requested_end_time > requested_start_time",
+            name="requested_range_valid",
+        ),
+        CheckConstraint(
+            "completed_at >= created_at",
+            name="completed_after_created",
+        ),
+        CheckConstraint(
+            "candle_count >= 0",
+            name="candle_count_nonnegative",
+        ),
+        CheckConstraint(
+            "(status = 'succeeded' AND dataset_id IS NOT NULL AND candle_count > 0 "
+            "AND error_code IS NULL AND error_message IS NULL) OR "
+            "(status = 'failed' AND dataset_id IS NULL "
+            "AND error_code IS NOT NULL AND error_message IS NOT NULL)",
+            name="outcome_consistent",
+        ),
+        Index(
+            "ix_market_data_imports_connection_created_at",
+            "connection_id",
+            "created_at",
+        ),
+        Index(
+            "ix_market_data_imports_status_created_at",
+            "status",
+            "created_at",
+        ),
+    )
+
+    import_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    connection_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_data_connections.connection_id"),
+    )
+    provider_id: Mapped[str] = mapped_column(String(100), index=True)
+    dataset_name: Mapped[str] = mapped_column(String(100))
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    requested_start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    requested_end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    candle_count: Mapped[int] = mapped_column(Integer)
+    dataset_id: Mapped[str | None] = mapped_column(
+        String(100),
+        ForeignKey("dataset_snapshots.dataset_id"),
+        nullable=True,
+        index=True,
+    )
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class DatasetSnapshotRow(DatabaseBase):
     """Serialized immutable market-data snapshot metadata and payload."""
 

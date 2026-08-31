@@ -19,6 +19,7 @@ import type {
 type HistoricalDatasetImportFormProps = {
   connection: MarketDataConnection;
   locale: DashboardLocale;
+  onImported?: () => void;
   provider: MarketDataProviderSummary | undefined;
 };
 
@@ -41,6 +42,7 @@ function toIso(value: string): string {
 export default function HistoricalDatasetImportForm({
   connection,
   locale,
+  onImported,
   provider,
 }: HistoricalDatasetImportFormProps) {
   const copy = getHistoricalImportCopy(locale);
@@ -125,7 +127,9 @@ export default function HistoricalDatasetImportForm({
     setHasRequestError(false);
 
     try {
-      setImportedDataset(await importHistoricalDataset(connection.connection_id, buildRequest()));
+      const dataset = await importHistoricalDataset(connection.connection_id, buildRequest());
+      setImportedDataset(dataset);
+      onImported?.();
     } catch {
       setImportedDataset(null);
       setHasRequestError(true);

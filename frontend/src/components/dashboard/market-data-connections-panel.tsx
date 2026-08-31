@@ -5,6 +5,7 @@ import { type FormEvent, useState } from 'react';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getConnectionsCopy } from '@/components/dashboard/connections-copy';
 import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
+import MarketDataImportHistory from '@/components/dashboard/market-data-import-history';
 import {
   Badge,
   Button,
@@ -84,6 +85,7 @@ export default function MarketDataConnectionsPanel({
   } | null>(null);
   const [hasError, setHasError] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [historyRefreshVersions, setHistoryRefreshVersions] = useState<Record<string, number>>({});
 
   function updateConnection(updated: MarketDataConnection): void {
     setPage((current) => ({
@@ -91,6 +93,13 @@ export default function MarketDataConnectionsPanel({
       items: current.items.map((connection) =>
         connection.connection_id === updated.connection_id ? updated : connection,
       ),
+    }));
+  }
+
+  function markImportHistoryUpdated(connectionId: string): void {
+    setHistoryRefreshVersions((current) => ({
+      ...current,
+      [connectionId]: (current[connectionId] ?? 0) + 1,
     }));
   }
 
@@ -403,8 +412,15 @@ export default function MarketDataConnectionsPanel({
                         provider={initialProviders.find(
                           (provider) => provider.provider_id === connection.provider_id,
                         )}
+                        onImported={() => markImportHistoryUpdated(connection.connection_id)}
                       />
                     ) : null}
+
+                    <MarketDataImportHistory
+                      connectionId={connection.connection_id}
+                      locale={locale}
+                      refreshVersion={historyRefreshVersions[connection.connection_id] ?? 0}
+                    />
                   </CardContent>
                 </Card>
               );

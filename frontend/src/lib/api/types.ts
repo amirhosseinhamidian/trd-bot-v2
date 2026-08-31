@@ -78,6 +78,26 @@ export interface HistoricalDatasetImportPreview {
   ready_to_import: boolean;
 }
 
+export type MarketDataImportStatus = 'succeeded' | 'failed';
+
+export interface MarketDataImportRecord {
+  import_id: string;
+  connection_id: string;
+  provider_id: string;
+  dataset_name: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  requested_start_time: string;
+  requested_end_time: string;
+  created_at: string;
+  completed_at: string;
+  status: MarketDataImportStatus;
+  candle_count: number;
+  dataset_id: string | null;
+  error_code: string | null;
+  error_message: string | null;
+}
+
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
 
 export type DatasetSortDirection = 'asc' | 'desc';

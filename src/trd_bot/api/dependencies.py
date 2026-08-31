@@ -26,10 +26,14 @@ from trd_bot.db import (
 from trd_bot.db.market_data_connection_repositories import (
     SqlAlchemyMarketDataConnectionRepository,
 )
+from trd_bot.db.market_data_import_repositories import (
+    SqlAlchemyMarketDataImportRepository,
+)
 from trd_bot.market_data import (
     MarketDataConnectionRepository,
     MarketDataProviderCatalog,
 )
+from trd_bot.market_data.import_history import MarketDataImportRepository
 from trd_bot.monitoring import (
     ArchitectureRecommendationRepository,
     MonitoringRuntimeStateRepository,
@@ -58,6 +62,14 @@ def get_market_data_connection_repository(
     """Return the request-scoped market-data connection repository."""
 
     return SqlAlchemyMarketDataConnectionRepository(session)
+
+
+def get_market_data_import_repository(
+    session: DatabaseSessionDependency,
+) -> MarketDataImportRepository:
+    """Return the request-scoped historical import audit repository."""
+
+    return SqlAlchemyMarketDataImportRepository(session)
 
 
 def get_market_data_provider_catalog() -> MarketDataProviderCatalog:

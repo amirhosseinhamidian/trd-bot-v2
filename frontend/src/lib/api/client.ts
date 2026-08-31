@@ -19,6 +19,8 @@ import type {
   HistoricalDatasetImportRequest,
   MarketDataConnection,
   MarketDataConnectionCreateRequest,
+  MarketDataImportRecord,
+  MarketDataImportStatus,
   MarketDataProviderSummary,
   MonitoringSummary,
   OHLCVCandle,
@@ -349,6 +351,38 @@ export async function importHistoricalDataset(
   return postJson<DatasetSummary>(
     `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/datasets`,
     request,
+  );
+}
+
+export interface MarketDataImportHistoryFilters {
+  status?: MarketDataImportStatus;
+  limit?: number;
+  offset?: number;
+}
+
+export async function getMarketDataImportHistory(
+  connectionId: string,
+  filters: MarketDataImportHistoryFilters = {},
+): Promise<Page<MarketDataImportRecord>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 5));
+  params.set('offset', String(filters.offset ?? 0));
+
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+
+  return getJson<Page<MarketDataImportRecord>>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports?${params.toString()}`,
+  );
+}
+
+export async function getMarketDataImport(
+  connectionId: string,
+  importId: string,
+): Promise<MarketDataImportRecord> {
+  return getJson<MarketDataImportRecord>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}`,
   );
 }
 

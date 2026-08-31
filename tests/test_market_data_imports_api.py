@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from trd_bot.api.dependencies import (
     get_dataset_repository,
     get_market_data_connection_repository,
+    get_market_data_import_repository,
     get_market_data_provider_catalog,
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
@@ -23,6 +24,7 @@ from trd_bot.market_data import (
     MarketDataProviderError,
     MarketDataProviderMetadata,
 )
+from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
 from trd_bot.research import InMemoryDatasetRepository
 
 client = TestClient(app)
@@ -99,6 +101,7 @@ def historical_import_dependencies() -> Iterator[
     state = ProviderState(candles=[create_candle(0), create_candle(1)])
     connections = InMemoryMarketDataConnectionRepository()
     datasets = InMemoryDatasetRepository()
+    history = InMemoryMarketDataImportRepository()
     providers = MarketDataProviderCatalog(
         {
             "synthetic-public": lambda: HistoricalSyntheticProvider(state),
@@ -121,6 +124,7 @@ def historical_import_dependencies() -> Iterator[
     app.dependency_overrides[get_market_data_connection_repository] = lambda: connections
     app.dependency_overrides[get_market_data_provider_catalog] = lambda: providers
     app.dependency_overrides[get_dataset_repository] = lambda: datasets
+    app.dependency_overrides[get_market_data_import_repository] = lambda: history
 
     try:
         yield connections, datasets, state
@@ -128,6 +132,7 @@ def historical_import_dependencies() -> Iterator[
         app.dependency_overrides.pop(get_market_data_connection_repository, None)
         app.dependency_overrides.pop(get_market_data_provider_catalog, None)
         app.dependency_overrides.pop(get_dataset_repository, None)
+        app.dependency_overrides.pop(get_market_data_import_repository, None)
 
 
 def request_payload(*, timeframe: str = "1h") -> dict[str, object]:
@@ -188,6 +193,22 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert datasets.count() == 1
     assert datasets.get(first.json()["dataset_id"]) is not None
 
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    assert history_response.status_code == 200
+    history_payload = history_response.json()
+    assert history_payload["total"] == 2
+    assert history_payload["items"][0]["status"] == "succeeded"
+    assert history_payload["items"][0]["dataset_id"] == first.json()["dataset_id"]
+
+    import_id = history_payload["items"][0]["import_id"]
+    detail = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{import_id}"
+    )
+    assert detail.status_code == 200
+    assert detail.json()["import_id"] == import_id
+
 
 def test_import_requires_enabled_connection(
     historical_import_dependencies: tuple[
@@ -245,6 +266,15 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
     assert datasets.count() == 0
 
 
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
+    )
+    assert history_response.status_code == 200
+    assert history_response.json()["total"] == 1
+    assert history_response.json()["items"][0]["error_code"] == "quality_check_failed"
+    assert history_response.json()["items"][0]["candle_count"] == 2
+
+
 def test_import_maps_provider_failure_to_bad_gateway(
     historical_import_dependencies: tuple[
         InMemoryMarketDataConnectionRepository,
@@ -262,6 +292,15 @@ def test_import_maps_provider_failure_to_bad_gateway(
 
     assert response.status_code == 502
     assert response.json()["detail"] == "synthetic historical fetch failed"
+
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
+    )
+    assert history_response.status_code == 200
+    assert history_response.json()["total"] == 1
+    assert history_response.json()["items"][0]["error_code"] == "provider_request_failed"
+    assert history_response.json()["items"][0]["dataset_id"] is None
 
 
 def test_import_rejects_unsupported_timeframe_before_fetch(

@@ -71,6 +71,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "dataset_snapshots",
         "experiment_executions",
         "market_data_connections",
+        "market_data_imports",
         "monitoring_runtime_state",
         "portfolio_timeline_events",
         "research_experiments",
@@ -154,6 +155,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "candidate_projections",
             "dataset_snapshots",
             "market_data_connections",
+            "market_data_imports",
             "monitoring_runtime_state",
             "portfolio_timeline_events",
             "research_experiments",
@@ -181,6 +183,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "system_metric_samples" not in downgraded_tables
         assert "monitoring_runtime_state" not in downgraded_tables
         assert "market_data_connections" not in downgraded_tables
+        assert "market_data_imports" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables
         assert "simulated_portfolios" not in downgraded_tables
         assert "simulated_positions" not in downgraded_tables

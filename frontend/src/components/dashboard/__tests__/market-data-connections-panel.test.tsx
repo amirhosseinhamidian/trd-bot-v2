@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   disableMarketDataConnection: vi.fn(),
   enableMarketDataConnection: vi.fn(),
   getMarketDataConnections: vi.fn(),
+  getMarketDataImportHistory: vi.fn(),
   testMarketDataConnection: vi.fn(),
 }));
 
@@ -18,6 +19,7 @@ vi.mock('@/lib/api/client', () => ({
   disableMarketDataConnection: mocks.disableMarketDataConnection,
   enableMarketDataConnection: mocks.enableMarketDataConnection,
   getMarketDataConnections: mocks.getMarketDataConnections,
+  getMarketDataImportHistory: mocks.getMarketDataImportHistory,
   importHistoricalDataset: vi.fn(),
   previewHistoricalDatasetImport: vi.fn(),
   testMarketDataConnection: mocks.testMarketDataConnection,
@@ -61,6 +63,7 @@ describe('MarketDataConnectionsPanel', () => {
     mocks.disableMarketDataConnection.mockReset();
     mocks.enableMarketDataConnection.mockReset();
     mocks.getMarketDataConnections.mockReset();
+    mocks.getMarketDataImportHistory.mockReset();
     mocks.testMarketDataConnection.mockReset();
   });
 

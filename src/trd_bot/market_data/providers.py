@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -35,7 +36,43 @@ class MarketDataProviderResponseError(MarketDataProviderError):
     """Raised when a provider returns an unexpected or invalid payload."""
 
 
+class MarketDataProviderHttpError(MarketDataProviderError):
+    """HTTP failure with enough metadata for deterministic retry decisions."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int,
+        retry_after_seconds: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.retry_after_seconds = retry_after_seconds
+
+
+@dataclass(frozen=True, slots=True)
+class MarketDataRetryPolicy:
+    """Bounded retry/backoff policy for public read-only market-data requests."""
+
+    max_attempts: int = 3
+    initial_backoff_seconds: float = 0.25
+    max_backoff_seconds: float = 2.0
+    max_retry_after_seconds: float = 30.0
+
+    def __post_init__(self) -> None:
+        if self.max_attempts <= 0:
+            raise ValueError("max attempts must be greater than zero")
+        if self.initial_backoff_seconds < 0:
+            raise ValueError("initial backoff cannot be negative")
+        if self.max_backoff_seconds < self.initial_backoff_seconds:
+            raise ValueError("maximum backoff cannot be lower than initial backoff")
+        if self.max_retry_after_seconds < 0:
+            raise ValueError("maximum retry-after cannot be negative")
+
+
 JsonFetcher = Callable[[str, float], Awaitable[object]]
+Sleep = Callable[[float], Awaitable[None]]
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _TIMEFRAME_DURATIONS: dict[Timeframe, timedelta] = {
@@ -65,18 +102,37 @@ async def _fetch_json(url: str, timeout_seconds: float) -> object:
 
     try:
         return await asyncio.to_thread(load)
+    except HTTPError as exc:
+        retry_after_header = exc.headers.get("Retry-After") if exc.headers is not None else None
+        retry_after_seconds = _parse_retry_after_seconds(retry_after_header)
+        raise MarketDataProviderHttpError(
+            "public market-data request failed",
+            status_code=exc.code,
+            retry_after_seconds=retry_after_seconds,
+        ) from exc
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise MarketDataProviderError("public market-data request failed") from exc
+
+
+def _parse_retry_after_seconds(value: str | None) -> float | None:
+    if value is None:
+        return None
+
+    try:
+        parsed = float(value.strip())
+    except ValueError:
+        return None
+
+    if parsed < 0:
+        return None
+    return parsed
 
 
 def _to_epoch_milliseconds(value: datetime) -> int:
     normalized = value.astimezone(UTC)
     delta = normalized - _EPOCH
 
-    return (
-        ((delta.days * 86_400) + delta.seconds) * 1_000
-        + (delta.microseconds // 1_000)
-    )
+    return ((delta.days * 86_400) + delta.seconds) * 1_000 + (delta.microseconds // 1_000)
 
 
 def _from_epoch_milliseconds(value: int) -> datetime:
@@ -205,13 +261,17 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
         self,
         *,
         timeout_seconds: float = 10.0,
+        retry_policy: MarketDataRetryPolicy | None = None,
         fetch_json: JsonFetcher | None = None,
+        sleep: Sleep | None = None,
     ) -> None:
         if timeout_seconds <= 0:
             raise ValueError("timeout must be greater than zero")
 
         self._timeout_seconds = timeout_seconds
+        self._retry_policy = retry_policy or MarketDataRetryPolicy()
         self._fetch_json = fetch_json or _fetch_json
+        self._sleep = sleep or asyncio.sleep
 
     @property
     def metadata(self) -> MarketDataProviderMetadata:
@@ -220,7 +280,7 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
     async def test_connection(self) -> None:
         """Probe Binance's public market-data API without account credentials."""
 
-        payload = await self._fetch_json(
+        payload = await self._request_json(
             self._PING_URL,
             self._timeout_seconds,
         )
@@ -265,12 +325,10 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
 
             remaining = None if limit is None else limit - len(candles)
             page_size = (
-                self._MAX_PAGE_SIZE
-                if remaining is None
-                else min(self._MAX_PAGE_SIZE, remaining)
+                self._MAX_PAGE_SIZE if remaining is None else min(self._MAX_PAGE_SIZE, remaining)
             )
 
-            payload = await self._fetch_json(
+            payload = await self._request_json(
                 self._build_url(
                     pair=pair,
                     timeframe=timeframe,
@@ -295,10 +353,7 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
                 )
                 last_open_time = candle.open_time
 
-                if (
-                    candle.is_closed
-                    and normalized_start <= candle.open_time < normalized_end
-                ):
+                if candle.is_closed and normalized_start <= candle.open_time < normalized_end:
                     candles.append(candle)
 
                     if limit is not None and len(candles) >= limit:
@@ -323,6 +378,55 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
             candles,
             key=lambda candle: candle.open_time,
         )
+
+    async def _request_json(self, url: str, timeout_seconds: float) -> object:
+        """Execute one bounded public request with retry/backoff and rate-limit handling."""
+
+        policy = self._retry_policy
+
+        for attempt in range(1, policy.max_attempts + 1):
+            try:
+                return await self._fetch_json(url, timeout_seconds)
+            except MarketDataProviderHttpError as exc:
+                if not self._is_retryable_status(exc.status_code) or attempt >= policy.max_attempts:
+                    raise
+                delay = self._retry_delay(
+                    attempt=attempt,
+                    retry_after_seconds=exc.retry_after_seconds,
+                )
+            except MarketDataProviderError:
+                if attempt >= policy.max_attempts:
+                    raise
+                delay = self._retry_delay(attempt=attempt)
+
+            await self._sleep(delay)
+
+        raise RuntimeError("market-data retry policy exhausted without a result")
+
+    def _retry_delay(
+        self,
+        *,
+        attempt: int,
+        retry_after_seconds: float | None = None,
+    ) -> float:
+        policy = self._retry_policy
+        exponential = min(
+            policy.initial_backoff_seconds * float(2 ** (attempt - 1)),
+            policy.max_backoff_seconds,
+        )
+
+        if retry_after_seconds is None:
+            return exponential
+
+        bounded_retry_after = min(
+            retry_after_seconds,
+            policy.max_retry_after_seconds,
+        )
+        return max(exponential, bounded_retry_after)
+
+    @staticmethod
+    def _is_retryable_status(status_code: int) -> bool:
+        return status_code in {408, 425, 429, 500, 502, 503, 504}
 
     def _validate_capabilities(
         self,
