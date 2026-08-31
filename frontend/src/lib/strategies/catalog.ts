@@ -1,6 +1,7 @@
 import type {
   ResearchStrategyMetadata,
   ResearchStrategyName,
+  StoredDatasetStrategyExecutionRequest,
   StrategyParameterMetadata,
 } from '@/lib/api/types';
 
@@ -14,15 +15,20 @@ export type StrategyParameterInputProps = {
   step: 1 | 'any';
 };
 
-const EXECUTABLE_STRATEGY_NAMES = new Set<ResearchStrategyName>(['ema-crossover', 'rsi-threshold']);
-
-const EXECUTABLE_STRATEGY_VERSIONS: Record<ResearchStrategyName, string> = {
-  'ema-crossover': '1.0.0',
-  'rsi-threshold': '1.0.0',
+type ExecutableStrategyVersions = {
+  [Name in ResearchStrategyName]: Extract<
+    StoredDatasetStrategyExecutionRequest,
+    { strategy_name: Name }
+  >['strategy_version'];
 };
 
+const EXECUTABLE_STRATEGY_VERSIONS = {
+  'ema-crossover': '1.0.0',
+  'rsi-threshold': '1.0.0',
+} satisfies ExecutableStrategyVersions;
+
 export function isExecutableResearchStrategyName(name: string): name is ResearchStrategyName {
-  return EXECUTABLE_STRATEGY_NAMES.has(name as ResearchStrategyName);
+  return Object.prototype.hasOwnProperty.call(EXECUTABLE_STRATEGY_VERSIONS, name);
 }
 
 export function getExecutableResearchStrategies(

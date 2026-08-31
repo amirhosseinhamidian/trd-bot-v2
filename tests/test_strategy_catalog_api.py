@@ -1,6 +1,16 @@
-from fastapi.testclient import TestClient
+from typing import get_args
 
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
+from trd_bot.api.routes.research import (
+    StoredDatasetEMACrossoverExecutionRequest,
+    StoredDatasetEMACrossoverWalkForwardExecutionRequest,
+    StoredDatasetRSIThresholdExecutionRequest,
+    StoredDatasetRSIThresholdWalkForwardExecutionRequest,
+)
 from trd_bot.main import app
+from trd_bot.strategies import build_default_strategy_registry
 
 client = TestClient(app)
 
@@ -47,3 +57,31 @@ def test_lists_versioned_research_strategy_metadata() -> None:
     assert rsi["parameters"][1]["maximum"] == "50"
     assert rsi["parameters"][1]["minimum_exclusive"] is True
     assert rsi["parameters"][1]["maximum_exclusive"] is True
+
+
+def _request_identity(request_model: type[BaseModel]) -> tuple[str, str]:
+    name_values = get_args(request_model.model_fields["strategy_name"].annotation)
+    version_values = get_args(request_model.model_fields["strategy_version"].annotation)
+
+    assert len(name_values) == 1
+    assert len(version_values) == 1
+
+    return str(name_values[0]), str(version_values[0])
+
+
+def test_execution_request_identities_match_strategy_catalog() -> None:
+    catalog_identities = {
+        (metadata.name, metadata.version)
+        for metadata in build_default_strategy_registry().list_metadata()
+    }
+    experiment_identities = {
+        _request_identity(StoredDatasetEMACrossoverExecutionRequest),
+        _request_identity(StoredDatasetRSIThresholdExecutionRequest),
+    }
+    walk_forward_identities = {
+        _request_identity(StoredDatasetEMACrossoverWalkForwardExecutionRequest),
+        _request_identity(StoredDatasetRSIThresholdWalkForwardExecutionRequest),
+    }
+
+    assert experiment_identities == catalog_identities
+    assert walk_forward_identities == catalog_identities
