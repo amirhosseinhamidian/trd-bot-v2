@@ -105,6 +105,8 @@ def build_execution_payload(
 ) -> dict[str, object]:
     return {
         "dataset_id": dataset_id,
+        "strategy_name": "ema-crossover",
+        "strategy_version": "1.0.0",
         "fast_period": 2,
         "slow_period": 3,
         "horizon_candles": 1,
@@ -128,6 +130,8 @@ def build_rsi_execution_payload(
     payload.pop("slow_period")
     payload.update(
         {
+            "strategy_name": "rsi-threshold",
+            "strategy_version": "1.0.0",
             "period": 2,
             "oversold_threshold": "30",
             "overbought_threshold": "70",
@@ -143,7 +147,7 @@ def test_creates_queued_walk_forward_execution(
     dataset_id = create_dataset()
 
     response = client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -175,7 +179,7 @@ def test_creates_queued_rsi_walk_forward_execution(
     dataset_id = create_dataset()
 
     response = client.post(
-        "/api/v1/research/walk-forward-executions/rsi-threshold",
+        "/api/v1/research/walk-forward-executions",
         json=build_rsi_execution_payload(dataset_id),
     )
 
@@ -199,7 +203,7 @@ def test_creates_queued_rsi_walk_forward_execution(
     ("path", "payload_builder", "foreign_fields"),
     [
         (
-            "/api/v1/research/walk-forward-executions/ema-crossover",
+            "/api/v1/research/walk-forward-executions",
             build_execution_payload,
             {
                 "period": 2,
@@ -208,7 +212,7 @@ def test_creates_queued_rsi_walk_forward_execution(
             },
         ),
         (
-            "/api/v1/research/walk-forward-executions/rsi-threshold",
+            "/api/v1/research/walk-forward-executions",
             build_rsi_execution_payload,
             {
                 "fast_period": 2,
@@ -235,11 +239,43 @@ def test_rejects_foreign_strategy_parameters(
     assert response.status_code == 422
 
 
+def test_rejects_unknown_strategy_identity(
+    execution_task_calls: list[str],
+) -> None:
+    dataset_id = create_dataset()
+    payload = build_execution_payload(dataset_id)
+    payload["strategy_name"] = "future-strategy"
+
+    response = client.post(
+        "/api/v1/research/walk-forward-executions",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert execution_task_calls == []
+
+
+def test_rejects_unknown_strategy_version(
+    execution_task_calls: list[str],
+) -> None:
+    dataset_id = create_dataset()
+    payload = build_execution_payload(dataset_id)
+    payload["strategy_version"] = "2.0.0"
+
+    response = client.post(
+        "/api/v1/research/walk-forward-executions",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert execution_task_calls == []
+
+
 def test_returns_walk_forward_execution() -> None:
     dataset_id = create_dataset()
 
     create_response = client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -255,7 +291,7 @@ def test_lists_walk_forward_executions() -> None:
     dataset_id = create_dataset()
 
     client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -292,7 +328,7 @@ def test_rejects_unknown_dataset(
     execution_task_calls: list[str],
 ) -> None:
     response = client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=build_execution_payload("dataset-0000000000000000"),
     )
 
@@ -310,7 +346,7 @@ def test_rejects_windows_larger_than_dataset(
     payload["test_candles"] = 2
 
     response = client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=payload,
     )
 
@@ -327,7 +363,7 @@ def test_rejects_overlapping_test_windows(
     payload["step_candles"] = 2
 
     response = client.post(
-        "/api/v1/research/walk-forward-executions/ema-crossover",
+        "/api/v1/research/walk-forward-executions",
         json=payload,
     )
 

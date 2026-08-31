@@ -45,3 +45,7 @@ out/
 # Operating system
 .DS_Store
 Thumbs.db
+
+*.patch
+
+*.tar.gz

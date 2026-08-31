@@ -107,6 +107,8 @@ def build_execution_payload(
 ) -> dict[str, object]:
     return {
         "dataset_id": dataset_id,
+        "strategy_name": "ema-crossover",
+        "strategy_version": "1.0.0",
         "fast_period": 9,
         "slow_period": 21,
         "horizon_candles": 1,
@@ -122,6 +124,8 @@ def build_rsi_execution_payload(
 ) -> dict[str, object]:
     return {
         "dataset_id": dataset_id,
+        "strategy_name": "rsi-threshold",
+        "strategy_version": "1.0.0",
         "period": 14,
         "oversold_threshold": "30",
         "overbought_threshold": "70",
@@ -140,7 +144,7 @@ def test_creates_queued_experiment_execution(
     dataset_id = create_dataset()
 
     response = client.post(
-        "/api/v1/research/experiment-executions/ema-crossover",
+        "/api/v1/research/experiment-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -170,7 +174,7 @@ def test_creates_queued_rsi_experiment_execution(
     dataset_id = create_dataset()
 
     response = client.post(
-        "/api/v1/research/experiment-executions/rsi-threshold",
+        "/api/v1/research/experiment-executions",
         json=build_rsi_execution_payload(dataset_id),
     )
 
@@ -195,7 +199,7 @@ def test_creates_queued_rsi_experiment_execution(
     ("path", "payload_builder", "foreign_fields"),
     [
         (
-            "/api/v1/research/experiment-executions/ema-crossover",
+            "/api/v1/research/experiment-executions",
             build_execution_payload,
             {
                 "period": 14,
@@ -204,7 +208,7 @@ def test_creates_queued_rsi_experiment_execution(
             },
         ),
         (
-            "/api/v1/research/experiment-executions/rsi-threshold",
+            "/api/v1/research/experiment-executions",
             build_rsi_execution_payload,
             {
                 "fast_period": 9,
@@ -231,11 +235,43 @@ def test_rejects_foreign_strategy_parameters(
     assert response.status_code == 422
 
 
+def test_rejects_unknown_strategy_identity(
+    execution_task_calls: list[str],
+) -> None:
+    dataset_id = create_dataset()
+    payload = build_execution_payload(dataset_id)
+    payload["strategy_name"] = "future-strategy"
+
+    response = client.post(
+        "/api/v1/research/experiment-executions",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert execution_task_calls == []
+
+
+def test_rejects_unknown_strategy_version(
+    execution_task_calls: list[str],
+) -> None:
+    dataset_id = create_dataset()
+    payload = build_execution_payload(dataset_id)
+    payload["strategy_version"] = "2.0.0"
+
+    response = client.post(
+        "/api/v1/research/experiment-executions",
+        json=payload,
+    )
+
+    assert response.status_code == 422
+    assert execution_task_calls == []
+
+
 def test_returns_experiment_execution() -> None:
     dataset_id = create_dataset()
 
     create_response = client.post(
-        "/api/v1/research/experiment-executions/ema-crossover",
+        "/api/v1/research/experiment-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -251,7 +287,7 @@ def test_lists_experiment_executions() -> None:
     dataset_id = create_dataset()
 
     client.post(
-        "/api/v1/research/experiment-executions/ema-crossover",
+        "/api/v1/research/experiment-executions",
         json=build_execution_payload(dataset_id),
     )
 
@@ -286,7 +322,7 @@ def test_rejects_unknown_dataset(
     execution_task_calls: list[str],
 ) -> None:
     response = client.post(
-        "/api/v1/research/experiment-executions/ema-crossover",
+        "/api/v1/research/experiment-executions",
         json=build_execution_payload(
             "dataset-0000000000000000",
         ),
@@ -308,7 +344,7 @@ def test_rejects_invalid_period_relationship(
     payload["slow_period"] = 20
 
     response = client.post(
-        "/api/v1/research/experiment-executions/ema-crossover",
+        "/api/v1/research/experiment-executions",
         json=payload,
     )
 
