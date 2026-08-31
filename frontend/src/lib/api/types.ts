@@ -7,6 +7,35 @@ export type DatasetTimeframe = '15m' | '1h' | '4h' | '1d';
 
 export type MarketType = 'spot';
 
+export type MarketDataConnectionState = 'disabled' | 'enabled';
+
+export type MarketDataConnectionHealth = 'untested' | 'healthy' | 'unhealthy';
+
+export interface MarketDataProviderSummary {
+  provider_id: string;
+  display_name: string;
+  requires_credentials: boolean;
+  supported_market_types: MarketType[];
+  supported_timeframes: DatasetTimeframe[];
+}
+
+export interface MarketDataConnection {
+  connection_id: string;
+  provider_id: string;
+  display_name: string;
+  state: MarketDataConnectionState;
+  health_status: MarketDataConnectionHealth;
+  created_at: string;
+  updated_at: string;
+  last_tested_at: string | null;
+  last_error: string | null;
+}
+
+export interface MarketDataConnectionCreateRequest {
+  provider_id: string;
+  display_name: string;
+}
+
 export type DatasetSortField = 'created_at' | 'start_time' | 'candle_count';
 
 export type DatasetSortDirection = 'asc' | 'desc';

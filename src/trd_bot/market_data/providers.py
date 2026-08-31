@@ -94,6 +94,12 @@ class MarketDataProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def test_connection(self) -> None:
+        """Validate that the read-only provider endpoint is reachable and usable."""
+
+        raise NotImplementedError
+
+    @abstractmethod
     async def get_candles(
         self,
         pair: TradingPair,
@@ -148,6 +154,9 @@ class InMemoryMarketDataProvider(MarketDataProvider):
     def metadata(self) -> MarketDataProviderMetadata:
         return self._METADATA
 
+    async def test_connection(self) -> None:
+        """In-memory provider is always available to isolated tests."""
+
     async def get_candles(
         self,
         pair: TradingPair,
@@ -180,7 +189,9 @@ class InMemoryMarketDataProvider(MarketDataProvider):
 class BinancePublicMarketDataProvider(MarketDataProvider):
     """Historical spot-candle provider using Binance public market-data endpoints only."""
 
-    _BASE_URL = "https://data-api.binance.vision/api/v3/klines"
+    _API_BASE_URL = "https://data-api.binance.vision/api/v3"
+    _KLINES_URL = f"{_API_BASE_URL}/klines"
+    _PING_URL = f"{_API_BASE_URL}/ping"
     _MAX_PAGE_SIZE = 1_000
     _METADATA = MarketDataProviderMetadata(
         provider_id="binance-public",
@@ -205,6 +216,19 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
     @property
     def metadata(self) -> MarketDataProviderMetadata:
         return self._METADATA
+
+    async def test_connection(self) -> None:
+        """Probe Binance's public market-data API without account credentials."""
+
+        payload = await self._fetch_json(
+            self._PING_URL,
+            self._timeout_seconds,
+        )
+
+        if not isinstance(payload, dict):
+            raise MarketDataProviderResponseError(
+                "binance public market-data health response must be an object"
+            )
 
     async def get_candles(
         self,
@@ -331,7 +355,7 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
             }
         )
 
-        return f"{self._BASE_URL}?{query}"
+        return f"{self._KLINES_URL}?{query}"
 
     @staticmethod
     def _validate_payload(payload: object) -> list[object]:

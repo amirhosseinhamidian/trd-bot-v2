@@ -15,6 +15,9 @@ import type {
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
   ExperimentPerformanceSeries,
+  MarketDataConnection,
+  MarketDataConnectionCreateRequest,
+  MarketDataProviderSummary,
   MonitoringSummary,
   OHLCVCandle,
   Page,
@@ -205,6 +208,11 @@ export interface ExperimentSignalFilters {
   offset?: number;
 }
 
+export interface MarketDataConnectionFilters {
+  limit?: number;
+  offset?: number;
+}
+
 export async function getResearchOverview(): Promise<ResearchOverview> {
   return getJson<ResearchOverview>('/api/v1/research/overview');
 }
@@ -274,6 +282,52 @@ export async function getDataset(datasetId: string): Promise<DatasetSnapshot> {
 
 export async function getResearchStrategies(): Promise<ResearchStrategyMetadata[]> {
   return getJson<ResearchStrategyMetadata[]>('/api/v1/research/strategies');
+}
+
+export async function getMarketDataProviders(): Promise<MarketDataProviderSummary[]> {
+  return getJson<MarketDataProviderSummary[]>('/api/v1/market-data/providers');
+}
+
+export async function getMarketDataConnections(
+  filters: MarketDataConnectionFilters = {},
+): Promise<Page<MarketDataConnection>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 12));
+  params.set('offset', String(filters.offset ?? 0));
+
+  return getJson<Page<MarketDataConnection>>(
+    `/api/v1/market-data/connections?${params.toString()}`,
+  );
+}
+
+export async function createMarketDataConnection(
+  request: MarketDataConnectionCreateRequest,
+): Promise<MarketDataConnection> {
+  return postJson<MarketDataConnection>('/api/v1/market-data/connections', request);
+}
+
+export async function testMarketDataConnection(
+  connectionId: string,
+): Promise<MarketDataConnection> {
+  return postJson<MarketDataConnection>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/test`,
+  );
+}
+
+export async function enableMarketDataConnection(
+  connectionId: string,
+): Promise<MarketDataConnection> {
+  return postJson<MarketDataConnection>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/enable`,
+  );
+}
+
+export async function disableMarketDataConnection(
+  connectionId: string,
+): Promise<MarketDataConnection> {
+  return postJson<MarketDataConnection>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/disable`,
+  );
 }
 
 export async function createExperimentExecution(

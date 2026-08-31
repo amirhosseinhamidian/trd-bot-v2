@@ -9,6 +9,7 @@ export type DashboardCopy = {
     overview: string;
     experiments: string;
     datasets: string;
+    connections: string;
     walkForward: string;
     portfolios: string;
     candidates: string;
@@ -96,6 +97,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       overview: 'نمای کلی',
       experiments: 'آزمایش‌ها',
       datasets: 'مجموعه‌داده‌ها',
+      connections: 'اتصال‌های داده',
       walkForward: 'تحلیل Walk-forward',
       portfolios: 'گزارش‌های پرتفوی تاریخی',
       candidates: 'کاندیدهای پژوهشی',
@@ -182,6 +184,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       overview: 'Overview',
       experiments: 'Experiments',
       datasets: 'Datasets',
+      connections: 'Data connections',
       walkForward: 'Walk-forward analysis',
       portfolios: 'Historical portfolio reports',
       candidates: 'Research candidates',

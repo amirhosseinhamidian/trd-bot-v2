@@ -23,6 +23,13 @@ from trd_bot.db import (
     SqlAlchemyWalkForwardRunRegistry,
     get_database_session,
 )
+from trd_bot.db.market_data_connection_repositories import (
+    SqlAlchemyMarketDataConnectionRepository,
+)
+from trd_bot.market_data import (
+    MarketDataConnectionRepository,
+    MarketDataProviderCatalog,
+)
 from trd_bot.monitoring import (
     ArchitectureRecommendationRepository,
     MonitoringRuntimeStateRepository,
@@ -41,7 +48,22 @@ from trd_bot.research.walk_forward_executions import (
 )
 
 _acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
+_market_data_provider_catalog = MarketDataProviderCatalog()
 DatabaseSessionDependency = Annotated[Session, Depends(get_database_session)]
+
+
+def get_market_data_connection_repository(
+    session: DatabaseSessionDependency,
+) -> MarketDataConnectionRepository:
+    """Return the request-scoped market-data connection repository."""
+
+    return SqlAlchemyMarketDataConnectionRepository(session)
+
+
+def get_market_data_provider_catalog() -> MarketDataProviderCatalog:
+    """Return the explicit allowlist of read-only market-data providers."""
+
+    return _market_data_provider_catalog
 
 
 def get_dataset_repository(

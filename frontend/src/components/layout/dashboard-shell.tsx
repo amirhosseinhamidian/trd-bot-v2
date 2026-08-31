@@ -80,6 +80,12 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       enabled: true,
     },
     {
+      key: 'connections',
+      label: copy.navigation.connections,
+      href: `/${locale}/connections`,
+      enabled: true,
+    },
+    {
       key: 'monitoring',
       label: copy.navigation.monitoring,
       href: `/${locale}/monitoring`,

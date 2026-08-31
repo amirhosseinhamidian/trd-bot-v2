@@ -18,6 +18,67 @@ from sqlalchemy.orm import Mapped, mapped_column
 from trd_bot.db.base import DatabaseBase
 
 
+class MarketDataConnectionRow(DatabaseBase):
+    """Persistent configuration and health state for one read-only data connector."""
+
+    __tablename__ = "market_data_connections"
+
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('disabled', 'enabled')",
+            name="state_supported",
+        ),
+        CheckConstraint(
+            "health_status IN ('untested', 'healthy', 'unhealthy')",
+            name="health_status_supported",
+        ),
+        CheckConstraint(
+            "updated_at >= created_at",
+            name="updated_after_created",
+        ),
+        CheckConstraint(
+            "last_tested_at IS NULL OR "
+            "(last_tested_at >= created_at AND last_tested_at <= updated_at)",
+            name="last_tested_in_lifecycle",
+        ),
+        CheckConstraint(
+            "(health_status = 'untested' AND last_tested_at IS NULL AND last_error IS NULL) "
+            "OR (health_status = 'healthy' AND last_tested_at IS NOT NULL "
+            "AND last_error IS NULL) "
+            "OR (health_status = 'unhealthy' AND last_tested_at IS NOT NULL "
+            "AND last_error IS NOT NULL)",
+            name="health_details_consistent",
+        ),
+        CheckConstraint(
+            "state = 'disabled' OR health_status = 'healthy'",
+            name="enabled_requires_healthy",
+        ),
+        Index(
+            "ix_market_data_connections_provider_state",
+            "provider_id",
+            "state",
+        ),
+        Index(
+            "ix_market_data_connections_health_updated_at",
+            "health_status",
+            "updated_at",
+        ),
+    )
+
+    connection_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    provider_id: Mapped[str] = mapped_column(String(100), index=True)
+    display_name: Mapped[str] = mapped_column(String(100))
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    health_status: Mapped[str] = mapped_column(String(20), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    last_tested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class DatasetSnapshotRow(DatabaseBase):
     """Serialized immutable market-data snapshot metadata and payload."""
 

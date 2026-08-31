@@ -194,3 +194,39 @@ async def test_public_provider_rejects_unexpected_payload_shape() -> None:
             start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
             end_time=datetime(2026, 8, 21, 11, tzinfo=UTC),
         )
+
+
+@pytest.mark.asyncio
+async def test_public_provider_health_check_uses_public_ping_endpoint() -> None:
+    requested: list[tuple[str, float]] = []
+
+    async def fetch_json(url: str, timeout_seconds: float) -> object:
+        requested.append((url, timeout_seconds))
+        return {}
+
+    provider = BinancePublicMarketDataProvider(
+        timeout_seconds=3.0,
+        fetch_json=fetch_json,
+    )
+
+    await provider.test_connection()
+
+    assert requested == [
+        ("https://data-api.binance.vision/api/v3/ping", 3.0),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_public_provider_health_check_rejects_invalid_ping_payload() -> None:
+    async def fetch_json(url: str, timeout_seconds: float) -> object:
+        del url
+        del timeout_seconds
+        return []
+
+    provider = BinancePublicMarketDataProvider(fetch_json=fetch_json)
+
+    with pytest.raises(
+        MarketDataProviderResponseError,
+        match="health response must be an object",
+    ):
+        await provider.test_connection()

@@ -7,6 +7,7 @@ from trd_bot.api.routes.candidates import router as candidates_router
 from trd_bot.api.routes.datasets import router as datasets_router
 from trd_bot.api.routes.health import router as health_router
 from trd_bot.api.routes.journals import router as journals_router
+from trd_bot.api.routes.market_data_connections import router as market_data_connections_router
 from trd_bot.api.routes.monitoring import (
     router as monitoring_router,
 )
@@ -61,6 +62,11 @@ def create_app() -> FastAPI:
 
     application.include_router(
         datasets_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        market_data_connections_router,
         prefix="/api/v1",
     )
 
