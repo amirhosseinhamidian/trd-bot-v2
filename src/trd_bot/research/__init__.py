@@ -116,6 +116,16 @@ from trd_bot.research.historical_dataset_imports import (
     HistoricalDatasetImportService,
     HistoricalDatasetProviderCapabilityError,
 )
+from trd_bot.research.optimization import (
+    MAX_OPTIMIZATION_TRIALS,
+    OptimizationParameterGrid,
+    OptimizationPlan,
+    OptimizationPlanner,
+    OptimizationRankingEntry,
+    OptimizationRankingResult,
+    OptimizationScorer,
+    OptimizationTrial,
+)
 from trd_bot.research.performance_series import (
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
@@ -199,6 +209,7 @@ from trd_bot.research.walk_forward_runs import (
 
 __all__ = [
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
+    "MAX_OPTIMIZATION_TRIALS",
     "AcceptancePolicyPreset",
     "AcceptancePolicyPresetCatalog",
     "CandidateAction",
@@ -291,6 +302,13 @@ __all__ = [
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
+    "OptimizationParameterGrid",
+    "OptimizationPlan",
+    "OptimizationPlanner",
+    "OptimizationRankingEntry",
+    "OptimizationRankingResult",
+    "OptimizationScorer",
+    "OptimizationTrial",
     "PresetExperimentResearchReport",
     "RSIThresholdExecutionParameters",
     "ResearchActivityBuilder",
