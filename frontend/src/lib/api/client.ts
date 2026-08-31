@@ -36,10 +36,9 @@ import type {
   StrategySignal,
   CreatedResearchExperiment,
   StoredDatasetEMACrossoverRequest,
-  StoredDatasetRSIThresholdRequest,
   ExperimentExecution,
-  StoredDatasetEMACrossoverWalkForwardRequest,
-  StoredDatasetRSIThresholdWalkForwardRequest,
+  StoredDatasetStrategyExecutionRequest,
+  StoredDatasetStrategyWalkForwardExecutionRequest,
   WalkForwardExecution,
 } from '@/lib/api/types';
 
@@ -277,22 +276,10 @@ export async function getResearchStrategies(): Promise<ResearchStrategyMetadata[
   return getJson<ResearchStrategyMetadata[]>('/api/v1/research/strategies');
 }
 
-export async function createEmaCrossoverExperimentExecution(
-  request: StoredDatasetEMACrossoverRequest,
+export async function createExperimentExecution(
+  request: StoredDatasetStrategyExecutionRequest,
 ): Promise<ExperimentExecution> {
-  return postJson<ExperimentExecution>(
-    '/api/v1/research/experiment-executions/ema-crossover',
-    request,
-  );
-}
-
-export async function createRsiThresholdExperimentExecution(
-  request: StoredDatasetRSIThresholdRequest,
-): Promise<ExperimentExecution> {
-  return postJson<ExperimentExecution>(
-    '/api/v1/research/experiment-executions/rsi-threshold',
-    request,
-  );
+  return postJson<ExperimentExecution>('/api/v1/research/experiment-executions', request);
 }
 
 export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {
@@ -301,22 +288,10 @@ export async function getExperimentExecution(executionId: string): Promise<Exper
   );
 }
 
-export async function createEmaCrossoverWalkForwardExecution(
-  request: StoredDatasetEMACrossoverWalkForwardRequest,
+export async function createWalkForwardExecution(
+  request: StoredDatasetStrategyWalkForwardExecutionRequest,
 ): Promise<WalkForwardExecution> {
-  return postJson<WalkForwardExecution>(
-    '/api/v1/research/walk-forward-executions/ema-crossover',
-    request,
-  );
-}
-
-export async function createRsiThresholdWalkForwardExecution(
-  request: StoredDatasetRSIThresholdWalkForwardRequest,
-): Promise<WalkForwardExecution> {
-  return postJson<WalkForwardExecution>(
-    '/api/v1/research/walk-forward-executions/rsi-threshold',
-    request,
-  );
+  return postJson<WalkForwardExecution>('/api/v1/research/walk-forward-executions', request);
 }
 
 export async function getWalkForwardExecution(executionId: string): Promise<WalkForwardExecution> {

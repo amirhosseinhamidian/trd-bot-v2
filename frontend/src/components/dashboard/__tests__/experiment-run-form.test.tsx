@@ -17,7 +17,6 @@ const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
   getStrategies: vi.fn(),
   createExecution: vi.fn(),
-  createRsiExecution: vi.fn(),
   getExecution: vi.fn(),
 }));
 
@@ -33,8 +32,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
     ...actual,
     getDatasets: apiMocks.getDatasets,
     getResearchStrategies: apiMocks.getStrategies,
-    createEmaCrossoverExperimentExecution: apiMocks.createExecution,
-    createRsiThresholdExperimentExecution: apiMocks.createRsiExecution,
+    createExperimentExecution: apiMocks.createExecution,
     getExperimentExecution: apiMocks.getExecution,
   };
 });
@@ -235,7 +233,6 @@ describe('ExperimentRunForm', () => {
     apiMocks.getDatasets.mockReset();
     apiMocks.getStrategies.mockReset();
     apiMocks.createExecution.mockReset();
-    apiMocks.createRsiExecution.mockReset();
     apiMocks.getExecution.mockReset();
     navigationMocks.push.mockReset();
     navigationMocks.replace.mockReset();
@@ -275,6 +272,8 @@ describe('ExperimentRunForm', () => {
 
     expect(apiMocks.createExecution).toHaveBeenCalledWith({
       dataset_id: 'dataset-btc-usdt-1h',
+      strategy_name: 'ema-crossover',
+      strategy_version: '1.0.0',
       fast_period: 9,
       slow_period: 21,
       horizon_candles: 1,
@@ -489,7 +488,7 @@ describe('ExperimentRunForm', () => {
   it('switches to RSI fields and queues an RSI threshold execution', async () => {
     const user = userEvent.setup();
 
-    apiMocks.createRsiExecution.mockResolvedValue(buildRsiExecution('queued', 0));
+    apiMocks.createExecution.mockResolvedValue(buildRsiExecution('queued', 0));
     apiMocks.getExecution.mockResolvedValue(
       buildRsiExecution('succeeded', 100, 'experiment-rsi-btc'),
     );
@@ -508,8 +507,10 @@ describe('ExperimentRunForm', () => {
     await user.click(screen.getByRole('button', { name: 'Run historical backtest' }));
 
     await waitFor(() => {
-      expect(apiMocks.createRsiExecution).toHaveBeenCalledWith({
+      expect(apiMocks.createExecution).toHaveBeenCalledWith({
         dataset_id: dataset.dataset_id,
+        strategy_name: 'rsi-threshold',
+        strategy_version: '1.0.0',
         period: 14,
         oversold_threshold: '30',
         overbought_threshold: '70',
@@ -520,8 +521,6 @@ describe('ExperimentRunForm', () => {
         slippage_rate: '0.0005',
       });
     });
-
-    expect(apiMocks.createExecution).not.toHaveBeenCalled();
 
     await waitFor(() => {
       expect(navigationMocks.push).toHaveBeenCalledWith('/en/experiments/experiment-rsi-btc');
@@ -623,6 +622,8 @@ describe('ExperimentRunForm', () => {
     await waitFor(() => {
       expect(apiMocks.createExecution).toHaveBeenCalledWith({
         dataset_id: 'dataset-btc-usdt-1h',
+        strategy_name: 'ema-crossover',
+        strategy_version: '1.0.0',
         fast_period: 12,
         slow_period: 34,
         horizon_candles: 3,

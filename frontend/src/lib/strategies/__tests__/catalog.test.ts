@@ -90,6 +90,10 @@ describe('strategy catalog helpers', () => {
     const result = getExecutableResearchStrategies([
       ...catalog,
       {
+        ...catalog[0],
+        version: '2.0.0',
+      },
+      {
         name: 'future-strategy',
         version: '2.0.0',
         display_name: 'Future Strategy',
@@ -98,7 +102,10 @@ describe('strategy catalog helpers', () => {
       },
     ]);
 
-    expect(result.map((strategy) => strategy.name)).toEqual(['ema-crossover', 'rsi-threshold']);
+    expect(result.map((strategy) => `${strategy.name}@${strategy.version}`)).toEqual([
+      'ema-crossover@1.0.0',
+      'rsi-threshold@1.0.0',
+    ]);
     expect(isExecutableResearchStrategyName('future-strategy')).toBe(false);
   });
 

@@ -1,18 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  API_BASE_URL,
-  createEmaCrossoverExperimentExecution,
-  createRsiThresholdExperimentExecution,
-} from '@/lib/api/client';
+import { API_BASE_URL, createExperimentExecution } from '@/lib/api/client';
 import type {
   ExperimentExecution,
-  StoredDatasetEMACrossoverRequest,
-  StoredDatasetRSIThresholdRequest,
+  StoredDatasetEMACrossoverExecutionRequest,
+  StoredDatasetRSIThresholdExecutionRequest,
 } from '@/lib/api/types';
 
-const emaRequest: StoredDatasetEMACrossoverRequest = {
+const emaRequest: StoredDatasetEMACrossoverExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'ema-crossover',
+  strategy_version: '1.0.0',
   fast_period: 9,
   slow_period: 21,
   horizon_candles: 1,
@@ -22,8 +20,10 @@ const emaRequest: StoredDatasetEMACrossoverRequest = {
   slippage_rate: '0.0005',
 };
 
-const rsiRequest: StoredDatasetRSIThresholdRequest = {
+const rsiRequest: StoredDatasetRSIThresholdExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'rsi-threshold',
+  strategy_version: '1.0.0',
   period: 14,
   oversold_threshold: '30',
   overbought_threshold: '70',
@@ -91,10 +91,10 @@ describe('experiment execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createEmaCrossoverExperimentExecution(emaRequest)).resolves.toEqual(execution);
+    await expect(createExperimentExecution(emaRequest)).resolves.toEqual(execution);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      `${API_BASE_URL}/api/v1/research/experiment-executions/ema-crossover`,
+      `${API_BASE_URL}/api/v1/research/experiment-executions`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(emaRequest),
@@ -116,10 +116,10 @@ describe('experiment execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createRsiThresholdExperimentExecution(rsiRequest)).resolves.toEqual(execution);
+    await expect(createExperimentExecution(rsiRequest)).resolves.toEqual(execution);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      `${API_BASE_URL}/api/v1/research/experiment-executions/rsi-threshold`,
+      `${API_BASE_URL}/api/v1/research/experiment-executions`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(rsiRequest),

@@ -2,18 +2,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   API_BASE_URL,
-  createEmaCrossoverWalkForwardExecution,
-  createRsiThresholdWalkForwardExecution,
+  createWalkForwardExecution,
   getWalkForwardExecution,
 } from '@/lib/api/client';
 import type {
-  StoredDatasetEMACrossoverWalkForwardRequest,
-  StoredDatasetRSIThresholdWalkForwardRequest,
+  StoredDatasetEMACrossoverWalkForwardExecutionRequest,
+  StoredDatasetRSIThresholdWalkForwardExecutionRequest,
   WalkForwardExecution,
 } from '@/lib/api/types';
 
-const request: StoredDatasetEMACrossoverWalkForwardRequest = {
+const request: StoredDatasetEMACrossoverWalkForwardExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'ema-crossover',
+  strategy_version: '1.0.0',
   fast_period: 9,
   slow_period: 21,
   horizon_candles: 1,
@@ -62,8 +63,10 @@ const execution: WalkForwardExecution = {
   error_message: null,
 };
 
-const rsiRequest: StoredDatasetRSIThresholdWalkForwardRequest = {
+const rsiRequest: StoredDatasetRSIThresholdWalkForwardExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'rsi-threshold',
+  strategy_version: '1.0.0',
   period: 14,
   oversold_threshold: '30',
   overbought_threshold: '70',
@@ -111,13 +114,13 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createEmaCrossoverWalkForwardExecution(request)).resolves.toEqual(execution);
+    await expect(createWalkForwardExecution(request)).resolves.toEqual(execution);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 
-    expect(url).toBe(`${API_BASE_URL}/api/v1/research/walk-forward-executions/ema-crossover`);
+    expect(url).toBe(`${API_BASE_URL}/api/v1/research/walk-forward-executions`);
 
     expect(options).toEqual(
       expect.objectContaining({
@@ -147,10 +150,10 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createRsiThresholdWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiExecution);
+    await expect(createWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiExecution);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      `${API_BASE_URL}/api/v1/research/walk-forward-executions/rsi-threshold`,
+      `${API_BASE_URL}/api/v1/research/walk-forward-executions`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(rsiRequest),

@@ -16,6 +16,11 @@ export type StrategyParameterInputProps = {
 
 const EXECUTABLE_STRATEGY_NAMES = new Set<ResearchStrategyName>(['ema-crossover', 'rsi-threshold']);
 
+const EXECUTABLE_STRATEGY_VERSIONS: Record<ResearchStrategyName, string> = {
+  'ema-crossover': '1.0.0',
+  'rsi-threshold': '1.0.0',
+};
+
 export function isExecutableResearchStrategyName(name: string): name is ResearchStrategyName {
   return EXECUTABLE_STRATEGY_NAMES.has(name as ResearchStrategyName);
 }
@@ -23,9 +28,13 @@ export function isExecutableResearchStrategyName(name: string): name is Research
 export function getExecutableResearchStrategies(
   catalog: ResearchStrategyMetadata[],
 ): ExecutableResearchStrategyMetadata[] {
-  return catalog.filter((strategy): strategy is ExecutableResearchStrategyMetadata =>
-    isExecutableResearchStrategyName(strategy.name),
-  );
+  return catalog.filter((strategy): strategy is ExecutableResearchStrategyMetadata => {
+    if (!isExecutableResearchStrategyName(strategy.name)) {
+      return false;
+    }
+
+    return EXECUTABLE_STRATEGY_VERSIONS[strategy.name] === strategy.version;
+  });
 }
 
 export function findStrategyMetadata(

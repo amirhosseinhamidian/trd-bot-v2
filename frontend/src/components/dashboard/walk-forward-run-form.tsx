@@ -21,8 +21,7 @@ import {
 } from '@/components/ui';
 import {
   ApiRequestError,
-  createEmaCrossoverWalkForwardExecution,
-  createRsiThresholdWalkForwardExecution,
+  createWalkForwardExecution,
   getDatasets,
   getResearchStrategies,
   getWalkForwardExecution,
@@ -31,8 +30,7 @@ import type {
   DatasetSummary,
   ResearchStrategyMetadata,
   ResearchStrategyName,
-  StoredDatasetEMACrossoverWalkForwardRequest,
-  StoredDatasetRSIThresholdWalkForwardRequest,
+  StoredDatasetStrategyWalkForwardExecutionRequest,
   WalkForwardExecution,
   WalkForwardMode,
 } from '@/lib/api/types';
@@ -100,15 +98,7 @@ const INITIAL_VALUES: FormValues = {
   slippageRate: '0.0005',
 };
 
-type BuiltWalkForwardRequest =
-  | {
-      strategyName: 'ema-crossover';
-      request: StoredDatasetEMACrossoverWalkForwardRequest;
-    }
-  | {
-      strategyName: 'rsi-threshold';
-      request: StoredDatasetRSIThresholdWalkForwardRequest;
-    };
+type BuiltWalkForwardRequest = StoredDatasetStrategyWalkForwardExecutionRequest;
 
 const POLLING_INTERVAL_MS = 1000;
 
@@ -476,12 +466,11 @@ export default function WalkForwardRunForm({
       }
 
       return {
-        strategyName: 'ema-crossover',
-        request: {
-          ...sharedRequest,
-          fast_period: fastPeriod,
-          slow_period: slowPeriod,
-        },
+        ...sharedRequest,
+        strategy_name: 'ema-crossover',
+        strategy_version: '1.0.0',
+        fast_period: fastPeriod,
+        slow_period: slowPeriod,
       };
     }
 
@@ -520,13 +509,12 @@ export default function WalkForwardRunForm({
     }
 
     return {
-      strategyName: 'rsi-threshold',
-      request: {
-        ...sharedRequest,
-        period: rsiPeriod,
-        oversold_threshold: values.oversoldThreshold.trim(),
-        overbought_threshold: values.overboughtThreshold.trim(),
-      },
+      ...sharedRequest,
+      strategy_name: 'rsi-threshold',
+      strategy_version: '1.0.0',
+      period: rsiPeriod,
+      oversold_threshold: values.oversoldThreshold.trim(),
+      overbought_threshold: values.overboughtThreshold.trim(),
     };
   }
 
@@ -618,10 +606,7 @@ export default function WalkForwardRunForm({
     setCreatedRunId(null);
 
     try {
-      const queuedExecution =
-        builtRequest.strategyName === 'ema-crossover'
-          ? await createEmaCrossoverWalkForwardExecution(builtRequest.request)
-          : await createRsiThresholdWalkForwardExecution(builtRequest.request);
+      const queuedExecution = await createWalkForwardExecution(builtRequest);
 
       setExecution(queuedExecution);
       replace(
