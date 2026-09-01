@@ -40,16 +40,14 @@ from trd_bot.monitoring import (
     SystemMetricRepository,
 )
 from trd_bot.paper import SimulatedPortfolioRepository
-from trd_bot.research import (
-    AcceptancePolicyPresetCatalog,
-    DatasetRepository,
-    ExperimentExecutionRepository,
-    ExperimentRegistry,
-    WalkForwardRunRegistry,
-)
-from trd_bot.research.walk_forward_executions import (
-    WalkForwardExecutionRepository,
-)
+from trd_bot.research.datasets import DatasetRepository
+from trd_bot.research.experiment_executions import ExperimentExecutionRepository
+from trd_bot.research.experiments import ExperimentRegistry
+from trd_bot.research.optimization_executions import OptimizationExecutionRepository
+from trd_bot.research.optimization_runner import OptimizationRunner
+from trd_bot.research.policy_presets import AcceptancePolicyPresetCatalog
+from trd_bot.research.walk_forward_executions import WalkForwardExecutionRepository
+from trd_bot.research.walk_forward_runs import WalkForwardRunRegistry
 
 _acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
 _market_data_provider_catalog = MarketDataProviderCatalog()
@@ -182,3 +180,20 @@ def get_walk_forward_execution_task() -> WalkForwardExecutionTask:
     """Return the production walk-forward background task."""
 
     return run_walk_forward_execution_job
+
+
+def get_optimization_execution_repository() -> "OptimizationExecutionRepository":
+    """Provide optimization execution repository dependency."""
+    from trd_bot.db.optimization_execution_repositories import (
+        SqlAlchemyOptimizationExecutionRepository,
+    )
+    from trd_bot.db.session import get_database_session
+
+    return SqlAlchemyOptimizationExecutionRepository(next(get_database_session()))
+
+
+def get_optimization_runner() -> "OptimizationRunner":
+    """Provide optimization runner dependency."""
+    from trd_bot.research.optimization_runner import OptimizationRunner
+
+    return OptimizationRunner(get_optimization_execution_repository())

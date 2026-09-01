@@ -183,6 +183,75 @@ class DatasetSnapshotRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class OptimizationExecutionRow(DatabaseBase):
+    """Persistent lifecycle state of one historical optimization execution."""
+
+    __tablename__ = "optimization_executions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'succeeded', 'failed')",
+            name="optimization_execution_status_supported",
+        ),
+        CheckConstraint(
+            "total_trials > 0",
+            name="optimization_execution_total_trials_positive",
+        ),
+        CheckConstraint(
+            "completed_trials >= 0 AND completed_trials <= total_trials",
+            name="optimization_execution_progress_range",
+        ),
+        CheckConstraint(
+            "updated_at >= created_at",
+            name="optimization_execution_updated_after_created",
+        ),
+        CheckConstraint(
+            "started_at IS NULL OR started_at >= created_at",
+            name="optimization_execution_started_after_created",
+        ),
+        CheckConstraint(
+            "finished_at IS NULL OR "
+            "(started_at IS NOT NULL AND finished_at >= started_at)",
+            name="optimization_execution_finished_after_started",
+        ),
+        Index(
+            "ix_optimization_executions_status_created_at",
+            "status",
+            "created_at",
+        ),
+        Index(
+            "ix_optimization_executions_dataset_created_at",
+            "dataset_id",
+            "created_at",
+        ),
+    )
+
+    execution_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    dataset_id: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_name: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_version: Mapped[str] = mapped_column(String(30))
+    objective: Mapped[str] = mapped_column(String(50))
+    total_trials: Mapped[int] = mapped_column(Integer)
+    completed_trials: Mapped[int] = mapped_column(Integer)
+    best_experiment_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class ResearchExperimentRow(DatabaseBase):
     """Serialized result of one standard offline research experiment."""
 

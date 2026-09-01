@@ -126,6 +126,11 @@ from trd_bot.research.optimization import (
     OptimizationScorer,
     OptimizationTrial,
 )
+from trd_bot.research.optimization_executions import (
+    OptimizationExecution,
+    OptimizationExecutionState,
+    OptimizationExecutionStateMachine,
+)
 from trd_bot.research.performance_series import (
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
@@ -302,6 +307,9 @@ __all__ = [
     "InMemoryExperimentRegistry",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
+    "OptimizationExecution",
+    "OptimizationExecutionState",
+    "OptimizationExecutionStateMachine",
     "OptimizationParameterGrid",
     "OptimizationPlan",
     "OptimizationPlanner",
