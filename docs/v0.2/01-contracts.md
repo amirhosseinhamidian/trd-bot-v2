@@ -1,0 +1,40 @@
+# TB2-001 — قراردادهای مبنا و تصمیم‌های طراحی
+
+این سند قراردادهای **قابل اتکا در HEAD** و پیشنهادهای لازم برای گام‌های بعدی را جدا می‌کند. «هدف» در جدول‌ها قرارداد پیاده‌شده نیست و به معنی نهایی‌شدن طراحی API، schema یا انتخاب فناوری نیست. هر تصمیمی که نیاز به تغییر API/داده داشته باشد در پچ مربوط با تست و راه مهاجرت قطعی می‌شود.
+
+## مرز محصول و سازگاری
+
+| قرارداد | وضع فعلی/منبع | قاعده برای مراحل بعدی |
+| --- | --- | --- |
+| دامنه | `src/trd_bot/main.py` برنامه را «historical research and paper-analysis» معرفی می‌کند؛ APIهای فعلی در `/api/v1` هستند. | API سفارش‌گذاری یا ارسال سفارش واقعی، credential معامله و live trading به v0.2 اضافه نشود؛ هر قابلیت جدید فقط تحقیق و شبیه‌سازی است. |
+| بازتولیدپذیری | `DatasetSnapshot` frozen است و checksum/provenance دارد؛ Experiment به Dataset و نام/نسخهٔ Strategy ارجاع می‌دهد. | هر نتیجه به همان snapshot و strategy version بماند؛ refresh داده و تغییر منطق استراتژی نباید نتیجهٔ قدیمی را بازتفسیر کند. |
+| API و مهاجرت | `/api/v1/research/...` و `/api/v1/market-data/...` فعال هستند؛ migrationهای موجود تا `20260831_0014_optimization_executions.py` دیده می‌شوند. | مسیرهای موجود بدون ضرورت نشکنند؛ schema فقط با migration قابل اجرا از DB خالی و بدون overwrite رکوردهای قبلی توسعه یابد. |
+| خطاها | APIهای موجود برای بعضی موارد با HTTPException و `detail` متن خطا برمی‌گردانند. | وقتی قرارداد جدید لازم شد، کد خطای پایدار و پیام قابل فهم تعریف شود؛ `detail`/status موجود بدون سنجش clientهای فعلی یک‌باره عوض نشود. |
+| اسرار | `MarketDataProviderCatalog` فعلاً فقط `binance-public` با `requires_credentials=False` دارد. | اتصال عمومی secret درخواست نکند؛ راه credential احتمالی بعدی باید backend-managed باشد و کلید در UI، log، URL یا response افشا نشود؛ بازار/معامله خارج از دامنه است. |
+
+## قرارداد ورود داده و مدل تحقیق
+
+| حوزه | قرارداد قابل مشاهده | هدف و محل تصمیم تکمیلی |
+| --- | --- | --- |
+| کندل | `OHLCVCandle` در `src/trd_bot/domain/market_data.py`: source، pair، timeframe (`15m/1h/4h/1d`)، زمان aware که UTC می‌شود، open/high/low/close/volume به صورت Decimal، is_closed؛ بازار فعلی spot. | منبع API یا فایل پس از parse باید به همین schema واحد برسد؛ formatهای جدید مدل پژوهش را دور نزنند (TB2-007). |
+| provider | interface پیاده‌شده `test_connection()` و `get_candles(pair,timeframe,start,end,limit)` است؛ `MarketDataProviderCatalog` metadata می‌دهد. | قابلیت‌های `list_markets`/`list_timeframes` و `normalize_response` که پروپوزال نام برده، بعد از تطبیق adapter واقعی تصمیم‌گیری شوند؛ الزام افزودن provider دوم نیست (TB2-003). |
+| بازه | در provider حافظه‌ای انتخاب با `start_time <= open_time < end_time` انجام می‌شود؛ request دارای زمان aware است. | برای همهٔ مسیرها semantics بازهٔ نیمه‌باز و تکلیف کندل آخر/بازهٔ باز مبنا شود یا در TB2-004 با شاهد مخالف بازنگری شود؛ preview و import باید دربارهٔ coverage یک معنی بدهند. |
+| snapshot | `DatasetSnapshot` دارای `dataset_id`, `schema_version`, checksum, quality_report, provenance, candles است؛ `MarketDataImportRecord` تاریخچهٔ درخواست را نگه می‌دارد. | snapshot immutable بماند؛ باید تعیین شود اشتراک checksum یکسان بین دو Connection چگونه با provenance هر import و version lineage سازگار می‌شود (TB2-005). |
+| کیفیت | `DataQualityReport` فعلاً تعداد کندل/issueها و `is_valid` دارد. | پوشش requested range، score قابل تعریف و مستندسازی، علت نقص، قرارداد پذیرش فایل و گزارش persisted در TB2-004/006 کامل شوند؛ فرمول امتیاز فعلاً عمداً تعیین نشده است. |
+| strategy | `build_default_strategy_registry()` سه strategy با metadata و نسخهٔ `1.0.0` می‌سازد؛ lookup کاتالوگ در `/api/v1/research/strategies` است. | قرارداد عدم تغییر رفتار در همان نسخه، schema پارامتر و نگاشت history به StrategyVersion در TB2-010/011 تثبیت شود؛ نوع نگهداری registry هنوز الزاماً DB نیست. |
+| optimization | `OptimizationPlan` bounded و `OptimizationExecution` با queued/running/succeeded/failed موجودند؛ scorer انتخاب objective تکی دارد. | شمار/نتیجهٔ هر trial، best_experiment_id، score breakdown و folds باید به Experiment/Dataset/StrategyVersion وصل شود؛ workflow پچ‌های TB2-012 تا TB2-015 تعریف شود. |
+| jobs | Experiment و Walk-Forward در FastAPI `BackgroundTasks` اجرا می‌شوند. | قرارداد مشترک durable با progress/retry/idempotency/cancel و پیوند به نتیجه در TB2-008 تعیین شود؛ queue/worker محصول یک انتخاب عملیاتی است، نه تصمیم پذیرفته‌شدهٔ TB2-001. |
+
+## فهرست تصمیم‌ها؛ پیشنهاد اولیه، هنوز قرارداد اجرایی نیست
+
+| ADR | سؤال و پیشنهاد برای بررسی | تکلیف نهایی |
+| --- | --- | --- |
+| ADR-01 | در import تاریخی، preview به snapshot آمادهٔ ثبت با checksum گره بخورد یا هنگام commit دوباره hash/coverage بررسی شود؟ پیشنهاد: یک هویت پایدارِ preview و جلوگیری از تأیید دادهٔ متفاوت. | TB2-004 |
+| ADR-02 | checksum برابر از Connectionهای مختلف: snapshot محتوایی مشترک + رکورد مجزای provenance هر import، یا snapshot مستقل؟ پیشنهاد: محتوای مشترک مجاز بماند ولی provenance بازسازی‌پذیر هر import حفظ شود. | TB2-005 |
+| ADR-03 | سیاست سر/ته ناقص، فایل با gap و کیفیت کم: reject یا قبول با warning و score؟ پیشنهاد: نقص بازهٔ ادعاشده نباید بدون هشدار به‌عنوان دادهٔ کامل پذیرفته شود؛ آستانه/فرمول باید با fixture تعیین شود. | TB2-004/006 |
+| ADR-04 | تضمین نسخهٔ رفتار Strategy: افزایش version با هر تغییر سیگنال، hash نسخه یا هر دو؟ پیشنهاد: نسخهٔ منتشرشده immutable با تست golden؛ راه migration برای experimentهای قدیمی ثبت شود. | TB2-010 |
+| ADR-05 | پشتهٔ job/worker چگونه با PostgreSQL و استقرار موجود بدون هزینهٔ غیرضروری سازگار شود؟ پیشنهاد: صف persistent با lease/recovery و محدودیت هم‌زمانی؛ انتخاب فناوری پس از سنجش محیط استقرار. | TB2-008 |
+| ADR-06 | تعریف robustness، وزن‌ها، حداقل sample، دوره‌ها، train/test split و tie-break چیست؟ پیشنهاد: ابتدا golden مثال overfit و fold بی‌معامله بسازیم، سپس score نسخه‌دار نهایی شود. | TB2-014 |
+| ADR-07 | error contract جدید چگونه در کنار endpointهای موجود سازگار می‌ماند؟ پیشنهاد: کد ماشین‌خوان برای مسیر جدید همراه HTTP status، بدون شکستن client فعلی. | TB2-002/012 |
+
+**معیار خروج TB2-001:** قرارداد موجود از هدف پیشنهادی تفکیک شده، هر ADR صاحب مرحله و سناریوی پذیرش دارد، و تمام Definition of Doneها در ماتریس همراه شاهد کد/تست و گام بعدی ثبت شده‌اند. این مرحله هیچ ADR فنیِ حل‌نشده را «تأیید شده» اعلام نمی‌کند.
