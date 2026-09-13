@@ -125,7 +125,8 @@ npm run build
 ```
 
 The GitHub Actions workflow runs the same backend, PostgreSQL, and frontend
-quality gates for pushes and pull requests targeting `main`.
+quality gates for pushes to `main`, `feature/**`, `fix/**`, and `bugfix/**`, as
+well as pull requests targeting `main`.
 
 ## MVP release verification
 
