@@ -167,9 +167,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "walk_forward_runs",
         }.issubset(table_names)
 
-        import_columns = {
-            column["name"] for column in inspector.get_columns("market_data_imports")
-        }
+        import_columns = {column["name"] for column in inspector.get_columns("market_data_imports")}
         assert {
             "operation",
             "source_dataset_id",

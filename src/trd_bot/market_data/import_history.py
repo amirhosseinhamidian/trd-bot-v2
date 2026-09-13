@@ -114,9 +114,7 @@ class MarketDataImportRecord(BaseModel):
             ):
                 raise ValueError("initial import cannot contain refresh lineage metadata")
 
-            has_version_lineage = (
-                self.root_import_id is not None or self.version_number is not None
-            )
+            has_version_lineage = self.root_import_id is not None or self.version_number is not None
             if has_version_lineage:
                 if self.status is not MarketDataImportStatus.SUCCEEDED:
                     raise ValueError("failed initial import cannot define a dataset version")

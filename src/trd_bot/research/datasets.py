@@ -474,8 +474,7 @@ class DatasetBuilder:
             start_time=candles[0].open_time,
             end_time=candles[-1].close_time,
             created_at=(created_at or datetime.now(UTC)).astimezone(UTC),
-            provenance=provenance
-            or DatasetProvenance(kind=DatasetProvenanceKind.GENERATED),
+            provenance=provenance or DatasetProvenance(kind=DatasetProvenanceKind.GENERATED),
             quality_report=report,
             candle_count=len(candles),
             checksum=checksum,

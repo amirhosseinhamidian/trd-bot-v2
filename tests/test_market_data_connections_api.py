@@ -121,21 +121,15 @@ def test_api_connection_lifecycle_requires_successful_health_check(
     assert created["state"] == "disabled"
     assert created["health_status"] == "untested"
 
-    enable_before_test = client.post(
-        f"/api/v1/market-data/connections/{connection_id}/enable"
-    )
+    enable_before_test = client.post(f"/api/v1/market-data/connections/{connection_id}/enable")
     assert enable_before_test.status_code == 409
 
-    test_response = client.post(
-        f"/api/v1/market-data/connections/{connection_id}/test"
-    )
+    test_response = client.post(f"/api/v1/market-data/connections/{connection_id}/test")
     assert test_response.status_code == 200
     assert test_response.json()["health_status"] == "healthy"
     assert test_response.json()["last_tested_at"] is not None
 
-    enable_response = client.post(
-        f"/api/v1/market-data/connections/{connection_id}/enable"
-    )
+    enable_response = client.post(f"/api/v1/market-data/connections/{connection_id}/enable")
     assert enable_response.status_code == 200
     assert enable_response.json()["state"] == "enabled"
 
@@ -148,9 +142,7 @@ def test_api_connection_lifecycle_requires_successful_health_check(
     assert get_response.status_code == 200
     assert get_response.json()["state"] == "enabled"
 
-    disable_response = client.post(
-        f"/api/v1/market-data/connections/{connection_id}/disable"
-    )
+    disable_response = client.post(f"/api/v1/market-data/connections/{connection_id}/disable")
     assert disable_response.status_code == 200
     assert disable_response.json()["state"] == "disabled"
     assert disable_response.json()["health_status"] == "healthy"

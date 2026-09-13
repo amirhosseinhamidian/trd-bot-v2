@@ -52,9 +52,7 @@ class SqlAlchemyOptimizationExecutionRepository:
             self._session.commit()
         except IntegrityError as error:
             self._session.rollback()
-            raise ValueError(
-                "optimization execution could not be persisted"
-            ) from error
+            raise ValueError("optimization execution could not be persisted") from error
 
         return execution
 
@@ -65,9 +63,7 @@ class SqlAlchemyOptimizationExecutionRepository:
         return OptimizationExecution.model_validate_json(row.payload_json)
 
     def count(self) -> int:
-        value = self._session.scalar(
-            select(func.count()).select_from(OptimizationExecutionRow)
-        )
+        value = self._session.scalar(select(func.count()).select_from(OptimizationExecutionRow))
         return int(value or 0)
 
     def list_page(
@@ -91,10 +87,7 @@ class SqlAlchemyOptimizationExecutionRepository:
             .limit(limit)
         ).all()
 
-        return tuple(
-            OptimizationExecution.model_validate_json(row.payload_json)
-            for row in rows
-        )
+        return tuple(OptimizationExecution.model_validate_json(row.payload_json) for row in rows)
 
 
 def assert_optimization_repository_contract(

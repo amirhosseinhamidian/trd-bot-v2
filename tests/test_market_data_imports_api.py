@@ -210,15 +210,11 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert root_record["operation"] == "import"
 
     import_id = history_payload["items"][0]["import_id"]
-    detail = client.get(
-        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{import_id}"
-    )
+    detail = client.get(f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{import_id}")
     assert detail.status_code == 200
     assert detail.json()["import_id"] == import_id
 
-    dataset_detail = client.get(
-        f"/api/v1/research/datasets/{first.json()['dataset_id']}/summary"
-    )
+    dataset_detail = client.get(f"/api/v1/research/datasets/{first.json()['dataset_id']}/summary")
     assert dataset_detail.status_code == 200
     dataset_payload = dataset_detail.json()
     assert dataset_payload["schema_version"] == 2
@@ -314,9 +310,7 @@ def test_refresh_with_changed_content_creates_new_immutable_snapshot(
     assert payload["dataset_id"] != root["dataset_id"]
     assert datasets.count() == 2
 
-    dataset_detail = client.get(
-        f"/api/v1/research/datasets/{payload['dataset_id']}/summary"
-    )
+    dataset_detail = client.get(f"/api/v1/research/datasets/{payload['dataset_id']}/summary")
     assert dataset_detail.status_code == 200
     assert dataset_detail.json()["provenance"]["import_id"] == payload["import_id"]
 
@@ -424,7 +418,6 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
     assert imported.json()["detail"]["issues"][0]["code"] == "missing_candle"
     assert datasets.count() == 0
 
-
     history_response = client.get(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
     )
@@ -452,7 +445,6 @@ def test_import_maps_provider_failure_to_bad_gateway(
     assert response.status_code == 502
     assert response.json()["detail"] == "synthetic historical fetch failed"
 
-
     history_response = client.get(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
     )
@@ -477,9 +469,7 @@ def test_import_rejects_unsupported_timeframe_before_fetch(
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == (
-        "timeframe is not supported by connection provider"
-    )
+    assert response.json()["detail"] == ("timeframe is not supported by connection provider")
 
 
 def test_import_returns_not_found_for_unknown_connection(

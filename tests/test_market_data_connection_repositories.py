@@ -87,8 +87,6 @@ def test_sqlalchemy_connection_repository_lists_newest_first() -> None:
             page = repository.list_page(limit=1, offset=0)
 
             assert repository.count() == 2
-            assert [item.connection_id for item in page] == [
-                "market-data-connection-newer"
-            ]
+            assert [item.connection_id for item in page] == ["market-data-connection-newer"]
     finally:
         engine.dispose()

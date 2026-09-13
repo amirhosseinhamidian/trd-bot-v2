@@ -260,8 +260,7 @@ class OptimizationExecutionStateMachine:
     ) -> None:
         if execution.status is not expected:
             raise ValueError(
-                f"optimization execution must be {expected.value} "
-                f"but is {execution.status.value}"
+                f"optimization execution must be {expected.value} but is {execution.status.value}"
             )
 
 

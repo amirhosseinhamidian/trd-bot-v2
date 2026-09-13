@@ -196,8 +196,7 @@ class MarketDataProviderCatalog:
 
     def list_metadata(self) -> tuple[MarketDataProviderMetadata, ...]:
         return tuple(
-            self._metadata_by_id[provider_id]
-            for provider_id in sorted(self._metadata_by_id)
+            self._metadata_by_id[provider_id] for provider_id in sorted(self._metadata_by_id)
         )
 
     def get_metadata(self, provider_id: str) -> MarketDataProviderMetadata | None:

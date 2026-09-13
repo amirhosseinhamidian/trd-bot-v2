@@ -210,8 +210,7 @@ class OptimizationExecutionRow(DatabaseBase):
             name="optimization_execution_started_after_created",
         ),
         CheckConstraint(
-            "finished_at IS NULL OR "
-            "(started_at IS NOT NULL AND finished_at >= started_at)",
+            "finished_at IS NULL OR (started_at IS NOT NULL AND finished_at >= started_at)",
             name="optimization_execution_finished_after_started",
         ),
         Index(

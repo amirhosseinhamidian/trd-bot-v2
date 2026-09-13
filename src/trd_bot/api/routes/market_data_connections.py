@@ -106,8 +106,7 @@ def list_market_data_providers(
     """List provider implementations that this research server can configure."""
 
     return tuple(
-        MarketDataProviderSummary.from_metadata(metadata)
-        for metadata in providers.list_metadata()
+        MarketDataProviderSummary.from_metadata(metadata) for metadata in providers.list_metadata()
     )
 
 

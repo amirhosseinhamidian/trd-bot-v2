@@ -311,7 +311,6 @@ def build_default_strategy_registry() -> StrategyRegistry:
         )
     )
 
-
     registry.register(
         StrategyDefinition(
             name="sma-crossover",

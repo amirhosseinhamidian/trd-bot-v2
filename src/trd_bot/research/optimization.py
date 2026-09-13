@@ -242,9 +242,7 @@ class OptimizationPlanner:
 
         canonical = tuple(value for value, _ in parsed)
         if len(canonical) != len(set(canonical)):
-            raise ValueError(
-                f"optimization parameter {parameter.name!r} contains duplicate values"
-            )
+            raise ValueError(f"optimization parameter {parameter.name!r} contains duplicate values")
 
         return parsed
 
@@ -300,23 +298,15 @@ class OptimizationPlanner:
     ) -> None:
         if parameter.minimum is not None:
             minimum = Decimal(parameter.minimum)
-            invalid_minimum = (
-                value <= minimum if parameter.minimum_exclusive else value < minimum
-            )
+            invalid_minimum = value <= minimum if parameter.minimum_exclusive else value < minimum
             if invalid_minimum:
-                raise ValueError(
-                    f"optimization parameter {parameter.name!r} is below its minimum"
-                )
+                raise ValueError(f"optimization parameter {parameter.name!r} is below its minimum")
 
         if parameter.maximum is not None:
             maximum = Decimal(parameter.maximum)
-            invalid_maximum = (
-                value >= maximum if parameter.maximum_exclusive else value > maximum
-            )
+            invalid_maximum = value >= maximum if parameter.maximum_exclusive else value > maximum
             if invalid_maximum:
-                raise ValueError(
-                    f"optimization parameter {parameter.name!r} is above its maximum"
-                )
+                raise ValueError(f"optimization parameter {parameter.name!r} is above its maximum")
 
 
 class OptimizationRankingEntry(BaseModel):

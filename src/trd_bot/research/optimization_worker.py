@@ -9,8 +9,7 @@ class TrialExecutor(Protocol):
         self,
         execution: OptimizationExecution,
         parameters: dict[str, str],
-    ) -> str:
-        ...
+    ) -> str: ...
 
 
 @dataclass(frozen=True)
