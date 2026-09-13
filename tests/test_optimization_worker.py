@@ -1,20 +1,29 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 
+from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.research.comparisons import ExperimentComparisonMetric
 from trd_bot.research.optimization import (
     OptimizationParameterGrid,
     OptimizationPlanner,
 )
-from trd_bot.research.optimization_executions import OptimizationExecutionBuilder
+from trd_bot.research.optimization_executions import (
+    OptimizationExecution,
+    OptimizationExecutionBuilder,
+)
 from trd_bot.research.optimization_worker import OptimizationWorker
 
 
 class FakeTrialExecutor:
-    def execute_trial(self, execution, parameters):
+    def execute_trial(
+        self,
+        execution: OptimizationExecution,
+        parameters: dict[str, str],
+    ) -> str:
         return "experiment-001"
 
 
-def build_execution():
+def build_execution() -> OptimizationExecution:
     plan = OptimizationPlanner().plan(
         strategy_name="ema-crossover",
         strategy_version="1.0.0",
@@ -24,6 +33,10 @@ def build_execution():
                 name="fast_period",
                 values=("9",),
             ),
+            OptimizationParameterGrid(
+                name="slow_period",
+                values=("21",),
+            ),
         ),
     )
 
@@ -31,7 +44,12 @@ def build_execution():
         dataset_id="dataset-1234567890abcdef",
         plan=plan,
         horizon_candles=1,
-        backtest_config=plan.backtest_config,
+        backtest_config=BacktestConfig(
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
         now=datetime(2026, 9, 1, tzinfo=UTC),
     )
 

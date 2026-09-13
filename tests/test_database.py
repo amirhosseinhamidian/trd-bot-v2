@@ -73,6 +73,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "market_data_connections",
         "market_data_imports",
         "monitoring_runtime_state",
+        "optimization_executions",
         "portfolio_timeline_events",
         "research_experiments",
         "simulated_portfolios",
