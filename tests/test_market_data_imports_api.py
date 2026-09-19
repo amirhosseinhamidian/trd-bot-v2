@@ -37,6 +37,7 @@ CONNECTION_ID = "market-data-connection-historical-test"
 class ProviderState:
     candles: list[OHLCVCandle]
     fail_fetch: bool = False
+    failure_message: str = "synthetic historical fetch failed"
 
 
 def create_candle(hour_offset: int) -> OHLCVCandle:
@@ -82,7 +83,7 @@ class HistoricalSyntheticProvider(MarketDataProvider):
         limit: int | None = None,
     ) -> list[OHLCVCandle]:
         if self._state.fail_fetch:
-            raise MarketDataProviderError("synthetic historical fetch failed")
+            raise MarketDataProviderError(self._state.failure_message)
 
         candles = [
             candle
@@ -452,6 +453,36 @@ def test_import_maps_provider_failure_to_bad_gateway(
     assert history_response.json()["total"] == 1
     assert history_response.json()["items"][0]["error_code"] == "provider_request_failed"
     assert history_response.json()["items"][0]["dataset_id"] is None
+
+
+def test_import_redacts_provider_secrets_from_response_and_history(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, _, state = historical_import_dependencies
+    state.fail_fetch = True
+    state.failure_message = "synthetic historical fetch failed; token=history-secret-value"
+
+    response = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=request_payload(),
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == ("synthetic historical fetch failed; token=[REDACTED]")
+    assert "history-secret-value" not in response.text
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
+    )
+    assert history_response.status_code == 200
+    record = history_response.json()["items"][0]
+    assert record["error_code"] == "provider_request_failed"
+    assert record["error_message"] == ("synthetic historical fetch failed; token=[REDACTED]")
+    assert "history-secret-value" not in history_response.text
 
 
 def test_import_rejects_unsupported_timeframe_before_fetch(

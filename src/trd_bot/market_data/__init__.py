@@ -15,9 +15,11 @@ from trd_bot.market_data.providers import (
     InMemoryMarketDataProvider,
     MarketDataProvider,
     MarketDataProviderError,
+    MarketDataProviderErrorCode,
     MarketDataProviderHttpError,
     MarketDataProviderMetadata,
     MarketDataProviderResponseError,
+    MarketDataProviderTimeoutError,
     MarketDataRetryPolicy,
 )
 from trd_bot.market_data.quality import (
@@ -26,6 +28,7 @@ from trd_bot.market_data.quality import (
     DataQualityReport,
     MarketDataQualityChecker,
 )
+from trd_bot.market_data.security import redact_sensitive_text
 
 __all__ = [
     "BinancePublicMarketDataProvider",
@@ -44,10 +47,13 @@ __all__ = [
     "MarketDataProvider",
     "MarketDataProviderCatalog",
     "MarketDataProviderError",
+    "MarketDataProviderErrorCode",
     "MarketDataProviderHttpError",
     "MarketDataProviderMetadata",
     "MarketDataProviderResponseError",
+    "MarketDataProviderTimeoutError",
     "MarketDataProviderUnavailableError",
     "MarketDataQualityChecker",
     "MarketDataRetryPolicy",
+    "redact_sensitive_text",
 ]

@@ -10,8 +10,10 @@ from trd_bot.market_data.providers import (
     BinancePublicMarketDataProvider,
     MarketDataProvider,
     MarketDataProviderError,
+    MarketDataProviderErrorCode,
     MarketDataProviderMetadata,
 )
+from trd_bot.market_data.security import redact_sensitive_text
 
 
 class MarketDataConnectionState(StrEnum):
@@ -54,6 +56,7 @@ class MarketDataConnection(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_tested_at: datetime | None = None
+    last_error_code: MarketDataProviderErrorCode | None = None
     last_error: str | None = Field(default=None, max_length=500)
 
     @field_validator("connection_id", "provider_id", "display_name")
@@ -95,15 +98,27 @@ class MarketDataConnection(BaseModel):
                 raise ValueError("connection test time cannot exceed update time")
 
         if self.health_status is MarketDataConnectionHealth.UNTESTED:
-            if self.last_tested_at is not None or self.last_error is not None:
+            if (
+                self.last_tested_at is not None
+                or self.last_error_code is not None
+                or self.last_error is not None
+            ):
                 raise ValueError("untested connection cannot contain health-check details")
 
         elif self.health_status is MarketDataConnectionHealth.HEALTHY:
-            if self.last_tested_at is None or self.last_error is not None:
+            if (
+                self.last_tested_at is None
+                or self.last_error_code is not None
+                or self.last_error is not None
+            ):
                 raise ValueError("healthy connection requires a successful test timestamp")
 
         else:
-            if self.last_tested_at is None or self.last_error is None:
+            if (
+                self.last_tested_at is None
+                or self.last_error_code is None
+                or self.last_error is None
+            ):
                 raise ValueError("unhealthy connection requires failed test details")
 
         if (
@@ -271,15 +286,46 @@ class MarketDataConnectionManager:
         try:
             provider = self._providers.create(connection.provider_id)
             await provider.test_connection()
-        except (MarketDataProviderError, MarketDataProviderUnavailableError) as exc:
-            safe_error = str(exc).strip() or "market-data provider health check failed"
+        except MarketDataProviderError as exc:
+            error_code = exc.code
+            safe_error = redact_sensitive_text(
+                exc,
+                fallback="market-data provider health check failed",
+            )
             updated = connection.model_copy(
                 update={
                     "state": MarketDataConnectionState.DISABLED,
                     "health_status": MarketDataConnectionHealth.UNHEALTHY,
                     "updated_at": tested_at,
                     "last_tested_at": tested_at,
-                    "last_error": safe_error[:500],
+                    "last_error_code": error_code,
+                    "last_error": safe_error,
+                }
+            )
+        except MarketDataProviderUnavailableError as exc:
+            safe_error = redact_sensitive_text(
+                exc,
+                fallback="market-data provider is not available",
+            )
+            updated = connection.model_copy(
+                update={
+                    "state": MarketDataConnectionState.DISABLED,
+                    "health_status": MarketDataConnectionHealth.UNHEALTHY,
+                    "updated_at": tested_at,
+                    "last_tested_at": tested_at,
+                    "last_error_code": MarketDataProviderErrorCode.UNAVAILABLE,
+                    "last_error": safe_error,
+                }
+            )
+        except TimeoutError:
+            updated = connection.model_copy(
+                update={
+                    "state": MarketDataConnectionState.DISABLED,
+                    "health_status": MarketDataConnectionHealth.UNHEALTHY,
+                    "updated_at": tested_at,
+                    "last_tested_at": tested_at,
+                    "last_error_code": MarketDataProviderErrorCode.TIMEOUT,
+                    "last_error": "market-data provider health check timed out",
                 }
             )
         else:
@@ -288,6 +334,7 @@ class MarketDataConnectionManager:
                     "health_status": MarketDataConnectionHealth.HEALTHY,
                     "updated_at": tested_at,
                     "last_tested_at": tested_at,
+                    "last_error_code": None,
                     "last_error": None,
                 }
             )

@@ -5,7 +5,9 @@ import pytest
 from trd_bot.market_data import (
     BinancePublicMarketDataProvider,
     MarketDataProviderError,
+    MarketDataProviderErrorCode,
     MarketDataProviderHttpError,
+    MarketDataProviderTimeoutError,
     MarketDataRetryPolicy,
 )
 
@@ -57,6 +59,27 @@ async def test_public_provider_retries_transient_request_failure_with_exponentia
 
 
 @pytest.mark.asyncio
+async def test_public_provider_retries_and_categorizes_timeout() -> None:
+    attempts = 0
+    delays: list[float] = []
+
+    async def fetch_json(url: str, timeout_seconds: float) -> object:
+        nonlocal attempts
+        del url, timeout_seconds
+        attempts += 1
+        raise TimeoutError
+
+    provider = build_provider(fetch_json, delays, max_attempts=2)
+
+    with pytest.raises(MarketDataProviderTimeoutError) as exc_info:
+        await provider.test_connection()
+
+    assert exc_info.value.code is MarketDataProviderErrorCode.TIMEOUT
+    assert attempts == 2
+    assert delays == [0.1]
+
+
+@pytest.mark.asyncio
 async def test_public_provider_honors_bounded_retry_after_for_rate_limit() -> None:
     attempts = 0
     delays: list[float] = []
@@ -101,6 +124,7 @@ async def test_public_provider_does_not_retry_non_retryable_http_error() -> None
         await provider.test_connection()
 
     assert exc_info.value.status_code == 400
+    assert exc_info.value.code is MarketDataProviderErrorCode.HTTP_ERROR
     assert attempts == 1
     assert delays == []
 
@@ -126,6 +150,17 @@ async def test_public_provider_stops_after_bounded_retry_budget() -> None:
 
     assert attempts == 3
     assert delays == [0.1, 0.2]
+
+
+def test_http_failure_categories_are_stable() -> None:
+    assert (
+        MarketDataProviderHttpError("rate limited", status_code=429).code
+        is MarketDataProviderErrorCode.RATE_LIMITED
+    )
+    assert (
+        MarketDataProviderHttpError("gateway timeout", status_code=504).code
+        is MarketDataProviderErrorCode.TIMEOUT
+    )
 
 
 def test_retry_policy_rejects_invalid_bounds() -> None:

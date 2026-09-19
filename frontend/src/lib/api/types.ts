@@ -11,6 +11,14 @@ export type MarketDataConnectionState = 'disabled' | 'enabled';
 
 export type MarketDataConnectionHealth = 'untested' | 'healthy' | 'unhealthy';
 
+export type MarketDataProviderErrorCode =
+  | 'provider_request_failed'
+  | 'provider_timeout'
+  | 'provider_rate_limited'
+  | 'provider_http_error'
+  | 'provider_response_invalid'
+  | 'provider_unavailable';
+
 export interface MarketDataProviderSummary {
   provider_id: string;
   display_name: string;
@@ -28,6 +36,7 @@ export interface MarketDataConnection {
   created_at: string;
   updated_at: string;
   last_tested_at: string | null;
+  last_error_code: MarketDataProviderErrorCode | null;
   last_error: string | null;
 }
 

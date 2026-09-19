@@ -167,6 +167,7 @@ async def test_public_provider_normalizes_and_paginates_binance_klines(
     first_query = parse_qs(urlparse(requested_urls[0]).query)
     second_query = parse_qs(urlparse(requested_urls[1]).query)
 
+    assert set(first_query) == {"symbol", "interval", "startTime", "endTime", "limit"}
     assert first_query["symbol"] == ["BTCUSDT"]
     assert first_query["interval"] == ["1h"]
     assert first_query["limit"] == ["2"]

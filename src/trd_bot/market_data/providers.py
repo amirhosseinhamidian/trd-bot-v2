@@ -5,6 +5,7 @@ from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
+from enum import StrEnum
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -28,12 +29,48 @@ class MarketDataProviderMetadata:
     supported_timeframes: tuple[Timeframe, ...]
 
 
+class MarketDataProviderErrorCode(StrEnum):
+    """Stable public categories for external provider failures."""
+
+    REQUEST_FAILED = "provider_request_failed"
+    TIMEOUT = "provider_timeout"
+    RATE_LIMITED = "provider_rate_limited"
+    HTTP_ERROR = "provider_http_error"
+    RESPONSE_INVALID = "provider_response_invalid"
+    UNAVAILABLE = "provider_unavailable"
+
+
 class MarketDataProviderError(RuntimeError):
     """Base error raised when an external market-data provider fails."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: MarketDataProviderErrorCode = MarketDataProviderErrorCode.REQUEST_FAILED,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 class MarketDataProviderResponseError(MarketDataProviderError):
     """Raised when a provider returns an unexpected or invalid payload."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            code=MarketDataProviderErrorCode.RESPONSE_INVALID,
+        )
+
+
+class MarketDataProviderTimeoutError(MarketDataProviderError):
+    """Raised when a bounded provider request exceeds its timeout."""
+
+    def __init__(self, message: str = "public market-data request timed out") -> None:
+        super().__init__(
+            message,
+            code=MarketDataProviderErrorCode.TIMEOUT,
+        )
 
 
 class MarketDataProviderHttpError(MarketDataProviderError):
@@ -46,7 +83,14 @@ class MarketDataProviderHttpError(MarketDataProviderError):
         status_code: int,
         retry_after_seconds: float | None = None,
     ) -> None:
-        super().__init__(message)
+        if status_code == 429:
+            code = MarketDataProviderErrorCode.RATE_LIMITED
+        elif status_code in {408, 504}:
+            code = MarketDataProviderErrorCode.TIMEOUT
+        else:
+            code = MarketDataProviderErrorCode.HTTP_ERROR
+
+        super().__init__(message, code=code)
         self.status_code = status_code
         self.retry_after_seconds = retry_after_seconds
 
@@ -110,6 +154,8 @@ async def _fetch_json(url: str, timeout_seconds: float) -> object:
             status_code=exc.code,
             retry_after_seconds=retry_after_seconds,
         ) from exc
+    except TimeoutError as exc:
+        raise MarketDataProviderTimeoutError() from exc
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise MarketDataProviderError("public market-data request failed") from exc
 
@@ -397,6 +443,11 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
             except MarketDataProviderError:
                 if attempt >= policy.max_attempts:
                     raise
+                delay = self._retry_delay(attempt=attempt)
+            except TimeoutError as exc:
+                timeout_error = MarketDataProviderTimeoutError()
+                if attempt >= policy.max_attempts:
+                    raise timeout_error from exc
                 delay = self._retry_delay(attempt=attempt)
 
             await self._sleep(delay)

@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from trd_bot.api.error_handlers import sanitized_request_validation_error_handler
 from trd_bot.api.monitoring_lifecycle import build_monitoring_lifespan
 from trd_bot.api.monitoring_middleware import ApiMetricsMiddleware
 from trd_bot.api.routes.candidates import router as candidates_router
@@ -54,6 +56,10 @@ def create_app() -> FastAPI:
             "Accept",
             "Content-Type",
         ],
+    )
+    application.add_exception_handler(
+        RequestValidationError,
+        sanitized_request_validation_error_handler,
     )
 
     application.include_router(

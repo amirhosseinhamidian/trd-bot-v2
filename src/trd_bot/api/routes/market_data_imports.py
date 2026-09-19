@@ -19,7 +19,9 @@ from trd_bot.market_data import (
     MarketDataConnectionStateError,
     MarketDataProviderCatalog,
     MarketDataProviderError,
+    MarketDataProviderErrorCode,
     MarketDataProviderUnavailableError,
+    redact_sensitive_text,
 )
 from trd_bot.market_data.import_history import (
     MarketDataImportOperation,
@@ -104,8 +106,10 @@ def _history_error_code(error: Exception) -> str:
     if isinstance(error, HistoricalDatasetImportLimitError):
         return "import_limit_exceeded"
     if isinstance(error, MarketDataProviderUnavailableError):
-        return "provider_unavailable"
-    return "provider_request_failed"
+        return MarketDataProviderErrorCode.UNAVAILABLE.value
+    if isinstance(error, MarketDataProviderError):
+        return error.code.value
+    return MarketDataProviderErrorCode.REQUEST_FAILED.value
 
 
 def _save_import_history(
@@ -131,7 +135,10 @@ def _save_import_history(
     error_code = None
     if error is not None:
         error_code = _history_error_code(error)
-        error_message = (str(error).strip() or error.__class__.__name__)[:500]
+        error_message = redact_sensitive_text(
+            error,
+            fallback=error.__class__.__name__,
+        )
 
     return repository.save(
         MarketDataImportRecord(
@@ -205,39 +212,44 @@ def _raise_fetch_error(
         | MarketDataProviderError
     ),
 ) -> NoReturn:
+    safe_detail = redact_sensitive_text(
+        error,
+        fallback="market-data request failed",
+    )
+
     if isinstance(error, MarketDataConnectionNotFoundError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
+            detail=safe_detail,
         ) from error
 
     if isinstance(error, MarketDataConnectionStateError):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(error),
+            detail=safe_detail,
         ) from error
 
     if isinstance(error, HistoricalDatasetProviderCapabilityError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error),
+            detail=safe_detail,
         ) from error
 
     if isinstance(error, HistoricalDatasetImportLimitError):
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=str(error),
+            detail=safe_detail,
         ) from error
 
     if isinstance(error, MarketDataProviderUnavailableError):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(error),
+            detail=safe_detail,
         ) from error
 
     raise HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
-        detail=str(error),
+        detail=safe_detail,
     ) from error
 
 

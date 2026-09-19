@@ -8,6 +8,7 @@ from trd_bot.market_data import (
     MarketDataConnection,
     MarketDataConnectionHealth,
     MarketDataConnectionState,
+    MarketDataProviderErrorCode,
 )
 
 BASE_TIME = datetime(2026, 8, 31, 12, tzinfo=UTC)
@@ -58,7 +59,29 @@ def test_sqlalchemy_connection_repository_persists_health_and_state_updates() ->
             assert stored.state is MarketDataConnectionState.ENABLED
             assert stored.health_status is MarketDataConnectionHealth.HEALTHY
             assert stored.last_tested_at == tested_at
+            assert stored.last_error_code is None
             assert stored.last_error is None
+
+            failed_at = BASE_TIME + timedelta(minutes=2)
+            unhealthy = MarketDataConnection.model_validate(
+                healthy.model_copy(
+                    update={
+                        "state": MarketDataConnectionState.DISABLED,
+                        "health_status": MarketDataConnectionHealth.UNHEALTHY,
+                        "updated_at": failed_at,
+                        "last_tested_at": failed_at,
+                        "last_error_code": MarketDataProviderErrorCode.TIMEOUT,
+                        "last_error": "market-data provider health check timed out",
+                    }
+                ).model_dump()
+            )
+            repository.save(unhealthy)
+
+            failed = repository.get(connection.connection_id)
+            assert failed is not None
+            assert failed.health_status is MarketDataConnectionHealth.UNHEALTHY
+            assert failed.last_error_code is MarketDataProviderErrorCode.TIMEOUT
+            assert failed.last_error == "market-data provider health check timed out"
     finally:
         engine.dispose()
 

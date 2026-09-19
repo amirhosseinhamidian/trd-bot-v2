@@ -10,6 +10,7 @@ from trd_bot.market_data.connections import (
     MarketDataConnectionHealth,
     MarketDataConnectionState,
 )
+from trd_bot.market_data.providers import MarketDataProviderErrorCode
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -37,6 +38,11 @@ class SqlAlchemyMarketDataConnectionRepository:
                 created_at=connection.created_at,
                 updated_at=connection.updated_at,
                 last_tested_at=connection.last_tested_at,
+                last_error_code=(
+                    connection.last_error_code.value
+                    if connection.last_error_code is not None
+                    else None
+                ),
                 last_error=connection.last_error,
             )
             self._session.add(row)
@@ -48,6 +54,9 @@ class SqlAlchemyMarketDataConnectionRepository:
             row.created_at = connection.created_at
             row.updated_at = connection.updated_at
             row.last_tested_at = connection.last_tested_at
+            row.last_error_code = (
+                connection.last_error_code.value if connection.last_error_code is not None else None
+            )
             row.last_error = connection.last_error
 
         try:
@@ -103,6 +112,11 @@ class SqlAlchemyMarketDataConnectionRepository:
             updated_at=_as_utc(row.updated_at),
             last_tested_at=(
                 _as_utc(row.last_tested_at) if row.last_tested_at is not None else None
+            ),
+            last_error_code=(
+                MarketDataProviderErrorCode(row.last_error_code)
+                if row.last_error_code is not None
+                else None
             ),
             last_error=row.last_error,
         )

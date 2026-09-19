@@ -178,6 +178,11 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "content_changed",
         }.issubset(import_columns)
 
+        connection_columns = {
+            column["name"] for column in inspector.get_columns("market_data_connections")
+        }
+        assert "last_error_code" in connection_columns
+
         command.check(config)
     finally:
         engine.dispose()

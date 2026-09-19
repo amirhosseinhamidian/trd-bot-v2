@@ -28,6 +28,7 @@ const connection: MarketDataConnection = {
   created_at: '2026-08-31T12:00:00Z',
   updated_at: '2026-08-31T12:00:00Z',
   last_tested_at: null,
+  last_error_code: null,
   last_error: null,
 };
 

@@ -37,7 +37,9 @@ class ApiSyntheticProvider(MarketDataProvider):
 
     async def test_connection(self) -> None:
         if self._health_state["should_fail"]:
-            raise MarketDataProviderError("synthetic provider unavailable")
+            raise MarketDataProviderError(
+                "synthetic provider unavailable; api_key=connection-secret"
+            )
 
     async def get_candles(
         self,
@@ -171,7 +173,30 @@ def test_api_failed_health_check_returns_persisted_unhealthy_state(
     assert response.status_code == 200
     assert response.json()["state"] == "disabled"
     assert response.json()["health_status"] == "unhealthy"
-    assert response.json()["last_error"] == "synthetic provider unavailable"
+    assert response.json()["last_error_code"] == "provider_request_failed"
+    assert response.json()["last_error"] == ("synthetic provider unavailable; api_key=[REDACTED]")
+    assert "connection-secret" not in response.text
+
+
+def test_api_validation_does_not_echo_rejected_credentials(
+    connection_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        dict[str, bool],
+    ],
+) -> None:
+    del connection_dependencies
+
+    response = client.post(
+        "/api/v1/market-data/connections",
+        json={
+            "provider_id": "synthetic-public",
+            "display_name": "Synthetic historical feed",
+            "api_key": "request-secret-value",
+        },
+    )
+
+    assert response.status_code == 422
+    assert "request-secret-value" not in response.text
 
 
 def test_api_rejects_unknown_provider(

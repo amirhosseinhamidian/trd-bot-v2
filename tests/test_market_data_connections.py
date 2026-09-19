@@ -13,6 +13,7 @@ from trd_bot.market_data import (
     MarketDataProvider,
     MarketDataProviderCatalog,
     MarketDataProviderError,
+    MarketDataProviderErrorCode,
     MarketDataProviderMetadata,
 )
 
@@ -157,6 +158,7 @@ async def test_failed_health_check_disables_connection_and_records_safe_error() 
     assert failed.state is MarketDataConnectionState.DISABLED
     assert failed.health_status is MarketDataConnectionHealth.UNHEALTHY
     assert failed.last_tested_at == BASE_TIME + timedelta(minutes=1)
+    assert failed.last_error_code is MarketDataProviderErrorCode.REQUEST_FAILED
     assert failed.last_error == "synthetic provider unavailable"
 
 

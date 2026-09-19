@@ -42,11 +42,12 @@ class MarketDataConnectionRow(DatabaseBase):
             name="last_tested_in_lifecycle",
         ),
         CheckConstraint(
-            "(health_status = 'untested' AND last_tested_at IS NULL AND last_error IS NULL) "
+            "(health_status = 'untested' AND last_tested_at IS NULL "
+            "AND last_error_code IS NULL AND last_error IS NULL) "
             "OR (health_status = 'healthy' AND last_tested_at IS NOT NULL "
-            "AND last_error IS NULL) "
+            "AND last_error_code IS NULL AND last_error IS NULL) "
             "OR (health_status = 'unhealthy' AND last_tested_at IS NOT NULL "
-            "AND last_error IS NOT NULL)",
+            "AND last_error_code IS NOT NULL AND last_error IS NOT NULL)",
             name="health_details_consistent",
         ),
         CheckConstraint(
@@ -76,6 +77,7 @@ class MarketDataConnectionRow(DatabaseBase):
         DateTime(timezone=True),
         nullable=True,
     )
+    last_error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -191,27 +193,27 @@ class OptimizationExecutionRow(DatabaseBase):
     __table_args__ = (
         CheckConstraint(
             "status IN ('queued', 'running', 'succeeded', 'failed')",
-            name="optimization_execution_status_supported",
+            name="status_supported",
         ),
         CheckConstraint(
             "total_trials > 0",
-            name="optimization_execution_total_trials_positive",
+            name="total_trials_positive",
         ),
         CheckConstraint(
             "completed_trials >= 0 AND completed_trials <= total_trials",
-            name="optimization_execution_progress_range",
+            name="progress_range",
         ),
         CheckConstraint(
             "updated_at >= created_at",
-            name="optimization_execution_updated_after_created",
+            name="updated_after_created",
         ),
         CheckConstraint(
             "started_at IS NULL OR started_at >= created_at",
-            name="optimization_execution_started_after_created",
+            name="started_after_created",
         ),
         CheckConstraint(
             "finished_at IS NULL OR (started_at IS NOT NULL AND finished_at >= started_at)",
-            name="optimization_execution_finished_after_started",
+            name="finished_after_started",
         ),
         Index(
             "ix_optimization_executions_status_created_at",
