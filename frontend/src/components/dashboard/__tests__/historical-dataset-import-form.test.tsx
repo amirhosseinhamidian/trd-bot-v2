@@ -39,6 +39,25 @@ const provider: MarketDataProviderSummary = {
   requires_credentials: false,
   supported_market_types: ['spot'],
   supported_timeframes: ['1h', '4h'],
+  default_pair: {
+    base_asset: 'BTC',
+    quote_asset: 'USDT',
+    market_type: 'spot',
+  },
+  access_mode: 'vpn_required',
+  max_closed_candles: null,
+};
+
+const krakenProvider: MarketDataProviderSummary = {
+  ...provider,
+  provider_id: 'kraken-public',
+  display_name: 'Kraken Public Market Data',
+  default_pair: {
+    base_asset: 'BTC',
+    quote_asset: 'USD',
+    market_type: 'spot',
+  },
+  max_closed_candles: 719,
 };
 
 const preview: HistoricalDatasetImportPreview = {
@@ -171,5 +190,31 @@ describe('HistoricalDatasetImportForm', () => {
     expect(screen.getByText(/Missing candle:/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create dataset' })).toBeDisabled();
     expect(mocks.importHistoricalDataset).not.toHaveBeenCalled();
+  });
+
+  it('uses provider defaults and blocks ranges outside the recent Kraken window', async () => {
+    render(
+      <HistoricalDatasetImportForm
+        connection={{ ...connection, provider_id: krakenProvider.provider_id }}
+        locale="en"
+        provider={krakenProvider}
+      />,
+    );
+
+    expect(screen.getByLabelText('Quote asset')).toHaveValue('USD');
+    expect(
+      screen.getByText(
+        'This provider requires VPN in the current environment. Confirm the VPN route before previewing data.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/latest 719 closed candles/)).toBeInTheDocument();
+
+    fillValidForm();
+
+    expect(
+      screen.getByText(/outside this provider’s 719-candle recent window/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Preview data' })).toBeDisabled();
+    expect(mocks.previewHistoricalDatasetImport).not.toHaveBeenCalled();
   });
 });

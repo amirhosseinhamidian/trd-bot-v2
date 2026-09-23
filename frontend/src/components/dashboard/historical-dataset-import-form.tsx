@@ -23,6 +23,13 @@ type HistoricalDatasetImportFormProps = {
   provider: MarketDataProviderSummary | undefined;
 };
 
+const TIMEFRAME_DURATION_MS: Record<DatasetTimeframe, number> = {
+  '15m': 15 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '4h': 4 * 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+};
+
 function formatDate(value: string, locale: DashboardLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -39,6 +46,10 @@ function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
+function formatCandleLimit(value: number, locale: DashboardLocale): string {
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
 export default function HistoricalDatasetImportForm({
   connection,
   locale,
@@ -50,8 +61,8 @@ export default function HistoricalDatasetImportForm({
   const marketType = provider?.supported_market_types[0] ?? 'spot';
 
   const [name, setName] = useState('');
-  const [baseAsset, setBaseAsset] = useState('BTC');
-  const [quoteAsset, setQuoteAsset] = useState('USDT');
+  const [baseAsset, setBaseAsset] = useState(provider?.default_pair.base_asset ?? 'BTC');
+  const [quoteAsset, setQuoteAsset] = useState(provider?.default_pair.quote_asset ?? 'USDT');
   const [timeframe, setTimeframe] = useState<DatasetTimeframe | ''>(availableTimeframes[0] ?? '');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -71,8 +82,29 @@ export default function HistoricalDatasetImportForm({
     return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start;
   }, [endTime, startTime]);
 
+  const exceedsProviderWindow = useMemo(() => {
+    if (!provider?.max_closed_candles || !timeframe || !startTime) {
+      return false;
+    }
+
+    const start = new Date(startTime);
+    if (Number.isNaN(start.getTime())) {
+      return false;
+    }
+
+    const earliestSupportedStart =
+      Date.now() - TIMEFRAME_DURATION_MS[timeframe] * provider.max_closed_candles;
+    return start.getTime() < earliestSupportedStart;
+  }, [provider?.max_closed_candles, startTime, timeframe]);
+
   const canPreview = Boolean(
-    provider && name.trim() && baseAsset.trim() && quoteAsset.trim() && timeframe && hasValidRange,
+    provider &&
+    name.trim() &&
+    baseAsset.trim() &&
+    quoteAsset.trim() &&
+    timeframe &&
+    hasValidRange &&
+    !exceedsProviderWindow,
   );
 
   function invalidateResult(): void {
@@ -153,6 +185,25 @@ export default function HistoricalDatasetImportForm({
         <p className="mt-1 text-sm leading-6 text-app-muted">{copy.description}</p>
       </div>
 
+      <p
+        className={`mt-4 rounded-xl border p-3 text-sm leading-6 ${
+          provider.access_mode === 'direct'
+            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
+            : 'border-app-warning-border bg-app-warning-soft text-app-warning'
+        }`}
+      >
+        {provider.access_mode === 'direct' ? copy.directAccessNotice : copy.vpnAccessNotice}
+      </p>
+
+      {provider.max_closed_candles !== null ? (
+        <p className="mt-3 rounded-xl border border-app-warning-border bg-app-warning-soft p-3 text-sm leading-6 text-app-warning">
+          {copy.recentWindowNotice.replace(
+            '{count}',
+            formatCandleLimit(provider.max_closed_candles, locale),
+          )}
+        </p>
+      ) : null}
+
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <Input
           label={copy.datasetName}
@@ -207,6 +258,14 @@ export default function HistoricalDatasetImportForm({
           label={copy.startTime}
           type="datetime-local"
           value={startTime}
+          error={
+            exceedsProviderWindow && provider.max_closed_candles !== null
+              ? copy.recentWindowError.replace(
+                  '{count}',
+                  formatCandleLimit(provider.max_closed_candles, locale),
+                )
+              : undefined
+          }
           disabled={isPreviewing || isImporting}
           onChange={(event) => {
             setStartTime(event.target.value);

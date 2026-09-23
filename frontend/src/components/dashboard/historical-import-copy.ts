@@ -31,6 +31,10 @@ export type HistoricalImportCopy = {
   invalidRange: string;
   requestError: string;
   providerMetadataMissing: string;
+  directAccessNotice: string;
+  vpnAccessNotice: string;
+  recentWindowNotice: string;
+  recentWindowError: string;
   issueLabels: Record<MarketDataQualityIssueCode, string>;
 };
 
@@ -66,6 +70,12 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     invalidRange: 'زمان پایان باید بعد از زمان شروع باشد.',
     requestError: 'دریافت داده یا ساخت Dataset ناموفق بود. ورودی‌ها و وضعیت Backend را بررسی کنید.',
     providerMetadataMissing: 'Metadata مربوط به Provider این اتصال در دسترس نیست.',
+    directAccessNotice: 'این Provider برای مسیر اتصال مستقیم انتخاب شده است.',
+    vpnAccessNotice:
+      'این Provider در محیط فعلی به VPN نیاز دارد. پیش از Preview از فعال بودن مسیر VPN مطمئن شوید.',
+    recentWindowNotice: 'این Provider فقط {count} کندل بسته اخیر را ارائه می‌کند.',
+    recentWindowError:
+      'زمان شروع خارج از پنجره {count} کندل اخیر این Provider است. بازه جدیدتری انتخاب کنید.',
     issueLabels: {
       empty_data: 'داده خالی',
       mixed_series: 'سری داده ترکیبی',
@@ -107,6 +117,12 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     requestError:
       'Unable to fetch data or create the dataset. Check the inputs and backend status.',
     providerMetadataMissing: 'Provider metadata for this connection is unavailable.',
+    directAccessNotice: 'This provider is selected for the direct network route.',
+    vpnAccessNotice:
+      'This provider requires VPN in the current environment. Confirm the VPN route before previewing data.',
+    recentWindowNotice: 'This provider exposes only the latest {count} closed candles.',
+    recentWindowError:
+      'The start time is outside this provider’s {count}-candle recent window. Choose a newer range.',
     issueLabels: {
       empty_data: 'Empty data',
       mixed_series: 'Mixed series',

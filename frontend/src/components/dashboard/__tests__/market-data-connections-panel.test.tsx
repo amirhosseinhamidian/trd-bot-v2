@@ -32,6 +32,41 @@ const providers: MarketDataProviderSummary[] = [
     requires_credentials: false,
     supported_market_types: ['spot'],
     supported_timeframes: ['15m', '1h', '4h', '1d'],
+    default_pair: {
+      base_asset: 'BTC',
+      quote_asset: 'USDT',
+      market_type: 'spot',
+    },
+    access_mode: 'vpn_required',
+    max_closed_candles: null,
+  },
+  {
+    provider_id: 'kraken-public',
+    display_name: 'Kraken Public Market Data',
+    requires_credentials: false,
+    supported_market_types: ['spot'],
+    supported_timeframes: ['15m', '1h', '4h', '1d'],
+    default_pair: {
+      base_asset: 'BTC',
+      quote_asset: 'USD',
+      market_type: 'spot',
+    },
+    access_mode: 'vpn_required',
+    max_closed_candles: 719,
+  },
+  {
+    provider_id: 'nobitex-public',
+    display_name: 'Nobitex Public Market Data',
+    requires_credentials: false,
+    supported_market_types: ['spot'],
+    supported_timeframes: ['15m', '1h', '4h', '1d'],
+    default_pair: {
+      base_asset: 'BTC',
+      quote_asset: 'USDT',
+      market_type: 'spot',
+    },
+    access_mode: 'direct',
+    max_closed_candles: null,
   },
 ];
 
@@ -65,7 +100,31 @@ describe('MarketDataConnectionsPanel', () => {
     mocks.enableMarketDataConnection.mockReset();
     mocks.getMarketDataConnections.mockReset();
     mocks.getMarketDataImportHistory.mockReset();
+    mocks.getMarketDataImportHistory.mockResolvedValue({
+      items: [],
+      total: 0,
+      limit: 10,
+      offset: 0,
+      count: 0,
+      has_next: false,
+      has_previous: false,
+    });
     mocks.testMarketDataConnection.mockReset();
+  });
+
+  it('shows provider access and history constraints', () => {
+    render(
+      <MarketDataConnectionsPanel
+        locale="en"
+        initialProviders={providers}
+        initialPage={initialPage}
+      />,
+    );
+
+    expect(screen.getByText('Direct access')).toBeInTheDocument();
+    expect(screen.getAllByText('VPN required')).toHaveLength(3);
+    expect(screen.getByText('BTC/USD')).toBeInTheDocument();
+    expect(screen.getByText('Up to 719 recent closed candles')).toBeInTheDocument();
   });
 
   it('moves a connection through test, enable, and disable actions', async () => {
@@ -158,7 +217,7 @@ describe('MarketDataConnectionsPanel', () => {
 
     await waitFor(() => {
       expect(mocks.createMarketDataConnection).toHaveBeenCalledWith({
-        provider_id: 'binance-public',
+        provider_id: 'nobitex-public',
         display_name: 'Secondary feed',
       });
     });

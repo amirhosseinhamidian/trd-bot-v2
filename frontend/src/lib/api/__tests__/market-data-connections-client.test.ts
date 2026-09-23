@@ -17,6 +17,13 @@ const provider: MarketDataProviderSummary = {
   requires_credentials: false,
   supported_market_types: ['spot'],
   supported_timeframes: ['15m', '1h', '4h', '1d'],
+  default_pair: {
+    base_asset: 'BTC',
+    quote_asset: 'USDT',
+    market_type: 'spot',
+  },
+  access_mode: 'vpn_required',
+  max_closed_candles: null,
 };
 
 const connection: MarketDataConnection = {

@@ -1,5 +1,9 @@
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import type { MarketDataConnectionHealth, MarketDataConnectionState } from '@/lib/api/types';
+import type {
+  MarketDataConnectionHealth,
+  MarketDataConnectionState,
+  MarketDataProviderAccessMode,
+} from '@/lib/api/types';
 
 export type ConnectionsCopy = {
   eyebrow: string;
@@ -9,6 +13,12 @@ export type ConnectionsCopy = {
   providersTitle: string;
   providersDescription: string;
   noCredentials: string;
+  access: string;
+  accessModes: Record<MarketDataProviderAccessMode, string>;
+  defaultPair: string;
+  historyCoverage: string;
+  fullHistory: string;
+  recentHistory: string;
   marketTypes: string;
   timeframes: string;
   createTitle: string;
@@ -60,13 +70,22 @@ const copies: Record<DashboardLocale, ConnectionsCopy> = {
     providersTitle: 'Providerهای در دسترس',
     providersDescription: 'منابعی که Backend به‌صورت صریح برای داده بازار پشتیبانی می‌کند.',
     noCredentials: 'بدون نیاز به credential',
+    access: 'مسیر دسترسی',
+    accessModes: {
+      direct: 'اتصال مستقیم',
+      vpn_required: 'نیازمند VPN',
+    },
+    defaultPair: 'بازار پیش‌فرض',
+    historyCoverage: 'پوشش تاریخچه',
+    fullHistory: 'بازه تاریخی با صفحه‌بندی',
+    recentHistory: 'حداکثر {count} کندل بسته اخیر',
     marketTypes: 'نوع بازار',
     timeframes: 'تایم‌فریم‌ها',
     createTitle: 'افزودن اتصال',
     createDescription: 'اتصال جدید ابتدا غیرفعال و تست‌نشده ساخته می‌شود.',
     provider: 'Provider',
     displayName: 'نام اتصال',
-    displayNamePlaceholder: 'مثلاً Binance historical data',
+    displayNamePlaceholder: 'مثلاً Nobitex direct historical data',
     create: 'افزودن اتصال',
     creating: 'در حال افزودن',
     connectionsTitle: 'اتصال‌های پیکربندی‌شده',
@@ -116,6 +135,15 @@ const copies: Record<DashboardLocale, ConnectionsCopy> = {
     providersTitle: 'Available providers',
     providersDescription: 'Sources explicitly supported by the backend for market-data retrieval.',
     noCredentials: 'No credentials required',
+    access: 'Access route',
+    accessModes: {
+      direct: 'Direct access',
+      vpn_required: 'VPN required',
+    },
+    defaultPair: 'Default market',
+    historyCoverage: 'History coverage',
+    fullHistory: 'Paginated historical range',
+    recentHistory: 'Up to {count} recent closed candles',
     marketTypes: 'Market types',
     timeframes: 'Timeframes',
     createTitle: 'Add connection',

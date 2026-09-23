@@ -46,6 +46,18 @@ type MarketDataConnectionsPanelProps = {
   locale: DashboardLocale;
 };
 
+function getInitialProviderId(providers: MarketDataProviderSummary[]): string {
+  return (
+    providers.find((provider) => provider.access_mode === 'direct')?.provider_id ??
+    providers[0]?.provider_id ??
+    ''
+  );
+}
+
+function formatCandleLimit(value: number, locale: DashboardLocale): string {
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
 function formatDate(value: string, locale: DashboardLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -75,7 +87,7 @@ export default function MarketDataConnectionsPanel({
 }: MarketDataConnectionsPanelProps) {
   const copy = getConnectionsCopy(locale);
   const [page, setPage] = useState(initialPage);
-  const [providerId, setProviderId] = useState(initialProviders[0]?.provider_id ?? '');
+  const [providerId, setProviderId] = useState(getInitialProviderId(initialProviders));
   const [displayName, setDisplayName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -219,6 +231,20 @@ export default function MarketDataConnectionsPanel({
                 </div>
                 <dl className="space-y-3 text-sm">
                   <div className="flex items-start justify-between gap-4">
+                    <dt className="text-app-muted">{copy.access}</dt>
+                    <dd>
+                      <Badge variant={provider.access_mode === 'direct' ? 'success' : 'warning'}>
+                        {copy.accessModes[provider.access_mode]}
+                      </Badge>
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-app-muted">{copy.defaultPair}</dt>
+                    <dd dir="ltr" className="text-end text-app-foreground">
+                      {provider.default_pair.base_asset}/{provider.default_pair.quote_asset}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
                     <dt className="text-app-muted">{copy.marketTypes}</dt>
                     <dd className="text-end text-app-foreground">
                       {provider.supported_market_types.join(', ')}
@@ -228,6 +254,17 @@ export default function MarketDataConnectionsPanel({
                     <dt className="text-app-muted">{copy.timeframes}</dt>
                     <dd dir="ltr" className="text-end text-app-foreground">
                       {provider.supported_timeframes.join(', ')}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-app-muted">{copy.historyCoverage}</dt>
+                    <dd className="max-w-48 text-end text-app-foreground">
+                      {provider.max_closed_candles === null
+                        ? copy.fullHistory
+                        : copy.recentHistory.replace(
+                            '{count}',
+                            formatCandleLimit(provider.max_closed_candles, locale),
+                          )}
                     </dd>
                   </div>
                 </dl>
@@ -311,6 +348,9 @@ export default function MarketDataConnectionsPanel({
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {page.items.map((connection) => {
+              const providerMetadata = initialProviders.find(
+                (provider) => provider.provider_id === connection.provider_id,
+              );
               const isTesting =
                 activeAction?.connectionId === connection.connection_id &&
                 activeAction.action === 'test';
@@ -337,6 +377,15 @@ export default function MarketDataConnectionsPanel({
                         <Badge variant={healthVariant(connection.health_status)}>
                           {copy.healthStatuses[connection.health_status]}
                         </Badge>
+                        {providerMetadata ? (
+                          <Badge
+                            variant={
+                              providerMetadata.access_mode === 'direct' ? 'success' : 'warning'
+                            }
+                          >
+                            {copy.accessModes[providerMetadata.access_mode]}
+                          </Badge>
+                        ) : null}
                       </div>
                     </div>
                   </CardHeader>
@@ -409,9 +458,7 @@ export default function MarketDataConnectionsPanel({
                       <HistoricalDatasetImportForm
                         connection={connection}
                         locale={locale}
-                        provider={initialProviders.find(
-                          (provider) => provider.provider_id === connection.provider_id,
-                        )}
+                        provider={providerMetadata}
                         onImported={() => markImportHistoryUpdated(connection.connection_id)}
                       />
                     ) : null}

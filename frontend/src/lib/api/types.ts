@@ -11,6 +11,8 @@ export type MarketDataConnectionState = 'disabled' | 'enabled';
 
 export type MarketDataConnectionHealth = 'untested' | 'healthy' | 'unhealthy';
 
+export type MarketDataProviderAccessMode = 'direct' | 'vpn_required';
+
 export type MarketDataProviderErrorCode =
   | 'provider_request_failed'
   | 'provider_timeout'
@@ -25,6 +27,9 @@ export interface MarketDataProviderSummary {
   requires_credentials: boolean;
   supported_market_types: MarketType[];
   supported_timeframes: DatasetTimeframe[];
+  default_pair: TradingPair;
+  access_mode: MarketDataProviderAccessMode;
+  max_closed_candles: number | null;
 }
 
 export interface MarketDataConnection {
