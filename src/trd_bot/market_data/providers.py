@@ -233,75 +233,8 @@ class MarketDataProvider(ABC):
             raise ValueError("limit must be greater than zero")
 
 
-class InMemoryMarketDataProvider(MarketDataProvider):
-    """Market-data provider backed by an in-memory candle collection."""
-
-    _METADATA = MarketDataProviderMetadata(
-        provider_id="in-memory",
-        display_name="In-memory",
-        requires_credentials=False,
-        supported_market_types=(MarketType.SPOT,),
-        supported_timeframes=tuple(Timeframe),
-    )
-
-    def __init__(self, candles: Iterable[OHLCVCandle]) -> None:
-        self._candles = tuple(
-            sorted(
-                candles,
-                key=lambda candle: candle.open_time,
-            )
-        )
-
-    @property
-    def metadata(self) -> MarketDataProviderMetadata:
-        return self._METADATA
-
-    async def test_connection(self) -> None:
-        """In-memory provider is always available to isolated tests."""
-
-    async def get_candles(
-        self,
-        pair: TradingPair,
-        timeframe: Timeframe,
-        start_time: datetime,
-        end_time: datetime,
-        limit: int | None = None,
-    ) -> list[OHLCVCandle]:
-        self._validate_query(
-            start_time=start_time,
-            end_time=end_time,
-            limit=limit,
-        )
-
-        result = [
-            candle
-            for candle in self._candles
-            if candle.pair == pair
-            and candle.timeframe == timeframe
-            and candle.is_closed
-            and start_time <= candle.open_time < end_time
-        ]
-
-        if limit is not None:
-            return result[:limit]
-
-        return result
-
-
-class BinancePublicMarketDataProvider(MarketDataProvider):
-    """Historical spot-candle provider using Binance public market-data endpoints only."""
-
-    _API_BASE_URL = "https://data-api.binance.vision/api/v3"
-    _KLINES_URL = f"{_API_BASE_URL}/klines"
-    _PING_URL = f"{_API_BASE_URL}/ping"
-    _MAX_PAGE_SIZE = 1_000
-    _METADATA = MarketDataProviderMetadata(
-        provider_id="binance-public",
-        display_name="Binance Public Market Data",
-        requires_credentials=False,
-        supported_market_types=(MarketType.SPOT,),
-        supported_timeframes=tuple(Timeframe),
-    )
+class RetryingPublicJsonMarketDataProvider(MarketDataProvider):
+    """Shared bounded HTTP/retry behavior for public read-only JSON providers."""
 
     def __init__(
         self,
@@ -319,120 +252,14 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
         self._fetch_json = fetch_json or _fetch_json
         self._sleep = sleep or asyncio.sleep
 
-    @property
-    def metadata(self) -> MarketDataProviderMetadata:
-        return self._METADATA
-
-    async def test_connection(self) -> None:
-        """Probe Binance's public market-data API without account credentials."""
-
-        payload = await self._request_json(
-            self._PING_URL,
-            self._timeout_seconds,
-        )
-
-        if not isinstance(payload, dict):
-            raise MarketDataProviderResponseError(
-                "binance public market-data health response must be an object"
-            )
-
-    async def get_candles(
-        self,
-        pair: TradingPair,
-        timeframe: Timeframe,
-        start_time: datetime,
-        end_time: datetime,
-        limit: int | None = None,
-    ) -> list[OHLCVCandle]:
-        self._validate_query(
-            start_time=start_time,
-            end_time=end_time,
-            limit=limit,
-        )
-        self._validate_capabilities(
-            pair=pair,
-            timeframe=timeframe,
-        )
-
-        normalized_start = start_time.astimezone(UTC)
-        normalized_end = end_time.astimezone(UTC)
-        start_milliseconds = _to_epoch_milliseconds(normalized_start)
-        end_milliseconds = _to_epoch_milliseconds(normalized_end)
-
-        if end_milliseconds <= start_milliseconds:
-            return []
-
-        cursor = normalized_start
-        candles: list[OHLCVCandle] = []
-
-        while cursor < normalized_end:
-            if limit is not None and len(candles) >= limit:
-                break
-
-            remaining = None if limit is None else limit - len(candles)
-            page_size = (
-                self._MAX_PAGE_SIZE if remaining is None else min(self._MAX_PAGE_SIZE, remaining)
-            )
-
-            payload = await self._request_json(
-                self._build_url(
-                    pair=pair,
-                    timeframe=timeframe,
-                    start_time=cursor,
-                    end_time=normalized_end,
-                    page_size=page_size,
-                ),
-                self._timeout_seconds,
-            )
-            rows = self._validate_payload(payload)
-
-            if not rows:
-                break
-
-            last_open_time: datetime | None = None
-
-            for row in rows:
-                candle = self._parse_candle(
-                    row,
-                    pair=pair,
-                    timeframe=timeframe,
-                )
-                last_open_time = candle.open_time
-
-                if candle.is_closed and normalized_start <= candle.open_time < normalized_end:
-                    candles.append(candle)
-
-                    if limit is not None and len(candles) >= limit:
-                        break
-
-            if limit is not None and len(candles) >= limit:
-                break
-
-            if last_open_time is None or len(rows) < page_size:
-                break
-
-            next_cursor = last_open_time + _TIMEFRAME_DURATIONS[timeframe]
-
-            if next_cursor <= cursor:
-                raise MarketDataProviderResponseError(
-                    "binance public market-data pagination did not advance"
-                )
-
-            cursor = next_cursor
-
-        return sorted(
-            candles,
-            key=lambda candle: candle.open_time,
-        )
-
-    async def _request_json(self, url: str, timeout_seconds: float) -> object:
+    async def _request_json(self, url: str) -> object:
         """Execute one bounded public request with retry/backoff and rate-limit handling."""
 
         policy = self._retry_policy
 
         for attempt in range(1, policy.max_attempts + 1):
             try:
-                return await self._fetch_json(url, timeout_seconds)
+                return await self._fetch_json(url, self._timeout_seconds)
             except MarketDataProviderHttpError as exc:
                 if not self._is_retryable_status(exc.status_code) or attempt >= policy.max_attempts:
                     raise
@@ -490,6 +317,179 @@ class BinancePublicMarketDataProvider(MarketDataProvider):
 
         if timeframe not in self.metadata.supported_timeframes:
             raise ValueError("timeframe is not supported by provider")
+
+
+class InMemoryMarketDataProvider(MarketDataProvider):
+    """Market-data provider backed by an in-memory candle collection."""
+
+    _METADATA = MarketDataProviderMetadata(
+        provider_id="in-memory",
+        display_name="In-memory",
+        requires_credentials=False,
+        supported_market_types=(MarketType.SPOT,),
+        supported_timeframes=tuple(Timeframe),
+    )
+
+    def __init__(self, candles: Iterable[OHLCVCandle]) -> None:
+        self._candles = tuple(
+            sorted(
+                candles,
+                key=lambda candle: candle.open_time,
+            )
+        )
+
+    @property
+    def metadata(self) -> MarketDataProviderMetadata:
+        return self._METADATA
+
+    async def test_connection(self) -> None:
+        """In-memory provider is always available to isolated tests."""
+
+    async def get_candles(
+        self,
+        pair: TradingPair,
+        timeframe: Timeframe,
+        start_time: datetime,
+        end_time: datetime,
+        limit: int | None = None,
+    ) -> list[OHLCVCandle]:
+        self._validate_query(
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit,
+        )
+
+        result = [
+            candle
+            for candle in self._candles
+            if candle.pair == pair
+            and candle.timeframe == timeframe
+            and candle.is_closed
+            and start_time <= candle.open_time < end_time
+        ]
+
+        if limit is not None:
+            return result[:limit]
+
+        return result
+
+
+class BinancePublicMarketDataProvider(RetryingPublicJsonMarketDataProvider):
+    """Historical spot-candle provider using Binance public market-data endpoints only."""
+
+    _API_BASE_URL = "https://data-api.binance.vision/api/v3"
+    _KLINES_URL = f"{_API_BASE_URL}/klines"
+    _PING_URL = f"{_API_BASE_URL}/ping"
+    _MAX_PAGE_SIZE = 1_000
+    _METADATA = MarketDataProviderMetadata(
+        provider_id="binance-public",
+        display_name="Binance Public Market Data",
+        requires_credentials=False,
+        supported_market_types=(MarketType.SPOT,),
+        supported_timeframes=tuple(Timeframe),
+    )
+
+    @property
+    def metadata(self) -> MarketDataProviderMetadata:
+        return self._METADATA
+
+    async def test_connection(self) -> None:
+        """Probe Binance's public market-data API without account credentials."""
+
+        payload = await self._request_json(self._PING_URL)
+
+        if not isinstance(payload, dict):
+            raise MarketDataProviderResponseError(
+                "binance public market-data health response must be an object"
+            )
+
+    async def get_candles(
+        self,
+        pair: TradingPair,
+        timeframe: Timeframe,
+        start_time: datetime,
+        end_time: datetime,
+        limit: int | None = None,
+    ) -> list[OHLCVCandle]:
+        self._validate_query(
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit,
+        )
+        self._validate_capabilities(
+            pair=pair,
+            timeframe=timeframe,
+        )
+
+        normalized_start = start_time.astimezone(UTC)
+        normalized_end = end_time.astimezone(UTC)
+        start_milliseconds = _to_epoch_milliseconds(normalized_start)
+        end_milliseconds = _to_epoch_milliseconds(normalized_end)
+
+        if end_milliseconds <= start_milliseconds:
+            return []
+
+        cursor = normalized_start
+        candles: list[OHLCVCandle] = []
+
+        while cursor < normalized_end:
+            if limit is not None and len(candles) >= limit:
+                break
+
+            remaining = None if limit is None else limit - len(candles)
+            page_size = (
+                self._MAX_PAGE_SIZE if remaining is None else min(self._MAX_PAGE_SIZE, remaining)
+            )
+
+            payload = await self._request_json(
+                self._build_url(
+                    pair=pair,
+                    timeframe=timeframe,
+                    start_time=cursor,
+                    end_time=normalized_end,
+                    page_size=page_size,
+                )
+            )
+            rows = self._validate_payload(payload)
+
+            if not rows:
+                break
+
+            last_open_time: datetime | None = None
+
+            for row in rows:
+                candle = self._parse_candle(
+                    row,
+                    pair=pair,
+                    timeframe=timeframe,
+                )
+                last_open_time = candle.open_time
+
+                if candle.is_closed and normalized_start <= candle.open_time < normalized_end:
+                    candles.append(candle)
+
+                    if limit is not None and len(candles) >= limit:
+                        break
+
+            if limit is not None and len(candles) >= limit:
+                break
+
+            if last_open_time is None or len(rows) < page_size:
+                break
+
+            next_cursor = last_open_time + _TIMEFRAME_DURATIONS[timeframe]
+
+            if next_cursor <= cursor:
+                raise MarketDataProviderResponseError(
+                    "binance public market-data pagination did not advance"
+                )
+
+            cursor = next_cursor
+
+        return sorted(
+            candles,
+            key=lambda candle: candle.open_time,
+        )
 
     def _build_url(
         self,

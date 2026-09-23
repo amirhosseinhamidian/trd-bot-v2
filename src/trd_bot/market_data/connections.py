@@ -6,6 +6,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from trd_bot.market_data.kraken import KrakenPublicMarketDataProvider
+from trd_bot.market_data.nobitex import NobitexPublicMarketDataProvider
 from trd_bot.market_data.providers import (
     BinancePublicMarketDataProvider,
     MarketDataProvider,
@@ -193,6 +195,8 @@ class MarketDataProviderCatalog:
             if factories is not None
             else {
                 "binance-public": BinancePublicMarketDataProvider,
+                "kraken-public": KrakenPublicMarketDataProvider,
+                "nobitex-public": NobitexPublicMarketDataProvider,
             }
         )
         if not configured_factories:

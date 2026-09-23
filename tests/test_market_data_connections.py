@@ -70,14 +70,17 @@ def clock(*values: datetime) -> Iterator[datetime]:
     yield from values
 
 
-def test_default_provider_catalog_exposes_binance_public_only() -> None:
+def test_default_provider_catalog_exposes_allowlisted_public_adapters() -> None:
     catalog = MarketDataProviderCatalog()
 
     metadata = catalog.list_metadata()
 
-    assert len(metadata) == 1
-    assert metadata[0].provider_id == "binance-public"
-    assert metadata[0].requires_credentials is False
+    assert [item.provider_id for item in metadata] == [
+        "binance-public",
+        "kraken-public",
+        "nobitex-public",
+    ]
+    assert all(item.requires_credentials is False for item in metadata)
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,8 @@
 # TB2-003 — قرارداد اتصال داده و اسرار
 
-این مرحله فقط اتصال‌های **read-only** دادهٔ بازار را پوشش می‌دهد. provider پیش‌فرض
-`binance-public` عمومی است و هیچ API key، secret، token یا credential دریافت نمی‌کند.
+این مرحله فقط اتصال‌های **read-only** دادهٔ بازار را پوشش می‌دهد. catalog پیش‌فرض providerهای
+عمومی `binance-public`، `nobitex-public` و `kraken-public` را ارائه می‌کند و هیچ API key، secret،
+token یا credential دریافت نمی‌کند.
 افزودن provider معاملاتی، ثبت سفارش، برداشت و نگهداری credential خارج از دامنهٔ v0.2 است.
 
 ## قرارداد قابل اجرا
@@ -21,8 +22,10 @@
 - مقدارهای ورودی نامعتبر در پاسخ validation بازتاب داده نمی‌شوند.
 - credentialهای رایج در خطای health check، پاسخ import و تاریخچهٔ import با
   `[REDACTED]` جایگزین می‌شوند.
-- URLهای Binance فقط پارامترهای `symbol`، `interval`، `startTime`، `endTime` و `limit`
-  دارند.
+- URLهای هر adapter فقط به host ثابت رسمی و پارامترهای allowlistشدهٔ همان endpoint ساخته می‌شوند.
+- Nobitex بیش از ۵۰۰ ردیف را با `page` و فاصلهٔ پیش‌فرض یک ثانیه دریافت می‌کند؛ سقف صفحه محدود است.
+- Kraken فقط پنجرهٔ رسمی ۷۲۰ entry اخیر را می‌پذیرد و بازهٔ قدیمی‌تر را پیش از request رد می‌کند.
+- خروجی همهٔ adapterها فقط کندل بسته، مرتب، UTC و در بازهٔ نیمه‌باز `[start, end)` است.
 
 ## migration
 

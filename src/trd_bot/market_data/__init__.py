@@ -10,6 +10,8 @@ from trd_bot.market_data.connections import (
     MarketDataProviderCatalog,
     MarketDataProviderUnavailableError,
 )
+from trd_bot.market_data.kraken import KrakenPublicMarketDataProvider
+from trd_bot.market_data.nobitex import NobitexPublicMarketDataProvider
 from trd_bot.market_data.provider_probes import (
     MarketDataProbeOutcome,
     MarketDataProbePayloadError,
@@ -52,6 +54,7 @@ __all__ = [
     "DataQualityReport",
     "InMemoryMarketDataConnectionRepository",
     "InMemoryMarketDataProvider",
+    "KrakenPublicMarketDataProvider",
     "MarketDataConnection",
     "MarketDataConnectionHealth",
     "MarketDataConnectionManager",
@@ -75,6 +78,7 @@ __all__ = [
     "MarketDataProviderUnavailableError",
     "MarketDataQualityChecker",
     "MarketDataRetryPolicy",
+    "NobitexPublicMarketDataProvider",
     "available_market_data_probe_provider_ids",
     "classify_market_data_probe_http_status",
     "get_market_data_probe_spec",

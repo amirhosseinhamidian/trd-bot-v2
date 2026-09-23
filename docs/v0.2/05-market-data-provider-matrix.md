@@ -12,10 +12,10 @@
 | نامزد | نوع داده و credential | محدودیت مستند مؤثر بر v0.2 | کندل باز و معنای داده | probe این مرحله | تصمیم فعلی |
 | --- | --- | --- | --- | --- | --- |
 | `binance-public` | tape صرافی، endpoint عمومی | adapter فعلی پروژه؛ دسترسی مستقیم ایران باید جداگانه سنجیده شود. | adapter فعلی فقط کندل بسته را وارد می‌کند. | در این ابزار تکرار نشده؛ benchmark موجود پروژه است. | fallback موجود، نه انتخاب قطعی |
-| `bitstamp-public` | tape صرافی، OHLC عمومی بدون credential | `limit` بین ۱ تا ۱۰۰۰؛ stepهای ۱۵m/۱h/۴h/۱d پشتیبانی می‌شوند. | پارامتر `exclude_current_candle=true` کندل باز را حذف می‌کند؛ volume مربوط به همان بازار است. | BTC/USD، دو کندل ۱h بسته | نامزد adapter |
-| `kraken-public` | tape صرافی، OHLC عمومی بدون credential | حداکثر ۷۲۰ کندل اخیر و دادهٔ قدیمی‌تر با `since` قابل دریافت نیست؛ timeframeهای لازم موجودند. | آخرین ردیف همیشه کندل جاری و نهایی‌نشده است؛ adapter باید آن را حذف کند. | XBT/USD، ۱h | نامزد محدود؛ عمق تاریخچه احتمالاً مانع است |
-| `coinbase-exchange-public` | tape صرافی، candles عمومی | حداکثر ۳۰۰ کندل در هر درخواست؛ ۱۵m/۱h/۱d موجود است اما ۴h مستقیم نیست و باید با قرارداد روشن resample شود. | پاسخ `[time, low, high, open, close, volume]` است؛ مرتب‌سازی و بسته‌بودن آخرین bucket باید در adapter قطعی شود. | BTC/USD، ۱h | نامزد adapter مشروط به ۴h و دسترسی |
-| `nobitex-public` | tape صرافی داخلی، OHLC عمومی و بدون token روی host رسمی `apiv2.nobitex.ir` | حداکثر ۵۰۰ کندل در هر درخواست، pagination با `page`، دادهٔ دقیقه‌ای از آغاز ۱۴۰۱ و سقف ۶۰ درخواست در دقیقه طبق مستند رسمی. | پاسخ TradingView UDF با ستون‌های `t/o/h/l/c/v`؛ قرارداد کندل آخر باید با گزارش واقعی و fixture تثبیت شود. | BTC/USDT، سه ساعت اخیر در ۱h | نامزد adapter داخلی |
+| `bitstamp-public` | tape صرافی، OHLC عمومی بدون credential | `limit` بین ۱ تا ۱۰۰۰؛ stepهای ۱۵m/۱h/۴h/۱d پشتیبانی می‌شوند. | پارامتر `exclude_current_candle=true` کندل باز را حذف می‌کند؛ volume مربوط به همان بازار است. | BTC/USD، دو کندل ۱h بسته | فعلاً deferred؛ مزیت کافی نسبت به دو انتخاب ندارد |
+| `kraken-public` | tape صرافی، OHLC عمومی بدون credential | حداکثر ۷۲۰ کندل اخیر و دادهٔ قدیمی‌تر با `since` قابل دریافت نیست؛ timeframeهای لازم موجودند. | آخرین ردیف همیشه کندل جاری و نهایی‌نشده است؛ adapter آن را حذف می‌کند. | XBT/USD، ۱h | adapter دوم؛ نیازمند VPN و محدود به recent window |
+| `coinbase-exchange-public` | tape صرافی، candles عمومی | حداکثر ۳۰۰ کندل در هر درخواست؛ ۱۵m/۱h/۱d موجود است اما ۴h مستقیم نیست و باید با قرارداد روشن resample شود. | پاسخ `[time, low, high, open, close, volume]` است؛ مرتب‌سازی و بسته‌بودن آخرین bucket باید در adapter قطعی شود. | BTC/USD، ۱h | deferred؛ وابستگی VPN و نبود ۴h مستقیم |
+| `nobitex-public` | tape صرافی داخلی، OHLC عمومی و بدون token روی host رسمی `apiv2.nobitex.ir` | حداکثر ۵۰۰ کندل در هر درخواست، pagination با `page`، دادهٔ دقیقه‌ای از آغاز ۱۴۰۱ و سقف ۶۰ درخواست در دقیقه طبق مستند رسمی. | پاسخ TradingView UDF با ستون‌های `t/o/h/l/c/v`؛ adapter ستون‌ها را هم‌طول می‌خواهد و کندل باز را حذف می‌کند. | BTC/USDT، سه ساعت اخیر در ۱h | adapter اصلی مستقیم |
 | `coinpaprika-free` | قیمت تجمیعی VWAP، نه tape یک صرافی | پلن Free فقط ۲۴ ساعت اخیر و interval برابر ۲۴h دارد. | کندل روز جاری تا پایان روز تغییر می‌کند و volume تجمیعی است. | OHLC روز جاری BTC/USD فقط برای connectivity | fallback اضطراری؛ برای منبع اصلی تحقیق رد می‌شود |
 | CoinGecko Demo | aggregator و نیازمند API key | granularity خودکار و محدودیت‌های پلن؛ با قرارداد timeframe ثابت پروژه هم‌راستا نیست. | OHLC تجمیعی است. | عمداً ندارد؛ probe بدون secret است. | تحقیق تکمیلی، نه adapter این مرحله |
 
@@ -81,15 +81,36 @@ python scripts/probe_market_data_providers.py \
   --output artifacts/provider-probes/iran-direct-nobitex.json
 ```
 
+## شواهد دسترسی و تصمیم انتخاب
+
+در ۲۳ سپتامبر ۲۰۲۶ اجرای اتصال مستقیم ایران برای Nobitex پس از اصلاح host رسمی و برای
+CoinPaprika موفق بود؛ Bitstamp و Kraken پاسخ ۴۰۳ و Coinbase خطای TLS داشتند. اجرای دوم که در
+فایل با label قدیمی `iran-direct-run-2` ذخیره شده، در واقع با VPN انجام شده و نباید شاهد اتصال
+مستقیم تلقی شود. هر پنج نامزد در مسیر VPN payload معتبر برگرداندند.
+
+با تصمیم عملیاتی صاحب پروژه، VPN برای منبع بین‌المللی قابل قبول است. بنابراین:
+
+- `nobitex-public` adapter اصلی مستقیم برای تاریخچهٔ موردنیاز پژوهش است؛
+- `kraken-public` adapter دوم و وابسته به VPN است و به علت سقف رسمی ۷۲۰ entry، fallback تاریخچهٔ
+  بلندمدت نیست؛
+- `coinpaprika-free` فقط connectivity/validation کمکی است و به catalog import اضافه نمی‌شود؛
+- Bitstamp و Coinbase در این مرحله adapter نمی‌شوند تا پیچیدگی بدون مزیت عملی اضافه نشود؛
+- Binance فعلی برای سازگاری باقی می‌ماند ولی انتخاب اصلی محیط ایران نیست.
+
+این تصمیم، الزام سه اجرای مستقیم قبلی را با یک تصمیم ثبت‌شدهٔ عملیاتی جایگزین می‌کند؛ گزارش VPN
+عمداً direct معرفی نمی‌شود. اگر اجرای خودکار روی server انجام شود، همان server باید مسیر خروجی VPN
+یا proxy پایدار داشته باشد؛ VPN لپ‌تاپ به‌تنهایی دسترسی server را تضمین نمی‌کند.
+
 ## gate انتخاب برای TB2-003.5B
 
 یک provider فقط وقتی وارد مرحلهٔ adapter می‌شود که همهٔ شرط‌های سخت زیر برقرار باشند:
 
-1. هر سه اجرای مستقیم، DNS و TLS و payload معتبر داشته باشند؛ timeout تکراری، ۴۰۳، ۴۵۱ یا نیاز به
-   VPN موجب رد provider برای v0.2 است.
+1. provider مستقیم باید DNS، TLS و payload معتبر داشته باشد. provider وابسته به VPN فقط با ثبت
+   صریح این وابستگی و فراهم‌بودن همان مسیر در محیط اجرا پذیرفته می‌شود.
 2. endpoint OHLCV عمومی بدون کارت بانکی، حساب یا credential کار کند.
 3. حداقل ۱h و ۱d مستقیم و ۱۵m/۴h مستقیم یا با resample کاملاً deterministic تأمین شوند.
-4. pagination و عمق واقعی تاریخچه برای backtest قابل قبول باشد؛ هدف اولیه حداقل ۹۰ روز ۱h است.
+4. provider اصلی باید pagination و حداقل ۹۰ روز دادهٔ ۱h داشته باشد. provider دوم می‌تواند پنجرهٔ
+   کوتاه‌تری داشته باشد، به شرط اینکه محدودیت را صریح رد کند و دادهٔ ناقص را کامل جلوه ندهد.
 5. کندل باز، timezone، ترتیب، volume، gap و rate-limit قرارداد مستند و fixture داشته باشند.
 6. شرایط استفاده و مجوز استفاده از داده برای نوع انتشار پروژه بررسی و نتیجه ثبت شود.
 
@@ -102,8 +123,9 @@ python scripts/probe_market_data_providers.py \
 
 - parser هر پنج payload با fixture آفلاین تست شود؛
 - report schema و invariantهای success/failure بدون شبکه تست شوند؛
-- سه گزارش واقعی مستقیم ایران تولید و outcome هر provider ثبت شود؛
-- عمق تاریخچهٔ دو نامزد برتر با requestهای صفحه‌بندی‌شده به‌صورت دستی تأیید شود؛
-- دو provider منتخب و علت رد بقیه در انتهای همین سند ثبت شوند.
+- گزارش مستقیم و گزارش VPN با environment واقعی و بدون جابه‌جایی label تفسیر شوند؛
+- عمق تاریخچه و محدودیت رسمی دو نامزد منتخب در adapter به‌صورت enforceشده ثبت شود؛
+- دو provider منتخب و علت رد یا تعویق بقیه در همین سند ثبت شوند.
 
-تا قبل از تکمیل دو مورد آخر، TB2-003.5B شروع نمی‌شود.
+انتخاب ثبت شد: Nobitex اصلی و Kraken ثانویهٔ وابسته به VPN. پذیرش نهایی به اجرای تست‌ها و smoke
+test روی محیط واقعی صاحب پروژه وابسته است.
