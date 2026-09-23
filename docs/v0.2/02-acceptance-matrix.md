@@ -6,7 +6,7 @@
 
 | ID | شرط پروپوزال | شاهد فعلی و وضعیت ایستا | آزمون پذیرش لازم | مرحلهٔ بستن |
 | --- | --- | --- | --- | --- |
-| D01 | حداقل یک Connection دادهٔ واقعی Test و Historical Import انجام دهد. | allowlist `binance-public`، `market_data_connections.py` و `market_data_imports.py` موجود؛ صحت runtime نامعلوم. | با اتصال عمومی، test موفق و خطای provider/timeout را بررسی؛ واردکردن بازهٔ معلوم، کنترل provenance و بدون secret. | TB2-003، TB2-004، TB2-009 |
+| D01 | حداقل یک Connection دادهٔ واقعی Test و Historical Import انجام دهد. | allowlist `binance-public`، `market_data_connections.py` و `market_data_imports.py` موجود؛ قرارداد امن در TB2-003 تثبیت شد؛ دسترسی مستقیم ایران و provider جایگزین هنوز باید با گزارش واقعی انتخاب شوند. | با اتصال عمومی منتخب، test موفق و خطای provider/timeout را بررسی؛ واردکردن بازهٔ معلوم، کنترل provenance و بدون secret. | TB2-003، TB2-003.5A تا C، TB2-004، TB2-009 |
 | D02 | Dataset از API و فایل به schema یکسان برسد. | `OHLCVCandle`/DatasetBuilder مشترک؛ فرم CSV سمت frontend، ورودی JSON کندل در API؛ JSON/Parquet فایل و mapping نداریم. **جزئی**. | fixture یکسان را از provider/CSV/JSON/Parquet بخوان؛ candleهای canonical و گزارش کیفیت را مقایسه کن؛ ستون غیرمعمول و فایل خراب را آزمایش کن. | TB2-007، TB2-024 |
 | D03 | Quality Report و provenance برای Dataset قابل مشاهده باشد. | `DatasetSnapshot.quality_report` و `provenance` و Dataset Detail فعلی؛ score و coverage کامل نیست. **جزئی**. | UI و API منشأ/بازه/درصد یا گزارش کیفیت مستند را نشان دهند؛ head/tail ناقص و gap تشخیص داده شوند. | TB2-004، TB2-006 |
 | D04 | Refresh نسخهٔ تازه بسازد و نسخهٔ قبلی را تغییر ندهد. | history/version lineage و API refresh موجود؛ اتمی‌بودن و هم‌زمانی نیاز آزمون دارد. **جزئی**. | checksum/نتایج Experiment قدیمی پس از refresh ثابت؛ درخواست هم‌زمان یا شکست history snapshot بی‌صاحب نگذارد. | TB2-005، TB2-006 |
@@ -34,4 +34,4 @@
 
 ## تعریف بستن هر مرحله
 
-برای هر TB2، پچ محدود، شمارهٔ مرحله، سناریوهای خطا، تغییر قرارداد و migration، commandهای قابل اجرا و خروجی واقعی تست صاحب پروژه ثبت می‌شود. برای TB2-001 فقط مستندسازی و سازگاری ماتریس با کد بررسی می‌شود؛ «قبولی عملکرد» شرط این مرحله نیست. TB2-002 گیت CI را قابل ارزیابی می‌کند و TB2-024 شواهد نهایی همهٔ D01 تا D12 را جمع می‌کند. موارد deferred مثل market regime، streaming و provider دوم خارج از دامنهٔ انتشار v0.2 هستند مگر تصمیم دامنه تغییر کند.
+برای هر TB2، پچ محدود، شمارهٔ مرحله، سناریوهای خطا، تغییر قرارداد و migration، commandهای قابل اجرا و خروجی واقعی تست صاحب پروژه ثبت می‌شود. برای TB2-001 فقط مستندسازی و سازگاری ماتریس با کد بررسی می‌شود؛ «قبولی عملکرد» شرط این مرحله نیست. TB2-002 گیت CI را قابل ارزیابی می‌کند و TB2-024 شواهد نهایی همهٔ D01 تا D12 را جمع می‌کند. provider دوم دیگر deferred نیست: سنجش دسترسی و انتخاب در TB2-003.5A، دو adapter در TB2-003.5B و اتصال UI/E2E در TB2-003.5C انجام می‌شود؛ market regime و streaming همچنان خارج از دامنهٔ انتشار v0.2 هستند.
