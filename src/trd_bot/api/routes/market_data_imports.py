@@ -15,6 +15,7 @@ from trd_bot.api.dependencies import (
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.market_data import (
+    DataQualityReport,
     MarketDataConnectionNotFoundError,
     MarketDataConnectionRepository,
     MarketDataConnectionStateError,
@@ -152,6 +153,7 @@ def _build_import_history(
     parent_import_id: str | None = None,
     version_number: int | None = None,
     content_changed: bool | None = None,
+    quality_report: DataQualityReport | None = None,
 ) -> MarketDataImportRecord:
     error_message = None
     error_code = None
@@ -178,6 +180,7 @@ def _build_import_history(
         dataset_id=dataset_id,
         error_code=error_code,
         error_message=error_message,
+        quality_report=quality_report,
         operation=operation,
         source_dataset_id=source_dataset_id,
         root_import_id=root_import_id,
@@ -303,6 +306,16 @@ def _raise_quality_error(error: InvalidDatasetError) -> NoReturn:
                 if error.report.coverage is not None
                 else None
             ),
+            "score": (
+                error.report.score.model_dump(mode="json")
+                if error.report.score is not None
+                else None
+            ),
+            "acceptance": (
+                error.report.acceptance.model_dump(mode="json")
+                if error.report.acceptance is not None
+                else None
+            ),
         },
     ) from error
 
@@ -390,6 +403,7 @@ async def import_historical_dataset(
                     status_value=MarketDataImportStatus.FAILED,
                     candle_count=error.report.candles_checked,
                     error=error,
+                    quality_report=error.report,
                 )
             )
         _raise_quality_error(error)
@@ -426,6 +440,7 @@ async def import_historical_dataset(
         status_value=MarketDataImportStatus.SUCCEEDED,
         candle_count=dataset.candle_count,
         dataset_id=dataset.dataset_id,
+        quality_report=dataset.quality_report,
     )
     result = committer.commit(dataset=dataset, record=record)
     return DatasetSummary.from_dataset(result.dataset)
@@ -580,6 +595,7 @@ async def refresh_historical_import(
                 status_value=MarketDataImportStatus.FAILED,
                 candle_count=error.report.candles_checked,
                 error=error,
+                quality_report=error.report,
                 operation=MarketDataImportOperation.REFRESH,
                 source_dataset_id=source_record.dataset_id,
                 root_import_id=source_record.root_import_id,
@@ -628,6 +644,7 @@ async def refresh_historical_import(
         parent_import_id=source_record.import_id,
         version_number=source_record.version_number + 1,
         content_changed=dataset.dataset_id != source_record.dataset_id,
+        quality_report=dataset.quality_report,
     )
     try:
         result = committer.commit(
@@ -646,6 +663,7 @@ async def refresh_historical_import(
                 status_value=MarketDataImportStatus.FAILED,
                 candle_count=dataset.candle_count,
                 error=error,
+                quality_report=dataset.quality_report,
                 operation=MarketDataImportOperation.REFRESH,
                 source_dataset_id=source_record.dataset_id,
                 root_import_id=source_record.root_import_id,

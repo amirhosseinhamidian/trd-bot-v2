@@ -82,10 +82,26 @@ export interface MarketDataCoverageReport {
   complete: boolean;
 }
 
+export interface MarketDataQualityScore {
+  score_version: 'quality-score-v1';
+  score_percent: number;
+  coverage_percent: number;
+  integrity_percent: number;
+}
+
+export interface MarketDataQualityAcceptance {
+  policy_version: 'strict-quality-v1';
+  accepted: boolean;
+  minimum_score_percent: number;
+  blocking_issue_codes: MarketDataQualityIssueCode[];
+}
+
 export interface MarketDataQualityReport {
   candles_checked: number;
   issues: MarketDataQualityIssue[];
   coverage: MarketDataCoverageReport | null;
+  score: MarketDataQualityScore | null;
+  acceptance: MarketDataQualityAcceptance | null;
 }
 
 export interface HistoricalDatasetImportRequest {
@@ -136,6 +152,7 @@ export interface MarketDataImportRecord {
   dataset_id: string | null;
   error_code: string | null;
   error_message: string | null;
+  quality_report: MarketDataQualityReport | null;
   operation: MarketDataImportOperation;
   source_dataset_id: string | null;
   root_import_id: string | null;

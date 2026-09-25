@@ -44,8 +44,10 @@ from trd_bot.market_data.providers import (
 from trd_bot.market_data.quality import (
     DataCoverageReport,
     DataIssueCode,
+    DataQualityAcceptance,
     DataQualityIssue,
     DataQualityReport,
+    DataQualityScore,
     MarketDataQualityChecker,
 )
 from trd_bot.market_data.security import redact_sensitive_text
@@ -54,8 +56,10 @@ __all__ = [
     "BinancePublicMarketDataProvider",
     "DataCoverageReport",
     "DataIssueCode",
+    "DataQualityAcceptance",
     "DataQualityIssue",
     "DataQualityReport",
+    "DataQualityScore",
     "InMemoryMarketDataConnectionRepository",
     "InMemoryMarketDataProvider",
     "KrakenPublicMarketDataProvider",

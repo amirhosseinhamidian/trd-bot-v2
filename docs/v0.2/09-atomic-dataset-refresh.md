@@ -53,6 +53,10 @@ dataset refresh lost a concurrency race; reload version history
 در نتیجه provenance Snapshot دربارهٔ سازندهٔ canonical content است و provenance هر تلاش از
 MarketDataImportRecord بازسازی می‌شود.
 
+از TB2-006، `quality_report` کامل هر تلاش نیز داخل payload همان `MarketDataImportRecord` ثبت
+می‌شود. بنابراین Refresh بدون تغییر محتوا می‌تواند Snapshot canonical قبلی را reuse کند، اما score و
+policy ارزیابی تازه همچنان در version history قابل ممیزی می‌مانند.
+
 ## شواهد پذیرش
 
 تست‌های این مرحله باید بدون شبکهٔ زنده این موارد را پوشش دهند:

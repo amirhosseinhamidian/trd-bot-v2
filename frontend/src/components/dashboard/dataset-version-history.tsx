@@ -40,6 +40,13 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
+function formatPercent(value: number, locale: DashboardLocale): string {
+  const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted}${locale === 'fa' ? '٪' : '%'}`;
+}
+
 export default function DatasetVersionHistory({
   connectionId,
   importId,
@@ -267,6 +274,30 @@ export default function DatasetVersionHistory({
                           ? copy.versions.contentChanged
                           : copy.versions.contentUnchanged}
                       </Badge>
+                    </div>
+                  ) : null}
+
+                  {record.quality_report?.score && record.quality_report.acceptance ? (
+                    <div className="mt-3 rounded-lg border border-app-border bg-app-surface p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs text-app-muted">{copy.quality.scorePercent}</span>
+                        <Badge
+                          variant={
+                            record.quality_report.acceptance.accepted ? 'success' : 'warning'
+                          }
+                        >
+                          {record.quality_report.acceptance.accepted
+                            ? copy.quality.policyPassed
+                            : copy.quality.policyFailed}
+                        </Badge>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatPercent(record.quality_report.score.score_percent, locale)}
+                      </p>
+                      <p dir="ltr" className="mt-2 text-left text-xs text-app-muted">
+                        {record.quality_report.score.score_version} ·{' '}
+                        {record.quality_report.acceptance.policy_version}
+                      </p>
                     </div>
                   ) : null}
 

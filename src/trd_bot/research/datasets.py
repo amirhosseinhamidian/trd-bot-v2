@@ -474,7 +474,7 @@ class DatasetBuilder:
 
         return DatasetSnapshot(
             dataset_id=f"dataset-{checksum[:16]}",
-            schema_version=2,
+            schema_version=3,
             name=name,
             source=candles[0].source,
             pair=candles[0].pair,

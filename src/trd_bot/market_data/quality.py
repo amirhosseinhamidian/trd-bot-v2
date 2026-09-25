@@ -2,7 +2,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from itertools import pairwise
-from typing import Self
+from math import ceil
+from typing import Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -87,6 +88,42 @@ class DataCoverageReport(BaseModel):
         return self
 
 
+QUALITY_SCORE_VERSION: Final = "quality-score-v1"
+QUALITY_ACCEPTANCE_POLICY_VERSION: Final = "strict-quality-v1"
+
+
+class DataQualityScore(BaseModel):
+    """Versioned, non-compensating score for normalized market data."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    score_version: Literal["quality-score-v1"] = QUALITY_SCORE_VERSION
+    score_percent: float = Field(ge=0, le=100)
+    coverage_percent: float = Field(ge=0, le=100)
+    integrity_percent: float = Field(ge=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_formula(self) -> Self:
+        expected = round(
+            (self.coverage_percent * self.integrity_percent) / 100,
+            2,
+        )
+        if self.score_percent != expected:
+            raise ValueError("quality score does not match its versioned formula")
+        return self
+
+
+class DataQualityAcceptance(BaseModel):
+    """Persisted decision made by one explicit quality-acceptance policy."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    policy_version: Literal["strict-quality-v1"] = QUALITY_ACCEPTANCE_POLICY_VERSION
+    accepted: bool
+    minimum_score_percent: float = Field(default=100.0, ge=100, le=100)
+    blocking_issue_codes: tuple[DataIssueCode, ...] = ()
+
+
 class DataQualityReport(BaseModel):
     """Result of checking a candle collection."""
 
@@ -95,11 +132,35 @@ class DataQualityReport(BaseModel):
     candles_checked: int
     issues: tuple[DataQualityIssue, ...] = ()
     coverage: DataCoverageReport | None = None
+    score: DataQualityScore | None = None
+    acceptance: DataQualityAcceptance | None = None
+
+    @model_validator(mode="after")
+    def validate_score_and_acceptance(self) -> Self:
+        if (self.score is None) != (self.acceptance is None):
+            raise ValueError("quality score and acceptance must be recorded together")
+
+        if self.score is None or self.acceptance is None:
+            return self
+
+        blocking_codes = tuple(dict.fromkeys(issue.code for issue in self.issues))
+        if self.acceptance.blocking_issue_codes != blocking_codes:
+            raise ValueError("quality acceptance does not match report issues")
+
+        expected_accepted = (
+            not blocking_codes and self.score.score_percent >= self.acceptance.minimum_score_percent
+        )
+        if self.acceptance.accepted != expected_accepted:
+            raise ValueError("quality acceptance decision is inconsistent")
+
+        return self
 
     @property
     def is_valid(self) -> bool:
         """Return whether the dataset passed all checks."""
 
+        if self.acceptance is not None:
+            return self.acceptance.accepted
         return not self.issues
 
 
@@ -110,6 +171,17 @@ _TIMEFRAME_INTERVALS: dict[Timeframe, timedelta] = {
     Timeframe.DAY_1: timedelta(days=1),
 }
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+_INTEGRITY_ISSUE_CODES = frozenset(
+    {
+        DataIssueCode.EMPTY_DATA,
+        DataIssueCode.MIXED_SERIES,
+        DataIssueCode.DUPLICATE_TIMESTAMP,
+        DataIssueCode.OUT_OF_ORDER,
+        DataIssueCode.OPEN_CANDLE,
+        DataIssueCode.OUTSIDE_REQUESTED_RANGE,
+        DataIssueCode.UNALIGNED_CANDLE,
+    }
+)
 
 
 def _to_epoch_microseconds(value: datetime) -> int:
@@ -198,9 +270,9 @@ class MarketDataQualityChecker:
                     timeframe=requested_timeframe,
                 )
 
-            return DataQualityReport(
-                candles_checked=0,
-                issues=tuple(issues),
+            return self._build_report(
+                candles=candles,
+                issues=issues,
                 coverage=empty_coverage,
             )
 
@@ -373,11 +445,98 @@ class MarketDataQualityChecker:
                         )
                     )
 
+        return self._build_report(
+            candles=candles,
+            issues=issues,
+            coverage=coverage,
+        )
+
+    @staticmethod
+    def _build_report(
+        *,
+        candles: Sequence[OHLCVCandle],
+        issues: Sequence[DataQualityIssue],
+        coverage: DataCoverageReport | None,
+    ) -> DataQualityReport:
+        coverage_percent = MarketDataQualityChecker._score_coverage_percent(
+            candles=candles,
+            coverage=coverage,
+        )
+        integrity_percent = MarketDataQualityChecker._score_integrity_percent(
+            candles=candles,
+            issues=issues,
+        )
+        score = DataQualityScore(
+            score_percent=round((coverage_percent * integrity_percent) / 100, 2),
+            coverage_percent=coverage_percent,
+            integrity_percent=integrity_percent,
+        )
+        blocking_codes = tuple(dict.fromkeys(issue.code for issue in issues))
+        acceptance = DataQualityAcceptance(
+            accepted=not blocking_codes and score.score_percent == 100.0,
+            blocking_issue_codes=blocking_codes,
+        )
+
         return DataQualityReport(
             candles_checked=len(candles),
             issues=tuple(issues),
             coverage=coverage,
+            score=score,
+            acceptance=acceptance,
         )
+
+    @staticmethod
+    def _score_coverage_percent(
+        *,
+        candles: Sequence[OHLCVCandle],
+        coverage: DataCoverageReport | None,
+    ) -> float:
+        if coverage is not None:
+            return coverage.coverage_percent
+        if not candles:
+            return 0.0
+
+        reference_timeframe = candles[0].timeframe
+        interval = _TIMEFRAME_INTERVALS[reference_timeframe]
+        unique_open_times = sorted(
+            {
+                candle.open_time.astimezone(UTC)
+                for candle in candles
+                if candle.timeframe is reference_timeframe
+            }
+        )
+        if not unique_open_times:
+            return 0.0
+
+        expected_candles = 1 + sum(
+            max(1, ceil((current - previous) / interval))
+            for previous, current in pairwise(unique_open_times)
+        )
+        return round((len(unique_open_times) / expected_candles) * 100, 2)
+
+    @staticmethod
+    def _score_integrity_percent(
+        *,
+        candles: Sequence[OHLCVCandle],
+        issues: Sequence[DataQualityIssue],
+    ) -> float:
+        if not candles:
+            return 0.0
+
+        integrity_issues = tuple(issue for issue in issues if issue.code in _INTEGRITY_ISSUE_CODES)
+        if any(issue.timestamp is None for issue in integrity_issues):
+            return 0.0
+
+        affected_timestamps = {
+            issue.timestamp.astimezone(UTC)
+            for issue in integrity_issues
+            if issue.timestamp is not None
+        }
+        affected_candles = sum(
+            candle.open_time.astimezone(UTC) in affected_timestamps for candle in candles
+        )
+        unaffected_candles = max(0, len(candles) - affected_candles)
+        return round((unaffected_candles / len(candles)) * 100, 2)
 
     @staticmethod
     def _coverage_report(

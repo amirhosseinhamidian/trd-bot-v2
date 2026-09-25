@@ -55,6 +55,13 @@ function formatCandleLimit(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
+function formatPercent(value: number, locale: DashboardLocale): string {
+  const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted}${locale === 'fa' ? '٪' : '%'}`;
+}
+
 function isPreviewMismatchError(error: unknown): boolean {
   if (!(error instanceof ApiRequestError) || error.status !== 409) {
     return false;
@@ -396,6 +403,51 @@ export default function HistoricalDatasetImportForm({
             </div>
           </dl>
 
+          {preview.quality_report.score && preview.quality_report.acceptance ? (
+            <section className="mt-4 rounded-xl border border-app-border bg-app-surface p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h5 className="text-sm font-semibold text-app-foreground">{copy.scoreTitle}</h5>
+                <Badge variant={preview.quality_report.acceptance.accepted ? 'success' : 'warning'}>
+                  {preview.quality_report.acceptance.accepted
+                    ? copy.policyPassed
+                    : copy.policyFailed}
+                </Badge>
+              </div>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <dt className="text-app-muted">{copy.scorePercent}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatPercent(preview.quality_report.score.score_percent, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.coverageComponent}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatPercent(preview.quality_report.score.coverage_percent, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.integrityComponent}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatPercent(preview.quality_report.score.integrity_percent, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.scoreVersion}</dt>
+                  <dd dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
+                    {preview.quality_report.score.score_version}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.policyVersion}</dt>
+                  <dd dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
+                    {preview.quality_report.acceptance.policy_version}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
+
           {preview.quality_report.coverage ? (
             <section className="mt-4 rounded-xl border border-app-border bg-app-surface p-4">
               <h5 className="text-sm font-semibold text-app-foreground">{copy.coverageTitle}</h5>
@@ -421,10 +473,7 @@ export default function HistoricalDatasetImportForm({
                 <div>
                   <dt className="text-app-muted">{copy.coveragePercent}</dt>
                   <dd className="mt-1 font-semibold text-app-foreground">
-                    {new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
-                      maximumFractionDigits: 2,
-                    }).format(preview.quality_report.coverage.coverage_percent)}
-                    {locale === 'fa' ? '٪' : '%'}
+                    {formatPercent(preview.quality_report.coverage.coverage_percent, locale)}
                   </dd>
                 </div>
               </dl>

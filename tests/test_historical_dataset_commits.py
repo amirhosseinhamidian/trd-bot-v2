@@ -126,6 +126,7 @@ def build_record(
         status=MarketDataImportStatus.SUCCEEDED,
         candle_count=dataset.candle_count,
         dataset_id=dataset.dataset_id,
+        quality_report=dataset.quality_report,
         operation=operation,
         source_dataset_id=source_dataset_id,
         root_import_id=root_import_id,
@@ -153,7 +154,15 @@ def test_success_commit_persists_snapshot_and_history_together(
 
     with session_factory() as session:
         assert SqlAlchemyDatasetRepository(session).count() == 1
-        assert SqlAlchemyMarketDataImportRepository(session).count() == 1
+        history = SqlAlchemyMarketDataImportRepository(session)
+        assert history.count() == 1
+        stored = history.get(import_id)
+        assert stored is not None
+        assert stored.quality_report is not None
+        assert stored.quality_report.score is not None
+        assert stored.quality_report.score.score_percent == 100.0
+        assert stored.quality_report.acceptance is not None
+        assert stored.quality_report.acceptance.accepted is True
 
 
 def test_history_failure_rolls_back_a_new_snapshot(

@@ -53,6 +53,18 @@ const preview: HistoricalDatasetImportPreview = {
       coverage_percent: 100,
       complete: true,
     },
+    score: {
+      score_version: 'quality-score-v1',
+      score_percent: 100,
+      coverage_percent: 100,
+      integrity_percent: 100,
+    },
+    acceptance: {
+      policy_version: 'strict-quality-v1',
+      accepted: true,
+      minimum_score_percent: 100,
+      blocking_issue_codes: [],
+    },
   },
   ready_to_import: true,
 };

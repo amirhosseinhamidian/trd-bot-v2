@@ -218,6 +218,18 @@ def test_preview_fetches_normalized_candles_without_persisting_dataset(
         [create_candle(0), create_candle(1)]
     )
     assert payload["quality_report"]["issues"] == []
+    assert payload["quality_report"]["score"] == {
+        "score_version": "quality-score-v1",
+        "score_percent": 100.0,
+        "coverage_percent": 100.0,
+        "integrity_percent": 100.0,
+    }
+    assert payload["quality_report"]["acceptance"] == {
+        "policy_version": "strict-quality-v1",
+        "accepted": True,
+        "minimum_score_percent": 100.0,
+        "blocking_issue_codes": [],
+    }
     assert payload["quality_report"]["coverage"] == {
         "requested_start_time": START.isoformat().replace("+00:00", "Z"),
         "requested_end_time": (START + timedelta(hours=2)).isoformat().replace("+00:00", "Z"),
@@ -272,6 +284,8 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert root_record["root_import_id"] == root_record["import_id"]
     assert root_record["version_number"] == 1
     assert root_record["operation"] == "import"
+    assert root_record["quality_report"]["score"]["score_percent"] == 100.0
+    assert root_record["quality_report"]["acceptance"]["accepted"] is True
 
     import_id = history_payload["items"][0]["import_id"]
     detail = client.get(f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{import_id}")
@@ -281,7 +295,7 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     dataset_detail = client.get(f"/api/v1/research/datasets/{first.json()['dataset_id']}/summary")
     assert dataset_detail.status_code == 200
     dataset_payload = dataset_detail.json()
-    assert dataset_payload["schema_version"] == 2
+    assert dataset_payload["schema_version"] == 3
     assert dataset_payload["provenance"]["kind"] == "market_data_import"
     assert dataset_payload["provenance"]["connection_id"] == CONNECTION_ID
     assert dataset_payload["provenance"]["provider_id"] == "synthetic-public"
@@ -289,6 +303,8 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert dataset_payload["quality_report"]["candles_checked"] == 2
     assert dataset_payload["quality_report"]["issues"] == []
     assert dataset_payload["quality_report"]["coverage"]["complete"] is True
+    assert dataset_payload["quality_report"]["score"]["score_percent"] == 100.0
+    assert dataset_payload["quality_report"]["acceptance"]["accepted"] is True
 
 
 def test_import_requires_preview_checksum(
@@ -381,6 +397,8 @@ def test_refresh_without_content_change_records_new_version_without_new_snapshot
     assert payload["source_dataset_id"] == root["dataset_id"]
     assert payload["dataset_id"] == root["dataset_id"]
     assert payload["content_changed"] is False
+    assert payload["quality_report"]["score"]["score_percent"] == 100.0
+    assert payload["quality_report"]["acceptance"]["accepted"] is True
     assert datasets.count() == 1
     assert datasets.get(root["dataset_id"]) == original_snapshot
 
@@ -440,6 +458,8 @@ def test_refresh_with_changed_content_creates_new_immutable_snapshot(
     dataset_detail = client.get(f"/api/v1/research/datasets/{payload['dataset_id']}/summary")
     assert dataset_detail.status_code == 200
     assert dataset_detail.json()["provenance"]["import_id"] == payload["import_id"]
+    assert dataset_detail.json()["quality_report"]["score"]["score_percent"] == 100.0
+    assert dataset_detail.json()["quality_report"]["acceptance"]["accepted"] is True
 
 
 def test_failed_refresh_is_recorded_without_consuming_a_version_number(
@@ -522,9 +542,7 @@ def test_refresh_commit_conflict_is_recorded_and_requires_reload(
     )
     assert datasets.count() == 1
 
-    failed = client.get(
-        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
-    )
+    failed = client.get(f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed")
     assert failed.status_code == 200
     assert failed.json()["total"] == 1
     record = failed.json()["items"][0]
@@ -584,8 +602,12 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
     assert preview.status_code == 200
     assert preview.json()["ready_to_import"] is False
     assert preview.json()["quality_report"]["issues"][0]["code"] == "missing_candle"
+    assert preview.json()["quality_report"]["score"]["score_percent"] == 66.67
+    assert preview.json()["quality_report"]["acceptance"]["accepted"] is False
     assert imported.status_code == 422
     assert imported.json()["detail"]["issues"][0]["code"] == "missing_candle"
+    assert imported.json()["detail"]["score"]["score_percent"] == 66.67
+    assert imported.json()["detail"]["acceptance"]["accepted"] is False
     assert datasets.count() == 0
 
     history_response = client.get(
@@ -595,6 +617,8 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
     assert history_response.json()["total"] == 1
     assert history_response.json()["items"][0]["error_code"] == "quality_check_failed"
     assert history_response.json()["items"][0]["candle_count"] == 2
+    assert history_response.json()["items"][0]["quality_report"]["score"]["score_percent"] == 66.67
+    assert history_response.json()["items"][0]["quality_report"]["acceptance"]["accepted"] is False
 
 
 def test_preview_rejects_silent_head_and_tail_truncation(

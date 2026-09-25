@@ -30,6 +30,14 @@ export type HistoricalImportCopy = {
   coveragePercent: string;
   previewChecksum: string;
   qualityTitle: string;
+  scoreTitle: string;
+  scorePercent: string;
+  coverageComponent: string;
+  integrityComponent: string;
+  scoreVersion: string;
+  policyVersion: string;
+  policyPassed: string;
+  policyFailed: string;
   qualityPassed: string;
   qualityIssues: string;
   importedTitle: string;
@@ -76,6 +84,14 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     coveragePercent: 'درصد پوشش',
     previewChecksum: 'Checksum پیش‌نمایش',
     qualityTitle: 'گزارش کیفیت',
+    scoreTitle: 'امتیاز کیفیت نسخه‌دار',
+    scorePercent: 'امتیاز نهایی',
+    coverageComponent: 'مولفه پوشش',
+    integrityComponent: 'مولفه یکپارچگی',
+    scoreVersion: 'نسخه فرمول',
+    policyVersion: 'نسخه سیاست پذیرش',
+    policyPassed: 'پذیرفته‌شده',
+    policyFailed: 'ردشده',
     qualityPassed: 'هیچ مشکل کیفیتی پیدا نشد.',
     qualityIssues: 'مشکلات کیفیت',
     importedTitle: 'Dataset ساخته شد',
@@ -134,6 +150,14 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     coveragePercent: 'Coverage',
     previewChecksum: 'Preview checksum',
     qualityTitle: 'Quality report',
+    scoreTitle: 'Versioned quality score',
+    scorePercent: 'Final score',
+    coverageComponent: 'Coverage component',
+    integrityComponent: 'Integrity component',
+    scoreVersion: 'Formula version',
+    policyVersion: 'Acceptance policy',
+    policyPassed: 'Accepted',
+    policyFailed: 'Rejected',
     qualityPassed: 'No quality issues were detected.',
     qualityIssues: 'Quality issues',
     importedTitle: 'Dataset created',

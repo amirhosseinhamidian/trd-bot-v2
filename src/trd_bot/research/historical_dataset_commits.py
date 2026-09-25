@@ -52,6 +52,10 @@ def validate_commit_request(
         raise ValueError("atomic historical dataset commits require a successful record")
     if record.dataset_id != dataset.dataset_id:
         raise ValueError("import history must reference the committed dataset")
+    if dataset.quality_report is None:
+        raise ValueError("historical dataset commits require quality evidence")
+    if record.quality_report != dataset.quality_report:
+        raise ValueError("import history must preserve the dataset quality evaluation")
 
     if record.operation is MarketDataImportOperation.REFRESH:
         if expected_parent_import_id is None:

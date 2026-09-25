@@ -38,6 +38,23 @@ const root: MarketDataImportRecord = {
   dataset_id: currentDatasetId,
   error_code: null,
   error_message: null,
+  quality_report: {
+    candles_checked: 2,
+    issues: [],
+    coverage: null,
+    score: {
+      score_version: 'quality-score-v1',
+      score_percent: 100,
+      coverage_percent: 100,
+      integrity_percent: 100,
+    },
+    acceptance: {
+      policy_version: 'strict-quality-v1',
+      accepted: true,
+      minimum_score_percent: 100,
+      blocking_issue_codes: [],
+    },
+  },
   operation: 'import',
   source_dataset_id: null,
   root_import_id: 'market-data-import-root',
@@ -109,6 +126,8 @@ describe('DatasetVersionHistory', () => {
     expect(await screen.findByText('Version 1')).toBeInTheDocument();
     expect(screen.getByText('Initial import')).toBeInTheDocument();
     expect(screen.getByText('Current snapshot')).toBeInTheDocument();
+    expect(screen.getByText(/quality-score-v1/)).toBeInTheDocument();
+    expect(screen.getByText(/strict-quality-v1/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Refresh latest version' }));
 

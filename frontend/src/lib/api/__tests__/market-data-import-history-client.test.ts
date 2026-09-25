@@ -24,6 +24,7 @@ const importRecord: MarketDataImportRecord = {
   dataset_id: 'dataset-1234567890abcdef',
   error_code: null,
   error_message: null,
+  quality_report: null,
   operation: 'import',
   source_dataset_id: null,
   root_import_id: 'market-data-import-1',

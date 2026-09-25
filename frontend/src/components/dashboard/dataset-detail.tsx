@@ -52,6 +52,13 @@ function formatNumber(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
+function formatPercent(value: number, locale: DashboardLocale): string {
+  const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted}${locale === 'fa' ? '٪' : '%'}`;
+}
+
 export default function DatasetDetail({ dataset, initialCandlesPage, locale }: DatasetDetailProps) {
   const copy = getDatasetDetailCopy(locale);
 
@@ -91,7 +98,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
   const qualityStatus =
     dataset.quality_report === null
       ? 'notRecorded'
-      : qualityIssues.length === 0
+      : (dataset.quality_report.acceptance?.accepted ?? qualityIssues.length === 0)
         ? 'passed'
         : 'issues';
 
@@ -348,6 +355,65 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                 </div>
               </dl>
 
+              {dataset.quality_report.score && dataset.quality_report.acceptance ? (
+                <section className="mt-5 rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-sm font-semibold text-app-foreground">
+                      {copy.quality.scoreTitle}
+                    </h4>
+                    <Badge
+                      variant={dataset.quality_report.acceptance.accepted ? 'success' : 'warning'}
+                    >
+                      {dataset.quality_report.acceptance.accepted
+                        ? copy.quality.policyPassed
+                        : copy.quality.policyFailed}
+                    </Badge>
+                  </div>
+                  <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.scorePercent}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatPercent(dataset.quality_report.score.score_percent, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.coverageComponent}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatPercent(dataset.quality_report.score.coverage_percent, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.integrityComponent}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatPercent(dataset.quality_report.score.integrity_percent, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.scoreVersion}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {dataset.quality_report.score.score_version}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.policyVersion}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {dataset.quality_report.acceptance.policy_version}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : (
+                <p className="mt-5 text-sm leading-7 text-app-muted">
+                  {copy.quality.scoreNotRecorded}
+                </p>
+              )}
+
               {dataset.quality_report.coverage ? (
                 <section className="mt-5 rounded-xl border border-app-border bg-app-surface-muted p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -384,10 +450,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                     <div>
                       <dt className="text-xs text-app-muted">{copy.quality.coveragePercent}</dt>
                       <dd className="mt-2 text-sm font-semibold text-app-foreground">
-                        {new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
-                          maximumFractionDigits: 2,
-                        }).format(dataset.quality_report.coverage.coverage_percent)}
-                        {locale === 'fa' ? '٪' : '%'}
+                        {formatPercent(dataset.quality_report.coverage.coverage_percent, locale)}
                       </dd>
                     </div>
                   </dl>

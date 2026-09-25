@@ -103,6 +103,18 @@ const preview: HistoricalDatasetImportPreview = {
       coverage_percent: 100,
       complete: true,
     },
+    score: {
+      score_version: 'quality-score-v1',
+      score_percent: 100,
+      coverage_percent: 100,
+      integrity_percent: 100,
+    },
+    acceptance: {
+      policy_version: 'strict-quality-v1',
+      accepted: true,
+      minimum_score_percent: 100,
+      blocking_issue_codes: [],
+    },
   },
   ready_to_import: true,
 };
@@ -175,7 +187,10 @@ describe('HistoricalDatasetImportForm', () => {
     expect(await screen.findByText('Ready to import')).toBeInTheDocument();
     expect(screen.getByText('Range coverage')).toBeInTheDocument();
     expect(screen.getByText('Expected candles')).toBeInTheDocument();
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getByText('Versioned quality score')).toBeInTheDocument();
+    expect(screen.getByText('quality-score-v1')).toBeInTheDocument();
+    expect(screen.getByText('strict-quality-v1')).toBeInTheDocument();
+    expect(screen.getAllByText('100%').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Create dataset' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Create dataset' }));
@@ -217,6 +232,18 @@ describe('HistoricalDatasetImportForm', () => {
             timestamp: '2026-08-20T11:00:00Z',
           },
         ],
+        score: {
+          score_version: 'quality-score-v1',
+          score_percent: 95.83,
+          coverage_percent: 95.83,
+          integrity_percent: 100,
+        },
+        acceptance: {
+          policy_version: 'strict-quality-v1',
+          accepted: false,
+          minimum_score_percent: 100,
+          blocking_issue_codes: ['missing_candle'],
+        },
       },
     } satisfies HistoricalDatasetImportPreview);
 

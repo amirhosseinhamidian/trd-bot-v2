@@ -47,6 +47,15 @@ export type DatasetDetailCopy = {
     };
     candlesChecked: string;
     issueCount: string;
+    scoreTitle: string;
+    scorePercent: string;
+    coverageComponent: string;
+    integrityComponent: string;
+    scoreVersion: string;
+    policyVersion: string;
+    policyPassed: string;
+    policyFailed: string;
+    scoreNotRecorded: string;
     coverageTitle: string;
     expectedCandles: string;
     receivedCandles: string;
@@ -166,6 +175,15 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       },
       candlesChecked: 'کندل‌های بررسی‌شده',
       issueCount: 'تعداد مسائل',
+      scoreTitle: 'امتیاز کیفیت نسخه‌دار',
+      scorePercent: 'امتیاز نهایی',
+      coverageComponent: 'مولفه پوشش',
+      integrityComponent: 'مولفه یکپارچگی',
+      scoreVersion: 'نسخه فرمول',
+      policyVersion: 'نسخه سیاست پذیرش',
+      policyPassed: 'پذیرفته‌شده',
+      policyFailed: 'ردشده',
+      scoreNotRecorded: 'برای این گزارش قدیمی امتیاز و سیاست پذیرش ثبت نشده است.',
       coverageTitle: 'پوشش بازه درخواستی',
       expectedCandles: 'کندل مورد انتظار',
       receivedCandles: 'کندل دریافت‌شده',
@@ -286,6 +304,15 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       },
       candlesChecked: 'Candles checked',
       issueCount: 'Issues',
+      scoreTitle: 'Versioned quality score',
+      scorePercent: 'Final score',
+      coverageComponent: 'Coverage component',
+      integrityComponent: 'Integrity component',
+      scoreVersion: 'Formula version',
+      policyVersion: 'Acceptance policy',
+      policyPassed: 'Accepted',
+      policyFailed: 'Rejected',
+      scoreNotRecorded: 'No score or acceptance policy was recorded for this legacy report.',
       coverageTitle: 'Requested range coverage',
       expectedCandles: 'Expected candles',
       receivedCandles: 'Received candles',

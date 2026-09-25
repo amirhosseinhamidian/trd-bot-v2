@@ -55,7 +55,7 @@ def test_dataset_is_created_from_valid_candles() -> None:
         ],
     )
 
-    assert dataset.schema_version == 2
+    assert dataset.schema_version == 3
     assert dataset.candle_count == 2
     assert dataset.source == "test-exchange"
     assert dataset.pair.symbol == "BTC/USDT"
@@ -67,6 +67,10 @@ def test_dataset_is_created_from_valid_candles() -> None:
     assert dataset.quality_report.candles_checked == 2
     assert dataset.quality_report.issues == ()
     assert dataset.quality_report.coverage is None
+    assert dataset.quality_report.score is not None
+    assert dataset.quality_report.score.score_percent == 100.0
+    assert dataset.quality_report.acceptance is not None
+    assert dataset.quality_report.acceptance.accepted is True
 
 
 def test_dataset_persists_requested_range_coverage() -> None:

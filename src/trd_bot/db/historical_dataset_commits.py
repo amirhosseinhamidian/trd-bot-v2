@@ -77,9 +77,7 @@ class SqlAlchemyHistoricalDatasetCommitter:
 
                 existing = self._datasets.get(dataset.dataset_id)
                 can_retry_shared_snapshot = (
-                    attempt == 0
-                    and existing is not None
-                    and existing.has_same_content(dataset)
+                    attempt == 0 and existing is not None and existing.has_same_content(dataset)
                 )
                 if can_retry_shared_snapshot:
                     continue

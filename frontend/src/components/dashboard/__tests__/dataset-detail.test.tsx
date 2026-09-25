@@ -23,7 +23,7 @@ const initialCandlesPage: Page<OHLCVCandle> = {
 function importedDataset(): DatasetDetailSummary {
   return {
     dataset_id: 'dataset-1234567890abcdef',
-    schema_version: 2,
+    schema_version: 3,
     name: 'BTC historical import',
     source: 'synthetic-public',
     pair: {
@@ -61,6 +61,18 @@ function importedDataset(): DatasetDetailSummary {
         coverage_percent: 100,
         complete: true,
       },
+      score: {
+        score_version: 'quality-score-v1',
+        score_percent: 100,
+        coverage_percent: 100,
+        integrity_percent: 100,
+      },
+      acceptance: {
+        policy_version: 'strict-quality-v1',
+        accepted: true,
+        minimum_score_percent: 100,
+        blocking_issue_codes: [],
+      },
     },
   };
 }
@@ -90,7 +102,10 @@ describe('DatasetDetail', () => {
     expect(screen.getByText('Requested range coverage')).toBeInTheDocument();
     expect(screen.getByText('Complete coverage')).toBeInTheDocument();
     expect(screen.getByText('Expected candles')).toBeInTheDocument();
-    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Versioned quality score' })).toBeInTheDocument();
+    expect(screen.getByText('quality-score-v1')).toBeInTheDocument();
+    expect(screen.getByText('strict-quality-v1')).toBeInTheDocument();
+    expect(screen.getAllByText('100%').length).toBeGreaterThanOrEqual(1);
     expect(
       screen.getByText('No data-quality issues were recorded when this snapshot was created.'),
     ).toBeInTheDocument();

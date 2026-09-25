@@ -5,6 +5,7 @@ from typing import Protocol, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.market_data.quality import DataQualityReport
 
 
 class MarketDataImportStatus(StrEnum):
@@ -41,6 +42,7 @@ class MarketDataImportRecord(BaseModel):
     dataset_id: str | None = Field(default=None, min_length=1, max_length=100)
     error_code: str | None = Field(default=None, min_length=1, max_length=100)
     error_message: str | None = Field(default=None, min_length=1, max_length=500)
+    quality_report: DataQualityReport | None = None
 
     operation: MarketDataImportOperation = MarketDataImportOperation.IMPORT
     source_dataset_id: str | None = Field(default=None, min_length=1, max_length=100)
@@ -100,11 +102,19 @@ class MarketDataImportRecord(BaseModel):
                 raise ValueError("successful import must contain candles")
             if self.error_code is not None or self.error_message is not None:
                 raise ValueError("successful import cannot contain failure metadata")
+            if self.quality_report is not None and not self.quality_report.is_valid:
+                raise ValueError("successful import cannot contain rejected quality evidence")
         else:
             if self.dataset_id is not None:
                 raise ValueError("failed import cannot reference a dataset")
             if self.error_code is None or self.error_message is None:
                 raise ValueError("failed import must contain failure metadata")
+
+        if (
+            self.quality_report is not None
+            and self.quality_report.candles_checked != self.candle_count
+        ):
+            raise ValueError("import candle count must match its quality report")
 
         if self.operation is MarketDataImportOperation.IMPORT:
             if (
