@@ -13,6 +13,7 @@ from trd_bot.main import app
 from trd_bot.market_data import (
     InMemoryMarketDataConnectionRepository,
     MarketDataProvider,
+    MarketDataProviderAccessMode,
     MarketDataProviderCatalog,
     MarketDataProviderError,
     MarketDataProviderMetadata,
@@ -33,6 +34,9 @@ class ApiSyntheticProvider(MarketDataProvider):
             requires_credentials=False,
             supported_market_types=(MarketType.SPOT,),
             supported_timeframes=(Timeframe.HOUR_1,),
+            default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+            access_mode=MarketDataProviderAccessMode.DIRECT,
+            max_closed_candles=None,
         )
 
     async def test_connection(self) -> None:
@@ -97,6 +101,13 @@ def test_api_lists_allowlisted_provider_capabilities(
             "requires_credentials": False,
             "supported_market_types": ["spot"],
             "supported_timeframes": ["1h"],
+            "default_pair": {
+                "base_asset": "BTC",
+                "quote_asset": "USDT",
+                "market_type": "spot",
+            },
+            "access_mode": "direct",
+            "max_closed_candles": None,
         }
     ]
 

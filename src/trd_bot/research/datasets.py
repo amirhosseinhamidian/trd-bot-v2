@@ -453,16 +453,24 @@ class DatasetBuilder:
         *,
         created_at: datetime | None = None,
         provenance: DatasetProvenance | None = None,
+        requested_start_time: datetime | None = None,
+        requested_end_time: datetime | None = None,
+        requested_timeframe: Timeframe | None = None,
     ) -> DatasetSnapshot:
         if created_at is not None and (created_at.tzinfo is None or created_at.utcoffset() is None):
             raise ValueError("created time must include timezone information")
 
-        report = self._quality_checker.check(candles)
+        report = self._quality_checker.check(
+            candles,
+            requested_start_time=requested_start_time,
+            requested_end_time=requested_end_time,
+            requested_timeframe=requested_timeframe,
+        )
 
         if not report.is_valid:
             raise InvalidDatasetError(report)
 
-        checksum = self._calculate_checksum(candles)
+        checksum = calculate_dataset_checksum(candles)
 
         return DatasetSnapshot(
             dataset_id=f"dataset-{checksum[:16]}",
@@ -481,25 +489,25 @@ class DatasetBuilder:
             candles=tuple(candles),
         )
 
-    @staticmethod
-    def _calculate_checksum(
-        candles: Sequence[OHLCVCandle],
-    ) -> str:
-        digest = hashlib.sha256()
 
-        for candle in candles:
-            candle_data = candle.model_dump(
-                mode="json",
-                exclude={"received_at"},
-            )
+def calculate_dataset_checksum(candles: Sequence[OHLCVCandle]) -> str:
+    """Return the stable content identity shared by preview and immutable snapshot."""
 
-            serialized_candle = json.dumps(
-                candle_data,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
+    digest = hashlib.sha256()
 
-            digest.update(serialized_candle.encode("utf-8"))
-            digest.update(b"\n")
+    for candle in candles:
+        candle_data = candle.model_dump(
+            mode="json",
+            exclude={"received_at"},
+        )
 
-        return digest.hexdigest()
+        serialized_candle = json.dumps(
+            candle_data,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+        digest.update(serialized_candle.encode("utf-8"))
+        digest.update(b"\n")
+
+    return digest.hexdigest()

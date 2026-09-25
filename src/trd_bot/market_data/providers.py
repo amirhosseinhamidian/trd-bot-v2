@@ -18,17 +18,6 @@ from trd_bot.domain.market_data import (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class MarketDataProviderMetadata:
-    """Stable provider capabilities exposed to connector orchestration."""
-
-    provider_id: str
-    display_name: str
-    requires_credentials: bool
-    supported_market_types: tuple[MarketType, ...]
-    supported_timeframes: tuple[Timeframe, ...]
-
-
 class MarketDataProviderErrorCode(StrEnum):
     """Stable public categories for external provider failures."""
 
@@ -38,6 +27,27 @@ class MarketDataProviderErrorCode(StrEnum):
     HTTP_ERROR = "provider_http_error"
     RESPONSE_INVALID = "provider_response_invalid"
     UNAVAILABLE = "provider_unavailable"
+
+
+class MarketDataProviderAccessMode(StrEnum):
+    """Operational network route selected for this research deployment."""
+
+    DIRECT = "direct"
+    VPN_REQUIRED = "vpn_required"
+
+
+@dataclass(frozen=True, slots=True)
+class MarketDataProviderMetadata:
+    """Stable provider capabilities exposed to connector orchestration."""
+
+    provider_id: str
+    display_name: str
+    requires_credentials: bool
+    supported_market_types: tuple[MarketType, ...]
+    supported_timeframes: tuple[Timeframe, ...]
+    default_pair: TradingPair
+    access_mode: MarketDataProviderAccessMode
+    max_closed_candles: int | None
 
 
 class MarketDataProviderError(RuntimeError):
@@ -60,6 +70,16 @@ class MarketDataProviderResponseError(MarketDataProviderError):
         super().__init__(
             message,
             code=MarketDataProviderErrorCode.RESPONSE_INVALID,
+        )
+
+
+class MarketDataProviderQueryError(MarketDataProviderError):
+    """Raised when a valid provider cannot serve the requested historical query."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            code=MarketDataProviderErrorCode.UNAVAILABLE,
         )
 
 
@@ -328,6 +348,9 @@ class InMemoryMarketDataProvider(MarketDataProvider):
         requires_credentials=False,
         supported_market_types=(MarketType.SPOT,),
         supported_timeframes=tuple(Timeframe),
+        default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+        access_mode=MarketDataProviderAccessMode.DIRECT,
+        max_closed_candles=None,
     )
 
     def __init__(self, candles: Iterable[OHLCVCandle]) -> None:
@@ -387,6 +410,9 @@ class BinancePublicMarketDataProvider(RetryingPublicJsonMarketDataProvider):
         requires_credentials=False,
         supported_market_types=(MarketType.SPOT,),
         supported_timeframes=tuple(Timeframe),
+        default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+        access_mode=MarketDataProviderAccessMode.VPN_REQUIRED,
+        max_closed_candles=None,
     )
 
     @property

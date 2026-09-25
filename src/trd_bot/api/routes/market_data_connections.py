@@ -8,13 +8,14 @@ from trd_bot.api.dependencies import (
     get_market_data_provider_catalog,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
-from trd_bot.domain.market_data import MarketType, Timeframe
+from trd_bot.domain.market_data import MarketType, Timeframe, TradingPair
 from trd_bot.market_data import (
     MarketDataConnection,
     MarketDataConnectionManager,
     MarketDataConnectionNotFoundError,
     MarketDataConnectionRepository,
     MarketDataConnectionStateError,
+    MarketDataProviderAccessMode,
     MarketDataProviderCatalog,
     MarketDataProviderMetadata,
     MarketDataProviderUnavailableError,
@@ -49,6 +50,9 @@ class MarketDataProviderSummary(BaseModel):
     requires_credentials: bool
     supported_market_types: tuple[MarketType, ...]
     supported_timeframes: tuple[Timeframe, ...]
+    default_pair: TradingPair
+    access_mode: MarketDataProviderAccessMode
+    max_closed_candles: int | None = Field(default=None, ge=1)
 
     @classmethod
     def from_metadata(cls, metadata: MarketDataProviderMetadata) -> Self:
@@ -58,6 +62,9 @@ class MarketDataProviderSummary(BaseModel):
             requires_credentials=metadata.requires_credentials,
             supported_market_types=metadata.supported_market_types,
             supported_timeframes=metadata.supported_timeframes,
+            default_pair=metadata.default_pair,
+            access_mode=metadata.access_mode,
+            max_closed_candles=metadata.max_closed_candles,
         )
 
 

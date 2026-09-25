@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_dataset_repository,
+    get_historical_dataset_committer,
     get_market_data_connection_repository,
     get_market_data_import_repository,
     get_market_data_provider_catalog,
@@ -20,12 +21,23 @@ from trd_bot.market_data import (
     MarketDataConnectionHealth,
     MarketDataConnectionState,
     MarketDataProvider,
+    MarketDataProviderAccessMode,
     MarketDataProviderCatalog,
     MarketDataProviderError,
     MarketDataProviderMetadata,
 )
-from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
-from trd_bot.research import InMemoryDatasetRepository
+from trd_bot.market_data.import_history import (
+    InMemoryMarketDataImportRepository,
+    MarketDataImportRecord,
+)
+from trd_bot.research import (
+    DatasetSnapshot,
+    HistoricalDatasetCommitResult,
+    HistoricalDatasetRefreshConflictError,
+    InMemoryDatasetRepository,
+    InMemoryHistoricalDatasetCommitter,
+    calculate_dataset_checksum,
+)
 
 client = TestClient(app)
 PAIR = TradingPair(base_asset="BTC", quote_asset="USDT")
@@ -69,6 +81,9 @@ class HistoricalSyntheticProvider(MarketDataProvider):
             requires_credentials=False,
             supported_market_types=(MarketType.SPOT,),
             supported_timeframes=(Timeframe.HOUR_1,),
+            default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+            access_mode=MarketDataProviderAccessMode.DIRECT,
+            max_closed_candles=None,
         )
 
     async def test_connection(self) -> None:
@@ -95,6 +110,20 @@ class HistoricalSyntheticProvider(MarketDataProvider):
         return candles if limit is None else candles[:limit]
 
 
+class ConflictingHistoricalDatasetCommitter:
+    def commit(
+        self,
+        *,
+        dataset: DatasetSnapshot,
+        record: MarketDataImportRecord,
+        expected_parent_import_id: str | None = None,
+    ) -> HistoricalDatasetCommitResult:
+        del dataset, record, expected_parent_import_id
+        raise HistoricalDatasetRefreshConflictError(
+            "dataset refresh lost a concurrency race; reload version history"
+        )
+
+
 @pytest.fixture
 def historical_import_dependencies() -> Iterator[
     tuple[InMemoryMarketDataConnectionRepository, InMemoryDatasetRepository, ProviderState]
@@ -103,6 +132,7 @@ def historical_import_dependencies() -> Iterator[
     connections = InMemoryMarketDataConnectionRepository()
     datasets = InMemoryDatasetRepository()
     history = InMemoryMarketDataImportRepository()
+    committer = InMemoryHistoricalDatasetCommitter(datasets=datasets, history=history)
     providers = MarketDataProviderCatalog(
         {
             "synthetic-public": lambda: HistoricalSyntheticProvider(state),
@@ -126,6 +156,7 @@ def historical_import_dependencies() -> Iterator[
     app.dependency_overrides[get_market_data_provider_catalog] = lambda: providers
     app.dependency_overrides[get_dataset_repository] = lambda: datasets
     app.dependency_overrides[get_market_data_import_repository] = lambda: history
+    app.dependency_overrides[get_historical_dataset_committer] = lambda: committer
 
     try:
         yield connections, datasets, state
@@ -134,9 +165,10 @@ def historical_import_dependencies() -> Iterator[
         app.dependency_overrides.pop(get_market_data_provider_catalog, None)
         app.dependency_overrides.pop(get_dataset_repository, None)
         app.dependency_overrides.pop(get_market_data_import_repository, None)
+        app.dependency_overrides.pop(get_historical_dataset_committer, None)
 
 
-def request_payload(*, timeframe: str = "1h") -> dict[str, object]:
+def request_payload(*, timeframe: str = "1h", end_hours: int = 2) -> dict[str, object]:
     return {
         "name": "BTC historical import",
         "pair": {
@@ -146,8 +178,21 @@ def request_payload(*, timeframe: str = "1h") -> dict[str, object]:
         },
         "timeframe": timeframe,
         "start_time": START.isoformat(),
-        "end_time": (START + timedelta(hours=4)).isoformat(),
+        "end_time": (START + timedelta(hours=end_hours)).isoformat(),
     }
+
+
+def commit_payload(
+    *,
+    candles: list[OHLCVCandle] | None = None,
+    timeframe: str = "1h",
+    end_hours: int = 2,
+) -> dict[str, object]:
+    payload = request_payload(timeframe=timeframe, end_hours=end_hours)
+    payload["preview_checksum"] = calculate_dataset_checksum(
+        candles if candles is not None else [create_candle(0), create_candle(1)]
+    )
+    return payload
 
 
 def test_preview_fetches_normalized_candles_without_persisting_dataset(
@@ -169,7 +214,25 @@ def test_preview_fetches_normalized_candles_without_persisting_dataset(
     assert payload["provider_id"] == "synthetic-public"
     assert payload["candle_count"] == 2
     assert payload["ready_to_import"] is True
+    assert payload["preview_checksum"] == calculate_dataset_checksum(
+        [create_candle(0), create_candle(1)]
+    )
     assert payload["quality_report"]["issues"] == []
+    assert payload["quality_report"]["coverage"] == {
+        "requested_start_time": START.isoformat().replace("+00:00", "Z"),
+        "requested_end_time": (START + timedelta(hours=2)).isoformat().replace("+00:00", "Z"),
+        "expected_first_open_time": START.isoformat().replace("+00:00", "Z"),
+        "expected_last_open_time": (START + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "actual_first_open_time": START.isoformat().replace("+00:00", "Z"),
+        "actual_last_close_time": (START + timedelta(hours=2) - timedelta(milliseconds=1))
+        .isoformat()
+        .replace("+00:00", "Z"),
+        "expected_candles": 2,
+        "received_candles": 2,
+        "missing_candles": 0,
+        "coverage_percent": 100.0,
+        "complete": True,
+    }
     assert datasets.count() == 0
 
 
@@ -183,8 +246,8 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     _, datasets, _ = historical_import_dependencies
     url = f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets"
 
-    first = client.post(url, json=request_payload())
-    second = client.post(url, json=request_payload())
+    first = client.post(url, json=commit_payload())
+    second = client.post(url, json=commit_payload())
 
     assert first.status_code == 201
     assert second.status_code == 201
@@ -225,6 +288,63 @@ def test_import_persists_immutable_dataset_and_is_idempotent(
     assert dataset_payload["provenance"]["import_id"] == history_payload["items"][-1]["import_id"]
     assert dataset_payload["quality_report"]["candles_checked"] == 2
     assert dataset_payload["quality_report"]["issues"] == []
+    assert dataset_payload["quality_report"]["coverage"]["complete"] is True
+
+
+def test_import_requires_preview_checksum(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, _ = historical_import_dependencies
+
+    response = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=request_payload(),
+    )
+
+    assert response.status_code == 422
+    assert datasets.count() == 0
+
+
+def test_import_rejects_provider_content_changed_after_preview(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, state = historical_import_dependencies
+    preview = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets/preview",
+        json=request_payload(),
+    )
+    assert preview.status_code == 200
+
+    state.candles = [
+        create_candle(0),
+        create_candle(1).model_copy(update={"close_price": Decimal("106")}),
+    ]
+    payload = request_payload()
+    payload["preview_checksum"] = preview.json()["preview_checksum"]
+
+    imported = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=payload,
+    )
+
+    assert imported.status_code == 409
+    assert imported.json()["detail"] == (
+        "provider data changed after preview; run preview again before importing"
+    )
+    assert datasets.count() == 0
+
+    history = client.get(f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed")
+    assert history.status_code == 200
+    assert history.json()["total"] == 1
+    assert history.json()["items"][0]["error_code"] == "preview_mismatch"
 
 
 def test_refresh_without_content_change_records_new_version_without_new_snapshot(
@@ -237,7 +357,7 @@ def test_refresh_without_content_change_records_new_version_without_new_snapshot
     _, datasets, _ = historical_import_dependencies
     import_response = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
     assert import_response.status_code == 201
 
@@ -245,6 +365,8 @@ def test_refresh_without_content_change_records_new_version_without_new_snapshot
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
     )
     root = history_response.json()["items"][0]
+    original_snapshot = datasets.get(root["dataset_id"])
+    assert original_snapshot is not None
 
     refreshed = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
@@ -260,6 +382,7 @@ def test_refresh_without_content_change_records_new_version_without_new_snapshot
     assert payload["dataset_id"] == root["dataset_id"]
     assert payload["content_changed"] is False
     assert datasets.count() == 1
+    assert datasets.get(root["dataset_id"]) == original_snapshot
 
     versions = client.get(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{payload['import_id']}/versions"
@@ -286,7 +409,7 @@ def test_refresh_with_changed_content_creates_new_immutable_snapshot(
     _, datasets, state = historical_import_dependencies
     imported = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
     assert imported.status_code == 201
 
@@ -294,6 +417,8 @@ def test_refresh_with_changed_content_creates_new_immutable_snapshot(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
     )
     root = history_response.json()["items"][0]
+    original_snapshot = datasets.get(root["dataset_id"])
+    assert original_snapshot is not None
 
     state.candles = [
         create_candle(0),
@@ -310,6 +435,7 @@ def test_refresh_with_changed_content_creates_new_immutable_snapshot(
     assert payload["version_number"] == 2
     assert payload["dataset_id"] != root["dataset_id"]
     assert datasets.count() == 2
+    assert datasets.get(root["dataset_id"]) == original_snapshot
 
     dataset_detail = client.get(f"/api/v1/research/datasets/{payload['dataset_id']}/summary")
     assert dataset_detail.status_code == 200
@@ -326,7 +452,7 @@ def test_failed_refresh_is_recorded_without_consuming_a_version_number(
     _, _, state = historical_import_dependencies
     imported = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
     assert imported.status_code == 201
 
@@ -364,6 +490,49 @@ def test_failed_refresh_is_recorded_without_consuming_a_version_number(
     assert retried.json()["version_number"] == 2
 
 
+def test_refresh_commit_conflict_is_recorded_and_requires_reload(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, _ = historical_import_dependencies
+    imported = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=commit_payload(),
+    )
+    assert imported.status_code == 201
+
+    history_response = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    root = history_response.json()["items"][0]
+    app.dependency_overrides[get_historical_dataset_committer] = lambda: (
+        ConflictingHistoricalDatasetCommitter()
+    )
+
+    conflicted = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh"
+    )
+
+    assert conflicted.status_code == 409
+    assert conflicted.json()["detail"] == (
+        "dataset refresh lost a concurrency race; reload version history"
+    )
+    assert datasets.count() == 1
+
+    failed = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=failed"
+    )
+    assert failed.status_code == 200
+    assert failed.json()["total"] == 1
+    record = failed.json()["items"][0]
+    assert record["error_code"] == "refresh_conflict"
+    assert record["operation"] == "refresh"
+    assert record["version_number"] is None
+
+
 def test_import_requires_enabled_connection(
     historical_import_dependencies: tuple[
         InMemoryMarketDataConnectionRepository,
@@ -384,7 +553,7 @@ def test_import_requires_enabled_connection(
 
     response = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
 
     assert response.status_code == 409
@@ -405,11 +574,11 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
 
     preview = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets/preview",
-        json=request_payload(),
+        json=request_payload(end_hours=3),
     )
     imported = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(candles=state.candles, end_hours=3),
     )
 
     assert preview.status_code == 200
@@ -428,6 +597,35 @@ def test_preview_exposes_quality_failure_and_import_rejects_it(
     assert history_response.json()["items"][0]["candle_count"] == 2
 
 
+def test_preview_rejects_silent_head_and_tail_truncation(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, _, state = historical_import_dependencies
+    state.candles = [create_candle(1)]
+
+    preview = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets/preview",
+        json=request_payload(end_hours=3),
+    )
+
+    assert preview.status_code == 200
+    payload = preview.json()
+    assert payload["ready_to_import"] is False
+    assert {issue["code"] for issue in payload["quality_report"]["issues"]} == {
+        "incomplete_start",
+        "incomplete_end",
+    }
+    assert payload["quality_report"]["coverage"]["expected_candles"] == 3
+    assert payload["quality_report"]["coverage"]["received_candles"] == 1
+    assert payload["quality_report"]["coverage"]["missing_candles"] == 2
+    assert payload["quality_report"]["coverage"]["coverage_percent"] == 33.33
+    assert payload["quality_report"]["coverage"]["complete"] is False
+
+
 def test_import_maps_provider_failure_to_bad_gateway(
     historical_import_dependencies: tuple[
         InMemoryMarketDataConnectionRepository,
@@ -440,7 +638,7 @@ def test_import_maps_provider_failure_to_bad_gateway(
 
     response = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
 
     assert response.status_code == 502
@@ -468,7 +666,7 @@ def test_import_redacts_provider_secrets_from_response_and_history(
 
     response = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
 
     assert response.status_code == 502
@@ -496,7 +694,7 @@ def test_import_rejects_unsupported_timeframe_before_fetch(
 
     response = client.post(
         f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
-        json=request_payload(timeframe="4h"),
+        json=commit_payload(timeframe="4h"),
     )
 
     assert response.status_code == 400
@@ -514,7 +712,7 @@ def test_import_returns_not_found_for_unknown_connection(
 
     response = client.post(
         "/api/v1/market-data/connections/missing/datasets",
-        json=request_payload(),
+        json=commit_payload(),
     )
 
     assert response.status_code == 404

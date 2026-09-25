@@ -16,6 +16,7 @@ from trd_bot.db import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemyHistoricalDatasetCommitter,
     SqlAlchemyMonitoringRuntimeStateRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
@@ -43,6 +44,7 @@ from trd_bot.paper import SimulatedPortfolioRepository
 from trd_bot.research.datasets import DatasetRepository
 from trd_bot.research.experiment_executions import ExperimentExecutionRepository
 from trd_bot.research.experiments import ExperimentRegistry
+from trd_bot.research.historical_dataset_commits import HistoricalDatasetCommitter
 from trd_bot.research.optimization_executions import OptimizationExecutionRepository
 from trd_bot.research.optimization_runner import OptimizationRunner
 from trd_bot.research.policy_presets import AcceptancePolicyPresetCatalog
@@ -82,6 +84,14 @@ def get_dataset_repository(
     """Return the request-scoped dataset repository."""
 
     return SqlAlchemyDatasetRepository(session)
+
+
+def get_historical_dataset_committer(
+    session: DatabaseSessionDependency,
+) -> HistoricalDatasetCommitter:
+    """Return the atomic dataset snapshot and import-history committer."""
+
+    return SqlAlchemyHistoricalDatasetCommitter(session)
 
 
 def get_experiment_registry(

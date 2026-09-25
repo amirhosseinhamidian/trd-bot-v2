@@ -7,6 +7,8 @@ import pytest
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.market_data import (
     KrakenPublicMarketDataProvider,
+    MarketDataProviderAccessMode,
+    MarketDataProviderQueryError,
     MarketDataProviderResponseError,
 )
 
@@ -43,6 +45,9 @@ def test_kraken_provider_exposes_public_spot_capabilities() -> None:
     assert provider.metadata.provider_id == "kraken-public"
     assert provider.metadata.requires_credentials is False
     assert provider.metadata.supported_timeframes == tuple(Timeframe)
+    assert provider.metadata.default_pair == PAIR
+    assert provider.metadata.access_mode is MarketDataProviderAccessMode.VPN_REQUIRED
+    assert provider.metadata.max_closed_candles == 719
 
 
 @pytest.mark.asyncio
@@ -121,7 +126,7 @@ async def test_kraken_provider_rejects_range_outside_recent_retention_before_req
 
     provider = KrakenPublicMarketDataProvider(fetch_json=fetch_json, clock=lambda: NOW)
 
-    with pytest.raises(ValueError, match="recent OHLC retention window"):
+    with pytest.raises(MarketDataProviderQueryError, match="recent OHLC retention window"):
         await provider.get_candles(
             pair=PAIR,
             timeframe=Timeframe.HOUR_1,

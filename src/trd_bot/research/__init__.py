@@ -70,6 +70,7 @@ from trd_bot.research.datasets import (
     DatasetSummary,
     InMemoryDatasetRepository,
     InvalidDatasetError,
+    calculate_dataset_checksum,
 )
 from trd_bot.research.evaluation import (
     SignalEvaluation,
@@ -110,10 +111,18 @@ from trd_bot.research.experiments import (
     build_experiment_id,
 )
 from trd_bot.research.exports import ExperimentReportCsvExporter
+from trd_bot.research.historical_dataset_commits import (
+    HistoricalDatasetCommitError,
+    HistoricalDatasetCommitResult,
+    HistoricalDatasetCommitter,
+    HistoricalDatasetRefreshConflictError,
+    InMemoryHistoricalDatasetCommitter,
+)
 from trd_bot.research.historical_dataset_imports import (
     HistoricalDatasetImportLimitError,
     HistoricalDatasetImportPreview,
     HistoricalDatasetImportService,
+    HistoricalDatasetPreviewMismatchError,
     HistoricalDatasetProviderCapabilityError,
 )
 from trd_bot.research.optimization import (
@@ -295,16 +304,22 @@ __all__ = [
     "ExperimentSortDirection",
     "ExperimentSortField",
     "HistoricalBenchmarkContext",
+    "HistoricalDatasetCommitError",
+    "HistoricalDatasetCommitResult",
+    "HistoricalDatasetCommitter",
     "HistoricalDatasetImportLimitError",
     "HistoricalDatasetImportPreview",
     "HistoricalDatasetImportService",
+    "HistoricalDatasetPreviewMismatchError",
     "HistoricalDatasetProviderCapabilityError",
+    "HistoricalDatasetRefreshConflictError",
     "HistoricalDrawdownComparison",
     "HistoricalFoldReturnDirection",
     "HistoricalPerformanceSeries",
     "InMemoryDatasetRepository",
     "InMemoryExperimentExecutionRepository",
     "InMemoryExperimentRegistry",
+    "InMemoryHistoricalDatasetCommitter",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "OptimizationExecution",
@@ -366,6 +381,7 @@ __all__ = [
     "build_walk_forward_execution_id",
     "build_walk_forward_plan_id",
     "build_walk_forward_split_id",
+    "calculate_dataset_checksum",
     "default_acceptance_policy_presets",
     "normalize_candidate_timestamp",
 ]

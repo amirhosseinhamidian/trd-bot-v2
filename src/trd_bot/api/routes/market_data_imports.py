@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 
 from trd_bot.api.dependencies import (
     get_dataset_repository,
+    get_historical_dataset_committer,
     get_market_data_connection_repository,
     get_market_data_import_repository,
     get_market_data_provider_catalog,
@@ -20,6 +21,7 @@ from trd_bot.market_data import (
     MarketDataProviderCatalog,
     MarketDataProviderError,
     MarketDataProviderErrorCode,
+    MarketDataProviderQueryError,
     MarketDataProviderUnavailableError,
     redact_sensitive_text,
 )
@@ -29,11 +31,18 @@ from trd_bot.market_data.import_history import (
     MarketDataImportRepository,
     MarketDataImportStatus,
 )
-from trd_bot.research import DatasetRepository, DatasetSummary, InvalidDatasetError
+from trd_bot.research import (
+    DatasetRepository,
+    DatasetSummary,
+    HistoricalDatasetCommitter,
+    HistoricalDatasetRefreshConflictError,
+    InvalidDatasetError,
+)
 from trd_bot.research.historical_dataset_imports import (
     HistoricalDatasetImportLimitError,
     HistoricalDatasetImportPreview,
     HistoricalDatasetImportService,
+    HistoricalDatasetPreviewMismatchError,
     HistoricalDatasetProviderCapabilityError,
 )
 
@@ -57,6 +66,10 @@ DatasetRepositoryDependency = Annotated[
 ImportHistoryRepositoryDependency = Annotated[
     MarketDataImportRepository,
     Depends(get_market_data_import_repository),
+]
+HistoricalDatasetCommitterDependency = Annotated[
+    HistoricalDatasetCommitter,
+    Depends(get_historical_dataset_committer),
 ]
 
 
@@ -96,6 +109,12 @@ class HistoricalDatasetImportRequest(BaseModel):
         return self
 
 
+class HistoricalDatasetCommitRequest(HistoricalDatasetImportRequest):
+    """Import request bound to the exact content accepted during preview."""
+
+    preview_checksum: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+
+
 def _history_error_code(error: Exception) -> str:
     if isinstance(error, InvalidDatasetError):
         return "quality_check_failed"
@@ -105,6 +124,10 @@ def _history_error_code(error: Exception) -> str:
         return "provider_capability_unsupported"
     if isinstance(error, HistoricalDatasetImportLimitError):
         return "import_limit_exceeded"
+    if isinstance(error, HistoricalDatasetPreviewMismatchError):
+        return "preview_mismatch"
+    if isinstance(error, HistoricalDatasetRefreshConflictError):
+        return "refresh_conflict"
     if isinstance(error, MarketDataProviderUnavailableError):
         return MarketDataProviderErrorCode.UNAVAILABLE.value
     if isinstance(error, MarketDataProviderError):
@@ -112,9 +135,8 @@ def _history_error_code(error: Exception) -> str:
     return MarketDataProviderErrorCode.REQUEST_FAILED.value
 
 
-def _save_import_history(
+def _build_import_history(
     *,
-    repository: MarketDataImportRepository,
     import_id: str,
     connection_id: str,
     provider_id: str,
@@ -140,30 +162,28 @@ def _save_import_history(
             fallback=error.__class__.__name__,
         )
 
-    return repository.save(
-        MarketDataImportRecord(
-            import_id=import_id,
-            connection_id=connection_id,
-            provider_id=provider_id,
-            dataset_name=request.name,
-            pair=request.pair,
-            timeframe=request.timeframe,
-            requested_start_time=request.start_time,
-            requested_end_time=request.end_time,
-            created_at=created_at,
-            completed_at=datetime.now(UTC),
-            status=status_value,
-            candle_count=candle_count,
-            dataset_id=dataset_id,
-            error_code=error_code,
-            error_message=error_message,
-            operation=operation,
-            source_dataset_id=source_dataset_id,
-            root_import_id=root_import_id,
-            parent_import_id=parent_import_id,
-            version_number=version_number,
-            content_changed=content_changed,
-        )
+    return MarketDataImportRecord(
+        import_id=import_id,
+        connection_id=connection_id,
+        provider_id=provider_id,
+        dataset_name=request.name,
+        pair=request.pair,
+        timeframe=request.timeframe,
+        requested_start_time=request.start_time,
+        requested_end_time=request.end_time,
+        created_at=created_at,
+        completed_at=datetime.now(UTC),
+        status=status_value,
+        candle_count=candle_count,
+        dataset_id=dataset_id,
+        error_code=error_code,
+        error_message=error_message,
+        operation=operation,
+        source_dataset_id=source_dataset_id,
+        root_import_id=root_import_id,
+        parent_import_id=parent_import_id,
+        version_number=version_number,
+        content_changed=content_changed,
     )
 
 
@@ -193,12 +213,10 @@ def _service(
     *,
     connections: MarketDataConnectionRepository,
     providers: MarketDataProviderCatalog,
-    datasets: DatasetRepository,
 ) -> HistoricalDatasetImportService:
     return HistoricalDatasetImportService(
         connections=connections,
         providers=providers,
-        datasets=datasets,
     )
 
 
@@ -209,6 +227,8 @@ def _raise_fetch_error(
         | MarketDataProviderUnavailableError
         | HistoricalDatasetProviderCapabilityError
         | HistoricalDatasetImportLimitError
+        | HistoricalDatasetPreviewMismatchError
+        | HistoricalDatasetRefreshConflictError
         | MarketDataProviderError
     ),
 ) -> NoReturn:
@@ -241,6 +261,24 @@ def _raise_fetch_error(
             detail=safe_detail,
         ) from error
 
+    if isinstance(error, HistoricalDatasetPreviewMismatchError):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=safe_detail,
+        ) from error
+
+    if isinstance(error, HistoricalDatasetRefreshConflictError):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=safe_detail,
+        ) from error
+
+    if isinstance(error, MarketDataProviderQueryError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=safe_detail,
+        ) from error
+
     if isinstance(error, MarketDataProviderUnavailableError):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -260,6 +298,11 @@ def _raise_quality_error(error: InvalidDatasetError) -> NoReturn:
             "message": "dataset failed quality checks",
             "candles_checked": error.report.candles_checked,
             "issues": [issue.model_dump(mode="json") for issue in error.report.issues],
+            "coverage": (
+                error.report.coverage.model_dump(mode="json")
+                if error.report.coverage is not None
+                else None
+            ),
         },
     ) from error
 
@@ -273,14 +316,12 @@ async def preview_historical_dataset_import(
     request: HistoricalDatasetImportRequest,
     connections: ConnectionRepositoryDependency,
     providers: ProviderCatalogDependency,
-    datasets: DatasetRepositoryDependency,
 ) -> HistoricalDatasetImportPreview:
     """Fetch and validate normalized candles without creating a dataset."""
 
     service = _service(
         connections=connections,
         providers=providers,
-        datasets=datasets,
     )
 
     try:
@@ -310,25 +351,24 @@ async def preview_historical_dataset_import(
 )
 async def import_historical_dataset(
     connection_id: str,
-    request: HistoricalDatasetImportRequest,
+    request: HistoricalDatasetCommitRequest,
     connections: ConnectionRepositoryDependency,
     providers: ProviderCatalogDependency,
-    datasets: DatasetRepositoryDependency,
     history: ImportHistoryRepositoryDependency,
+    committer: HistoricalDatasetCommitterDependency,
 ) -> DatasetSummary:
     """Fetch, quality-check, persist a dataset, and record the immutable attempt."""
 
     service = _service(
         connections=connections,
         providers=providers,
-        datasets=datasets,
     )
     tracked_connection = connections.get(connection_id)
     import_id = f"market-data-import-{uuid4().hex}"
     created_at = datetime.now(UTC)
 
     try:
-        dataset = await service.import_dataset(
+        dataset = await service.build_dataset(
             connection_id=connection_id,
             import_id=import_id,
             name=request.name,
@@ -336,19 +376,21 @@ async def import_historical_dataset(
             timeframe=request.timeframe,
             start_time=request.start_time,
             end_time=request.end_time,
+            expected_preview_checksum=request.preview_checksum,
         )
     except InvalidDatasetError as error:
         if tracked_connection is not None:
-            _save_import_history(
-                repository=history,
-                import_id=import_id,
-                connection_id=tracked_connection.connection_id,
-                provider_id=tracked_connection.provider_id,
-                request=request,
-                created_at=created_at,
-                status_value=MarketDataImportStatus.FAILED,
-                candle_count=error.report.candles_checked,
-                error=error,
+            history.save(
+                _build_import_history(
+                    import_id=import_id,
+                    connection_id=tracked_connection.connection_id,
+                    provider_id=tracked_connection.provider_id,
+                    request=request,
+                    created_at=created_at,
+                    status_value=MarketDataImportStatus.FAILED,
+                    candle_count=error.report.candles_checked,
+                    error=error,
+                )
             )
         _raise_quality_error(error)
     except (
@@ -357,25 +399,25 @@ async def import_historical_dataset(
         MarketDataProviderUnavailableError,
         HistoricalDatasetProviderCapabilityError,
         HistoricalDatasetImportLimitError,
+        HistoricalDatasetPreviewMismatchError,
         MarketDataProviderError,
     ) as error:
         if tracked_connection is not None:
-            _save_import_history(
-                repository=history,
-                import_id=import_id,
-                connection_id=tracked_connection.connection_id,
-                provider_id=tracked_connection.provider_id,
-                request=request,
-                created_at=created_at,
-                status_value=MarketDataImportStatus.FAILED,
-                candle_count=0,
-                error=error,
+            history.save(
+                _build_import_history(
+                    import_id=import_id,
+                    connection_id=tracked_connection.connection_id,
+                    provider_id=tracked_connection.provider_id,
+                    request=request,
+                    created_at=created_at,
+                    status_value=MarketDataImportStatus.FAILED,
+                    candle_count=0,
+                    error=error,
+                )
             )
         _raise_fetch_error(error)
 
-    created_snapshot = dataset.provenance.import_id == import_id
-    _save_import_history(
-        repository=history,
+    record = _build_import_history(
         import_id=import_id,
         connection_id=connection_id,
         provider_id=dataset.source,
@@ -384,10 +426,9 @@ async def import_historical_dataset(
         status_value=MarketDataImportStatus.SUCCEEDED,
         candle_count=dataset.candle_count,
         dataset_id=dataset.dataset_id,
-        root_import_id=import_id if created_snapshot else None,
-        version_number=1 if created_snapshot else None,
     )
-    return DatasetSummary.from_dataset(dataset)
+    result = committer.commit(dataset=dataset, record=record)
+    return DatasetSummary.from_dataset(result.dataset)
 
 
 @router.get(
@@ -470,6 +511,7 @@ async def refresh_historical_import(
     providers: ProviderCatalogDependency,
     datasets: DatasetRepositoryDependency,
     history: ImportHistoryRepositoryDependency,
+    committer: HistoricalDatasetCommitterDependency,
 ) -> MarketDataImportRecord:
     """Re-fetch the latest immutable dataset version and record a new lineage event."""
 
@@ -515,11 +557,10 @@ async def refresh_historical_import(
     service = _service(
         connections=connections,
         providers=providers,
-        datasets=datasets,
     )
 
     try:
-        dataset = await service.import_dataset(
+        dataset = await service.build_dataset(
             connection_id=connection_id,
             import_id=refresh_id,
             name=request.name,
@@ -529,20 +570,21 @@ async def refresh_historical_import(
             end_time=request.end_time,
         )
     except InvalidDatasetError as error:
-        _save_import_history(
-            repository=history,
-            import_id=refresh_id,
-            connection_id=connection_id,
-            provider_id=source_record.provider_id,
-            request=request,
-            created_at=created_at,
-            status_value=MarketDataImportStatus.FAILED,
-            candle_count=error.report.candles_checked,
-            error=error,
-            operation=MarketDataImportOperation.REFRESH,
-            source_dataset_id=source_record.dataset_id,
-            root_import_id=source_record.root_import_id,
-            parent_import_id=source_record.import_id,
+        history.save(
+            _build_import_history(
+                import_id=refresh_id,
+                connection_id=connection_id,
+                provider_id=source_record.provider_id,
+                request=request,
+                created_at=created_at,
+                status_value=MarketDataImportStatus.FAILED,
+                candle_count=error.report.candles_checked,
+                error=error,
+                operation=MarketDataImportOperation.REFRESH,
+                source_dataset_id=source_record.dataset_id,
+                root_import_id=source_record.root_import_id,
+                parent_import_id=source_record.import_id,
+            )
         )
         _raise_quality_error(error)
     except (
@@ -553,25 +595,25 @@ async def refresh_historical_import(
         HistoricalDatasetImportLimitError,
         MarketDataProviderError,
     ) as error:
-        _save_import_history(
-            repository=history,
-            import_id=refresh_id,
-            connection_id=connection_id,
-            provider_id=source_record.provider_id,
-            request=request,
-            created_at=created_at,
-            status_value=MarketDataImportStatus.FAILED,
-            candle_count=0,
-            error=error,
-            operation=MarketDataImportOperation.REFRESH,
-            source_dataset_id=source_record.dataset_id,
-            root_import_id=source_record.root_import_id,
-            parent_import_id=source_record.import_id,
+        history.save(
+            _build_import_history(
+                import_id=refresh_id,
+                connection_id=connection_id,
+                provider_id=source_record.provider_id,
+                request=request,
+                created_at=created_at,
+                status_value=MarketDataImportStatus.FAILED,
+                candle_count=0,
+                error=error,
+                operation=MarketDataImportOperation.REFRESH,
+                source_dataset_id=source_record.dataset_id,
+                root_import_id=source_record.root_import_id,
+                parent_import_id=source_record.import_id,
+            )
         )
         _raise_fetch_error(error)
 
-    return _save_import_history(
-        repository=history,
+    record = _build_import_history(
         import_id=refresh_id,
         connection_id=connection_id,
         provider_id=dataset.source,
@@ -587,6 +629,32 @@ async def refresh_historical_import(
         version_number=source_record.version_number + 1,
         content_changed=dataset.dataset_id != source_record.dataset_id,
     )
+    try:
+        result = committer.commit(
+            dataset=dataset,
+            record=record,
+            expected_parent_import_id=source_record.import_id,
+        )
+    except HistoricalDatasetRefreshConflictError as error:
+        history.save(
+            _build_import_history(
+                import_id=refresh_id,
+                connection_id=connection_id,
+                provider_id=source_record.provider_id,
+                request=request,
+                created_at=created_at,
+                status_value=MarketDataImportStatus.FAILED,
+                candle_count=dataset.candle_count,
+                error=error,
+                operation=MarketDataImportOperation.REFRESH,
+                source_dataset_id=source_record.dataset_id,
+                root_import_id=source_record.root_import_id,
+                parent_import_id=source_record.import_id,
+            )
+        )
+        _raise_fetch_error(error)
+
+    return result.record
 
 
 @router.get(

@@ -7,7 +7,9 @@ from urllib.parse import urlencode
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data.providers import (
     JsonFetcher,
+    MarketDataProviderAccessMode,
     MarketDataProviderMetadata,
+    MarketDataProviderQueryError,
     MarketDataProviderResponseError,
     MarketDataRetryPolicy,
     RetryingPublicJsonMarketDataProvider,
@@ -39,12 +41,16 @@ class KrakenPublicMarketDataProvider(RetryingPublicJsonMarketDataProvider):
 
     _OHLC_URL = "https://api.kraken.com/0/public/OHLC"
     _MAX_RETURNED_ENTRIES = 720
+    _MAX_CLOSED_CANDLES = _MAX_RETURNED_ENTRIES - 1
     _METADATA = MarketDataProviderMetadata(
         provider_id="kraken-public",
         display_name="Kraken Public Market Data",
         requires_credentials=False,
         supported_market_types=(MarketType.SPOT,),
         supported_timeframes=tuple(Timeframe),
+        default_pair=TradingPair(base_asset="BTC", quote_asset="USD"),
+        access_mode=MarketDataProviderAccessMode.VPN_REQUIRED,
+        max_closed_candles=_MAX_CLOSED_CANDLES,
     )
 
     def __init__(
@@ -98,10 +104,9 @@ class KrakenPublicMarketDataProvider(RetryingPublicJsonMarketDataProvider):
         normalized_end = end_time.astimezone(UTC)
         received_at = self._now()
         duration = _TIMEFRAME_DURATIONS[timeframe]
-        closed_entry_budget = self._MAX_RETURNED_ENTRIES - 1
-        earliest_available = received_at - (duration * closed_entry_budget)
+        earliest_available = received_at - (duration * self._MAX_CLOSED_CANDLES)
         if normalized_start < earliest_available:
-            raise ValueError(
+            raise MarketDataProviderQueryError(
                 "requested start time is outside Kraken's recent OHLC retention window"
             )
 

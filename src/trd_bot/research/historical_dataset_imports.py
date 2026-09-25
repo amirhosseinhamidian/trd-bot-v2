@@ -18,9 +18,9 @@ from trd_bot.research.datasets import (
     DatasetBuilder,
     DatasetProvenance,
     DatasetProvenanceKind,
-    DatasetRepository,
     DatasetSnapshot,
     InvalidDatasetError,
+    calculate_dataset_checksum,
 )
 
 MAX_HISTORICAL_IMPORT_CANDLES = 100_000
@@ -32,6 +32,10 @@ class HistoricalDatasetProviderCapabilityError(ValueError):
 
 class HistoricalDatasetImportLimitError(ValueError):
     """Raised when one import would exceed the bounded dataset payload size."""
+
+
+class HistoricalDatasetPreviewMismatchError(ValueError):
+    """Raised when provider content changed after the accepted preview."""
 
 
 class HistoricalDatasetImportPreview(BaseModel):
@@ -49,6 +53,7 @@ class HistoricalDatasetImportPreview(BaseModel):
     candle_count: int = Field(ge=0)
     first_open_time: datetime | None
     last_close_time: datetime | None
+    preview_checksum: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
     quality_report: DataQualityReport
     ready_to_import: bool
 
@@ -61,12 +66,10 @@ class HistoricalDatasetImportService:
         *,
         connections: MarketDataConnectionRepository,
         providers: MarketDataProviderCatalog,
-        datasets: DatasetRepository,
         quality_checker: MarketDataQualityChecker | None = None,
     ) -> None:
         self._connections = connections
         self._providers = providers
-        self._datasets = datasets
         self._quality_checker = quality_checker or MarketDataQualityChecker()
 
     async def preview(
@@ -98,11 +101,12 @@ class HistoricalDatasetImportService:
             candle_count=len(candles),
             first_open_time=candles[0].open_time if candles else None,
             last_close_time=candles[-1].close_time if candles else None,
+            preview_checksum=calculate_dataset_checksum(candles),
             quality_report=quality_report,
             ready_to_import=quality_report.is_valid,
         )
 
-    async def import_dataset(
+    async def build_dataset(
         self,
         *,
         connection_id: str,
@@ -112,6 +116,7 @@ class HistoricalDatasetImportService:
         timeframe: Timeframe,
         start_time: datetime,
         end_time: datetime,
+        expected_preview_checksum: str | None = None,
     ) -> DatasetSnapshot:
         connection, candles, quality_report = await self._fetch_and_check(
             connection_id=connection_id,
@@ -121,10 +126,16 @@ class HistoricalDatasetImportService:
             end_time=end_time,
         )
 
+        current_checksum = calculate_dataset_checksum(candles)
+        if expected_preview_checksum is not None and current_checksum != expected_preview_checksum:
+            raise HistoricalDatasetPreviewMismatchError(
+                "provider data changed after preview; run preview again before importing"
+            )
+
         if not quality_report.is_valid:
             raise InvalidDatasetError(quality_report)
 
-        dataset = DatasetBuilder(quality_checker=self._quality_checker).build(
+        return DatasetBuilder(quality_checker=self._quality_checker).build(
             name=name,
             candles=candles,
             provenance=DatasetProvenance(
@@ -135,8 +146,10 @@ class HistoricalDatasetImportService:
                 requested_start_time=start_time,
                 requested_end_time=end_time,
             ),
+            requested_start_time=start_time,
+            requested_end_time=end_time,
+            requested_timeframe=timeframe,
         )
-        return self._datasets.save(dataset)
 
     async def _fetch_and_check(
         self,
@@ -189,5 +202,10 @@ class HistoricalDatasetImportService:
                 "historical import exceeds the maximum candle count"
             )
 
-        quality_report = self._quality_checker.check(candles)
+        quality_report = self._quality_checker.check(
+            candles,
+            requested_start_time=start_time,
+            requested_end_time=end_time,
+            requested_timeframe=timeframe,
+        )
         return connection, candles, quality_report

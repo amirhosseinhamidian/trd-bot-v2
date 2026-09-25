@@ -8,6 +8,7 @@ from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data import (
     BinancePublicMarketDataProvider,
     InMemoryMarketDataProvider,
+    MarketDataProviderAccessMode,
     MarketDataProviderResponseError,
 )
 
@@ -118,6 +119,9 @@ def test_public_provider_exposes_historical_capabilities_without_credentials() -
     assert provider.metadata.provider_id == "binance-public"
     assert provider.metadata.requires_credentials is False
     assert provider.metadata.supported_timeframes == tuple(Timeframe)
+    assert provider.metadata.default_pair == PAIR
+    assert provider.metadata.access_mode is MarketDataProviderAccessMode.VPN_REQUIRED
+    assert provider.metadata.max_closed_candles is None
 
 
 @pytest.mark.asyncio

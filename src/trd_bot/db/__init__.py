@@ -11,6 +11,9 @@ from trd_bot.db.candidate_projection_repositories import (
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
+from trd_bot.db.historical_dataset_commits import (
+    SqlAlchemyHistoricalDatasetCommitter,
+)
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     CandidateJournalRow,
@@ -73,6 +76,7 @@ __all__ = [
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
+    "SqlAlchemyHistoricalDatasetCommitter",
     "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",

@@ -66,6 +66,24 @@ def test_dataset_is_created_from_valid_candles() -> None:
     assert dataset.quality_report is not None
     assert dataset.quality_report.candles_checked == 2
     assert dataset.quality_report.issues == ()
+    assert dataset.quality_report.coverage is None
+
+
+def test_dataset_persists_requested_range_coverage() -> None:
+    dataset = DatasetBuilder().build(
+        name="Covered BTC hourly dataset",
+        candles=[create_candle(10), create_candle(11)],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 12, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert dataset.quality_report is not None
+    assert dataset.quality_report.coverage is not None
+    assert dataset.quality_report.coverage.expected_candles == 2
+    assert dataset.quality_report.coverage.received_candles == 2
+    assert dataset.quality_report.coverage.coverage_percent == 100.0
+    assert dataset.quality_report.coverage.complete is True
 
 
 def test_legacy_dataset_payload_remains_readable_without_v2_metadata() -> None:

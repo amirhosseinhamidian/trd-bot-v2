@@ -65,13 +65,29 @@ class SqlAlchemyDatasetRepository:
         self._session = session
 
     def save(self, dataset: DatasetSnapshot) -> DatasetSnapshot:
+        stored, created = self.stage(dataset)
+        if not created:
+            return stored
+
+        return _commit_or_resolve(
+            session=self._session,
+            model=dataset,
+            identity=dataset.dataset_id,
+            conflict_message=("dataset ID already exists with different content"),
+            get_existing=self.get,
+            same_content=self._same_dataset,
+        )
+
+    def stage(self, dataset: DatasetSnapshot) -> tuple[DatasetSnapshot, bool]:
+        """Add a snapshot without committing so a larger unit of work can own commit."""
+
         existing = self.get(dataset.dataset_id)
 
         if existing is not None:
             if not self._same_dataset(existing, dataset):
                 raise ValueError("dataset ID already exists with different content")
 
-            return existing
+            return existing, False
 
         self._session.add(
             DatasetSnapshotRow(
@@ -89,15 +105,7 @@ class SqlAlchemyDatasetRepository:
                 payload_json=dataset.model_dump_json(),
             )
         )
-
-        return _commit_or_resolve(
-            session=self._session,
-            model=dataset,
-            identity=dataset.dataset_id,
-            conflict_message=("dataset ID already exists with different content"),
-            get_existing=self.get,
-            same_content=self._same_dataset,
-        )
+        return dataset, True
 
     def get(
         self,

@@ -11,6 +11,7 @@ from trd_bot.market_data import (
     MarketDataConnectionState,
     MarketDataConnectionStateError,
     MarketDataProvider,
+    MarketDataProviderAccessMode,
     MarketDataProviderCatalog,
     MarketDataProviderError,
     MarketDataProviderErrorCode,
@@ -32,6 +33,9 @@ class SyntheticProvider(MarketDataProvider):
             requires_credentials=False,
             supported_market_types=(MarketType.SPOT,),
             supported_timeframes=(Timeframe.HOUR_1,),
+            default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+            access_mode=MarketDataProviderAccessMode.DIRECT,
+            max_closed_candles=None,
         )
 
     async def test_connection(self) -> None:
@@ -63,6 +67,9 @@ class CredentialedSyntheticProvider(SyntheticProvider):
             requires_credentials=True,
             supported_market_types=(MarketType.SPOT,),
             supported_timeframes=(Timeframe.HOUR_1,),
+            default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+            access_mode=MarketDataProviderAccessMode.DIRECT,
+            max_closed_candles=None,
         )
 
 

@@ -1,9 +1,10 @@
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from itertools import pairwise
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe
 
@@ -17,6 +18,10 @@ class DataIssueCode(StrEnum):
     OUT_OF_ORDER = "out_of_order"
     MISSING_CANDLE = "missing_candle"
     OPEN_CANDLE = "open_candle"
+    INCOMPLETE_START = "incomplete_start"
+    INCOMPLETE_END = "incomplete_end"
+    OUTSIDE_REQUESTED_RANGE = "outside_requested_range"
+    UNALIGNED_CANDLE = "unaligned_candle"
 
 
 class DataQualityIssue(BaseModel):
@@ -29,6 +34,59 @@ class DataQualityIssue(BaseModel):
     timestamp: datetime | None = None
 
 
+class DataCoverageReport(BaseModel):
+    """Deterministic candle-open coverage for one requested half-open range."""
+
+    model_config = ConfigDict(frozen=True)
+
+    requested_start_time: datetime
+    requested_end_time: datetime
+    expected_first_open_time: datetime | None
+    expected_last_open_time: datetime | None
+    actual_first_open_time: datetime | None
+    actual_last_close_time: datetime | None
+    expected_candles: int = Field(ge=0)
+    received_candles: int = Field(ge=0)
+    missing_candles: int = Field(ge=0)
+    coverage_percent: float = Field(ge=0, le=100)
+    complete: bool
+
+    @field_validator(
+        "requested_start_time",
+        "requested_end_time",
+        "expected_first_open_time",
+        "expected_last_open_time",
+        "actual_first_open_time",
+        "actual_last_close_time",
+    )
+    @classmethod
+    def normalize_timestamp(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("coverage timestamps must include timezone information")
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> Self:
+        if self.requested_end_time <= self.requested_start_time:
+            raise ValueError("coverage end time must be after start time")
+        if self.received_candles > self.expected_candles:
+            raise ValueError("received candle count cannot exceed expected candle count")
+        if self.missing_candles != self.expected_candles - self.received_candles:
+            raise ValueError("coverage missing candle count is inconsistent")
+        expected_percent = (
+            round((self.received_candles / self.expected_candles) * 100, 2)
+            if self.expected_candles
+            else 0.0
+        )
+        if self.coverage_percent != expected_percent:
+            raise ValueError("coverage percentage is inconsistent")
+        if self.complete != (self.expected_candles > 0 and self.missing_candles == 0):
+            raise ValueError("coverage completeness is inconsistent")
+        return self
+
+
 class DataQualityReport(BaseModel):
     """Result of checking a candle collection."""
 
@@ -36,6 +94,7 @@ class DataQualityReport(BaseModel):
 
     candles_checked: int
     issues: tuple[DataQualityIssue, ...] = ()
+    coverage: DataCoverageReport | None = None
 
     @property
     def is_valid(self) -> bool:
@@ -50,6 +109,51 @@ _TIMEFRAME_INTERVALS: dict[Timeframe, timedelta] = {
     Timeframe.HOURS_4: timedelta(hours=4),
     Timeframe.DAY_1: timedelta(days=1),
 }
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+
+def _to_epoch_microseconds(value: datetime) -> int:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("coverage timestamps must include timezone information")
+    delta = value.astimezone(UTC) - _EPOCH
+    return ((delta.days * 86_400) + delta.seconds) * 1_000_000 + delta.microseconds
+
+
+def _from_epoch_microseconds(value: int) -> datetime:
+    return _EPOCH + timedelta(microseconds=value)
+
+
+def _ceil_div(value: int, divisor: int) -> int:
+    return -(-value // divisor)
+
+
+def _expected_open_range(
+    *,
+    start_time: datetime,
+    end_time: datetime,
+    timeframe: Timeframe,
+) -> tuple[datetime | None, datetime | None, int, int, int]:
+    start_microseconds = _to_epoch_microseconds(start_time)
+    end_microseconds = _to_epoch_microseconds(end_time)
+    normalized_start = start_time.astimezone(UTC)
+    normalized_end = end_time.astimezone(UTC)
+    if normalized_end <= normalized_start:
+        raise ValueError("coverage end time must be after start time")
+
+    interval_microseconds = int(_TIMEFRAME_INTERVALS[timeframe].total_seconds() * 1_000_000)
+    first_index = _ceil_div(start_microseconds, interval_microseconds)
+    end_index = _ceil_div(end_microseconds, interval_microseconds)
+    expected_candles = max(0, end_index - first_index)
+    if expected_candles == 0:
+        return None, None, 0, first_index, interval_microseconds
+
+    return (
+        _from_epoch_microseconds(first_index * interval_microseconds),
+        _from_epoch_microseconds((end_index - 1) * interval_microseconds),
+        expected_candles,
+        first_index,
+        interval_microseconds,
+    )
 
 
 class MarketDataQualityChecker:
@@ -58,8 +162,21 @@ class MarketDataQualityChecker:
     def check(
         self,
         candles: Sequence[OHLCVCandle],
+        *,
+        requested_start_time: datetime | None = None,
+        requested_end_time: datetime | None = None,
+        requested_timeframe: Timeframe | None = None,
     ) -> DataQualityReport:
         issues: list[DataQualityIssue] = []
+        coverage_requested = (
+            requested_start_time is not None,
+            requested_end_time is not None,
+            requested_timeframe is not None,
+        )
+        if any(coverage_requested) and not all(coverage_requested):
+            raise ValueError("coverage checking requires start, end, and timeframe")
+
+        coverage: DataCoverageReport | None = None
 
         if not candles:
             issues.append(
@@ -69,9 +186,22 @@ class MarketDataQualityChecker:
                 )
             )
 
+            empty_coverage: DataCoverageReport | None = None
+            if all(coverage_requested):
+                assert requested_start_time is not None
+                assert requested_end_time is not None
+                assert requested_timeframe is not None
+                empty_coverage = self._coverage_report(
+                    candles=candles,
+                    start_time=requested_start_time,
+                    end_time=requested_end_time,
+                    timeframe=requested_timeframe,
+                )
+
             return DataQualityReport(
                 candles_checked=0,
                 issues=tuple(issues),
+                coverage=empty_coverage,
             )
 
         reference_pair = candles[0].pair
@@ -154,7 +284,143 @@ class MarketDataQualityChecker:
                         )
                     )
 
+        if all(coverage_requested):
+            assert requested_start_time is not None
+            assert requested_end_time is not None
+            assert requested_timeframe is not None
+            coverage = self._coverage_report(
+                candles=candles,
+                start_time=requested_start_time,
+                end_time=requested_end_time,
+                timeframe=requested_timeframe,
+            )
+            expected_first = coverage.expected_first_open_time
+            expected_last = coverage.expected_last_open_time
+            interval_microseconds = int(
+                _TIMEFRAME_INTERVALS[requested_timeframe].total_seconds() * 1_000_000
+            )
+            actual_opens = {
+                candle.open_time.astimezone(UTC)
+                for candle in candles
+                if candle.timeframe == requested_timeframe
+                and _to_epoch_microseconds(candle.open_time) % interval_microseconds == 0
+                and requested_start_time.astimezone(UTC)
+                <= candle.open_time.astimezone(UTC)
+                < requested_end_time.astimezone(UTC)
+            }
+
+            if expected_first is not None and expected_first not in actual_opens:
+                first_actual = coverage.actual_first_open_time
+                missing_at_start = (
+                    coverage.expected_candles
+                    if first_actual is None
+                    else int(
+                        (first_actual - expected_first) / _TIMEFRAME_INTERVALS[requested_timeframe]
+                    )
+                )
+                issues.append(
+                    DataQualityIssue(
+                        code=DataIssueCode.INCOMPLETE_START,
+                        message=(
+                            f"{missing_at_start} candle(s) are missing at the start "
+                            "of the requested range."
+                        ),
+                        timestamp=expected_first,
+                    )
+                )
+
+            if expected_last is not None and expected_last not in actual_opens:
+                last_actual = max(
+                    (value for value in actual_opens if value <= expected_last),
+                    default=None,
+                )
+                missing_at_end = (
+                    coverage.expected_candles
+                    if last_actual is None
+                    else int(
+                        (expected_last - last_actual) / _TIMEFRAME_INTERVALS[requested_timeframe]
+                    )
+                )
+                issues.append(
+                    DataQualityIssue(
+                        code=DataIssueCode.INCOMPLETE_END,
+                        message=(
+                            f"{missing_at_end} candle(s) are missing at the end "
+                            "of the requested range."
+                        ),
+                        timestamp=expected_last,
+                    )
+                )
+
+            normalized_start = requested_start_time.astimezone(UTC)
+            normalized_end = requested_end_time.astimezone(UTC)
+            for candle in candles:
+                normalized_open = candle.open_time.astimezone(UTC)
+                if not normalized_start <= normalized_open < normalized_end:
+                    issues.append(
+                        DataQualityIssue(
+                            code=DataIssueCode.OUTSIDE_REQUESTED_RANGE,
+                            message="A candle is outside the requested half-open range.",
+                            timestamp=normalized_open,
+                        )
+                    )
+                if _to_epoch_microseconds(normalized_open) % interval_microseconds != 0:
+                    issues.append(
+                        DataQualityIssue(
+                            code=DataIssueCode.UNALIGNED_CANDLE,
+                            message="A candle is not aligned to its UTC timeframe boundary.",
+                            timestamp=normalized_open,
+                        )
+                    )
+
         return DataQualityReport(
             candles_checked=len(candles),
             issues=tuple(issues),
+            coverage=coverage,
+        )
+
+    @staticmethod
+    def _coverage_report(
+        *,
+        candles: Sequence[OHLCVCandle],
+        start_time: datetime,
+        end_time: datetime,
+        timeframe: Timeframe,
+    ) -> DataCoverageReport:
+        expected_first, expected_last, expected_count, first_index, interval_microseconds = (
+            _expected_open_range(
+                start_time=start_time,
+                end_time=end_time,
+                timeframe=timeframe,
+            )
+        )
+        end_index = first_index + expected_count
+        candles_by_open_time = {
+            candle.open_time.astimezone(UTC): candle
+            for candle in candles
+            if candle.timeframe is timeframe
+            and _to_epoch_microseconds(candle.open_time) % interval_microseconds == 0
+            and first_index
+            <= _to_epoch_microseconds(candle.open_time) // interval_microseconds
+            < end_index
+        }
+        ordered = sorted(candles_by_open_time.values(), key=lambda candle: candle.open_time)
+        received_count = len(ordered)
+        missing_count = expected_count - received_count
+        coverage_percent = (
+            round((received_count / expected_count) * 100, 2) if expected_count else 0.0
+        )
+
+        return DataCoverageReport(
+            requested_start_time=start_time.astimezone(UTC),
+            requested_end_time=end_time.astimezone(UTC),
+            expected_first_open_time=expected_first,
+            expected_last_open_time=expected_last,
+            actual_first_open_time=ordered[0].open_time if ordered else None,
+            actual_last_close_time=ordered[-1].close_time if ordered else None,
+            expected_candles=expected_count,
+            received_candles=received_count,
+            missing_candles=missing_count,
+            coverage_percent=coverage_percent,
+            complete=expected_count > 0 and missing_count == 0,
         )

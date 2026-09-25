@@ -29,9 +29,9 @@
 
 | ADR | سؤال و پیشنهاد برای بررسی | تکلیف نهایی |
 | --- | --- | --- |
-| ADR-01 | در import تاریخی، preview به snapshot آمادهٔ ثبت با checksum گره بخورد یا هنگام commit دوباره hash/coverage بررسی شود؟ پیشنهاد: یک هویت پایدارِ preview و جلوگیری از تأیید دادهٔ متفاوت. | TB2-004 |
-| ADR-02 | checksum برابر از Connectionهای مختلف: snapshot محتوایی مشترک + رکورد مجزای provenance هر import، یا snapshot مستقل؟ پیشنهاد: محتوای مشترک مجاز بماند ولی provenance بازسازی‌پذیر هر import حفظ شود. | TB2-005 |
-| ADR-03 | سیاست سر/ته ناقص، فایل با gap و کیفیت کم: reject یا قبول با warning و score؟ پیشنهاد: نقص بازهٔ ادعاشده نباید بدون هشدار به‌عنوان دادهٔ کامل پذیرفته شود؛ آستانه/فرمول باید با fixture تعیین شود. | TB2-004/006 |
+| ADR-01 | **تصمیم TB2-004:** Preview checksum محتوایی برمی‌گرداند؛ Import داده را دوباره fetch و checksum را مقایسه می‌کند و تغییر را با HTTP 409 رد می‌کند. | بسته در TB2-004 |
+| ADR-02 | **تصمیم TB2-005:** checksum برابر یک Snapshot canonical مشترک دارد؛ Import سازنده مالک provenance و نسخهٔ ۱ Snapshot است و هر Import بعدی رکورد audit مستقل خود را بدون ادعای lineage تازه نگه می‌دارد. Snapshot و رکورد موفق در یک تراکنش ثبت می‌شوند. | بسته در TB2-005 |
+| ADR-03 | **تصمیم جزئی TB2-004:** gap و سر/ته ناقص برای Import قابل قبول نیستند و coverage عددی persisted می‌شود؛ سیاست score ترکیبی در TB2-006 تعیین می‌شود. | TB2-004/006 |
 | ADR-04 | تضمین نسخهٔ رفتار Strategy: افزایش version با هر تغییر سیگنال، hash نسخه یا هر دو؟ پیشنهاد: نسخهٔ منتشرشده immutable با تست golden؛ راه migration برای experimentهای قدیمی ثبت شود. | TB2-010 |
 | ADR-05 | پشتهٔ job/worker چگونه با PostgreSQL و استقرار موجود بدون هزینهٔ غیرضروری سازگار شود؟ پیشنهاد: صف persistent با lease/recovery و محدودیت هم‌زمانی؛ انتخاب فناوری پس از سنجش محیط استقرار. | TB2-008 |
 | ADR-06 | تعریف robustness، وزن‌ها، حداقل sample، دوره‌ها، train/test split و tie-break چیست؟ پیشنهاد: ابتدا golden مثال overfit و fold بی‌معامله بسازیم، سپس score نسخه‌دار نهایی شود. | TB2-014 |

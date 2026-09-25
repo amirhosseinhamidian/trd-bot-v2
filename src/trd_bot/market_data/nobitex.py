@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data.providers import (
     JsonFetcher,
+    MarketDataProviderAccessMode,
     MarketDataProviderMetadata,
     MarketDataProviderResponseError,
     MarketDataRetryPolicy,
@@ -42,6 +43,9 @@ class NobitexPublicMarketDataProvider(RetryingPublicJsonMarketDataProvider):
         requires_credentials=False,
         supported_market_types=(MarketType.SPOT,),
         supported_timeframes=tuple(Timeframe),
+        default_pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+        access_mode=MarketDataProviderAccessMode.DIRECT,
+        max_closed_candles=None,
     )
 
     def __init__(

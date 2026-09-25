@@ -6,6 +6,7 @@ import pytest
 
 from trd_bot.domain.market_data import Timeframe, TradingPair
 from trd_bot.market_data import (
+    MarketDataProviderAccessMode,
     MarketDataProviderResponseError,
     NobitexPublicMarketDataProvider,
 )
@@ -32,6 +33,9 @@ def test_nobitex_provider_exposes_public_spot_capabilities() -> None:
     assert provider.metadata.provider_id == "nobitex-public"
     assert provider.metadata.requires_credentials is False
     assert provider.metadata.supported_timeframes == tuple(Timeframe)
+    assert provider.metadata.default_pair == PAIR
+    assert provider.metadata.access_mode is MarketDataProviderAccessMode.DIRECT
+    assert provider.metadata.max_closed_candles is None
 
 
 @pytest.mark.asyncio

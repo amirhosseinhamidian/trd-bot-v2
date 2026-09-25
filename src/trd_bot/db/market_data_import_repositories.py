@@ -18,11 +18,29 @@ class SqlAlchemyMarketDataImportRepository:
         self._session = session
 
     def save(self, record: MarketDataImportRecord) -> MarketDataImportRecord:
+        stored, created = self.stage(record)
+        if not created:
+            return stored
+
+        try:
+            self._session.commit()
+        except IntegrityError as exc:
+            self._session.rollback()
+            existing = self.get(record.import_id)
+            if existing is not None and existing == record:
+                return existing
+            raise ValueError("market-data import history could not be persisted") from exc
+
+        return record
+
+    def stage(self, record: MarketDataImportRecord) -> tuple[MarketDataImportRecord, bool]:
+        """Add an immutable audit row without committing the surrounding transaction."""
+
         existing = self.get(record.import_id)
         if existing is not None:
             if existing != record:
                 raise ValueError("market-data import ID already exists with different content")
-            return existing
+            return existing, False
 
         self._session.add(
             MarketDataImportRow(
@@ -52,17 +70,7 @@ class SqlAlchemyMarketDataImportRepository:
                 payload_json=record.model_dump_json(),
             )
         )
-
-        try:
-            self._session.commit()
-        except IntegrityError as exc:
-            self._session.rollback()
-            existing = self.get(record.import_id)
-            if existing is not None and existing == record:
-                return existing
-            raise ValueError("market-data import history could not be persisted") from exc
-
-        return record
+        return record, True
 
     def get(self, import_id: str) -> MarketDataImportRecord | None:
         row = self._session.get(MarketDataImportRow, import_id)
@@ -130,8 +138,10 @@ class SqlAlchemyMarketDataImportRepository:
     def get_latest_successful_version(
         self,
         root_import_id: str,
+        *,
+        for_update: bool = False,
     ) -> MarketDataImportRecord | None:
-        row = self._session.scalar(
+        statement = (
             select(MarketDataImportRow)
             .where(
                 MarketDataImportRow.root_import_id == root_import_id,
@@ -145,6 +155,10 @@ class SqlAlchemyMarketDataImportRepository:
             )
             .limit(1)
         )
+        if for_update:
+            statement = statement.with_for_update()
+
+        row = self._session.scalar(statement)
         return self._record_from_row(row) if row is not None else None
 
     @staticmethod
