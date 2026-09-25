@@ -56,7 +56,11 @@ export type MarketDataQualityIssueCode =
   | 'duplicate_timestamp'
   | 'out_of_order'
   | 'missing_candle'
-  | 'open_candle';
+  | 'open_candle'
+  | 'incomplete_start'
+  | 'incomplete_end'
+  | 'outside_requested_range'
+  | 'unaligned_candle';
 
 export interface MarketDataQualityIssue {
   code: MarketDataQualityIssueCode;
@@ -64,9 +68,24 @@ export interface MarketDataQualityIssue {
   timestamp: string | null;
 }
 
+export interface MarketDataCoverageReport {
+  requested_start_time: string;
+  requested_end_time: string;
+  expected_first_open_time: string | null;
+  expected_last_open_time: string | null;
+  actual_first_open_time: string | null;
+  actual_last_close_time: string | null;
+  expected_candles: number;
+  received_candles: number;
+  missing_candles: number;
+  coverage_percent: number;
+  complete: boolean;
+}
+
 export interface MarketDataQualityReport {
   candles_checked: number;
   issues: MarketDataQualityIssue[];
+  coverage: MarketDataCoverageReport | null;
 }
 
 export interface HistoricalDatasetImportRequest {
@@ -75,6 +94,10 @@ export interface HistoricalDatasetImportRequest {
   timeframe: DatasetTimeframe;
   start_time: string;
   end_time: string;
+}
+
+export interface HistoricalDatasetCommitRequest extends HistoricalDatasetImportRequest {
+  preview_checksum: string;
 }
 
 export interface HistoricalDatasetImportPreview {
@@ -88,6 +111,7 @@ export interface HistoricalDatasetImportPreview {
   candle_count: number;
   first_open_time: string | null;
   last_close_time: string | null;
+  preview_checksum: string;
   quality_report: MarketDataQualityReport;
   ready_to_import: boolean;
 }

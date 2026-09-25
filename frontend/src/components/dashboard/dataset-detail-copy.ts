@@ -47,6 +47,13 @@ export type DatasetDetailCopy = {
     };
     candlesChecked: string;
     issueCount: string;
+    coverageTitle: string;
+    expectedCandles: string;
+    receivedCandles: string;
+    missingCandles: string;
+    coveragePercent: string;
+    completeCoverage: string;
+    incompleteCoverage: string;
     passedDescription: string;
     notRecordedDescription: string;
     issueTimestamp: string;
@@ -159,6 +166,13 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       },
       candlesChecked: 'کندل‌های بررسی‌شده',
       issueCount: 'تعداد مسائل',
+      coverageTitle: 'پوشش بازه درخواستی',
+      expectedCandles: 'کندل مورد انتظار',
+      receivedCandles: 'کندل دریافت‌شده',
+      missingCandles: 'کندل مفقود',
+      coveragePercent: 'درصد پوشش',
+      completeCoverage: 'پوشش کامل',
+      incompleteCoverage: 'پوشش ناقص',
       passedDescription: 'در زمان ایجاد Snapshot هیچ مسئله کیفیتی ثبت نشده است.',
       notRecordedDescription: 'برای این Dataset قدیمی گزارش کیفیت ذخیره نشده است.',
       issueTimestamp: 'زمان مسئله',
@@ -272,6 +286,13 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       },
       candlesChecked: 'Candles checked',
       issueCount: 'Issues',
+      coverageTitle: 'Requested range coverage',
+      expectedCandles: 'Expected candles',
+      receivedCandles: 'Received candles',
+      missingCandles: 'Missing candles',
+      coveragePercent: 'Coverage',
+      completeCoverage: 'Complete coverage',
+      incompleteCoverage: 'Incomplete coverage',
       passedDescription: 'No data-quality issues were recorded when this snapshot was created.',
       notRecordedDescription: 'No persisted quality report is available for this legacy dataset.',
       issueTimestamp: 'Issue timestamp',

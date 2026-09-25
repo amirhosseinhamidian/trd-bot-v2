@@ -348,6 +348,52 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                 </div>
               </dl>
 
+              {dataset.quality_report.coverage ? (
+                <section className="mt-5 rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h4 className="text-sm font-semibold text-app-foreground">
+                      {copy.quality.coverageTitle}
+                    </h4>
+                    <Badge
+                      variant={dataset.quality_report.coverage.complete ? 'success' : 'warning'}
+                    >
+                      {dataset.quality_report.coverage.complete
+                        ? copy.quality.completeCoverage
+                        : copy.quality.incompleteCoverage}
+                    </Badge>
+                  </div>
+                  <dl className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.expectedCandles}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatNumber(dataset.quality_report.coverage.expected_candles, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.receivedCandles}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatNumber(dataset.quality_report.coverage.received_candles, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.missingCandles}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatNumber(dataset.quality_report.coverage.missing_candles, locale)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.quality.coveragePercent}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+                          maximumFractionDigits: 2,
+                        }).format(dataset.quality_report.coverage.coverage_percent)}
+                        {locale === 'fa' ? '٪' : '%'}
+                      </dd>
+                    </div>
+                  </dl>
+                </section>
+              ) : null}
+
               {qualityIssues.length === 0 ? (
                 <p className="mt-5 text-sm leading-7 text-app-muted">
                   {copy.quality.passedDescription}

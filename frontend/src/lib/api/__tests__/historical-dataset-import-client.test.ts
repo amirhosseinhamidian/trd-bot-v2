@@ -7,6 +7,7 @@ import {
 } from '@/lib/api/client';
 import type {
   DatasetSummary,
+  HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
 } from '@/lib/api/types';
@@ -35,11 +36,30 @@ const preview: HistoricalDatasetImportPreview = {
   candle_count: 24,
   first_open_time: '2026-08-20T00:00:00Z',
   last_close_time: '2026-08-20T23:59:59.999Z',
+  preview_checksum: 'b'.repeat(64),
   quality_report: {
     candles_checked: 24,
     issues: [],
+    coverage: {
+      requested_start_time: request.start_time,
+      requested_end_time: request.end_time,
+      expected_first_open_time: request.start_time,
+      expected_last_open_time: '2026-08-20T23:00:00Z',
+      actual_first_open_time: request.start_time,
+      actual_last_close_time: '2026-08-20T23:59:59.999Z',
+      expected_candles: 24,
+      received_candles: 24,
+      missing_candles: 0,
+      coverage_percent: 100,
+      complete: true,
+    },
   },
   ready_to_import: true,
+};
+
+const commitRequest: HistoricalDatasetCommitRequest = {
+  ...request,
+  preview_checksum: preview.preview_checksum,
 };
 
 const dataset: DatasetSummary = {
@@ -78,7 +98,7 @@ describe('historical dataset import client', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(previewHistoricalDatasetImport(connectionId, request)).resolves.toEqual(preview);
-    await expect(importHistoricalDataset(connectionId, request)).resolves.toEqual(dataset);
+    await expect(importHistoricalDataset(connectionId, commitRequest)).resolves.toEqual(dataset);
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
@@ -94,7 +114,7 @@ describe('historical dataset import client', () => {
       `${API_BASE_URL}/api/v1/market-data/connections/${connectionId}/datasets`,
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify(request),
+        body: JSON.stringify(commitRequest),
         cache: 'no-store',
       }),
     );

@@ -23,6 +23,12 @@ export type HistoricalImportCopy = {
   requestedRange: string;
   availableRange: string;
   noCoverage: string;
+  coverageTitle: string;
+  expectedCandles: string;
+  receivedCandles: string;
+  missingCandles: string;
+  coveragePercent: string;
+  previewChecksum: string;
   qualityTitle: string;
   qualityPassed: string;
   qualityIssues: string;
@@ -30,6 +36,7 @@ export type HistoricalImportCopy = {
   viewDataset: string;
   invalidRange: string;
   requestError: string;
+  previewMismatchError: string;
   providerMetadataMissing: string;
   directAccessNotice: string;
   vpnAccessNotice: string;
@@ -62,6 +69,12 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     requestedRange: 'بازه درخواستی',
     availableRange: 'پوشش داده دریافت‌شده',
     noCoverage: 'هیچ کندل معتبری در این بازه دریافت نشد.',
+    coverageTitle: 'پوشش بازه',
+    expectedCandles: 'کندل مورد انتظار',
+    receivedCandles: 'کندل دریافت‌شده',
+    missingCandles: 'کندل مفقود',
+    coveragePercent: 'درصد پوشش',
+    previewChecksum: 'Checksum پیش‌نمایش',
     qualityTitle: 'گزارش کیفیت',
     qualityPassed: 'هیچ مشکل کیفیتی پیدا نشد.',
     qualityIssues: 'مشکلات کیفیت',
@@ -69,6 +82,8 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     viewDataset: 'مشاهده Dataset',
     invalidRange: 'زمان پایان باید بعد از زمان شروع باشد.',
     requestError: 'دریافت داده یا ساخت Dataset ناموفق بود. ورودی‌ها و وضعیت Backend را بررسی کنید.',
+    previewMismatchError:
+      'داده Provider بعد از Preview تغییر کرده است. دوباره Preview بگیرید و نتیجه جدید را بررسی کنید.',
     providerMetadataMissing: 'Metadata مربوط به Provider این اتصال در دسترس نیست.',
     directAccessNotice: 'این Provider برای مسیر اتصال مستقیم انتخاب شده است.',
     vpnAccessNotice:
@@ -83,6 +98,10 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
       out_of_order: 'ترتیب زمانی نامعتبر',
       missing_candle: 'کندل گمشده',
       open_candle: 'کندل بسته‌نشده',
+      incomplete_start: 'ابتدای بازه ناقص',
+      incomplete_end: 'انتهای بازه ناقص',
+      outside_requested_range: 'خارج از بازه درخواستی',
+      unaligned_candle: 'مرز زمانی نامعتبر',
     },
   },
   en: {
@@ -108,6 +127,12 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     requestedRange: 'Requested range',
     availableRange: 'Received data coverage',
     noCoverage: 'No valid candles were received for this range.',
+    coverageTitle: 'Range coverage',
+    expectedCandles: 'Expected candles',
+    receivedCandles: 'Received candles',
+    missingCandles: 'Missing candles',
+    coveragePercent: 'Coverage',
+    previewChecksum: 'Preview checksum',
     qualityTitle: 'Quality report',
     qualityPassed: 'No quality issues were detected.',
     qualityIssues: 'Quality issues',
@@ -116,6 +141,8 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
     invalidRange: 'Range end must be after range start.',
     requestError:
       'Unable to fetch data or create the dataset. Check the inputs and backend status.',
+    previewMismatchError:
+      'Provider data changed after preview. Run preview again and review the new result.',
     providerMetadataMissing: 'Provider metadata for this connection is unavailable.',
     directAccessNotice: 'This provider is selected for the direct network route.',
     vpnAccessNotice:
@@ -130,6 +157,10 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
       out_of_order: 'Out of order',
       missing_candle: 'Missing candle',
       open_candle: 'Open candle',
+      incomplete_start: 'Incomplete range start',
+      incomplete_end: 'Incomplete range end',
+      outside_requested_range: 'Outside requested range',
+      unaligned_candle: 'Unaligned candle',
     },
   },
 };

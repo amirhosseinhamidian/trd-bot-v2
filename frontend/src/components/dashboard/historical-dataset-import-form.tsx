@@ -6,10 +6,15 @@ import { useMemo, useState } from 'react';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getHistoricalImportCopy } from '@/components/dashboard/historical-import-copy';
 import { Badge, Button, Input, Select, SelectOption } from '@/components/ui';
-import { importHistoricalDataset, previewHistoricalDatasetImport } from '@/lib/api/client';
+import {
+  ApiRequestError,
+  importHistoricalDataset,
+  previewHistoricalDatasetImport,
+} from '@/lib/api/client';
 import type {
   DatasetSummary,
   DatasetTimeframe,
+  HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
   MarketDataConnection,
@@ -50,6 +55,20 @@ function formatCandleLimit(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
+function isPreviewMismatchError(error: unknown): boolean {
+  if (!(error instanceof ApiRequestError) || error.status !== 409) {
+    return false;
+  }
+
+  const payload = error.payload;
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'detail' in payload &&
+    payload.detail === 'provider data changed after preview; run preview again before importing'
+  );
+}
+
 export default function HistoricalDatasetImportForm({
   connection,
   locale,
@@ -71,6 +90,7 @@ export default function HistoricalDatasetImportForm({
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [hasRequestError, setHasRequestError] = useState(false);
+  const [hasPreviewMismatch, setHasPreviewMismatch] = useState(false);
 
   const hasValidRange = useMemo(() => {
     if (!startTime || !endTime) {
@@ -111,6 +131,7 @@ export default function HistoricalDatasetImportForm({
     setPreview(null);
     setImportedDataset(null);
     setHasRequestError(false);
+    setHasPreviewMismatch(false);
   }
 
   function buildRequest(): HistoricalDatasetImportRequest {
@@ -131,6 +152,17 @@ export default function HistoricalDatasetImportForm({
     };
   }
 
+  function buildCommitRequest(): HistoricalDatasetCommitRequest {
+    if (!preview) {
+      throw new Error('preview is required');
+    }
+
+    return {
+      ...buildRequest(),
+      preview_checksum: preview.preview_checksum,
+    };
+  }
+
   async function handlePreview(): Promise<void> {
     if (!canPreview) {
       return;
@@ -138,6 +170,7 @@ export default function HistoricalDatasetImportForm({
 
     setIsPreviewing(true);
     setHasRequestError(false);
+    setHasPreviewMismatch(false);
     setImportedDataset(null);
 
     try {
@@ -157,14 +190,20 @@ export default function HistoricalDatasetImportForm({
 
     setIsImporting(true);
     setHasRequestError(false);
+    setHasPreviewMismatch(false);
 
     try {
-      const dataset = await importHistoricalDataset(connection.connection_id, buildRequest());
+      const dataset = await importHistoricalDataset(connection.connection_id, buildCommitRequest());
       setImportedDataset(dataset);
       onImported?.();
-    } catch {
+    } catch (error) {
       setImportedDataset(null);
-      setHasRequestError(true);
+      if (isPreviewMismatchError(error)) {
+        setPreview(null);
+        setHasPreviewMismatch(true);
+      } else {
+        setHasRequestError(true);
+      }
     } finally {
       setIsImporting(false);
     }
@@ -314,6 +353,15 @@ export default function HistoricalDatasetImportForm({
         </p>
       ) : null}
 
+      {hasPreviewMismatch ? (
+        <p
+          role="alert"
+          className="mt-4 rounded-xl border border-app-warning-border bg-app-warning-soft p-3 text-sm text-app-warning"
+        >
+          {copy.previewMismatchError}
+        </p>
+      ) : null}
+
       {preview ? (
         <section className="mt-5 rounded-2xl border border-app-border bg-app-surface-muted p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -347,6 +395,51 @@ export default function HistoricalDatasetImportForm({
               </dd>
             </div>
           </dl>
+
+          {preview.quality_report.coverage ? (
+            <section className="mt-4 rounded-xl border border-app-border bg-app-surface p-4">
+              <h5 className="text-sm font-semibold text-app-foreground">{copy.coverageTitle}</h5>
+              <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <dt className="text-app-muted">{copy.expectedCandles}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatCandleLimit(preview.quality_report.coverage.expected_candles, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.receivedCandles}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatCandleLimit(preview.quality_report.coverage.received_candles, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.missingCandles}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {formatCandleLimit(preview.quality_report.coverage.missing_candles, locale)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-app-muted">{copy.coveragePercent}</dt>
+                  <dd className="mt-1 font-semibold text-app-foreground">
+                    {new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+                      maximumFractionDigits: 2,
+                    }).format(preview.quality_report.coverage.coverage_percent)}
+                    {locale === 'fa' ? '٪' : '%'}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-3 border-t border-app-border pt-3">
+                <p className="text-xs text-app-muted">{copy.previewChecksum}</p>
+                <p
+                  dir="ltr"
+                  title={preview.preview_checksum}
+                  className="mt-1 truncate text-left font-mono text-xs text-app-foreground"
+                >
+                  {preview.preview_checksum}
+                </p>
+              </div>
+            </section>
+          ) : null}
 
           <div className="mt-4 border-t border-app-border pt-4">
             <h5 className="text-sm font-semibold text-app-foreground">{copy.qualityTitle}</h5>

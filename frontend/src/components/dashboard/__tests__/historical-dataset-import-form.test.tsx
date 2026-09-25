@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
+import { ApiRequestError } from '@/lib/api/client';
 import type {
   DatasetSummary,
   HistoricalDatasetImportPreview,
@@ -16,6 +17,16 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/api/client', () => ({
+  ApiRequestError: class ApiRequestError extends Error {
+    readonly status: number;
+    readonly payload: unknown;
+
+    constructor(message: string, status: number, payload: unknown) {
+      super(message);
+      this.status = status;
+      this.payload = payload;
+    }
+  },
   importHistoricalDataset: mocks.importHistoricalDataset,
   previewHistoricalDatasetImport: mocks.previewHistoricalDatasetImport,
 }));
@@ -75,9 +86,23 @@ const preview: HistoricalDatasetImportPreview = {
   candle_count: 24,
   first_open_time: '2026-08-20T00:00:00Z',
   last_close_time: '2026-08-20T23:59:59.999Z',
+  preview_checksum: 'b'.repeat(64),
   quality_report: {
     candles_checked: 24,
     issues: [],
+    coverage: {
+      requested_start_time: '2026-08-20T00:00:00Z',
+      requested_end_time: '2026-08-21T00:00:00Z',
+      expected_first_open_time: '2026-08-20T00:00:00Z',
+      expected_last_open_time: '2026-08-20T23:00:00Z',
+      actual_first_open_time: '2026-08-20T00:00:00Z',
+      actual_last_close_time: '2026-08-20T23:59:59.999Z',
+      expected_candles: 24,
+      received_candles: 24,
+      missing_candles: 0,
+      coverage_percent: 100,
+      complete: true,
+    },
   },
   ready_to_import: true,
 };
@@ -148,6 +173,9 @@ describe('HistoricalDatasetImportForm', () => {
       }),
     );
     expect(await screen.findByText('Ready to import')).toBeInTheDocument();
+    expect(screen.getByText('Range coverage')).toBeInTheDocument();
+    expect(screen.getByText('Expected candles')).toBeInTheDocument();
+    expect(screen.getByText('100%')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create dataset' })).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Create dataset' }));
@@ -155,6 +183,10 @@ describe('HistoricalDatasetImportForm', () => {
     await waitFor(() => {
       expect(mocks.importHistoricalDataset).toHaveBeenCalledTimes(1);
     });
+    expect(mocks.importHistoricalDataset).toHaveBeenCalledWith(
+      connection.connection_id,
+      expect.objectContaining({ preview_checksum: preview.preview_checksum }),
+    );
     expect(await screen.findByText(dataset.dataset_id)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View dataset' })).toHaveAttribute(
       'href',
@@ -171,6 +203,13 @@ describe('HistoricalDatasetImportForm', () => {
       candle_count: 23,
       quality_report: {
         candles_checked: 23,
+        coverage: {
+          ...preview.quality_report.coverage!,
+          received_candles: 23,
+          missing_candles: 1,
+          coverage_percent: 95.83,
+          complete: false,
+        },
         issues: [
           {
             code: 'missing_candle',
@@ -190,6 +229,29 @@ describe('HistoricalDatasetImportForm', () => {
     expect(screen.getByText(/Missing candle:/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create dataset' })).toBeDisabled();
     expect(mocks.importHistoricalDataset).not.toHaveBeenCalled();
+  });
+
+  it('requires a new preview when provider content changes before import', async () => {
+    const user = userEvent.setup();
+    mocks.previewHistoricalDatasetImport.mockResolvedValue(preview);
+    mocks.importHistoricalDataset.mockRejectedValue(
+      new ApiRequestError('preview mismatch', 409, {
+        detail: 'provider data changed after preview; run preview again before importing',
+      }),
+    );
+
+    render(<HistoricalDatasetImportForm connection={connection} locale="en" provider={provider} />);
+
+    fillValidForm();
+    await user.click(screen.getByRole('button', { name: 'Preview data' }));
+    await user.click(await screen.findByRole('button', { name: 'Create dataset' }));
+
+    expect(
+      await screen.findByText(
+        'Provider data changed after preview. Run preview again and review the new result.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create dataset' })).toBeDisabled();
   });
 
   it('uses provider defaults and blocks ranges outside the recent Kraken window', async () => {

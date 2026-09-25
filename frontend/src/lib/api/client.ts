@@ -16,6 +16,7 @@ import type {
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
   ExperimentPerformanceSeries,
+  HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
   MarketDataConnection,
@@ -347,7 +348,7 @@ export async function previewHistoricalDatasetImport(
 
 export async function importHistoricalDataset(
   connectionId: string,
-  request: HistoricalDatasetImportRequest,
+  request: HistoricalDatasetCommitRequest,
 ): Promise<DatasetSummary> {
   return postJson<DatasetSummary>(
     `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/datasets`,

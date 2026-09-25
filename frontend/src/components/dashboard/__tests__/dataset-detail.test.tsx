@@ -43,11 +43,24 @@ function importedDataset(): DatasetDetailSummary {
       provider_id: 'synthetic-public',
       import_id: 'market-data-import-1',
       requested_start_time: '2026-08-20T10:00:00Z',
-      requested_end_time: '2026-08-20T14:00:00Z',
+      requested_end_time: '2026-08-20T12:00:00Z',
     },
     quality_report: {
       candles_checked: 2,
       issues: [],
+      coverage: {
+        requested_start_time: '2026-08-20T10:00:00Z',
+        requested_end_time: '2026-08-20T12:00:00Z',
+        expected_first_open_time: '2026-08-20T10:00:00Z',
+        expected_last_open_time: '2026-08-20T11:00:00Z',
+        actual_first_open_time: '2026-08-20T10:00:00Z',
+        actual_last_close_time: '2026-08-20T12:00:00Z',
+        expected_candles: 2,
+        received_candles: 2,
+        missing_candles: 0,
+        coverage_percent: 100,
+        complete: true,
+      },
     },
   };
 }
@@ -74,6 +87,10 @@ describe('DatasetDetail', () => {
     expect(screen.getByRole('heading', { name: 'Data quality' })).toBeInTheDocument();
     expect(screen.getByText('Passed')).toBeInTheDocument();
     expect(screen.getByText('Candles checked')).toBeInTheDocument();
+    expect(screen.getByText('Requested range coverage')).toBeInTheDocument();
+    expect(screen.getByText('Complete coverage')).toBeInTheDocument();
+    expect(screen.getByText('Expected candles')).toBeInTheDocument();
+    expect(screen.getByText('100%')).toBeInTheDocument();
     expect(
       screen.getByText('No data-quality issues were recorded when this snapshot was created.'),
     ).toBeInTheDocument();
