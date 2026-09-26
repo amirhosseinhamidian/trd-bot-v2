@@ -19,6 +19,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
     SqlAlchemyMonitoringRuntimeStateRepository,
+    SqlAlchemyOptimizationExecutionRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
     SqlAlchemyWalkForwardExecutionRepository,
@@ -202,18 +203,20 @@ def get_walk_forward_execution_task() -> WalkForwardExecutionTask:
     return run_walk_forward_execution_job
 
 
-def get_optimization_execution_repository() -> "OptimizationExecutionRepository":
-    """Provide optimization execution repository dependency."""
-    from trd_bot.db.optimization_execution_repositories import (
-        SqlAlchemyOptimizationExecutionRepository,
-    )
-    from trd_bot.db.session import get_database_session
+def get_optimization_execution_repository(
+    session: DatabaseSessionDependency,
+) -> OptimizationExecutionRepository:
+    """Return the request-scoped optimization execution repository."""
 
-    return SqlAlchemyOptimizationExecutionRepository(next(get_database_session()))
+    return SqlAlchemyOptimizationExecutionRepository(session)
 
 
-def get_optimization_runner() -> "OptimizationRunner":
-    """Provide optimization runner dependency."""
-    from trd_bot.research.optimization_runner import OptimizationRunner
+def get_optimization_runner(
+    repository: Annotated[
+        OptimizationExecutionRepository,
+        Depends(get_optimization_execution_repository),
+    ],
+) -> OptimizationRunner:
+    """Return an optimization runner sharing the request-scoped repository."""
 
-    return OptimizationRunner(get_optimization_execution_repository())
+    return OptimizationRunner(repository)

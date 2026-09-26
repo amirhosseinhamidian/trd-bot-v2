@@ -42,6 +42,9 @@ from trd_bot.db.monitoring_repositories import (
 from trd_bot.db.monitoring_runtime_state_repository import (
     SqlAlchemyMonitoringRuntimeStateRepository,
 )
+from trd_bot.db.optimization_execution_repositories import (
+    SqlAlchemyOptimizationExecutionRepository,
+)
 from trd_bot.db.repositories import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentRegistry,
@@ -86,6 +89,7 @@ __all__ = [
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",
     "SqlAlchemyMonitoringRuntimeStateRepository",
+    "SqlAlchemyOptimizationExecutionRepository",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardExecutionRepository",
