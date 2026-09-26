@@ -213,6 +213,39 @@ def test_api_returns_stored_experiment_summary(
     assert "result" not in data
 
 
+def test_api_verifies_an_experiment_replay_without_replacing_it(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.post(
+        f"/api/v1/research/experiments/{experiment_id}/replay-verification",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "verified"
+    assert response.json()["code"] == "verified"
+    assert (
+        response.json()["recorded_result_checksum"] == (response.json()["replayed_result_checksum"])
+    )
+    assert registry.count() == 1
+
+
+def test_api_returns_404_when_replay_target_is_unknown(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.post(
+        "/api/v1/research/experiments/experiment-0000000000000000/replay-verification",
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "experiment not found"}
+
+
 def test_api_returns_404_for_unknown_experiment_summary(
     registry: InMemoryExperimentRegistry,
 ) -> None:

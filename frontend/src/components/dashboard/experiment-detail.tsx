@@ -13,6 +13,7 @@ import type {
 } from '@/lib/api/types';
 import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
 import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
+import { ExperimentReplayPanel } from '@/components/dashboard/experiment-replay-panel';
 import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
 import { getStrategyDisplayName, getStrategyParameterLabel } from '@/lib/strategies/presentation';
 
@@ -217,6 +218,8 @@ export function ExperimentDetail({
           </dl>
         </CardContent>
       </Card>
+
+      <ExperimentReplayPanel experimentId={experiment.experiment_id} locale={locale} />
 
       <Card>
         <CardHeader>

@@ -110,6 +110,13 @@ from trd_bot.research.experiment_executions import (
     SMACrossoverExecutionParameters,
     StrategyExecutionParameters,
 )
+from trd_bot.research.experiment_replay import (
+    ExperimentReplayCode,
+    ExperimentReplayStatus,
+    ExperimentReplayVerification,
+    ExperimentReplayVerifier,
+    calculate_research_result_checksum,
+)
 from trd_bot.research.experiment_reports import (
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
@@ -327,6 +334,10 @@ __all__ = [
     "ExperimentPerformanceSeries",
     "ExperimentPerformanceSeriesBuilder",
     "ExperimentRegistry",
+    "ExperimentReplayCode",
+    "ExperimentReplayStatus",
+    "ExperimentReplayVerification",
+    "ExperimentReplayVerifier",
     "ExperimentReportCsvExporter",
     "ExperimentResearchReport",
     "ExperimentResearchReportBuilder",
@@ -414,6 +425,7 @@ __all__ = [
     "build_walk_forward_plan_id",
     "build_walk_forward_split_id",
     "calculate_dataset_checksum",
+    "calculate_research_result_checksum",
     "default_acceptance_policy_presets",
     "normalize_candidate_timestamp",
 ]

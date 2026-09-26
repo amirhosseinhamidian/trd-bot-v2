@@ -21,6 +21,7 @@ import type {
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
   ExperimentPerformanceSeries,
+  ExperimentReplayVerification,
   HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
@@ -668,6 +669,14 @@ export async function getExperimentSummary(experimentId: string): Promise<Experi
   const encodedExperimentId = encodeURIComponent(experimentId);
 
   return getJson<ExperimentSummary>(`/api/v1/research/experiments/${encodedExperimentId}/summary`);
+}
+
+export async function verifyExperimentReplay(
+  experimentId: string,
+): Promise<ExperimentReplayVerification> {
+  return postJson<ExperimentReplayVerification>(
+    `/api/v1/research/experiments/${encodeURIComponent(experimentId)}/replay-verification`,
+  );
 }
 
 export async function getExperimentPerformanceSeries(

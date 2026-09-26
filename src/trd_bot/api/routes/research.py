@@ -51,6 +51,8 @@ from trd_bot.research import (
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
     ExperimentRegistry,
+    ExperimentReplayVerification,
+    ExperimentReplayVerifier,
     ExperimentReportCsvExporter,
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
@@ -1655,6 +1657,24 @@ def get_experiment_summary(
         )
 
     return ExperimentSummary.from_experiment(experiment)
+
+
+@router.post(
+    "/experiments/{experiment_id}/replay-verification",
+    response_model=ExperimentReplayVerification,
+)
+def verify_experiment_replay(
+    experiment_id: str,
+    registry: ExperimentRegistryDependency,
+    datasets: DatasetRepositoryDependency,
+) -> ExperimentReplayVerification:
+    """Replay one experiment and compare it without replacing historical data."""
+
+    experiment = registry.get(experiment_id)
+    if experiment is None:
+        raise HTTPException(status_code=404, detail="experiment not found")
+
+    return ExperimentReplayVerifier(datasets=datasets).verify(experiment)
 
 
 @router.get(

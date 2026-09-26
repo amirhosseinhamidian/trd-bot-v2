@@ -551,6 +551,34 @@ export interface ExperimentSummary {
   comparison_outcome: 'strategy' | 'benchmark' | 'tie';
 }
 
+export type ExperimentReplayStatus = 'verified' | 'mismatch' | 'unverifiable';
+
+export type ExperimentReplayCode =
+  | 'verified'
+  | 'legacy_fingerprint_missing'
+  | 'dataset_not_found'
+  | 'dataset_integrity_mismatch'
+  | 'strategy_version_not_found'
+  | 'strategy_fingerprint_mismatch'
+  | 'invalid_strategy_parameters'
+  | 'replay_failed'
+  | 'result_mismatch';
+
+export interface ExperimentReplayVerification {
+  experiment_id: string;
+  checked_at: string;
+  status: ExperimentReplayStatus;
+  code: ExperimentReplayCode;
+  dataset_id: string;
+  strategy_name: string;
+  strategy_version: string;
+  recorded_strategy_fingerprint: string | null;
+  current_strategy_fingerprint: string | null;
+  recorded_result_checksum: string;
+  replayed_result_checksum: string | null;
+  mismatch_fields: string[];
+}
+
 export type ExperimentComparisonMetric = 'excess_return' | 'total_return' | 'max_drawdown_fraction';
 
 export type ExperimentComparisonRankingDirection = 'higher_is_better' | 'lower_is_better';

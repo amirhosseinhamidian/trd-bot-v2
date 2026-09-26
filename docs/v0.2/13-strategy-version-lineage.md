@@ -40,7 +40,5 @@ deterministic و هم در payload immutable Experiment قرار می‌دهد. 
 
 ## مرز مرحله
 
-این مرحله identity و navigation را می‌بندد. TB2-011 باید replay کنترل‌شده را اضافه کند: Dataset
-immutable را بارگذاری کند، fingerprint ثبت‌شده را با Registry تطبیق دهد، پارامترها را بازسازی
-کند و نتیجهٔ تازه را با نتیجهٔ ذخیره‌شده مقایسه کند. mismatch باید fail-closed باشد و نتیجهٔ
-قدیمی را بازنویسی نکند.
+این مرحله identity و navigation را می‌بندد. replay کنترل‌شده و fail-closed در TB2-011 و سند
+`14-experiment-replay-verification.md` تعریف شده است.

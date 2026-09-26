@@ -7,6 +7,7 @@ import {
   getResearchStrategyVersion,
   getResearchStrategyVersions,
   getResearchStrategies,
+  verifyExperimentReplay,
 } from '@/lib/api/client';
 import type {
   DatasetImportRequest,
@@ -139,6 +140,24 @@ describe('research API client', () => {
       2,
       expect.stringContaining('/research/strategies/ema%20crossover/versions'),
       expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+  });
+
+  it('requests a non-mutating replay verification for one experiment', async () => {
+    const verification = {
+      experiment_id: 'experiment-1234567890abcdef',
+      status: 'verified',
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(verification));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(verifyExperimentReplay('experiment with space')).resolves.toEqual(verification);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/research/experiments/experiment%20with%20space/replay-verification',
+      ),
+      expect.objectContaining({ method: 'POST', cache: 'no-store' }),
     );
   });
 
