@@ -1,3 +1,7 @@
+from trd_bot.db.background_job_repositories import (
+    BackgroundJobConflictError,
+    SqlAlchemyBackgroundJobRepository,
+)
 from trd_bot.db.base import DatabaseBase
 from trd_bot.db.candidate_journal_repositories import (
     SqlAlchemyCandidateJournalRepository,
@@ -16,6 +20,7 @@ from trd_bot.db.historical_dataset_commits import (
 )
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
+    BackgroundJobRow,
     CandidateJournalRow,
     CandidateProjectionRow,
     DatasetSnapshotRow,
@@ -58,6 +63,8 @@ from trd_bot.db.walk_forward_execution_repositories import (
 
 __all__ = [
     "ArchitectureRecommendationRow",
+    "BackgroundJobConflictError",
+    "BackgroundJobRow",
     "CandidateJournalRow",
     "CandidateProjectionRow",
     "DatabaseBase",
@@ -70,6 +77,7 @@ __all__ = [
     "SimulatedPortfolioRow",
     "SimulatedPositionRow",
     "SqlAlchemyArchitectureRecommendationRepository",
+    "SqlAlchemyBackgroundJobRepository",
     "SqlAlchemyCandidateJournalRepository",
     "SqlAlchemyCandidateProjectionRebuilder",
     "SqlAlchemyCandidateProjectionRepository",

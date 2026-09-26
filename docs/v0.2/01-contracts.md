@@ -23,7 +23,7 @@
 | کیفیت | `DataQualityReport` پوشش requested range، امتیاز `quality-score-v1`، breakdown پوشش/یکپارچگی و تصمیم `strict-quality-v1` را نگه می‌دارد؛ گزارش هر Import/Refresh نیز در audit record ثبت می‌شود. مسیر فایل پس از normalization همین policy را روی بازه‌ی اولین open تا آخرین close اجرا می‌کند و alignment زمانی را می‌سنجد. | خطای container/mapping/row قبل از Snapshot کد پایدار دارد؛ Dataset فایل فقط با policy پذیرفته‌شده قابل ذخیره است. |
 | strategy | `build_default_strategy_registry()` سه strategy با metadata و نسخهٔ `1.0.0` می‌سازد؛ lookup کاتالوگ در `/api/v1/research/strategies` است. | قرارداد عدم تغییر رفتار در همان نسخه، schema پارامتر و نگاشت history به StrategyVersion در TB2-010/011 تثبیت شود؛ نوع نگهداری registry هنوز الزاماً DB نیست. |
 | optimization | `OptimizationPlan` bounded و `OptimizationExecution` با queued/running/succeeded/failed موجودند؛ scorer انتخاب objective تکی دارد. | شمار/نتیجهٔ هر trial، best_experiment_id، score breakdown و folds باید به Experiment/Dataset/StrategyVersion وصل شود؛ workflow پچ‌های TB2-012 تا TB2-015 تعریف شود. |
-| jobs | Experiment و Walk-Forward در FastAPI `BackgroundTasks` اجرا می‌شوند. | قرارداد مشترک durable با progress/retry/idempotency/cancel و پیوند به نتیجه در TB2-008 تعیین شود؛ queue/worker محصول یک انتخاب عملیاتی است، نه تصمیم پذیرفته‌شدهٔ TB2-001. |
+| jobs | `BackgroundJob` یک envelope نسخه‌دار و allowlisted با وضعیت queued/running/succeeded/failed/cancelled است. PostgreSQL صف، idempotency، lease انقضادار، reclaim، progress، retry budget و cancel را نگه می‌دارد؛ worker مستقل با `scripts/run_background_worker.py` اجرا می‌شود. | handler جدید فقط از registry داخلی ثبت می‌شود؛ payload دلخواه از API enqueue نمی‌شود. Import و Optimization در مراحل صاحب دامنه به این foundation متصل می‌شوند. |
 
 ## فهرست تصمیم‌ها؛ پیشنهاد اولیه، هنوز قرارداد اجرایی نیست
 
@@ -34,7 +34,7 @@
 | ADR-03 | **تصمیم TB2-006:** امتیاز نسخه‌دار حاصل‌ضرب پوشش و یکپارچگی است و هیچ مولفه‌ای ضعف مولفه دیگر را جبران نمی‌کند. پذیرش fail-closed است: امتیاز ۱۰۰ و نبود هرگونه issue مسدودکننده لازم است. | بسته در TB2-004/006 |
 | ADR-08 | **تصمیم TB2-007:** فایل در سه مرحله inspect، preview و commit پردازش می‌شود؛ client فقط mapping/identity را می‌فرستد، Backend parse می‌کند و commit باید checksum canonical همان preview را ارائه کند. فایل خام ذخیره نمی‌شود، اما filename امن، format، SHA-256 فایل و mapping در provenance Snapshot ثبت می‌شوند. | بسته در TB2-007 |
 | ADR-04 | تضمین نسخهٔ رفتار Strategy: افزایش version با هر تغییر سیگنال، hash نسخه یا هر دو؟ پیشنهاد: نسخهٔ منتشرشده immutable با تست golden؛ راه migration برای experimentهای قدیمی ثبت شود. | TB2-010 |
-| ADR-05 | پشتهٔ job/worker چگونه با PostgreSQL و استقرار موجود بدون هزینهٔ غیرضروری سازگار شود؟ پیشنهاد: صف persistent با lease/recovery و محدودیت هم‌زمانی؛ انتخاب فناوری پس از سنجش محیط استقرار. | TB2-008 |
+| ADR-05 | **تصمیم TB2-008:** از PostgreSQL موجود به‌عنوان صف durable استفاده می‌شود؛ claim با row lock و `SKIP LOCKED`، lease/heartbeat و reclaim انجام می‌شود. وابستگی broker تازه اضافه نمی‌شود و handlerها allowlisted هستند. | بسته در TB2-008؛ اتصال domainها در TB2-009/013 |
 | ADR-06 | تعریف robustness، وزن‌ها، حداقل sample، دوره‌ها، train/test split و tie-break چیست؟ پیشنهاد: ابتدا golden مثال overfit و fold بی‌معامله بسازیم، سپس score نسخه‌دار نهایی شود. | TB2-014 |
 | ADR-07 | error contract جدید چگونه در کنار endpointهای موجود سازگار می‌ماند؟ پیشنهاد: کد ماشین‌خوان برای مسیر جدید همراه HTTP status، بدون شکستن client فعلی. | TB2-002/012 |
 

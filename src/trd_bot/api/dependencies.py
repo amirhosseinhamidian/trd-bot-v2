@@ -11,6 +11,7 @@ from trd_bot.api.background_jobs import (
 )
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
+    SqlAlchemyBackgroundJobRepository,
     SqlAlchemyCandidateJournalRepository,
     SqlAlchemyCandidateProjectionRepository,
     SqlAlchemyDatasetRepository,
@@ -30,6 +31,7 @@ from trd_bot.db.market_data_connection_repositories import (
 from trd_bot.db.market_data_import_repositories import (
     SqlAlchemyMarketDataImportRepository,
 )
+from trd_bot.jobs import BackgroundJobRepository
 from trd_bot.market_data import (
     MarketDataConnectionRepository,
     MarketDataProviderCatalog,
@@ -62,6 +64,14 @@ def get_market_data_connection_repository(
     """Return the request-scoped market-data connection repository."""
 
     return SqlAlchemyMarketDataConnectionRepository(session)
+
+
+def get_background_job_repository(
+    session: DatabaseSessionDependency,
+) -> BackgroundJobRepository:
+    """Return the request-scoped durable background job repository."""
+
+    return SqlAlchemyBackgroundJobRepository(session)
 
 
 def get_market_data_import_repository(

@@ -185,6 +185,80 @@ class DatasetSnapshotRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class BackgroundJobRow(DatabaseBase):
+    """Durable generic queue row claimed through a time-bounded worker lease."""
+
+    __tablename__ = "background_jobs"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "progress_percent >= 0 AND progress_percent <= 100",
+            name="progress_range",
+        ),
+        CheckConstraint(
+            "attempt_count >= 0 AND attempt_count <= max_attempts "
+            "AND max_attempts > 0 AND max_attempts <= 10",
+            name="attempt_range",
+        ),
+        CheckConstraint("updated_at >= created_at", name="updated_after_created"),
+        CheckConstraint("run_after >= created_at", name="run_after_created"),
+        CheckConstraint(
+            "started_at IS NULL OR started_at >= created_at",
+            name="started_after_created",
+        ),
+        CheckConstraint(
+            "finished_at IS NULL OR (finished_at >= created_at "
+            "AND (started_at IS NULL OR finished_at >= started_at))",
+            name="finished_after_started",
+        ),
+        CheckConstraint(
+            "(status = 'running' AND lease_owner IS NOT NULL "
+            "AND lease_expires_at IS NOT NULL) OR "
+            "(status != 'running' AND lease_owner IS NULL AND lease_expires_at IS NULL)",
+            name="lease_consistent",
+        ),
+        CheckConstraint(
+            "(status IN ('succeeded', 'failed', 'cancelled') AND finished_at IS NOT NULL) "
+            "OR (status IN ('queued', 'running') AND finished_at IS NULL)",
+            name="finish_consistent",
+        ),
+        CheckConstraint(
+            "status != 'succeeded' OR progress_percent = 100",
+            name="success_progress_complete",
+        ),
+        UniqueConstraint(
+            "kind",
+            "idempotency_key",
+            name="uq_background_jobs_kind_idempotency_key",
+        ),
+        Index("ix_background_jobs_claim", "status", "run_after", "created_at"),
+        Index("ix_background_jobs_lease", "status", "lease_expires_at"),
+    )
+
+    job_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(50), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    progress_percent: Mapped[int] = mapped_column(Integer)
+    attempt_count: Mapped[int] = mapped_column(Integer)
+    max_attempts: Mapped[int] = mapped_column(Integer)
+    idempotency_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    run_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    lease_owner: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    cancel_requested: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class OptimizationExecutionRow(DatabaseBase):
     """Persistent lifecycle state of one historical optimization execution."""
 

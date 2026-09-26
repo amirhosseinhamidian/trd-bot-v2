@@ -202,7 +202,7 @@ def _parse_file_request[RequestModel: BaseModel](
 def _raise_file_import_http_error(error: DatasetFileImportError) -> Never:
     status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     if error.code is DatasetFileImportErrorCode.FILE_TOO_LARGE:
-        status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        status_code = status.HTTP_413_CONTENT_TOO_LARGE
     elif error.code is DatasetFileImportErrorCode.UNSUPPORTED_FORMAT:
         status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
     elif error.code is DatasetFileImportErrorCode.PREVIEW_MISMATCH:
