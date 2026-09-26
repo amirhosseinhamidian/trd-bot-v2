@@ -25,6 +25,8 @@ from trd_bot.research.optimization_jobs import (
     OptimizationExecutionJobPayload,
     build_optimization_execution_idempotency_key,
 )
+from trd_bot.research.optimization_robustness import OptimizationRobustnessPlanner
+from trd_bot.research.walk_forward import WalkForwardConfig
 
 router = APIRouter(
     prefix="/research/optimization-executions",
@@ -44,6 +46,7 @@ class CreateOptimizationExecutionRequest(BaseModel):
     parameter_grid: tuple[OptimizationParameterGrid, ...] = Field(min_length=1)
     horizon_candles: int = Field(default=1, ge=1)
     backtest_config: BacktestConfig
+    walk_forward_config: WalkForwardConfig
 
 
 class OptimizationExecutionCatalogParams(BaseModel):
@@ -131,11 +134,27 @@ def create_optimization_execution(
             ),
         ) from error
 
+    try:
+        robustness_plan = OptimizationRobustnessPlanner().plan(
+            dataset=dataset,
+            walk_forward_config=request.walk_forward_config,
+            optimization_trials=plan.total_trials,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail=_error_detail(
+                code="invalid_optimization_robustness",
+                message=str(error),
+            ),
+        ) from error
+
     execution = OptimizationExecutionBuilder().build(
         dataset_id=dataset.dataset_id,
         plan=plan,
         horizon_candles=request.horizon_candles,
         backtest_config=request.backtest_config,
+        robustness_plan=robustness_plan,
     )
     payload = OptimizationExecutionJobPayload(execution_id=execution.execution_id)
     job = BackgroundJobBuilder().build(

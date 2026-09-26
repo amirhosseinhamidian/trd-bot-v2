@@ -49,7 +49,7 @@ def build_optimization_execution_idempotency_key(
 ) -> str:
     """Build a stable key from user-controlled execution intent."""
 
-    payload = {
+    payload: dict[str, object] = {
         "dataset_id": execution.dataset_id,
         "strategy_name": execution.strategy_name,
         "strategy_version": execution.strategy_version,
@@ -58,6 +58,8 @@ def build_optimization_execution_idempotency_key(
         "horizon_candles": execution.horizon_candles,
         "backtest_config": execution.backtest_config.model_dump(mode="json"),
     }
+    if execution.robustness_plan is not None:
+        payload["robustness_plan"] = execution.robustness_plan.model_dump(mode="json")
     encoded = json.dumps(
         payload,
         ensure_ascii=True,

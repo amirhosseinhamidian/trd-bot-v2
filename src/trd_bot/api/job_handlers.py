@@ -11,6 +11,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
     SqlAlchemyOptimizationExecutionRepository,
+    SqlAlchemyWalkForwardRunRegistry,
     get_session_factory,
 )
 from trd_bot.db.market_data_connection_repositories import (
@@ -119,6 +120,7 @@ def run_optimization_execution_job(
             executions=SqlAlchemyOptimizationExecutionRepository(session),
             datasets=SqlAlchemyDatasetRepository(session),
             experiments=SqlAlchemyExperimentRegistry(session),
+            walk_forward_runs=SqlAlchemyWalkForwardRunRegistry(session),
         )
         try:
             execution = runner.run(

@@ -4,8 +4,8 @@
 
 این مرحله اجرای plan محدود TB2-012 را به صف PostgreSQL موجود متصل می‌کند. API فقط intent را
 اعتبارسنجی و execution/job را enqueue می‌کند؛ اجرای Strategy، Backtest، ساخت Experiment و ranking
-فقط در worker مستقل و handler allowlisted انجام می‌شوند. robustness و Walk-Forward متعلق به TB2-014
-هستند.
+فقط در worker مستقل و handler allowlisted انجام می‌شوند. از TB2-014 هر execution تازه علاوه بر
+Experiment کامل، validation خارج‌ازنمونه و ranking robustness را نیز در همین worker انجام می‌دهد.
 
 ## قرارداد submission
 
@@ -27,7 +27,8 @@ handler نوع `optimization_execution` فقط payload نسخه‌دار شام�
 2. Dataset immutable و StrategyVersion دقیق را resolve می‌کند؛
 3. فقط trialهای بعد از `completed_trials` را اجرا می‌کند؛
 4. هر نتیجه را به Experiment immutable تبدیل و سپس ID آن را در execution ثبت می‌کند؛
-5. Experimentها را با objective ذخیره‌شده rank و `best_experiment_id` را ثبت می‌کند؛
+5. برای execution جدید Walk-Forward run و evidence نسخه‌دار می‌سازد؛ رکورد legacy را با objective خام
+   و رکورد جدید را با robustness score رتبه‌بندی می‌کند؛
 6. execution و job را succeeded می‌کند و `execution_id` را result reference می‌گذارد.
 
 پس از crash یا خطای زیرساختی، lease/retry صف اجرای دوباره را ممکن می‌کند و runner از trialهای ثبت‌شده

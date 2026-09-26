@@ -20,7 +20,8 @@ GET  /api/v1/research/optimization-executions/{execution_id}
 - `strategy_name` و `strategy_version` دقیق Registry؛
 - `parameter_grid` صریح؛
 - objective تاریخی؛
-- `horizon_candles` و `backtest_config`.
+- `horizon_candles` و `backtest_config`؛
+- `walk_forward_config` صریح برای validation زمانی خارج‌ازنمونه.
 
 ID اجرا، زمان‌ها، status، progress، experiment IDها، نتیجه برتر و خطا همگی server-owned هستند.
 endpoint عمومی برای `start`، `complete` یا `fail` وجود ندارد.
@@ -37,6 +38,7 @@ endpoint عمومی برای `start`، `complete` یا `fail` وجود ندار�
 | --- | --- | --- |
 | 404 | `dataset_not_found` | Dataset immutable موجود نیست. |
 | 422 | `invalid_optimization_plan` | نسخه، grid، مقدار یا محدودیت plan معتبر نیست. |
+| 422 | `invalid_optimization_robustness` | fold config حداقل/حداکثر یا سقف workload را رعایت نمی‌کند. |
 | 409 | `optimization_execution_conflict` | execution و job به‌صورت اتمیک قابل enqueue نبودند. |
 | 404 | `optimization_execution_not_found` | detail درخواستی موجود نیست. |
 
@@ -47,4 +49,5 @@ validation ساختاری FastAPI/Pydantic همچنان قرارداد استا�
 API از `SqlAlchemyOptimizationExecutionEnqueuer` با session request-scoped استفاده می‌کند و execution
 و job را در یک transaction می‌نویسد. کلید idempotency از intent canonical ساخته می‌شود؛ تکرار همان
 درخواست execution/job قبلی را با `created=false` برمی‌گرداند. migration جدید لازم نیست، چون جدول‌ها
-و indexهای لازم از قبل وجود دارند. جزئیات lifecycle worker در سند TB2-013 ثبت شده است.
+و indexهای لازم از قبل وجود دارند. از TB2-014 robustness plan نیز بخشی از کلید idempotency است.
+جزئیات lifecycle worker و scoring در سندهای TB2-013 و TB2-014 ثبت شده است.

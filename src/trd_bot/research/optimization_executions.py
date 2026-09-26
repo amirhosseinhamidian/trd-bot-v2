@@ -8,6 +8,12 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.research.comparisons import ExperimentComparisonMetric
 from trd_bot.research.optimization import OptimizationPlan
+from trd_bot.research.optimization_robustness import (
+    OptimizationRobustnessPlan,
+    OptimizationRobustnessRankingResult,
+    OptimizationTrialEvaluation,
+)
+from trd_bot.research.walk_forward import build_walk_forward_plan_id
 
 
 class OptimizationExecutionState(StrEnum):
@@ -36,11 +42,14 @@ class OptimizationExecution(BaseModel):
     plan: OptimizationPlan
     horizon_candles: int = Field(ge=1)
     backtest_config: BacktestConfig
+    robustness_plan: OptimizationRobustnessPlan | None = None
 
     total_trials: int = Field(ge=1)
     completed_trials: int = Field(ge=0)
     experiment_ids: tuple[str, ...] = ()
+    trial_evaluations: tuple[OptimizationTrialEvaluation, ...] = ()
     best_experiment_id: str | None = None
+    robustness_ranking: OptimizationRobustnessRankingResult | None = None
 
     error_code: str | None = Field(default=None, min_length=1, max_length=100)
     error_message: str | None = Field(default=None, min_length=1, max_length=500)
@@ -84,6 +93,8 @@ class OptimizationExecution(BaseModel):
         if len(self.experiment_ids) != len(set(self.experiment_ids)):
             raise ValueError("optimization experiment IDs must be unique")
 
+        self._validate_robustness_evidence()
+
         if self.status is OptimizationExecutionState.QUEUED:
             self._validate_queued()
         elif self.status is OptimizationExecutionState.RUNNING:
@@ -95,6 +106,73 @@ class OptimizationExecution(BaseModel):
 
         return self
 
+    def _validate_robustness_evidence(self) -> None:
+        if self.robustness_plan is None:
+            if self.trial_evaluations or self.robustness_ranking is not None:
+                raise ValueError("legacy optimization cannot contain robustness evidence")
+            return
+
+        expected_plan_id = build_walk_forward_plan_id(
+            dataset_id=self.dataset_id,
+            config=self.robustness_plan.walk_forward_config,
+        )
+        if self.robustness_plan.walk_forward_plan_id != expected_plan_id:
+            raise ValueError("robustness walk-forward plan identity is inconsistent")
+        if self.robustness_plan.validation_runs != (
+            self.total_trials * self.robustness_plan.total_folds
+        ):
+            raise ValueError("robustness validation workload is inconsistent")
+
+        if len(self.trial_evaluations) != self.completed_trials:
+            raise ValueError("completed trials must match robustness evaluations")
+        walk_forward_run_ids: list[str] = []
+        for trial_number, (experiment_id, evaluation) in enumerate(
+            zip(self.experiment_ids, self.trial_evaluations, strict=True),
+            start=1,
+        ):
+            if evaluation.trial_number != trial_number:
+                raise ValueError("robustness trial numbers must be continuous")
+            if evaluation.experiment_id != experiment_id:
+                raise ValueError("robustness evaluation does not match experiment")
+            if evaluation.objective is not self.objective:
+                raise ValueError("robustness evaluation objective is inconsistent")
+            if evaluation.score_version != self.robustness_plan.score_version:
+                raise ValueError("robustness score version is inconsistent")
+            if evaluation.total_folds != self.robustness_plan.total_folds:
+                raise ValueError("robustness evaluation fold count is inconsistent")
+            walk_forward_run_ids.append(evaluation.walk_forward_run_id)
+        if len(walk_forward_run_ids) != len(set(walk_forward_run_ids)):
+            raise ValueError("walk-forward run IDs must be unique")
+
+        if self.robustness_ranking is not None:
+            if self.status is not OptimizationExecutionState.SUCCEEDED:
+                raise ValueError("only succeeded optimization can contain robustness ranking")
+            if self.robustness_ranking.objective is not self.objective:
+                raise ValueError("robustness ranking objective is inconsistent")
+            if self.robustness_ranking.evaluated_trials != self.completed_trials:
+                raise ValueError("robustness ranking trial count is inconsistent")
+            eligible_evaluations = tuple(
+                evaluation for evaluation in self.trial_evaluations if evaluation.eligible
+            )
+            if self.robustness_ranking.eligible_trials != len(eligible_evaluations):
+                raise ValueError("robustness ranking eligibility count is inconsistent")
+            if self.robustness_ranking.rejected_trials != (
+                self.completed_trials - len(eligible_evaluations)
+            ):
+                raise ValueError("robustness ranking rejection count is inconsistent")
+            ranked_evaluations = tuple(
+                entry.evaluation for entry in self.robustness_ranking.entries
+            )
+            ranked_experiment_ids = tuple(
+                evaluation.experiment_id for evaluation in ranked_evaluations
+            )
+            if (
+                len(ranked_evaluations) != len(eligible_evaluations)
+                or len(ranked_experiment_ids) != len(set(ranked_experiment_ids))
+                or any(evaluation not in eligible_evaluations for evaluation in ranked_evaluations)
+            ):
+                raise ValueError("robustness ranking evidence is inconsistent")
+
     def _validate_queued(self) -> None:
         if self.started_at is not None or self.finished_at is not None:
             raise ValueError("queued optimization cannot have execution timestamps")
@@ -102,6 +180,8 @@ class OptimizationExecution(BaseModel):
             raise ValueError("queued optimization cannot contain completed trials")
         if self.best_experiment_id is not None:
             raise ValueError("queued optimization cannot contain a best experiment")
+        if self.robustness_ranking is not None:
+            raise ValueError("queued optimization cannot contain robustness ranking")
         if self.error_code is not None or self.error_message is not None:
             raise ValueError("queued optimization cannot contain an error")
 
@@ -110,6 +190,8 @@ class OptimizationExecution(BaseModel):
             raise ValueError("running optimization must have only a started time")
         if self.best_experiment_id is not None:
             raise ValueError("running optimization cannot contain a best experiment")
+        if self.robustness_ranking is not None:
+            raise ValueError("running optimization cannot contain robustness ranking")
         if self.error_code is not None or self.error_message is not None:
             raise ValueError("running optimization cannot contain an error")
 
@@ -122,6 +204,11 @@ class OptimizationExecution(BaseModel):
             raise ValueError("succeeded optimization requires a best experiment")
         if self.best_experiment_id not in self.experiment_ids:
             raise ValueError("best experiment must belong to the optimization")
+        if self.robustness_plan is not None:
+            if self.robustness_ranking is None:
+                raise ValueError("robust optimization requires a final ranking")
+            if self.robustness_ranking.best_experiment_id != self.best_experiment_id:
+                raise ValueError("robustness ranking does not match best experiment")
         if self.error_code is not None or self.error_message is not None:
             raise ValueError("succeeded optimization cannot contain an error")
 
@@ -130,6 +217,8 @@ class OptimizationExecution(BaseModel):
             raise ValueError("failed optimization must have execution timestamps")
         if self.best_experiment_id is not None:
             raise ValueError("failed optimization cannot contain a best experiment")
+        if self.robustness_ranking is not None:
+            raise ValueError("failed optimization cannot contain robustness ranking")
         if self.error_code is None or self.error_message is None:
             raise ValueError("failed optimization requires an error")
 
@@ -144,6 +233,7 @@ class OptimizationExecutionBuilder:
         plan: OptimizationPlan,
         horizon_candles: int,
         backtest_config: BacktestConfig,
+        robustness_plan: OptimizationRobustnessPlan | None = None,
         now: datetime | None = None,
     ) -> OptimizationExecution:
         created_at = now or datetime.now(UTC)
@@ -160,6 +250,7 @@ class OptimizationExecutionBuilder:
             plan=plan,
             horizon_candles=horizon_candles,
             backtest_config=backtest_config,
+            robustness_plan=robustness_plan,
             total_trials=plan.total_trials,
             completed_trials=0,
         )
@@ -188,6 +279,7 @@ class OptimizationExecutionStateMachine:
         execution: OptimizationExecution,
         *,
         experiment_id: str,
+        evaluation: OptimizationTrialEvaluation | None = None,
         now: datetime | None = None,
     ) -> OptimizationExecution:
         self._require_status(execution, OptimizationExecutionState.RUNNING)
@@ -198,13 +290,27 @@ class OptimizationExecutionStateMachine:
         if execution.completed_trials >= execution.total_trials:
             raise ValueError("optimization has already completed every trial")
 
+        if execution.robustness_plan is None and evaluation is not None:
+            raise ValueError("legacy optimization cannot record robustness evidence")
+        if execution.robustness_plan is not None:
+            if evaluation is None:
+                raise ValueError("robust optimization requires trial evaluation")
+            if evaluation.experiment_id != experiment_id:
+                raise ValueError("trial evaluation does not match experiment")
+            if evaluation.trial_number != execution.completed_trials + 1:
+                raise ValueError("trial evaluation number is inconsistent")
+
         updated_at = now or datetime.now(UTC)
         experiment_ids = (*execution.experiment_ids, experiment_id)
+        trial_evaluations = execution.trial_evaluations
+        if evaluation is not None:
+            trial_evaluations = (*trial_evaluations, evaluation)
 
         return self._validated_copy(
             execution,
             completed_trials=len(experiment_ids),
             experiment_ids=experiment_ids,
+            trial_evaluations=trial_evaluations,
             updated_at=updated_at,
         )
 
@@ -213,6 +319,7 @@ class OptimizationExecutionStateMachine:
         execution: OptimizationExecution,
         *,
         best_experiment_id: str,
+        robustness_ranking: OptimizationRobustnessRankingResult | None = None,
         now: datetime | None = None,
     ) -> OptimizationExecution:
         self._require_status(execution, OptimizationExecutionState.RUNNING)
@@ -221,6 +328,7 @@ class OptimizationExecutionStateMachine:
             execution,
             status=OptimizationExecutionState.SUCCEEDED,
             best_experiment_id=best_experiment_id,
+            robustness_ranking=robustness_ranking,
             finished_at=finished_at,
             updated_at=finished_at,
         )

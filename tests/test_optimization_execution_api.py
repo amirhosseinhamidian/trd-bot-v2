@@ -40,7 +40,7 @@ def dataset_repository() -> InMemoryDatasetRepository:
             volume=Decimal("1000"),
             is_closed=True,
         )
-        for index in range(4)
+        for index in range(16)
     )
     repository.save(DatasetBuilder().build(name="Optimization API dataset", candles=candles))
     return repository
@@ -85,6 +85,13 @@ def build_request(dataset_id: str) -> dict[str, object]:
             "fee_rate": "0.001",
             "slippage_rate": "0.0005",
         },
+        "walk_forward_config": {
+            "train_candles": 4,
+            "test_candles": 4,
+            "step_candles": 4,
+            "gap_candles": 0,
+            "mode": "rolling",
+        },
     }
 
 
@@ -118,6 +125,9 @@ def test_creates_a_server_built_bounded_optimization_execution(
     assert execution["plan"]["total_trials"] == 2
     assert execution["completed_trials"] == 0
     assert execution["experiment_ids"] == []
+    assert execution["robustness_plan"]["policy_version"] == ("optimization-robustness-v1")
+    assert execution["robustness_plan"]["total_folds"] == 3
+    assert execution["robustness_plan"]["validation_runs"] == 6
 
     stored = execution_repository.get(execution["execution_id"])
     assert stored is not None
@@ -171,6 +181,37 @@ def test_duplicate_submission_returns_the_existing_execution_and_job(
     assert execution_repository.count() == 1
 
 
+def test_walk_forward_config_is_part_of_submission_idempotency(
+    dataset_repository: InMemoryDatasetRepository,
+    execution_repository: InMemoryOptimizationExecutionRepository,
+) -> None:
+    dataset_id = stored_dataset_id(dataset_repository)
+    first_request = build_request(dataset_id)
+    second_request = build_request(dataset_id)
+    second_request["walk_forward_config"] = {
+        "train_candles": 4,
+        "test_candles": 3,
+        "step_candles": 3,
+        "gap_candles": 0,
+        "mode": "rolling",
+    }
+
+    first = client.post(
+        "/api/v1/research/optimization-executions",
+        json=first_request,
+    ).json()
+    second = client.post(
+        "/api/v1/research/optimization-executions",
+        json=second_request,
+    ).json()
+
+    assert first["created"] is True
+    assert second["created"] is True
+    assert second["execution"]["execution_id"] != first["execution"]["execution_id"]
+    assert second["job"]["job_id"] != first["job"]["job_id"]
+    assert execution_repository.count() == 2
+
+
 def test_rejects_an_unknown_dataset_without_persisting_execution(
     execution_repository: InMemoryOptimizationExecutionRepository,
 ) -> None:
@@ -221,6 +262,32 @@ def test_client_cannot_supply_optimization_lifecycle_state(
     )
 
     assert response.status_code == 422
+
+
+def test_rejects_walk_forward_config_with_too_few_robustness_folds(
+    dataset_repository: InMemoryDatasetRepository,
+    execution_repository: InMemoryOptimizationExecutionRepository,
+) -> None:
+    request = build_request(stored_dataset_id(dataset_repository))
+    request["walk_forward_config"] = {
+        "train_candles": 8,
+        "test_candles": 4,
+        "step_candles": 4,
+        "gap_candles": 0,
+        "mode": "rolling",
+    }
+
+    response = client.post(
+        "/api/v1/research/optimization-executions",
+        json=request,
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == {
+        "code": "invalid_optimization_robustness",
+        "message": "optimization robustness requires at least 3 folds",
+    }
+    assert execution_repository.count() == 0
 
 
 def test_returns_404_for_an_unknown_optimization_execution() -> None:

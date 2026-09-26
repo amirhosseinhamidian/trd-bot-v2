@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentRegistry,
     SqlAlchemyOptimizationExecutionEnqueuer,
     SqlAlchemyOptimizationExecutionRepository,
+    SqlAlchemyWalkForwardRunRegistry,
     create_database_engine,
     create_session_factory,
 )
@@ -34,6 +35,8 @@ from trd_bot.research.optimization_jobs import (
     OptimizationExecutionJobPayload,
     build_optimization_execution_idempotency_key,
 )
+from trd_bot.research.optimization_robustness import OptimizationRobustnessPlanner
+from trd_bot.research.walk_forward import WalkForwardConfig
 
 
 def test_durable_worker_executes_and_links_an_optimization_job(
@@ -46,7 +49,7 @@ def test_durable_worker_executes_and_links_an_optimization_job(
     monkeypatch.setattr(job_handlers, "get_session_factory", lambda: factory)
 
     start = datetime(2026, 8, 1, tzinfo=UTC)
-    prices = ("10", "9", "8", "9", "11", "13", "12", "10", "11", "14", "16", "15")
+    prices = tuple("10" if index % 2 == 0 else "20" for index in range(16))
     candles = tuple(
         OHLCVCandle(
             source="test-exchange",
@@ -82,6 +85,15 @@ def test_durable_worker_executes_and_links_an_optimization_job(
             allocation_fraction=Decimal("0.10"),
             fee_rate=Decimal("0.001"),
             slippage_rate=Decimal("0.0005"),
+        ),
+        robustness_plan=OptimizationRobustnessPlanner().plan(
+            dataset=dataset,
+            walk_forward_config=WalkForwardConfig(
+                train_candles=4,
+                test_candles=4,
+                step_candles=4,
+            ),
+            optimization_trials=plan.total_trials,
         ),
     )
     job = BackgroundJobBuilder().build(
@@ -121,6 +133,9 @@ def test_durable_worker_executes_and_links_an_optimization_job(
         assert completed_execution.status is OptimizationExecutionState.SUCCEEDED
         assert completed_execution.completed_trials == 2
         assert completed_execution.best_experiment_id in completed_execution.experiment_ids
+        assert completed_execution.robustness_ranking is not None
+        assert completed_execution.robustness_ranking.eligible_trials == 2
         assert SqlAlchemyExperimentRegistry(session).count() == 2
+        assert SqlAlchemyWalkForwardRunRegistry(session).count() == 2
 
     engine.dispose()
