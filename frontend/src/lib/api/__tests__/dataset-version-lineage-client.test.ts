@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   API_BASE_URL,
+  enqueueMarketDataImportRefresh,
   getMarketDataImportVersions,
   refreshMarketDataImport,
 } from '@/lib/api/client';
-import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import type { BackgroundJobSummary, MarketDataImportRecord, Page } from '@/lib/api/types';
 
 const connectionId = 'connection / one';
 const importId = 'import / one';
@@ -47,6 +48,25 @@ const page: Page<MarketDataImportRecord> = {
   count: 1,
   has_next: false,
   has_previous: false,
+};
+
+const refreshJob: BackgroundJobSummary = {
+  job_id: 'job-abcdef1234567890abcd',
+  kind: 'market_data_import',
+  status: 'queued',
+  progress_percent: 0,
+  attempt_count: 0,
+  max_attempts: 1,
+  run_after: '2026-09-26T08:00:00Z',
+  lease_expires_at: null,
+  cancel_requested: false,
+  result_reference: null,
+  error_code: null,
+  error_message: null,
+  created_at: '2026-09-26T08:00:00Z',
+  updated_at: '2026-09-26T08:00:00Z',
+  started_at: null,
+  finished_at: null,
 };
 
 function jsonResponse(payload: unknown, status = 200): Response {
@@ -100,6 +120,20 @@ describe('dataset version lineage client', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       `${API_BASE_URL}/api/v1/market-data/connections/${encodedConnectionId}/imports/${encodedImportId}/refresh`,
+      expect.objectContaining({ method: 'POST', cache: 'no-store' }),
+    );
+  });
+
+  it('enqueues a durable refresh job with encoded lineage ids', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(refreshJob, 202)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(enqueueMarketDataImportRefresh(connectionId, importId)).resolves.toEqual(
+      refreshJob,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE_URL}/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}/refresh-job`,
       expect.objectContaining({ method: 'POST', cache: 'no-store' }),
     );
   });

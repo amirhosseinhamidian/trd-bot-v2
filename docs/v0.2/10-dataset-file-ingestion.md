@@ -5,7 +5,9 @@
 این مرحله مسیر CSV محدود و client-side را با یک قرارداد واحد Backend برای CSV، JSON و
 Parquet جایگزین می‌کند. خروجی هر format پیش از ذخیره به `OHLCVCandle` می‌رسد، با
 `strict-quality-v1` ارزیابی می‌شود و سپس از همان `DatasetBuilder` مسیر provider عبور
-می‌کند. این مرحله background job نیست؛ انتقال اجرای طولانی به worker در TB2-009 است.
+می‌کند. این مسیر background job نیست؛ worker جدا به body درخواست دسترسی ندارد و انتقال آن
+نیازمند staging محدود و checksum-bound با expiry/cleanup است. TB2-009 فقط Import دادهٔ Provider
+را بدون ذخیره‌سازی بایت فایل به صف durable متصل می‌کند.
 
 ## قرارداد سه‌مرحله‌ای
 

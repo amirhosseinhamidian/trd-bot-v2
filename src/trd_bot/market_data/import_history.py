@@ -9,7 +9,7 @@ from trd_bot.market_data.quality import DataQualityReport
 
 
 class MarketDataImportStatus(StrEnum):
-    """Final status of one synchronous historical dataset import attempt."""
+    """Final status of one completed historical dataset import attempt."""
 
     SUCCEEDED = "succeeded"
     FAILED = "failed"

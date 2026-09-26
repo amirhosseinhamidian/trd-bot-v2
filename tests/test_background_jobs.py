@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy.orm import Session
 
+from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.db import (
     BackgroundJobConflictError,
     DatabaseBase,
@@ -243,3 +244,11 @@ def test_worker_fails_unregistered_kind_without_retry(session: Session) -> None:
     assert failed.status is BackgroundJobStatus.FAILED
     assert failed.error_code == "unsupported_job_kind"
     assert failed.attempt_count == 1
+
+
+def test_production_registry_allowlists_market_data_import_jobs() -> None:
+    handler = build_background_job_handler_registry().get(
+        BackgroundJobKind.MARKET_DATA_IMPORT
+    )
+
+    assert callable(handler)

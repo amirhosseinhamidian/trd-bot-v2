@@ -1,5 +1,6 @@
 import type {
   AcceptancePolicyPreset,
+  BackgroundJobSummary,
   CandidateJournalOccurrence,
   CandidateProjectionDetail,
   CandidateProjectionSummary,
@@ -420,6 +421,20 @@ export async function importHistoricalDataset(
   );
 }
 
+export async function enqueueHistoricalDatasetImport(
+  connectionId: string,
+  request: HistoricalDatasetCommitRequest,
+): Promise<BackgroundJobSummary> {
+  return postJson<BackgroundJobSummary>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/dataset-jobs`,
+    request,
+  );
+}
+
+export async function getBackgroundJob(jobId: string): Promise<BackgroundJobSummary> {
+  return getJson<BackgroundJobSummary>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
+}
+
 export interface MarketDataImportHistoryFilters {
   status?: MarketDataImportStatus;
   limit?: number;
@@ -477,6 +492,15 @@ export async function refreshMarketDataImport(
 ): Promise<MarketDataImportRecord> {
   return postJson<MarketDataImportRecord>(
     `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}/refresh`,
+  );
+}
+
+export async function enqueueMarketDataImportRefresh(
+  connectionId: string,
+  importId: string,
+): Promise<BackgroundJobSummary> {
+  return postJson<BackgroundJobSummary>(
+    `/api/v1/market-data/connections/${encodeURIComponent(connectionId)}/imports/${encodeURIComponent(importId)}/refresh-job`,
   );
 }
 

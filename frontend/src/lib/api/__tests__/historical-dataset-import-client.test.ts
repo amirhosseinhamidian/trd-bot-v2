@@ -2,10 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   API_BASE_URL,
+  enqueueHistoricalDatasetImport,
+  getBackgroundJob,
   importHistoricalDataset,
   previewHistoricalDatasetImport,
 } from '@/lib/api/client';
 import type {
+  BackgroundJobSummary,
   DatasetSummary,
   HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
@@ -88,6 +91,25 @@ const dataset: DatasetSummary = {
   checksum: 'a'.repeat(64),
 };
 
+const queuedJob: BackgroundJobSummary = {
+  job_id: 'job-1234567890abcdef1234',
+  kind: 'market_data_import',
+  status: 'queued',
+  progress_percent: 0,
+  attempt_count: 0,
+  max_attempts: 1,
+  run_after: '2026-09-26T08:00:00Z',
+  lease_expires_at: null,
+  cancel_requested: false,
+  result_reference: null,
+  error_code: null,
+  error_message: null,
+  created_at: '2026-09-26T08:00:00Z',
+  updated_at: '2026-09-26T08:00:00Z',
+  started_at: null,
+  finished_at: null,
+};
+
 function jsonResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
@@ -129,6 +151,34 @@ describe('historical dataset import client', () => {
         body: JSON.stringify(commitRequest),
         cache: 'no-store',
       }),
+    );
+  });
+
+  it('enqueues and reads a durable market-data import job', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(() => Promise.resolve(jsonResponse(queuedJob, 202)))
+      .mockImplementationOnce(() => Promise.resolve(jsonResponse(queuedJob)));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(enqueueHistoricalDatasetImport(connectionId, commitRequest)).resolves.toEqual(
+      queuedJob,
+    );
+    await expect(getBackgroundJob(queuedJob.job_id)).resolves.toEqual(queuedJob);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${API_BASE_URL}/api/v1/market-data/connections/${connectionId}/dataset-jobs`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(commitRequest),
+        cache: 'no-store',
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${API_BASE_URL}/api/v1/jobs/${queuedJob.job_id}`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
   });
 });

@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime
 from typing import Annotated, NoReturn, Self
 from uuid import uuid4
@@ -6,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.api.dependencies import (
+    get_background_job_repository,
     get_dataset_repository,
     get_historical_dataset_committer,
     get_market_data_connection_repository,
@@ -14,6 +16,12 @@ from trd_bot.api.dependencies import (
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.jobs import (
+    BackgroundJobBuilder,
+    BackgroundJobKind,
+    BackgroundJobRepository,
+    BackgroundJobSummary,
+)
 from trd_bot.market_data import (
     DataQualityReport,
     MarketDataConnectionNotFoundError,
@@ -46,6 +54,11 @@ from trd_bot.research.historical_dataset_imports import (
     HistoricalDatasetPreviewMismatchError,
     HistoricalDatasetProviderCapabilityError,
 )
+from trd_bot.research.historical_dataset_jobs import (
+    HistoricalDatasetJobOperation,
+    HistoricalDatasetJobPayload,
+    HistoricalDatasetJobRequest,
+)
 
 router = APIRouter(
     prefix="/market-data/connections",
@@ -71,6 +84,10 @@ ImportHistoryRepositoryDependency = Annotated[
 HistoricalDatasetCommitterDependency = Annotated[
     HistoricalDatasetCommitter,
     Depends(get_historical_dataset_committer),
+]
+BackgroundJobRepositoryDependency = Annotated[
+    BackgroundJobRepository,
+    Depends(get_background_job_repository),
 ]
 
 
@@ -114,6 +131,22 @@ class HistoricalDatasetCommitRequest(HistoricalDatasetImportRequest):
     """Import request bound to the exact content accepted during preview."""
 
     preview_checksum: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
+
+
+def _enqueue_import_job(
+    *,
+    payload: HistoricalDatasetJobPayload,
+    jobs: BackgroundJobRepository,
+) -> BackgroundJobSummary:
+    digest = hashlib.sha256(payload.model_dump_json().encode("utf-8")).hexdigest()
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.MARKET_DATA_IMPORT,
+        payload=payload.model_dump(mode="json"),
+        idempotency_key=digest,
+        max_attempts=1,
+    )
+    stored, _ = jobs.enqueue(job)
+    return BackgroundJobSummary.from_job(stored)
 
 
 def _history_error_code(error: Exception) -> str:
@@ -260,7 +293,7 @@ def _raise_fetch_error(
 
     if isinstance(error, HistoricalDatasetImportLimitError):
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=safe_detail,
         ) from error
 
@@ -358,6 +391,32 @@ async def preview_historical_dataset_import(
 
 
 @router.post(
+    "/{connection_id}/dataset-jobs",
+    response_model=BackgroundJobSummary,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def enqueue_historical_dataset_import(
+    connection_id: str,
+    request: HistoricalDatasetCommitRequest,
+    connections: ConnectionRepositoryDependency,
+    jobs: BackgroundJobRepositoryDependency,
+) -> BackgroundJobSummary:
+    """Persist an idempotent import request for execution by the durable worker."""
+
+    if connections.get(connection_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="market-data connection not found",
+        )
+    payload = HistoricalDatasetJobPayload(
+        operation=HistoricalDatasetJobOperation.IMPORT,
+        connection_id=connection_id,
+        request=HistoricalDatasetJobRequest.model_validate(request.model_dump()),
+    )
+    return _enqueue_import_job(payload=payload, jobs=jobs)
+
+
+@router.post(
     "/{connection_id}/datasets",
     response_model=DatasetSummary,
     status_code=status.HTTP_201_CREATED,
@@ -444,6 +503,56 @@ async def import_historical_dataset(
     )
     result = committer.commit(dataset=dataset, record=record)
     return DatasetSummary.from_dataset(result.dataset)
+
+
+@router.post(
+    "/{connection_id}/imports/{import_id}/refresh-job",
+    response_model=BackgroundJobSummary,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def enqueue_historical_import_refresh(
+    connection_id: str,
+    import_id: str,
+    connections: ConnectionRepositoryDependency,
+    datasets: DatasetRepositoryDependency,
+    history: ImportHistoryRepositoryDependency,
+    jobs: BackgroundJobRepositoryDependency,
+) -> BackgroundJobSummary:
+    """Persist an idempotent refresh of the latest successful dataset version."""
+
+    source_record = _get_import_or_404(
+        connection_id=connection_id,
+        import_id=import_id,
+        connections=connections,
+        history=history,
+    )
+    if (
+        source_record.status is not MarketDataImportStatus.SUCCEEDED
+        or source_record.dataset_id is None
+        or source_record.root_import_id is None
+        or source_record.version_number is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="market-data import does not identify a refreshable dataset version",
+        )
+    latest = history.get_latest_successful_version(source_record.root_import_id)
+    if latest is None or latest.import_id != source_record.import_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="only the latest successful dataset version can be refreshed",
+        )
+    if datasets.get(source_record.dataset_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="source dataset not found",
+        )
+    payload = HistoricalDatasetJobPayload(
+        operation=HistoricalDatasetJobOperation.REFRESH,
+        connection_id=connection_id,
+        source_import_id=source_record.import_id,
+    )
+    return _enqueue_import_job(payload=payload, jobs=jobs)
 
 
 @router.get(

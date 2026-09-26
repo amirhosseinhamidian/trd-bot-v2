@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
+    get_background_job_repository,
     get_dataset_repository,
     get_historical_dataset_committer,
     get_market_data_connection_repository,
@@ -14,6 +15,7 @@ from trd_bot.api.dependencies import (
     get_market_data_provider_catalog,
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
+from trd_bot.jobs import BackgroundJob, BackgroundJobKind
 from trd_bot.main import app
 from trd_bot.market_data import (
     InMemoryMarketDataConnectionRepository,
@@ -124,6 +126,19 @@ class ConflictingHistoricalDatasetCommitter:
         )
 
 
+class CapturingBackgroundJobRepository:
+    def __init__(self) -> None:
+        self.jobs_by_key: dict[tuple[BackgroundJobKind, str | None], BackgroundJob] = {}
+
+    def enqueue(self, job: BackgroundJob) -> tuple[BackgroundJob, bool]:
+        key = (job.kind, job.idempotency_key)
+        existing = self.jobs_by_key.get(key)
+        if existing is not None:
+            return existing, False
+        self.jobs_by_key[key] = job
+        return job, True
+
+
 @pytest.fixture
 def historical_import_dependencies() -> Iterator[
     tuple[InMemoryMarketDataConnectionRepository, InMemoryDatasetRepository, ProviderState]
@@ -138,6 +153,7 @@ def historical_import_dependencies() -> Iterator[
             "synthetic-public": lambda: HistoricalSyntheticProvider(state),
         }
     )
+    jobs = CapturingBackgroundJobRepository()
 
     connections.save(
         MarketDataConnection(
@@ -157,6 +173,7 @@ def historical_import_dependencies() -> Iterator[
     app.dependency_overrides[get_dataset_repository] = lambda: datasets
     app.dependency_overrides[get_market_data_import_repository] = lambda: history
     app.dependency_overrides[get_historical_dataset_committer] = lambda: committer
+    app.dependency_overrides[get_background_job_repository] = lambda: jobs
 
     try:
         yield connections, datasets, state
@@ -166,6 +183,7 @@ def historical_import_dependencies() -> Iterator[
         app.dependency_overrides.pop(get_dataset_repository, None)
         app.dependency_overrides.pop(get_market_data_import_repository, None)
         app.dependency_overrides.pop(get_historical_dataset_committer, None)
+        app.dependency_overrides.pop(get_background_job_repository, None)
 
 
 def request_payload(*, timeframe: str = "1h", end_hours: int = 2) -> dict[str, object]:
@@ -245,6 +263,29 @@ def test_preview_fetches_normalized_candles_without_persisting_dataset(
         "coverage_percent": 100.0,
         "complete": True,
     }
+    assert datasets.count() == 0
+
+
+def test_import_job_enqueue_is_non_blocking_and_idempotent(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, state = historical_import_dependencies
+    state.fail_fetch = True
+    url = f"/api/v1/market-data/connections/{CONNECTION_ID}/dataset-jobs"
+
+    first = client.post(url, json=commit_payload())
+    duplicate = client.post(url, json=commit_payload())
+
+    assert first.status_code == 202
+    assert duplicate.status_code == 202
+    assert duplicate.json()["job_id"] == first.json()["job_id"]
+    assert first.json()["kind"] == "market_data_import"
+    assert first.json()["status"] == "queued"
+    assert first.json()["attempt_count"] == 0
     assert datasets.count() == 0
 
 
@@ -415,6 +456,36 @@ def test_refresh_without_content_change_records_new_version_without_new_snapshot
     )
     assert stale.status_code == 409
     assert stale.json()["detail"] == "only the latest successful dataset version can be refreshed"
+
+
+def test_refresh_job_enqueue_is_non_blocking_and_idempotent(
+    historical_import_dependencies: tuple[
+        InMemoryMarketDataConnectionRepository,
+        InMemoryDatasetRepository,
+        ProviderState,
+    ],
+) -> None:
+    _, datasets, state = historical_import_dependencies
+    imported = client.post(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/datasets",
+        json=commit_payload(),
+    )
+    assert imported.status_code == 201
+    history = client.get(
+        f"/api/v1/market-data/connections/{CONNECTION_ID}/imports?status=succeeded"
+    )
+    root = history.json()["items"][0]
+    state.fail_fetch = True
+    url = f"/api/v1/market-data/connections/{CONNECTION_ID}/imports/{root['import_id']}/refresh-job"
+
+    first = client.post(url)
+    duplicate = client.post(url)
+
+    assert first.status_code == 202
+    assert duplicate.status_code == 202
+    assert duplicate.json()["job_id"] == first.json()["job_id"]
+    assert first.json()["status"] == "queued"
+    assert datasets.count() == 1
 
 
 def test_refresh_with_changed_content_creates_new_immutable_snapshot(

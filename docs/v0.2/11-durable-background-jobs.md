@@ -47,9 +47,9 @@ python scripts/run_background_worker.py
 python scripts/run_background_worker.py --once
 ```
 
-registry این مرحله handlerهای Experiment و Walk-Forward موجود را allowlist می‌کند. جایگزینی
-enqueueهای قدیمی FastAPI و اتصال Import/Optimization به‌ترتیب در مراحل domain مربوط انجام
-می‌شود تا migration عملیاتی و rollback هر جریان مستقل بماند.
+registry handlerهای Experiment، Walk-Forward و Import/Refresh دادهٔ Provider را allowlist
+می‌کند. enqueueهای قدیمی FastAPI و اتصال Optimization در مراحل domain مربوط انجام می‌شوند تا
+migration عملیاتی و rollback هر جریان مستقل بماند.
 
 ## معیار پذیرش
 
