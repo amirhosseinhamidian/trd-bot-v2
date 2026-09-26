@@ -4,6 +4,8 @@ import {
   createDataset,
   getExperimentPerformanceSeries,
   getExperimentSignals,
+  getResearchStrategyVersion,
+  getResearchStrategyVersions,
   getResearchStrategies,
 } from '@/lib/api/client';
 import type {
@@ -106,6 +108,38 @@ describe('research API client', () => {
       },
       cache: 'no-store',
     });
+  });
+
+  it('retrieves an exact strategy version and its version lineage', async () => {
+    const strategy: ResearchStrategyMetadata = {
+      name: 'ema-crossover',
+      version: '1.0.0',
+      display_name: 'EMA Crossover',
+      description: 'Historical EMA research strategy.',
+      parameters: [],
+      lifecycle_status: 'active',
+      supersedes_version: null,
+      behavior_fingerprint: `sha256:${'a'.repeat(64)}`,
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(strategy))
+      .mockResolvedValueOnce(jsonResponse([strategy]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getResearchStrategyVersion('ema crossover', '1.0.0')).resolves.toEqual(strategy);
+    await expect(getResearchStrategyVersions('ema crossover')).resolves.toEqual([strategy]);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('/research/strategies/ema%20crossover/versions/1.0.0'),
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/research/strategies/ema%20crossover/versions'),
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
   });
 
   it('creates a historical dataset with a JSON request', async () => {

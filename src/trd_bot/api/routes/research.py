@@ -147,6 +147,40 @@ def list_research_strategies() -> tuple[StrategyMetadata, ...]:
     return build_default_strategy_registry().list_metadata()
 
 
+@router.get(
+    "/strategies/{strategy_name}/versions",
+    response_model=tuple[StrategyMetadata, ...],
+)
+def list_research_strategy_versions(
+    strategy_name: str,
+) -> tuple[StrategyMetadata, ...]:
+    """List every registered immutable version for one strategy identity."""
+
+    versions = build_default_strategy_registry().list_versions(name=strategy_name)
+    if not versions:
+        raise HTTPException(status_code=404, detail="strategy not found")
+    return versions
+
+
+@router.get(
+    "/strategies/{strategy_name}/versions/{version}",
+    response_model=StrategyMetadata,
+)
+def get_research_strategy_version(
+    strategy_name: str,
+    version: str,
+) -> StrategyMetadata:
+    """Return the canonical contract for one exact executable version."""
+
+    metadata = build_default_strategy_registry().get_metadata(
+        name=strategy_name,
+        version=version,
+    )
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="strategy version not found")
+    return metadata
+
+
 @dataclass(frozen=True, slots=True)
 class _ResearchExecution:
     dataset: DatasetSnapshot

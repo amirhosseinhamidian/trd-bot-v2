@@ -177,7 +177,17 @@ export function ExperimentDetail({
 
         <CardContent>
           <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <Metric label={copy.strategy} value={strategyDisplayName} />
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+              <dt className="text-sm text-app-muted">{copy.strategy}</dt>
+              <dd className="mt-2 text-lg font-semibold text-app-foreground">
+                <Link
+                  href={`/${locale}/strategies/${encodeURIComponent(experiment.strategy_name)}/${encodeURIComponent(experiment.strategy_version)}`}
+                  className="rounded-sm text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                >
+                  {strategyDisplayName}
+                </Link>
+              </dd>
+            </div>
 
             <Metric label={copy.version} value={experiment.strategy_version} />
 
@@ -187,6 +197,16 @@ export function ExperimentDetail({
             />
 
             <Metric label={copy.createdAt} value={formatDate(experiment.created_at, locale)} />
+
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 sm:col-span-2 xl:col-span-3">
+              <dt className="text-sm text-app-muted">{copy.behaviorFingerprint}</dt>
+              <dd
+                dir={experiment.strategy_fingerprint ? 'ltr' : undefined}
+                className="mt-2 text-sm font-semibold break-all text-app-foreground"
+              >
+                {experiment.strategy_fingerprint ?? copy.legacyFingerprint}
+              </dd>
+            </div>
 
             <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 sm:col-span-2">
               <dt className="text-sm text-app-muted">{copy.datasetId}</dt>

@@ -10,10 +10,20 @@ describe('walk-forward run parameters', () => {
     expect(
       parseWalkForwardRunSearchParams({
         strategy: 'rsi-threshold',
+        strategy_version: '1.0.0',
       }),
     ).toEqual({
       strategyName: 'rsi-threshold',
     });
+  });
+
+  it('does not preselect a known strategy through an unsupported version', () => {
+    expect(
+      parseWalkForwardRunSearchParams({
+        strategy: 'rsi-threshold',
+        strategy_version: '2.0.0',
+      }),
+    ).toEqual({});
   });
 
   it('accepts the first strategy value and ignores unsupported names', () => {

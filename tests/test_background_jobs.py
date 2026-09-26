@@ -247,8 +247,6 @@ def test_worker_fails_unregistered_kind_without_retry(session: Session) -> None:
 
 
 def test_production_registry_allowlists_market_data_import_jobs() -> None:
-    handler = build_background_job_handler_registry().get(
-        BackgroundJobKind.MARKET_DATA_IMPORT
-    )
+    handler = build_background_job_handler_registry().get(BackgroundJobKind.MARKET_DATA_IMPORT)
 
     assert callable(handler)

@@ -94,7 +94,7 @@ class ExperimentExecutionRunner:
 
             running = self._executions.save(running)
 
-            experiment = ExperimentBuilder().build(
+            experiment = ExperimentBuilder(self._strategy_registry).build(
                 result=result,
                 parameters=tuple(
                     ExperimentParameter(

@@ -1,7 +1,7 @@
 import type { ExperimentSummary, ResearchStrategyName } from '@/lib/api/types';
 import {
   isExecutableResearchStrategyName,
-  isMovingAverageCrossoverStrategyName,
+  isExecutableResearchStrategyVersion,
 } from '@/lib/strategies/catalog';
 
 export type ExperimentRunInitialValues = {
@@ -83,10 +83,18 @@ function getExperimentParameter(
   return experiment.parameters.find((parameter) => parameter.name === parameterName)?.value;
 }
 
-function getStrategyName(value: string | string[] | undefined): ResearchStrategyName | undefined {
+function getStrategyName(
+  value: string | string[] | undefined,
+  versionValue: string | string[] | undefined,
+): ResearchStrategyName | undefined {
   const strategyName = getFirstValue(value)?.trim();
+  const strategyVersion = getFirstValue(versionValue)?.trim();
 
-  if (strategyName && isExecutableResearchStrategyName(strategyName)) {
+  if (
+    strategyName &&
+    isExecutableResearchStrategyName(strategyName) &&
+    (!strategyVersion || isExecutableResearchStrategyVersion(strategyName, strategyVersion))
+  ) {
     return strategyName;
   }
 
@@ -97,10 +105,7 @@ export function buildExperimentRerunHref(
   experiment: ExperimentSummary,
   locale: 'fa' | 'en',
 ): string | null {
-  if (
-    experiment.strategy_name !== 'rsi-threshold' &&
-    !isMovingAverageCrossoverStrategyName(experiment.strategy_name)
-  ) {
+  if (!isExecutableResearchStrategyVersion(experiment.strategy_name, experiment.strategy_version)) {
     return null;
   }
 
@@ -109,6 +114,7 @@ export function buildExperimentRerunHref(
   params.set('dataset_id', experiment.dataset_id);
   params.set('horizon_candles', String(experiment.horizon_candles));
   params.set('strategy', experiment.strategy_name);
+  params.set('strategy_version', experiment.strategy_version);
 
   const strategyParameterMappings =
     experiment.strategy_name === 'rsi-threshold'
@@ -148,7 +154,7 @@ export function parseExperimentRunSearchParams(
 
   const datasetId = getTextValue(searchParams.dataset_id, 200);
 
-  const strategyName = getStrategyName(searchParams.strategy);
+  const strategyName = getStrategyName(searchParams.strategy, searchParams.strategy_version);
 
   const fastPeriod = getIntegerValue(searchParams.fast_period, 2);
 

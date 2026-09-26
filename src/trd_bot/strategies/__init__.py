@@ -1,6 +1,7 @@
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.ema_crossover import EMACrossoverStrategy
 from trd_bot.strategies.metadata import (
+    StrategyLifecycleStatus,
     StrategyMetadata,
     StrategyParameterKind,
     StrategyParameterMetadata,
@@ -10,6 +11,7 @@ from trd_bot.strategies.registry import (
     StrategyParameterValue,
     StrategyRegistry,
     build_default_strategy_registry,
+    build_strategy_behavior_fingerprint,
 )
 from trd_bot.strategies.rsi_threshold import RSIThresholdStrategy
 from trd_bot.strategies.signals import (
@@ -28,6 +30,7 @@ __all__ = [
     "SignalDirection",
     "StrategyDefinition",
     "StrategyFeature",
+    "StrategyLifecycleStatus",
     "StrategyMetadata",
     "StrategyParameterKind",
     "StrategyParameterMetadata",
@@ -36,4 +39,5 @@ __all__ = [
     "StrategySignal",
     "build_default_strategy_registry",
     "build_signal_id",
+    "build_strategy_behavior_fingerprint",
 ]

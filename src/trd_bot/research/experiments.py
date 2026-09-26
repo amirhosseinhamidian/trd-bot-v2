@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from trd_bot.research.pipeline import ResearchPipelineResult
+from trd_bot.strategies import StrategyRegistry, build_default_strategy_registry
 
 
 class ExperimentParameter(BaseModel):
@@ -39,6 +40,10 @@ class ResearchExperiment(BaseModel):
 
     strategy_name: str
     strategy_version: str
+    strategy_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^sha256:[a-f0-9]{64}$",
+    )
     horizon_candles: int = Field(ge=1)
 
     parameters: tuple[ExperimentParameter, ...]
@@ -87,6 +92,10 @@ class ExperimentSummary(BaseModel):
     dataset_id: str
     strategy_name: str
     strategy_version: str
+    strategy_fingerprint: str | None = Field(
+        default=None,
+        pattern=r"^sha256:[a-f0-9]{64}$",
+    )
     horizon_candles: int = Field(ge=1)
     parameters: tuple[ExperimentParameter, ...]
     generated_signals: int = Field(ge=0)
@@ -115,6 +124,7 @@ class ExperimentSummary(BaseModel):
             dataset_id=experiment.dataset_id,
             strategy_name=experiment.strategy_name,
             strategy_version=experiment.strategy_version,
+            strategy_fingerprint=experiment.strategy_fingerprint,
             horizon_candles=experiment.horizon_candles,
             parameters=experiment.parameters,
             generated_signals=experiment.result.generated_signals,
@@ -236,6 +246,7 @@ def build_experiment_id(
     dataset_id: str,
     strategy_name: str,
     strategy_version: str,
+    strategy_fingerprint: str | None = None,
     horizon_candles: int,
     parameters: Sequence[ExperimentParameter],
 ) -> str:
@@ -258,6 +269,7 @@ def build_experiment_id(
             dataset_id,
             strategy_name,
             strategy_version,
+            strategy_fingerprint or "legacy-unfingerprinted",
             str(horizon_candles),
             parameter_identity,
         ]
@@ -270,6 +282,12 @@ def build_experiment_id(
 
 class ExperimentBuilder:
     """Build immutable experiment records."""
+
+    def __init__(
+        self,
+        strategy_registry: StrategyRegistry | None = None,
+    ) -> None:
+        self._strategy_registry = strategy_registry or build_default_strategy_registry()
 
     def build(
         self,
@@ -288,10 +306,19 @@ class ExperimentBuilder:
             )
         )
 
+        definition = self._strategy_registry.require(
+            name=result.strategy_name,
+            version=result.strategy_version,
+        )
+        if definition.metadata is None:
+            raise ValueError("strategy definition does not publish version metadata")
+        strategy_fingerprint = definition.metadata.behavior_fingerprint
+
         experiment_id = build_experiment_id(
             dataset_id=result.dataset_id,
             strategy_name=result.strategy_name,
             strategy_version=result.strategy_version,
+            strategy_fingerprint=strategy_fingerprint,
             horizon_candles=(result.evaluation_report.horizon_candles),
             parameters=ordered_parameters,
         )
@@ -302,6 +329,7 @@ class ExperimentBuilder:
             dataset_id=result.dataset_id,
             strategy_name=result.strategy_name,
             strategy_version=result.strategy_version,
+            strategy_fingerprint=strategy_fingerprint,
             horizon_candles=(result.evaluation_report.horizon_candles),
             parameters=ordered_parameters,
             result=result,
@@ -489,6 +517,7 @@ class InMemoryExperimentRegistry:
             first.dataset_id == second.dataset_id
             and first.strategy_name == second.strategy_name
             and first.strategy_version == second.strategy_version
+            and first.strategy_fingerprint == second.strategy_fingerprint
             and first.horizon_candles == second.horizon_candles
             and first.parameters == second.parameters
             and first.result == second.result

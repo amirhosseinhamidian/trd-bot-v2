@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrategyParameterKind(StrEnum):
@@ -8,6 +9,13 @@ class StrategyParameterKind(StrEnum):
 
     INTEGER = "integer"
     DECIMAL = "decimal"
+
+
+class StrategyLifecycleStatus(StrEnum):
+    """Lifecycle state of one immutable strategy version."""
+
+    ACTIVE = "active"
+    DEPRECATED = "deprecated"
 
 
 class StrategyParameterMetadata(BaseModel):
@@ -34,3 +42,15 @@ class StrategyMetadata(BaseModel):
     display_name: str = Field(min_length=1, max_length=100)
     description: str = Field(min_length=1, max_length=500)
     parameters: tuple[StrategyParameterMetadata, ...]
+    lifecycle_status: StrategyLifecycleStatus = StrategyLifecycleStatus.ACTIVE
+    supersedes_version: str | None = Field(default=None, min_length=1, max_length=50)
+    behavior_fingerprint: str = Field(pattern=r"^sha256:[a-f0-9]{64}$")
+
+    @model_validator(mode="after")
+    def validate_version_contract(self) -> Self:
+        parameter_names = [parameter.name for parameter in self.parameters]
+        if len(parameter_names) != len(set(parameter_names)):
+            raise ValueError("strategy parameter names must be unique")
+        if self.supersedes_version == self.version:
+            raise ValueError("strategy version cannot supersede itself")
+        return self

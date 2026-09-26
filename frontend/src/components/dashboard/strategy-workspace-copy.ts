@@ -18,6 +18,13 @@ export type StrategyWorkspaceCopy = {
     identifier: string;
     version: string;
     parameterCount: string;
+    lifecycleStatus: string;
+    statuses: {
+      active: string;
+      deprecated: string;
+    };
+    fingerprint: string;
+    legacyFingerprint: string;
     metadataTitle: string;
     metadataDescription: string;
     parametersTitle: string;
@@ -41,6 +48,13 @@ export type StrategyWorkspaceCopy = {
     unavailableDescription: string;
     registryTitle: string;
     registryDescription: string;
+    historyTitle: string;
+    historyDescription: string;
+    historyTotal: string;
+    historyEmpty: string;
+    historyDataset: string;
+    historyCreatedAt: string;
+    viewExperiment: string;
   };
 };
 
@@ -64,6 +78,13 @@ const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
       identifier: 'شناسه Strategy',
       version: 'نسخه',
       parameterCount: 'تعداد پارامترها',
+      lifecycleStatus: 'وضعیت نسخه',
+      statuses: {
+        active: 'فعال',
+        deprecated: 'منسوخ',
+      },
+      fingerprint: 'اثر انگشت رفتار',
+      legacyFingerprint: 'برای نسخه قدیمی ثبت نشده',
       metadataTitle: 'قرارداد Strategy',
       metadataDescription: 'هویت و توضیح canonical ثبت‌شده در Strategy Registry',
       parametersTitle: 'پارامترهای Strategy',
@@ -90,6 +111,14 @@ const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
       registryTitle: 'مدیریت نسخه‌ای',
       registryDescription:
         'Strategyهای این Workspace تعریف‌های خواندنی و نسخه‌بندی‌شده Backend هستند. تغییر پارامترها هنگام اجرای پژوهش انجام می‌شود و این صفحه خود تعریف Registry را ویرایش نمی‌کند.',
+      historyTitle: 'Experimentهای همین نسخه',
+      historyDescription:
+        'آخرین نتایجی که با همین name، version و هویت رفتاری Strategy ثبت شده‌اند.',
+      historyTotal: 'تعداد ثبت‌شده',
+      historyEmpty: 'هنوز Experiment ثبت‌شده‌ای برای این نسخه وجود ندارد.',
+      historyDataset: 'Dataset',
+      historyCreatedAt: 'زمان اجرا',
+      viewExperiment: 'مشاهده Experiment',
     },
   },
   en: {
@@ -111,6 +140,13 @@ const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
       identifier: 'Strategy identifier',
       version: 'Version',
       parameterCount: 'Parameters',
+      lifecycleStatus: 'Version status',
+      statuses: {
+        active: 'Active',
+        deprecated: 'Deprecated',
+      },
+      fingerprint: 'Behavior fingerprint',
+      legacyFingerprint: 'Not recorded for this legacy version',
       metadataTitle: 'Strategy contract',
       metadataDescription: 'Canonical identity and description registered in the Strategy Registry',
       parametersTitle: 'Strategy parameters',
@@ -138,6 +174,14 @@ const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
       registryTitle: 'Versioned management',
       registryDescription:
         'Strategies in this workspace are read-only, versioned backend definitions. Parameter choices belong to individual research runs; this page does not mutate the Registry definition.',
+      historyTitle: 'Experiments for this version',
+      historyDescription:
+        'Latest results recorded against this exact strategy name, version, and behavior identity.',
+      historyTotal: 'Recorded',
+      historyEmpty: 'No experiments have been recorded for this version yet.',
+      historyDataset: 'Dataset',
+      historyCreatedAt: 'Executed',
+      viewExperiment: 'View experiment',
     },
   },
 };

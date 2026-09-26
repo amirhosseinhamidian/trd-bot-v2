@@ -3,17 +3,34 @@ import Link from 'next/link';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getStrategyWorkspaceCopy } from '@/components/dashboard/strategy-workspace-copy';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import type { ResearchStrategyMetadata, StrategyParameterMetadata } from '@/lib/api/types';
+import type {
+  ExperimentSummary,
+  Page,
+  ResearchStrategyMetadata,
+  StrategyParameterMetadata,
+} from '@/lib/api/types';
 import { getExecutableResearchStrategies } from '@/lib/strategies/catalog';
 import { getStrategyParameterLabel } from '@/lib/strategies/presentation';
 
 type StrategyDetailProps = {
   locale: DashboardLocale;
   strategy: ResearchStrategyMetadata;
+  experimentHistory?: Page<ExperimentSummary>;
 };
 
 function formatNumber(value: number, locale: DashboardLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
+function formatDate(value: string, locale: DashboardLocale): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 
 function formatMinimum(
@@ -38,10 +55,16 @@ function formatMaximum(
   return `${parameter.maximum_exclusive ? '<' : '≤'} ${parameter.maximum}`;
 }
 
-export default function StrategyDetail({ locale, strategy }: StrategyDetailProps) {
+export default function StrategyDetail({
+  locale,
+  strategy,
+  experimentHistory,
+}: StrategyDetailProps) {
   const copy = getStrategyWorkspaceCopy(locale);
   const isExecutable = getExecutableResearchStrategies([strategy]).length === 1;
   const encodedStrategyName = encodeURIComponent(strategy.name);
+  const encodedStrategyVersion = encodeURIComponent(strategy.version);
+  const lifecycleStatus = strategy.lifecycle_status ?? 'active';
 
   const metadata = [
     {
@@ -58,6 +81,16 @@ export default function StrategyDetail({ locale, strategy }: StrategyDetailProps
       label: copy.detail.parameterCount,
       value: formatNumber(strategy.parameters.length, locale),
       direction: undefined,
+    },
+    {
+      label: copy.detail.lifecycleStatus,
+      value: copy.detail.statuses[lifecycleStatus],
+      direction: undefined,
+    },
+    {
+      label: copy.detail.fingerprint,
+      value: strategy.behavior_fingerprint ?? copy.detail.legacyFingerprint,
+      direction: strategy.behavior_fingerprint ? ('ltr' as const) : undefined,
     },
   ];
 
@@ -98,7 +131,7 @@ export default function StrategyDetail({ locale, strategy }: StrategyDetailProps
         </CardHeader>
 
         <CardContent>
-          <dl className="grid gap-4 sm:grid-cols-3">
+          <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {metadata.map((item) => (
               <div
                 key={item.label}
@@ -200,14 +233,14 @@ export default function StrategyDetail({ locale, strategy }: StrategyDetailProps
           {isExecutable ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <Link
-                href={`/${locale}/experiments?strategy=${encodedStrategyName}`}
+                href={`/${locale}/experiments?strategy=${encodedStrategyName}&strategy_version=${encodedStrategyVersion}`}
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-3 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
               >
                 {copy.detail.experimentAction}
               </Link>
 
               <Link
-                href={`/${locale}/walk-forward?strategy=${encodedStrategyName}`}
+                href={`/${locale}/walk-forward?strategy=${encodedStrategyName}&strategy_version=${encodedStrategyVersion}`}
                 className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
               >
                 {copy.detail.walkForwardAction}
@@ -219,6 +252,55 @@ export default function StrategyDetail({ locale, strategy }: StrategyDetailProps
               <p className="mt-2 text-sm leading-7 text-app-muted">
                 {copy.detail.unavailableDescription}
               </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>{copy.detail.historyTitle}</CardTitle>
+              <CardDescription>{copy.detail.historyDescription}</CardDescription>
+            </div>
+            <Badge variant="info">
+              {copy.detail.historyTotal}: {formatNumber(experimentHistory?.total ?? 0, locale)}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {!experimentHistory || experimentHistory.items.length === 0 ? (
+            <p className="text-sm leading-7 text-app-muted">{copy.detail.historyEmpty}</p>
+          ) : (
+            <div className="space-y-3">
+              {experimentHistory.items.map((experiment) => (
+                <article
+                  key={experiment.experiment_id}
+                  className="flex flex-col gap-4 rounded-xl border border-app-border bg-app-surface-muted p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p
+                      dir="ltr"
+                      className="truncate text-left text-sm font-semibold text-app-foreground"
+                    >
+                      {experiment.experiment_id}
+                    </p>
+                    <p className="mt-2 text-xs leading-6 text-app-muted">
+                      {copy.detail.historyDataset}: <span dir="ltr">{experiment.dataset_id}</span>
+                      {' · '}
+                      {copy.detail.historyCreatedAt}: {formatDate(experiment.created_at, locale)}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                  >
+                    {copy.detail.viewExperiment}
+                  </Link>
+                </article>
+              ))}
             </div>
           )}
         </CardContent>

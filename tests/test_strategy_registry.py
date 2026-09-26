@@ -10,6 +10,7 @@ from trd_bot.strategies import (
     StrategyDefinition,
     StrategyRegistry,
     build_default_strategy_registry,
+    build_strategy_behavior_fingerprint,
 )
 from trd_bot.strategies.base import BaseStrategy
 
@@ -55,6 +56,12 @@ def test_default_registry_exposes_versioned_parameter_metadata() -> None:
     ]
 
     ema, rsi, sma = metadata
+
+    assert ema.lifecycle_status == "active"
+    assert ema.supersedes_version is None
+    assert ema.behavior_fingerprint.startswith("sha256:")
+    assert len(ema.behavior_fingerprint) == 71
+    assert len({item.behavior_fingerprint for item in metadata}) == 3
 
     assert ema.display_name == "EMA Crossover"
     assert [(item.name, item.default_value) for item in ema.parameters] == [
@@ -149,6 +156,43 @@ def test_registry_rejects_unknown_strategy_version() -> None:
                 "slow_period": 3,
             },
         )
+
+
+def test_registry_resolves_exact_metadata_and_version_history() -> None:
+    registry = build_default_strategy_registry()
+
+    metadata = registry.get_metadata(name="ema-crossover", version="1.0.0")
+
+    assert metadata is not None
+    assert metadata.name == "ema-crossover"
+    assert registry.list_versions(name="ema-crossover") == (metadata,)
+    assert registry.get_metadata(name="ema-crossover", version="9.9.9") is None
+
+
+def test_behavior_fingerprint_is_canonical_and_contract_sensitive() -> None:
+    metadata = build_default_strategy_registry().list_metadata()[0]
+
+    first = build_strategy_behavior_fingerprint(
+        name=metadata.name,
+        version=metadata.version,
+        implementation_contract="behavior-v1",
+        parameters=metadata.parameters,
+    )
+    repeated = build_strategy_behavior_fingerprint(
+        name=metadata.name,
+        version=metadata.version,
+        implementation_contract="behavior-v1",
+        parameters=metadata.parameters,
+    )
+    changed = build_strategy_behavior_fingerprint(
+        name=metadata.name,
+        version=metadata.version,
+        implementation_contract="behavior-v2",
+        parameters=metadata.parameters,
+    )
+
+    assert first == repeated
+    assert first != changed
 
 
 @pytest.mark.parametrize(

@@ -181,6 +181,7 @@ def test_background_execution_lifecycle_with_postgresql() -> None:
             experiment = experiment_registry.get(completed.experiment_id)
 
             assert experiment is not None
+            assert experiment.strategy_fingerprint is not None
             assert experiment.dataset_id == dataset.dataset_id
             assert experiment.strategy_name == "ema-crossover"
 

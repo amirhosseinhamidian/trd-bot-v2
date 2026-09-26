@@ -375,6 +375,7 @@ class SqlAlchemyExperimentRegistry:
             first.dataset_id == second.dataset_id
             and first.strategy_name == second.strategy_name
             and first.strategy_version == second.strategy_version
+            and first.strategy_fingerprint == second.strategy_fingerprint
             and first.horizon_candles == second.horizon_candles
             and first.parameters == second.parameters
             and first.result == second.result

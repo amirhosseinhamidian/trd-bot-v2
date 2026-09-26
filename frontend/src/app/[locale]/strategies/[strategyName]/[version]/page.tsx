@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import StrategyDetail from '@/components/dashboard/strategy-detail';
-import { getResearchStrategies } from '@/lib/api/client';
-import { findStrategyMetadata } from '@/lib/strategies/catalog';
+import { ApiRequestError, getExperiments, getResearchStrategyVersion } from '@/lib/api/client';
 
 type StrategyDetailPageProps = {
   params: Promise<{
@@ -19,11 +18,26 @@ export default async function StrategyDetailPage({ params }: StrategyDetailPageP
     notFound();
   }
 
-  const strategy = findStrategyMetadata(await getResearchStrategies(), strategyName, version);
+  try {
+    const [strategy, experimentHistory] = await Promise.all([
+      getResearchStrategyVersion(strategyName, version),
+      getExperiments({
+        strategyName,
+        strategyVersion: version,
+        sortBy: 'created_at',
+        sortDirection: 'desc',
+        limit: 5,
+        offset: 0,
+      }),
+    ]);
 
-  if (strategy === null) {
-    notFound();
+    return (
+      <StrategyDetail locale={locale} strategy={strategy} experimentHistory={experimentHistory} />
+    );
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) {
+      notFound();
+    }
+    throw error;
   }
-
-  return <StrategyDetail locale={locale} strategy={strategy} />;
 }

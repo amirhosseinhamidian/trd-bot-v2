@@ -106,6 +106,7 @@ describe('experiment run parameters', () => {
       dataset_id: 'dataset-btc-usdt-1h',
       horizon_candles: '3',
       strategy: 'ema-crossover',
+      strategy_version: '1.0.0',
       fast_period: '12',
       slow_period: '34',
       starting_balance: '25000',
@@ -127,6 +128,7 @@ describe('experiment run parameters', () => {
       dataset_id: 'dataset-btc-usdt-1h',
       horizon_candles: '3',
       strategy: 'rsi-threshold',
+      strategy_version: '1.0.0',
       rsi_period: '14',
       oversold_threshold: '30',
       overbought_threshold: '70',
@@ -156,6 +158,7 @@ describe('experiment run parameters', () => {
       dataset_id: 'dataset-btc-usdt-1h',
       horizon_candles: '3',
       strategy: 'sma-crossover',
+      strategy_version: '1.0.0',
       fast_period: '12',
       slow_period: '34',
       starting_balance: '25000',
@@ -170,6 +173,7 @@ describe('experiment run parameters', () => {
       parseExperimentRunSearchParams({
         dataset_id: 'dataset-btc-usdt-1h',
         strategy: 'sma-crossover',
+        strategy_version: '1.0.0',
         fast_period: '8',
         slow_period: '20',
       }),
@@ -179,6 +183,15 @@ describe('experiment run parameters', () => {
       fastPeriod: '8',
       slowPeriod: '20',
     });
+  });
+
+  it('does not preselect a known strategy through an unsupported version', () => {
+    expect(
+      parseExperimentRunSearchParams({
+        strategy: 'ema-crossover',
+        strategy_version: '2.0.0',
+      }),
+    ).toEqual({});
   });
 
   it('does not create an EMA fallback rerun for an unsupported strategy', () => {
@@ -195,6 +208,18 @@ describe('experiment run parameters', () => {
               value: '12',
             },
           ],
+        },
+        'en',
+      ),
+    ).toBeNull();
+  });
+
+  it('does not rerun a known strategy name through a different executable version', () => {
+    expect(
+      buildExperimentRerunHref(
+        {
+          ...experiment,
+          strategy_version: '2.0.0',
         },
         'en',
       ),

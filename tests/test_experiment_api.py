@@ -154,6 +154,7 @@ def test_api_creates_and_stores_experiment(
     experiment_id = data["experiment_id"]
 
     assert experiment_id.startswith("experiment-")
+    assert data["strategy_fingerprint"].startswith("sha256:")
     assert data["result"]["generated_signals"] == 1
     assert data["result"]["benchmark_result"]["benchmark_type"] == "buy_and_hold"
     assert "benchmark_comparison" in data["result"]
@@ -197,6 +198,7 @@ def test_api_returns_stored_experiment_summary(
     assert data["experiment_id"] == experiment_id
     assert data["strategy_name"] == "ema-crossover"
     assert data["strategy_version"] == "1.0.0"
+    assert data["strategy_fingerprint"].startswith("sha256:")
     assert data["horizon_candles"] == 1
     assert data["generated_signals"] == 1
     assert data["total_trades"] == 1

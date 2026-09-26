@@ -124,6 +124,7 @@ def test_runs_queued_execution_to_success() -> None:
     assert stored_experiment is not None
     assert stored_experiment.dataset_id == dataset.dataset_id
     assert stored_experiment.strategy_name == "ema-crossover"
+    assert stored_experiment.strategy_fingerprint is not None
 
 
 def test_runs_queued_rsi_execution_to_success() -> None:

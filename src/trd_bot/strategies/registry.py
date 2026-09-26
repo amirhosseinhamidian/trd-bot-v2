@@ -1,3 +1,5 @@
+import hashlib
+import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from decimal import Decimal
@@ -5,6 +7,7 @@ from decimal import Decimal
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.ema_crossover import EMACrossoverStrategy
 from trd_bot.strategies.metadata import (
+    StrategyLifecycleStatus,
     StrategyMetadata,
     StrategyParameterKind,
     StrategyParameterMetadata,
@@ -14,6 +17,33 @@ from trd_bot.strategies.sma_crossover import SMACrossoverStrategy
 
 StrategyParameterValue = str | int | Decimal | bool
 StrategyFactory = Callable[[Mapping[str, StrategyParameterValue]], BaseStrategy]
+
+
+def build_strategy_behavior_fingerprint(
+    *,
+    name: str,
+    version: str,
+    implementation_contract: str,
+    parameters: tuple[StrategyParameterMetadata, ...],
+) -> str:
+    """Return a deterministic identity for one executable behavior contract."""
+
+    if not implementation_contract.strip():
+        raise ValueError("strategy implementation contract cannot be empty")
+
+    payload = {
+        "name": name,
+        "version": version,
+        "implementation_contract": implementation_contract,
+        "parameters": [parameter.model_dump(mode="json") for parameter in parameters],
+    }
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +150,20 @@ class StrategyRegistry:
             for definition in self.list_definitions()
             if definition.metadata is not None
         )
+
+    def get_metadata(
+        self,
+        *,
+        name: str,
+        version: str,
+    ) -> StrategyMetadata | None:
+        definition = self.get(name=name, version=version)
+        if definition is None:
+            return None
+        return definition.metadata
+
+    def list_versions(self, *, name: str) -> tuple[StrategyMetadata, ...]:
+        return tuple(metadata for metadata in self.list_metadata() if metadata.name == name)
 
 
 def _require_exact_parameters(
@@ -233,6 +277,34 @@ def _build_rsi_threshold(
     )
 
 
+def _build_metadata(
+    *,
+    name: str,
+    version: str,
+    display_name: str,
+    description: str,
+    implementation_contract: str,
+    parameters: tuple[StrategyParameterMetadata, ...],
+    lifecycle_status: StrategyLifecycleStatus = StrategyLifecycleStatus.ACTIVE,
+    supersedes_version: str | None = None,
+) -> StrategyMetadata:
+    return StrategyMetadata(
+        name=name,
+        version=version,
+        display_name=display_name,
+        description=description,
+        parameters=parameters,
+        lifecycle_status=lifecycle_status,
+        supersedes_version=supersedes_version,
+        behavior_fingerprint=build_strategy_behavior_fingerprint(
+            name=name,
+            version=version,
+            implementation_contract=implementation_contract,
+            parameters=parameters,
+        ),
+    )
+
+
 def build_default_strategy_registry() -> StrategyRegistry:
     """Build the registry used by historical research execution runners."""
 
@@ -243,13 +315,17 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="ema-crossover",
             version="1.0.0",
             factory=_build_ema_crossover,
-            metadata=StrategyMetadata(
+            metadata=_build_metadata(
                 name="ema-crossover",
                 version="1.0.0",
                 display_name="EMA Crossover",
                 description=(
                     "Generate historical directional signals from fast and slow "
                     "exponential moving-average crossovers."
+                ),
+                implementation_contract=(
+                    "ema-close-crossover-v1: close prices; fast EMA crosses above/below "
+                    "slow EMA; emit directional signal at the crossing candle"
                 ),
                 parameters=(
                     StrategyParameterMetadata(
@@ -273,13 +349,17 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="rsi-threshold",
             version="1.0.0",
             factory=_build_rsi_threshold,
-            metadata=StrategyMetadata(
+            metadata=_build_metadata(
                 name="rsi-threshold",
                 version="1.0.0",
                 display_name="RSI Threshold",
                 description=(
                     "Generate historical mean-reversion signals when RSI enters "
                     "configured extreme regions."
+                ),
+                implementation_contract=(
+                    "rsi-close-threshold-v1: Wilder RSI over close prices; emit long below "
+                    "oversold and short above overbought"
                 ),
                 parameters=(
                     StrategyParameterMetadata(
@@ -316,13 +396,17 @@ def build_default_strategy_registry() -> StrategyRegistry:
             name="sma-crossover",
             version="1.0.0",
             factory=_build_sma_crossover,
-            metadata=StrategyMetadata(
+            metadata=_build_metadata(
                 name="sma-crossover",
                 version="1.0.0",
                 display_name="SMA Crossover",
                 description=(
                     "Generate historical directional signals from fast and slow "
                     "simple moving-average crossovers."
+                ),
+                implementation_contract=(
+                    "sma-close-crossover-v1: close prices; fast SMA crosses above/below "
+                    "slow SMA; emit directional signal at the crossing candle"
                 ),
                 parameters=(
                     StrategyParameterMetadata(

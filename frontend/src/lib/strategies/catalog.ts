@@ -32,6 +32,13 @@ export function isExecutableResearchStrategyName(name: string): name is Research
   return Object.prototype.hasOwnProperty.call(EXECUTABLE_STRATEGY_VERSIONS, name);
 }
 
+export function isExecutableResearchStrategyVersion(
+  name: string,
+  version: string,
+): name is ResearchStrategyName {
+  return isExecutableResearchStrategyName(name) && EXECUTABLE_STRATEGY_VERSIONS[name] === version;
+}
+
 export function isMovingAverageCrossoverStrategyName(
   name: string,
 ): name is 'ema-crossover' | 'sma-crossover' {
@@ -42,11 +49,10 @@ export function getExecutableResearchStrategies(
   catalog: ResearchStrategyMetadata[],
 ): ExecutableResearchStrategyMetadata[] {
   return catalog.filter((strategy): strategy is ExecutableResearchStrategyMetadata => {
-    if (!isExecutableResearchStrategyName(strategy.name)) {
-      return false;
-    }
-
-    return EXECUTABLE_STRATEGY_VERSIONS[strategy.name] === strategy.version;
+    return (
+      strategy.lifecycle_status !== 'deprecated' &&
+      isExecutableResearchStrategyVersion(strategy.name, strategy.version)
+    );
   });
 }
 

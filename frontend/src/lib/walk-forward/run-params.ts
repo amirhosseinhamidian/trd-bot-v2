@@ -1,5 +1,8 @@
 import type { ResearchStrategyName } from '@/lib/api/types';
-import { isExecutableResearchStrategyName } from '@/lib/strategies/catalog';
+import {
+  isExecutableResearchStrategyName,
+  isExecutableResearchStrategyVersion,
+} from '@/lib/strategies/catalog';
 
 export type WalkForwardRunSearchParams = Record<string, string | string[] | undefined>;
 
@@ -11,10 +14,18 @@ function getFirstValue(value: string | string[] | undefined): string | undefined
   return Array.isArray(value) ? value[0] : value;
 }
 
-function getStrategyName(value: string | string[] | undefined): ResearchStrategyName | undefined {
+function getStrategyName(
+  value: string | string[] | undefined,
+  versionValue: string | string[] | undefined,
+): ResearchStrategyName | undefined {
   const strategyName = getFirstValue(value)?.trim();
+  const strategyVersion = getFirstValue(versionValue)?.trim();
 
-  if (strategyName && isExecutableResearchStrategyName(strategyName)) {
+  if (
+    strategyName &&
+    isExecutableResearchStrategyName(strategyName) &&
+    (!strategyVersion || isExecutableResearchStrategyVersion(strategyName, strategyVersion))
+  ) {
     return strategyName;
   }
 
@@ -24,7 +35,7 @@ function getStrategyName(value: string | string[] | undefined): ResearchStrategy
 export function parseWalkForwardRunSearchParams(
   searchParams: WalkForwardRunSearchParams,
 ): WalkForwardRunInitialValues {
-  const strategyName = getStrategyName(searchParams.strategy);
+  const strategyName = getStrategyName(searchParams.strategy, searchParams.strategy_version);
 
   return strategyName === undefined ? {} : { strategyName };
 }

@@ -341,6 +341,9 @@ export interface ResearchStrategyMetadata {
   display_name: string;
   description: string;
   parameters: StrategyParameterMetadata[];
+  lifecycle_status?: 'active' | 'deprecated';
+  supersedes_version?: string | null;
+  behavior_fingerprint?: string;
 }
 
 export interface StoredDatasetHistoricalExecutionRequest {
@@ -529,6 +532,7 @@ export interface ExperimentSummary {
   dataset_id: string;
   strategy_name: string;
   strategy_version: string;
+  strategy_fingerprint?: string | null;
   horizon_candles: number;
   parameters: ExperimentParameter[];
   generated_signals: number;

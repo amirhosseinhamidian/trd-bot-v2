@@ -355,6 +355,23 @@ export async function getResearchStrategies(): Promise<ResearchStrategyMetadata[
   return getJson<ResearchStrategyMetadata[]>('/api/v1/research/strategies');
 }
 
+export async function getResearchStrategyVersion(
+  strategyName: string,
+  version: string,
+): Promise<ResearchStrategyMetadata> {
+  return getJson<ResearchStrategyMetadata>(
+    `/api/v1/research/strategies/${encodeURIComponent(strategyName)}/versions/${encodeURIComponent(version)}`,
+  );
+}
+
+export async function getResearchStrategyVersions(
+  strategyName: string,
+): Promise<ResearchStrategyMetadata[]> {
+  return getJson<ResearchStrategyMetadata[]>(
+    `/api/v1/research/strategies/${encodeURIComponent(strategyName)}/versions`,
+  );
+}
+
 export async function getMarketDataProviders(): Promise<MarketDataProviderSummary[]> {
   return getJson<MarketDataProviderSummary[]>('/api/v1/market-data/providers');
 }

@@ -34,6 +34,9 @@ def test_lists_versioned_research_strategy_metadata() -> None:
 
     assert ema["version"] == "1.0.0"
     assert ema["display_name"] == "EMA Crossover"
+    assert ema["lifecycle_status"] == "active"
+    assert ema["supersedes_version"] is None
+    assert ema["behavior_fingerprint"].startswith("sha256:")
     assert [parameter["name"] for parameter in ema["parameters"]] == [
         "fast_period",
         "slow_period",
@@ -67,6 +70,23 @@ def test_lists_versioned_research_strategy_metadata() -> None:
         "fast_period",
         "slow_period",
     ]
+
+
+def test_gets_exact_strategy_version_and_lists_its_lineage() -> None:
+    detail_response = client.get("/api/v1/research/strategies/ema-crossover/versions/1.0.0")
+    versions_response = client.get("/api/v1/research/strategies/ema-crossover/versions")
+
+    assert detail_response.status_code == 200
+    assert versions_response.status_code == 200
+    assert detail_response.json() == versions_response.json()[0]
+    assert detail_response.json()["behavior_fingerprint"].startswith("sha256:")
+
+
+def test_exact_strategy_version_returns_not_found_without_fallback() -> None:
+    response = client.get("/api/v1/research/strategies/ema-crossover/versions/9.9.9")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "strategy version not found"}
 
 
 def _request_identity(request_model: type[BaseModel]) -> tuple[str, str]:
