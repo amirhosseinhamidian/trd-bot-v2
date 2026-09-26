@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_dataset_repository,
+    get_optimization_execution_enqueuer,
     get_optimization_execution_repository,
 )
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
@@ -15,6 +16,7 @@ from trd_bot.research.datasets import DatasetBuilder, InMemoryDatasetRepository
 from trd_bot.research.optimization_executions import (
     InMemoryOptimizationExecutionRepository,
 )
+from trd_bot.research.optimization_jobs import InMemoryOptimizationExecutionEnqueuer
 
 client = TestClient(app)
 
@@ -55,7 +57,9 @@ def override_repositories(
     execution_repository: InMemoryOptimizationExecutionRepository,
 ) -> Iterator[None]:
     previous_overrides = app.dependency_overrides.copy()
+    enqueuer = InMemoryOptimizationExecutionEnqueuer(execution_repository)
     app.dependency_overrides[get_dataset_repository] = lambda: dataset_repository
+    app.dependency_overrides[get_optimization_execution_enqueuer] = lambda: enqueuer
     app.dependency_overrides[get_optimization_execution_repository] = lambda: execution_repository
 
     yield
@@ -99,19 +103,23 @@ def test_creates_a_server_built_bounded_optimization_execution(
         json=build_request(dataset_id),
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
     body = response.json()
-    assert body["status"] == "queued"
-    assert body["dataset_id"] == dataset_id
-    assert body["strategy_name"] == "ema-crossover"
-    assert body["objective"] == "excess_return"
-    assert body["plan"]["requested_combinations"] == 4
-    assert body["plan"]["skipped_combinations"] == 2
-    assert body["plan"]["total_trials"] == 2
-    assert body["completed_trials"] == 0
-    assert body["experiment_ids"] == []
+    execution = body["execution"]
+    assert body["created"] is True
+    assert body["job"]["kind"] == "optimization_execution"
+    assert body["job"]["status"] == "queued"
+    assert execution["status"] == "queued"
+    assert execution["dataset_id"] == dataset_id
+    assert execution["strategy_name"] == "ema-crossover"
+    assert execution["objective"] == "excess_return"
+    assert execution["plan"]["requested_combinations"] == 4
+    assert execution["plan"]["skipped_combinations"] == 2
+    assert execution["plan"]["total_trials"] == 2
+    assert execution["completed_trials"] == 0
+    assert execution["experiment_ids"] == []
 
-    stored = execution_repository.get(body["execution_id"])
+    stored = execution_repository.get(execution["execution_id"])
     assert stored is not None
     assert stored.plan.total_trials == 2
 
@@ -120,10 +128,11 @@ def test_lists_and_returns_persisted_optimization_executions(
     dataset_repository: InMemoryDatasetRepository,
 ) -> None:
     dataset_id = stored_dataset_id(dataset_repository)
-    created = client.post(
+    submission = client.post(
         "/api/v1/research/optimization-executions",
         json=build_request(dataset_id),
     ).json()
+    created = submission["execution"]
 
     page_response = client.get(
         "/api/v1/research/optimization-executions",
@@ -138,6 +147,28 @@ def test_lists_and_returns_persisted_optimization_executions(
     assert page_response.json()["items"] == [created]
     assert detail_response.status_code == 200
     assert detail_response.json() == created
+
+
+def test_duplicate_submission_returns_the_existing_execution_and_job(
+    dataset_repository: InMemoryDatasetRepository,
+    execution_repository: InMemoryOptimizationExecutionRepository,
+) -> None:
+    request = build_request(stored_dataset_id(dataset_repository))
+
+    first = client.post(
+        "/api/v1/research/optimization-executions",
+        json=request,
+    ).json()
+    duplicate = client.post(
+        "/api/v1/research/optimization-executions",
+        json=request,
+    ).json()
+
+    assert first["created"] is True
+    assert duplicate["created"] is False
+    assert duplicate["execution"]["execution_id"] == first["execution"]["execution_id"]
+    assert duplicate["job"]["job_id"] == first["job"]["job_id"]
+    assert execution_repository.count() == 1
 
 
 def test_rejects_an_unknown_dataset_without_persisting_execution(

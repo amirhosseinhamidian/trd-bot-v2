@@ -38,6 +38,24 @@ class BackgroundJobConflictError(RuntimeError):
     """Raised when a worker no longer owns the lease it is trying to mutate."""
 
 
+class BackgroundJobHandlerError(RuntimeError):
+    """A sanitized handler failure with an explicit retry policy."""
+
+    def __init__(
+        self,
+        *,
+        error_code: str,
+        error_message: str,
+        retryable: bool,
+    ) -> None:
+        if not error_code.strip() or not error_message.strip():
+            raise ValueError("background job handler error requires code and message")
+        self.error_code = error_code.strip()
+        self.error_message = error_message.strip()
+        self.retryable = retryable
+        super().__init__(self.error_message)
+
+
 class BackgroundJob(BaseModel):
     """Persisted lifecycle and lease state for one bounded background operation."""
 
@@ -350,6 +368,15 @@ class BackgroundJobWorker:
                 result_reference = handler(context, job.payload)
                 if result_reference is not None and not 1 <= len(result_reference) <= 200:
                     raise ValueError("background job result reference is invalid")
+            except BackgroundJobHandlerError as error:
+                return self._repository.fail(
+                    job_id=job.job_id,
+                    worker_id=self._worker_id,
+                    error_code=error.error_code,
+                    error_message=error.error_message,
+                    retryable=error.retryable,
+                    now=now,
+                )
             except Exception:
                 return self._repository.fail(
                     job_id=job.job_id,

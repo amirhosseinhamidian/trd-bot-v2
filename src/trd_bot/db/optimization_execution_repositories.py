@@ -16,11 +16,28 @@ class SqlAlchemyOptimizationExecutionRepository:
         self._session = session
 
     def save(self, execution: OptimizationExecution) -> OptimizationExecution:
+        stored, _ = self.stage(execution)
+
+        try:
+            self._session.commit()
+        except IntegrityError as error:
+            self._session.rollback()
+            raise ValueError("optimization execution could not be persisted") from error
+
+        return stored
+
+    def stage(
+        self,
+        execution: OptimizationExecution,
+    ) -> tuple[OptimizationExecution, bool]:
+        """Stage an execution insert or update without committing the transaction."""
+
         row = self._session.get(
             OptimizationExecutionRow,
             execution.execution_id,
         )
 
+        created = row is None
         if row is None:
             row = OptimizationExecutionRow(
                 execution_id=execution.execution_id,
@@ -48,13 +65,7 @@ class SqlAlchemyOptimizationExecutionRepository:
             row.best_experiment_id = execution.best_experiment_id
             row.payload_json = execution.model_dump_json()
 
-        try:
-            self._session.commit()
-        except IntegrityError as error:
-            self._session.rollback()
-            raise ValueError("optimization execution could not be persisted") from error
-
-        return execution
+        return execution, created
 
     def get(self, execution_id: str) -> OptimizationExecution | None:
         row = self._session.get(OptimizationExecutionRow, execution_id)

@@ -19,6 +19,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
     SqlAlchemyMonitoringRuntimeStateRepository,
+    SqlAlchemyOptimizationExecutionEnqueuer,
     SqlAlchemyOptimizationExecutionRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
@@ -49,6 +50,7 @@ from trd_bot.research.experiment_executions import ExperimentExecutionRepository
 from trd_bot.research.experiments import ExperimentRegistry
 from trd_bot.research.historical_dataset_commits import HistoricalDatasetCommitter
 from trd_bot.research.optimization_executions import OptimizationExecutionRepository
+from trd_bot.research.optimization_jobs import OptimizationExecutionEnqueuer
 from trd_bot.research.optimization_runner import OptimizationRunner
 from trd_bot.research.policy_presets import AcceptancePolicyPresetCatalog
 from trd_bot.research.walk_forward_executions import WalkForwardExecutionRepository
@@ -209,6 +211,14 @@ def get_optimization_execution_repository(
     """Return the request-scoped optimization execution repository."""
 
     return SqlAlchemyOptimizationExecutionRepository(session)
+
+
+def get_optimization_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> OptimizationExecutionEnqueuer:
+    """Return the atomic optimization execution and job enqueuer."""
+
+    return SqlAlchemyOptimizationExecutionEnqueuer(session)
 
 
 def get_optimization_runner(

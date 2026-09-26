@@ -2,9 +2,9 @@
 
 ## مرز مرحله
 
-این مرحله API تولیدی ایجاد و مشاهده Optimization را فعال می‌کند، اما محاسبه trialها را داخل request
-یا background task موقت FastAPI اجرا نمی‌کند. اتصال به صف durable و worker مستقل متعلق به TB2-013
-است. بنابراین create در این مرحله یک رکورد `queued` معتبر می‌سازد و با HTTP 201 برمی‌گرداند.
+این مرحله API تولیدی ایجاد و مشاهده Optimization را فعال کرد. از TB2-013 محاسبهٔ trialها نه داخل request
+و نه در background task موقت FastAPI، بلکه در صف durable و worker مستقل انجام می‌شود. create با HTTP 202
+یک submission شامل execution، خلاصهٔ job و پرچم `created` برمی‌گرداند.
 
 ## endpointها
 
@@ -37,17 +37,14 @@ endpoint عمومی برای `start`، `complete` یا `fail` وجود ندار�
 | --- | --- | --- |
 | 404 | `dataset_not_found` | Dataset immutable موجود نیست. |
 | 422 | `invalid_optimization_plan` | نسخه، grid، مقدار یا محدودیت plan معتبر نیست. |
-| 409 | `optimization_execution_conflict` | رکورد execution قابل persist نبود. |
+| 409 | `optimization_execution_conflict` | execution و job به‌صورت اتمیک قابل enqueue نبودند. |
 | 404 | `optimization_execution_not_found` | detail درخواستی موجود نیست. |
 
 validation ساختاری FastAPI/Pydantic همچنان قرارداد استاندارد 422 برنامه را دارد.
 
 ## persistence و lifecycle
 
-API از `SqlAlchemyOptimizationExecutionRepository` با session request-scoped استفاده می‌کند؛ الگوی
-قدیمی `next(get_database_session())` حذف شده است. migration جدید لازم نیست، چون جدول و indexهای
-`20260831_0014_optimization_executions.py` از قبل وجود دارند.
-
-TB2-013 باید create و enqueue را در مرز تراکنشی امن هماهنگ کند، handler allowlisted بسازد و فقط
-worker را مجاز به transitionهای lifecycle و ثبت trialها کند. در آن مرحله پاسخ create به HTTP 202
-تغییر می‌کند.
+API از `SqlAlchemyOptimizationExecutionEnqueuer` با session request-scoped استفاده می‌کند و execution
+و job را در یک transaction می‌نویسد. کلید idempotency از intent canonical ساخته می‌شود؛ تکرار همان
+درخواست execution/job قبلی را با `created=false` برمی‌گرداند. migration جدید لازم نیست، چون جدول‌ها
+و indexهای لازم از قبل وجود دارند. جزئیات lifecycle worker در سند TB2-013 ثبت شده است.

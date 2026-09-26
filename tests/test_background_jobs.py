@@ -16,6 +16,7 @@ from trd_bot.jobs import (
     BackgroundJob,
     BackgroundJobBuilder,
     BackgroundJobContext,
+    BackgroundJobHandlerError,
     BackgroundJobHandlerRegistry,
     BackgroundJobKind,
     BackgroundJobStatus,
@@ -246,7 +247,42 @@ def test_worker_fails_unregistered_kind_without_retry(session: Session) -> None:
     assert failed.attempt_count == 1
 
 
+def test_worker_honors_a_nonretryable_sanitized_handler_failure(session: Session) -> None:
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(build_job(max_attempts=3))
+
+    def fail_handler(
+        _context: BackgroundJobContext,
+        _payload: Mapping[str, object],
+    ) -> str | None:
+        raise BackgroundJobHandlerError(
+            error_code="optimization_failed",
+            error_message="Optimization execution failed.",
+            retryable=False,
+        )
+
+    failed = BackgroundJobWorker(
+        repository=repository,
+        handlers=BackgroundJobHandlerRegistry(
+            {BackgroundJobKind.EXPERIMENT_EXECUTION: fail_handler}
+        ),
+        worker_id="worker-a",
+    ).run_once(now=NOW)
+
+    assert failed is not None
+    assert failed.job_id == queued.job_id
+    assert failed.status is BackgroundJobStatus.FAILED
+    assert failed.error_code == "optimization_failed"
+    assert failed.attempt_count == 1
+
+
 def test_production_registry_allowlists_market_data_import_jobs() -> None:
     handler = build_background_job_handler_registry().get(BackgroundJobKind.MARKET_DATA_IMPORT)
+
+    assert callable(handler)
+
+
+def test_production_registry_allowlists_optimization_jobs() -> None:
+    handler = build_background_job_handler_registry().get(BackgroundJobKind.OPTIMIZATION_EXECUTION)
 
     assert callable(handler)

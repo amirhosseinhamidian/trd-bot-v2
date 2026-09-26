@@ -164,6 +164,15 @@ from trd_bot.research.optimization_executions import (
     OptimizationExecutionState,
     OptimizationExecutionStateMachine,
 )
+from trd_bot.research.optimization_jobs import (
+    InMemoryOptimizationExecutionEnqueuer,
+    OptimizationExecutionEnqueueError,
+    OptimizationExecutionEnqueuer,
+    OptimizationExecutionEnqueueResult,
+    OptimizationExecutionJobPayload,
+    build_optimization_execution_idempotency_key,
+)
+from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
 from trd_bot.research.performance_series import (
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
@@ -363,9 +372,15 @@ __all__ = [
     "InMemoryExperimentExecutionRepository",
     "InMemoryExperimentRegistry",
     "InMemoryHistoricalDatasetCommitter",
+    "InMemoryOptimizationExecutionEnqueuer",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "OptimizationExecution",
+    "OptimizationExecutionEnqueueError",
+    "OptimizationExecutionEnqueueResult",
+    "OptimizationExecutionEnqueuer",
+    "OptimizationExecutionJobPayload",
+    "OptimizationExecutionJobRunner",
     "OptimizationExecutionState",
     "OptimizationExecutionStateMachine",
     "OptimizationParameterGrid",
@@ -420,6 +435,7 @@ __all__ = [
     "WalkForwardStabilityReport",
     "build_candidate_id",
     "build_experiment_id",
+    "build_optimization_execution_idempotency_key",
     "build_research_backtest_run_id",
     "build_walk_forward_execution_id",
     "build_walk_forward_plan_id",

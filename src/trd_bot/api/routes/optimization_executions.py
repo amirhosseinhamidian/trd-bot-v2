@@ -5,11 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.dependencies import (
     get_dataset_repository,
+    get_optimization_execution_enqueuer,
     get_optimization_execution_repository,
-    get_optimization_runner,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
+from trd_bot.jobs import BackgroundJobBuilder, BackgroundJobKind, BackgroundJobSummary
 from trd_bot.research.comparisons import ExperimentComparisonMetric
 from trd_bot.research.datasets import DatasetRepository
 from trd_bot.research.optimization import OptimizationParameterGrid, OptimizationPlanner
@@ -18,7 +19,12 @@ from trd_bot.research.optimization_executions import (
     OptimizationExecutionBuilder,
     OptimizationExecutionRepository,
 )
-from trd_bot.research.optimization_runner import OptimizationRunner
+from trd_bot.research.optimization_jobs import (
+    OptimizationExecutionEnqueueError,
+    OptimizationExecutionEnqueuer,
+    OptimizationExecutionJobPayload,
+    build_optimization_execution_idempotency_key,
+)
 
 router = APIRouter(
     prefix="/research/optimization-executions",
@@ -49,6 +55,16 @@ class OptimizationExecutionCatalogParams(BaseModel):
     offset: int = Field(default=0, ge=0)
 
 
+class OptimizationExecutionSubmission(BaseModel):
+    """Durable execution and job identity returned by an enqueue request."""
+
+    model_config = ConfigDict(frozen=True)
+
+    execution: OptimizationExecution
+    job: BackgroundJobSummary
+    created: bool
+
+
 OptimizationExecutionCatalogParamsQuery = Annotated[
     OptimizationExecutionCatalogParams,
     Query(),
@@ -59,9 +75,9 @@ OptimizationExecutionRepositoryDependency = Annotated[
     Depends(get_optimization_execution_repository),
 ]
 
-OptimizationRunnerDependency = Annotated[
-    OptimizationRunner,
-    Depends(get_optimization_runner),
+OptimizationExecutionEnqueuerDependency = Annotated[
+    OptimizationExecutionEnqueuer,
+    Depends(get_optimization_execution_enqueuer),
 ]
 
 DatasetRepositoryDependency = Annotated[
@@ -79,15 +95,15 @@ def _error_detail(*, code: str, message: str) -> dict[str, str]:
 
 @router.post(
     "",
-    response_model=OptimizationExecution,
-    status_code=201,
+    response_model=OptimizationExecutionSubmission,
+    status_code=202,
 )
 def create_optimization_execution(
     request: CreateOptimizationExecutionRequest,
     datasets: DatasetRepositoryDependency,
-    runner: OptimizationRunnerDependency,
-) -> OptimizationExecution:
-    """Persist a server-built bounded plan without starting inline work."""
+    enqueuer: OptimizationExecutionEnqueuerDependency,
+) -> OptimizationExecutionSubmission:
+    """Atomically persist a bounded execution and its durable worker job."""
 
     dataset = datasets.get(request.dataset_id)
     if dataset is None:
@@ -121,17 +137,30 @@ def create_optimization_execution(
         horizon_candles=request.horizon_candles,
         backtest_config=request.backtest_config,
     )
+    payload = OptimizationExecutionJobPayload(execution_id=execution.execution_id)
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.OPTIMIZATION_EXECUTION,
+        payload=payload.model_dump(mode="json"),
+        idempotency_key=build_optimization_execution_idempotency_key(execution),
+        max_attempts=3,
+        now=execution.created_at,
+    )
 
     try:
-        return runner.create(execution)
-    except ValueError as error:
+        result = enqueuer.enqueue(execution=execution, job=job)
+    except (OptimizationExecutionEnqueueError, ValueError) as error:
         raise HTTPException(
             status_code=409,
             detail=_error_detail(
                 code="optimization_execution_conflict",
-                message="optimization execution could not be stored",
+                message="optimization execution could not be enqueued",
             ),
         ) from error
+    return OptimizationExecutionSubmission(
+        execution=result.execution,
+        job=BackgroundJobSummary.from_job(result.job),
+        created=result.created,
+    )
 
 
 @router.get(

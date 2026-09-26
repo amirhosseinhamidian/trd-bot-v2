@@ -8,7 +8,9 @@ from trd_bot.api.background_jobs import (
 )
 from trd_bot.db import (
     SqlAlchemyDatasetRepository,
+    SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
+    SqlAlchemyOptimizationExecutionRepository,
     get_session_factory,
 )
 from trd_bot.db.market_data_connection_repositories import (
@@ -19,6 +21,7 @@ from trd_bot.db.market_data_import_repositories import (
 )
 from trd_bot.jobs import (
     BackgroundJobContext,
+    BackgroundJobHandlerError,
     BackgroundJobHandlerRegistry,
     BackgroundJobKind,
 )
@@ -27,8 +30,12 @@ from trd_bot.research.historical_dataset_jobs import (
     HistoricalDatasetJobPayload,
     HistoricalDatasetJobRunner,
 )
+from trd_bot.research.optimization_executions import OptimizationExecutionState
+from trd_bot.research.optimization_jobs import OptimizationExecutionJobPayload
+from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
 
 _MARKET_DATA_IMPORT_LEASE = timedelta(minutes=5)
+_OPTIMIZATION_EXECUTION_LEASE = timedelta(minutes=5)
 
 
 def _required_string(payload: Mapping[str, object], field: str) -> str:
@@ -95,13 +102,61 @@ def run_market_data_import_job(
     return None if record is None else record.import_id
 
 
+def run_optimization_execution_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str:
+    request = OptimizationExecutionJobPayload.model_validate(payload)
+
+    def report_progress(progress: int) -> None:
+        context.heartbeat(
+            progress,
+            lease_duration=_OPTIMIZATION_EXECUTION_LEASE,
+        )
+
+    with get_session_factory()() as session:
+        runner = OptimizationExecutionJobRunner(
+            executions=SqlAlchemyOptimizationExecutionRepository(session),
+            datasets=SqlAlchemyDatasetRepository(session),
+            experiments=SqlAlchemyExperimentRegistry(session),
+        )
+        try:
+            execution = runner.run(
+                request.execution_id,
+                report_progress=report_progress,
+                cancellation_requested=context.cancellation_requested,
+            )
+        except Exception as error:
+            if context.job.attempt_count < context.job.max_attempts:
+                raise
+            runner.fail_active(
+                request.execution_id,
+                error_code="optimization_attempts_exhausted",
+                error_message="Optimization stopped after exhausting its retry budget.",
+            )
+            raise BackgroundJobHandlerError(
+                error_code="optimization_attempts_exhausted",
+                error_message="Optimization stopped after exhausting its retry budget.",
+                retryable=False,
+            ) from error
+
+    if execution.status is OptimizationExecutionState.FAILED:
+        raise BackgroundJobHandlerError(
+            error_code=execution.error_code or "optimization_execution_failed",
+            error_message=execution.error_message or "Optimization execution failed.",
+            retryable=False,
+        )
+    return execution.execution_id
+
+
 def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
-    """Build the production allowlist; optimization is added in its owning stage."""
+    """Build the production allowlist of durable job handlers."""
 
     return BackgroundJobHandlerRegistry(
         {
             BackgroundJobKind.EXPERIMENT_EXECUTION: run_experiment_job,
             BackgroundJobKind.WALK_FORWARD_EXECUTION: run_walk_forward_job,
             BackgroundJobKind.MARKET_DATA_IMPORT: run_market_data_import_job,
+            BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }
     )

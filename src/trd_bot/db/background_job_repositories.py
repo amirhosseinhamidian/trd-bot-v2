@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from trd_bot.db.models import BackgroundJobRow
 from trd_bot.jobs import (
     BackgroundJob,
+    BackgroundJobKind,
     BackgroundJobStatus,
 )
 from trd_bot.jobs import (
@@ -20,37 +21,54 @@ class SqlAlchemyBackgroundJobRepository:
         self._session = session
 
     def enqueue(self, job: BackgroundJob) -> tuple[BackgroundJob, bool]:
-        if job.idempotency_key is not None:
-            existing = self._session.scalar(
-                select(BackgroundJobRow)
-                .where(
-                    BackgroundJobRow.kind == job.kind.value,
-                    BackgroundJobRow.idempotency_key == job.idempotency_key,
-                )
-                .execution_options(populate_existing=True)
-            )
-            if existing is not None:
-                return self._from_row(existing), False
+        stored, created = self.stage(job)
+        if not created:
+            return stored, False
 
-        self._session.add(self._new_row(job))
         try:
             self._session.commit()
         except IntegrityError as error:
             self._session.rollback()
             if job.idempotency_key is None:
                 raise ValueError("background job could not be enqueued") from error
-            existing = self._session.scalar(
-                select(BackgroundJobRow)
-                .where(
-                    BackgroundJobRow.kind == job.kind.value,
-                    BackgroundJobRow.idempotency_key == job.idempotency_key,
-                )
-                .execution_options(populate_existing=True)
+            existing = self.get_by_idempotency_key(
+                kind=job.kind,
+                idempotency_key=job.idempotency_key,
             )
             if existing is None:
                 raise ValueError("background job could not be enqueued") from error
-            return self._from_row(existing), False
+            return existing, False
         return job, True
+
+    def stage(self, job: BackgroundJob) -> tuple[BackgroundJob, bool]:
+        """Stage an enqueue without committing the surrounding transaction."""
+
+        if job.idempotency_key is not None:
+            existing = self.get_by_idempotency_key(
+                kind=job.kind,
+                idempotency_key=job.idempotency_key,
+            )
+            if existing is not None:
+                return existing, False
+
+        self._session.add(self._new_row(job))
+        return job, True
+
+    def get_by_idempotency_key(
+        self,
+        *,
+        kind: BackgroundJobKind,
+        idempotency_key: str,
+    ) -> BackgroundJob | None:
+        row = self._session.scalar(
+            select(BackgroundJobRow)
+            .where(
+                BackgroundJobRow.kind == kind.value,
+                BackgroundJobRow.idempotency_key == idempotency_key,
+            )
+            .execution_options(populate_existing=True)
+        )
+        return None if row is None else self._from_row(row)
 
     def get(self, job_id: str) -> BackgroundJob | None:
         row = self._session.get(BackgroundJobRow, job_id, populate_existing=True)
