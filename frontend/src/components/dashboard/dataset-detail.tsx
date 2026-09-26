@@ -298,6 +298,51 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
               </div>
             </dl>
           ) : null}
+
+          {dataset.provenance.kind === 'manual_upload' && dataset.provenance.original_filename ? (
+            <dl className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                <dt className="text-xs text-app-muted">{copy.provenance.originalFilename}</dt>
+                <dd
+                  dir="ltr"
+                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                >
+                  {dataset.provenance.original_filename}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                <dt className="text-xs text-app-muted">{copy.provenance.originalFileFormat}</dt>
+                <dd className="mt-2 text-sm font-semibold text-app-foreground uppercase">
+                  {dataset.provenance.original_file_format}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                <dt className="text-xs text-app-muted">{copy.provenance.originalFileChecksum}</dt>
+                <dd
+                  dir="ltr"
+                  title={dataset.provenance.original_file_checksum ?? undefined}
+                  className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                >
+                  {dataset.provenance.original_file_checksum}
+                </dd>
+              </div>
+
+              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                <dt className="text-xs text-app-muted">{copy.provenance.columnMapping}</dt>
+                <dd className="mt-3 flex flex-wrap gap-2">
+                  {Object.entries(dataset.provenance.column_mapping ?? {}).map(
+                    ([field, column]) => (
+                      <Badge key={field} variant="neutral">
+                        {field} → {column}
+                      </Badge>
+                    ),
+                  )}
+                </dd>
+              </div>
+            </dl>
+          ) : null}
         </CardContent>
       </Card>
 

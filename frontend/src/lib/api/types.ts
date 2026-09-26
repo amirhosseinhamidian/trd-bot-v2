@@ -204,6 +204,10 @@ export interface DatasetProvenance {
   import_id: string | null;
   requested_start_time: string | null;
   requested_end_time: string | null;
+  original_filename: string | null;
+  original_file_format: DatasetFileFormat | null;
+  original_file_checksum: string | null;
+  column_mapping: Record<string, string> | null;
 }
 
 export interface DatasetDetailSummary extends DatasetSummary {
@@ -229,6 +233,64 @@ export interface DatasetImportRequest {
   pair: TradingPair;
   timeframe: DatasetTimeframe;
   candles: DatasetImportCandle[];
+}
+
+export type DatasetFileFormat = 'csv' | 'json' | 'parquet';
+
+export type DatasetFileField =
+  | 'open_time'
+  | 'close_time'
+  | 'open_price'
+  | 'high_price'
+  | 'low_price'
+  | 'close_price'
+  | 'volume'
+  | 'is_closed';
+
+export interface DatasetColumnMapping {
+  open_time: string;
+  open_price: string;
+  high_price: string;
+  low_price: string;
+  close_price: string;
+  volume: string;
+  close_time: string | null;
+  is_closed: string | null;
+}
+
+export interface DatasetFileInspection {
+  file_name: string;
+  file_format: DatasetFileFormat;
+  file_size_bytes: number;
+  file_checksum: string;
+  row_count: number;
+  columns: string[];
+  suggested_mapping: Partial<Record<DatasetFileField, string>>;
+  missing_required_fields: DatasetFileField[];
+  can_preview: boolean;
+}
+
+export interface DatasetFilePreviewRequest {
+  name: string;
+  source: string;
+  pair: TradingPair;
+  timeframe: DatasetTimeframe;
+  column_mapping: DatasetColumnMapping;
+}
+
+export interface DatasetFileCommitRequest extends DatasetFilePreviewRequest {
+  preview_checksum: string;
+}
+
+export interface DatasetFileImportPreview {
+  inspection: DatasetFileInspection;
+  column_mapping: DatasetColumnMapping;
+  candle_count: number;
+  first_open_time: string;
+  last_close_time: string;
+  preview_checksum: string;
+  quality_report: MarketDataQualityReport;
+  ready_to_import: boolean;
 }
 
 export type ResearchStrategyName = 'ema-crossover' | 'rsi-threshold' | 'sma-crossover';

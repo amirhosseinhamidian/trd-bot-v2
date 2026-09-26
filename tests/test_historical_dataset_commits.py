@@ -181,12 +181,14 @@ def test_history_failure_rolls_back_a_new_snapshot(
 
     monkeypatch.setattr(SqlAlchemyMarketDataImportRepository, "stage", fail_history_stage)
 
-    with session_factory() as session:
-        with pytest.raises(RuntimeError, match="injected history failure"):
-            SqlAlchemyHistoricalDatasetCommitter(session).commit(
-                dataset=dataset,
-                record=build_record(import_id=import_id, dataset=dataset),
-            )
+    with (
+        session_factory() as session,
+        pytest.raises(RuntimeError, match="injected history failure"),
+    ):
+        SqlAlchemyHistoricalDatasetCommitter(session).commit(
+            dataset=dataset,
+            record=build_record(import_id=import_id, dataset=dataset),
+        )
 
     with session_factory() as session:
         assert SqlAlchemyDatasetRepository(session).count() == 0

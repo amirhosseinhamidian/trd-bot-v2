@@ -1,5 +1,5 @@
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import type { DatasetCsvErrorCode } from '@/lib/datasets/csv';
+import type { DatasetFileField } from '@/lib/api/types';
 
 export type DatasetImportCopy = {
   title: string;
@@ -12,20 +12,34 @@ export type DatasetImportCopy = {
   baseAsset: string;
   quoteAsset: string;
   timeframe: string;
-  csvFile: string;
-  csvHint: string;
+  datasetFile: string;
+  fileHint: string;
   downloadTemplate: string;
+  inspecting: string;
+  mappingTitle: string;
+  mappingDescription: string;
+  optional: string;
+  derivedCloseTime: string;
+  defaultClosed: string;
+  fields: Record<DatasetFileField, string>;
+  previewButton: string;
+  previewing: string;
   importButton: string;
   importing: string;
   previewTitle: string;
   previewFile: string;
+  previewFormat: string;
+  previewRows: string;
   previewCandles: string;
   previewStart: string;
   previewEnd: string;
+  qualityScore: string;
+  qualityPassed: string;
+  qualityRejected: string;
+  checksum: string;
   successTitle: string;
   successDescription: string;
   viewDataset: string;
-  row: string;
   timeframes: Record<'15m' | '1h' | '4h' | '1d', string>;
   errors: {
     required: string;
@@ -33,18 +47,45 @@ export type DatasetImportCopy = {
     identicalAssets: string;
     fileRequired: string;
     fileTooLarge: string;
-    readFailed: string;
-    backendValidation: string;
+    unsupportedFile: string;
+    inspectionFailed: string;
+    mappingRequired: string;
+    duplicateMapping: string;
+    previewFailed: string;
+    qualityRejected: string;
+    previewExpired: string;
     submitFailed: string;
   };
-  csvErrors: Record<DatasetCsvErrorCode, string>;
+};
+
+const fields: Record<DashboardLocale, Record<DatasetFileField, string>> = {
+  fa: {
+    open_time: 'زمان بازشدن',
+    close_time: 'زمان بسته‌شدن',
+    open_price: 'قیمت Open',
+    high_price: 'قیمت High',
+    low_price: 'قیمت Low',
+    close_price: 'قیمت Close',
+    volume: 'حجم',
+    is_closed: 'وضعیت بسته‌شدن',
+  },
+  en: {
+    open_time: 'Open time',
+    close_time: 'Close time',
+    open_price: 'Open price',
+    high_price: 'High price',
+    low_price: 'Low price',
+    close_price: 'Close price',
+    volume: 'Volume',
+    is_closed: 'Closed state',
+  },
 };
 
 const copies: Record<DashboardLocale, DatasetImportCopy> = {
   fa: {
     title: 'Import مجموعه‌داده تاریخی',
     description:
-      'فایل CSV شامل کندل‌های بسته‌شده OHLCV را بررسی و به‌صورت Snapshot تغییرناپذیر ذخیره کنید.',
+      'فایل CSV، JSON یا Parquet را روی Backend بررسی کنید، ستون‌ها را نگاشت دهید و فقط Preview تأییدشده را ذخیره کنید.',
     historicalOnly: 'فقط داده تاریخی',
     name: 'نام مجموعه‌داده',
     namePlaceholder: 'مثلاً BTC/USDT Historical 1H',
@@ -53,20 +94,34 @@ const copies: Record<DashboardLocale, DatasetImportCopy> = {
     baseAsset: 'دارایی پایه',
     quoteAsset: 'دارایی مقابل',
     timeframe: 'تایم‌فریم',
-    csvFile: 'فایل CSV',
-    csvHint: 'حداکثر حجم فایل ۱۰ مگابایت است.',
+    datasetFile: 'فایل Dataset',
+    fileHint: 'CSV، JSON یا Parquet؛ حداکثر ۱۰ مگابایت و ۱۰۰٬۰۰۰ ردیف.',
     downloadTemplate: 'دریافت نمونه CSV',
-    importButton: 'Import مجموعه‌داده',
-    importing: 'در حال Import',
-    previewTitle: 'پیش‌نمایش فایل',
+    inspecting: 'در حال بررسی فایل',
+    mappingTitle: 'نگاشت ستون‌ها',
+    mappingDescription: 'ستون فایل را برای هر فیلد استاندارد OHLCV انتخاب کنید.',
+    optional: 'اختیاری',
+    derivedCloseTime: 'محاسبه از تایم‌فریم',
+    defaultClosed: 'مقدار پیش‌فرض: بسته‌شده',
+    fields: fields.fa,
+    previewButton: 'ساخت Preview',
+    previewing: 'در حال ساخت Preview',
+    importButton: 'ثبت Dataset تأییدشده',
+    importing: 'در حال ثبت Dataset',
+    previewTitle: 'Preview سمت سرور',
     previewFile: 'نام فایل',
-    previewCandles: 'تعداد کندل',
+    previewFormat: 'فرمت',
+    previewRows: 'ردیف فایل',
+    previewCandles: 'کندل canonical',
     previewStart: 'شروع داده',
     previewEnd: 'پایان داده',
+    qualityScore: 'امتیاز کیفیت',
+    qualityPassed: 'آماده ثبت',
+    qualityRejected: 'ردشده توسط سیاست کیفیت',
+    checksum: 'Preview checksum',
     successTitle: 'مجموعه‌داده ذخیره شد',
-    successDescription: 'Snapshot تاریخی با موفقیت اعتبارسنجی و ذخیره شد.',
+    successDescription: 'Snapshot تاریخی با provenance فایل و گزارش کیفیت ذخیره شد.',
     viewDataset: 'مشاهده مجموعه‌داده',
-    row: 'ردیف',
     timeframes: {
       '15m': '۱۵ دقیقه',
       '1h': '۱ ساعت',
@@ -77,36 +132,22 @@ const copies: Record<DashboardLocale, DatasetImportCopy> = {
       required: 'تکمیل این فیلد الزامی است.',
       invalidAsset: 'نماد دارایی باید بین ۲ تا ۱۵ حرف یا عدد باشد.',
       identicalAssets: 'دارایی پایه و مقابل نمی‌توانند یکسان باشند.',
-      fileRequired: 'ابتدا یک فایل CSV انتخاب کنید.',
-      fileTooLarge: 'حجم فایل CSV نباید بیشتر از ۱۰ مگابایت باشد.',
-      readFailed: 'خواندن فایل CSV ناموفق بود.',
-      backendValidation: 'Backend کیفیت داده تاریخی را تأیید نکرد.',
+      fileRequired: 'ابتدا یک فایل Dataset انتخاب کنید.',
+      fileTooLarge: 'حجم فایل نباید بیشتر از ۱۰ مگابایت باشد.',
+      unsupportedFile: 'فقط فایل CSV، JSON یا Parquet پشتیبانی می‌شود.',
+      inspectionFailed: 'بررسی ساختار فایل روی Backend ناموفق بود.',
+      mappingRequired: 'ستون همه فیلدهای ضروری را انتخاب کنید.',
+      duplicateMapping: 'هر ستون فایل فقط یک‌بار قابل انتخاب است.',
+      previewFailed: 'ساخت Preview ناموفق بود؛ mapping و محتوای فایل را بررسی کنید.',
+      qualityRejected: 'کیفیت Dataset تأیید نشد؛ مسائل Preview را برطرف کنید.',
+      previewExpired: 'فایل یا mapping پس از Preview تغییر کرده است؛ دوباره Preview بگیرید.',
       submitFailed: 'ذخیره مجموعه‌داده ناموفق بود. اتصال Backend را بررسی کنید.',
     },
-    csvErrors: {
-      malformed_csv: 'ساختار فایل CSV معتبر نیست.',
-      empty_file: 'فایل CSV خالی است.',
-      missing_header: 'یکی از ستون‌های ضروری CSV وجود ندارد.',
-      duplicate_header: 'یکی از نام‌های ستون‌ها تکراری است.',
-      unknown_header: 'فایل CSV دارای ستون پشتیبانی‌نشده است.',
-      empty_dataset: 'فایل CSV هیچ کندلی ندارد.',
-      invalid_column_count: 'تعداد ستون‌های این ردیف صحیح نیست.',
-      empty_value: 'یکی از مقادیر ضروری خالی است.',
-      invalid_timestamp: 'زمان کندل معتبر نیست یا timezone ندارد.',
-      invalid_number: 'یکی از مقادیر عددی معتبر نیست.',
-      invalid_ohlc: 'رابطه قیمت‌های OHLC معتبر نیست.',
-      open_candle: 'فقط کندل‌های بسته‌شده قابل Import هستند.',
-      duplicate_timestamp: 'زمان تکراری در کندل‌ها پیدا شد.',
-      out_of_order: 'کندل‌ها باید از قدیمی به جدید مرتب باشند.',
-      missing_candle: 'یک یا چند کندل در بازه زمانی وجود ندارد.',
-      unexpected_interval: 'فاصله کندل‌ها با تایم‌فریم انتخاب‌شده مطابقت ندارد.',
-    },
   },
-
   en: {
     title: 'Import historical dataset',
     description:
-      'Validate a CSV containing closed OHLCV candles and store it as an immutable snapshot.',
+      'Inspect a CSV, JSON, or Parquet file on the backend, map its columns, and store only an approved preview.',
     historicalOnly: 'Historical data only',
     name: 'Dataset name',
     namePlaceholder: 'For example, BTC/USDT Historical 1H',
@@ -115,20 +156,35 @@ const copies: Record<DashboardLocale, DatasetImportCopy> = {
     baseAsset: 'Base asset',
     quoteAsset: 'Quote asset',
     timeframe: 'Timeframe',
-    csvFile: 'CSV file',
-    csvHint: 'The maximum supported file size is 10 MB.',
+    datasetFile: 'Dataset file',
+    fileHint: 'CSV, JSON, or Parquet; maximum 10 MB and 100,000 rows.',
     downloadTemplate: 'Download CSV template',
-    importButton: 'Import dataset',
-    importing: 'Importing',
-    previewTitle: 'File preview',
+    inspecting: 'Inspecting file',
+    mappingTitle: 'Column mapping',
+    mappingDescription: 'Select the source column for each canonical OHLCV field.',
+    optional: 'Optional',
+    derivedCloseTime: 'Derive from timeframe',
+    defaultClosed: 'Default: closed',
+    fields: fields.en,
+    previewButton: 'Build preview',
+    previewing: 'Building preview',
+    importButton: 'Import approved dataset',
+    importing: 'Importing dataset',
+    previewTitle: 'Server preview',
     previewFile: 'File name',
-    previewCandles: 'Candles',
+    previewFormat: 'Format',
+    previewRows: 'File rows',
+    previewCandles: 'Canonical candles',
     previewStart: 'Data start',
     previewEnd: 'Data end',
+    qualityScore: 'Quality score',
+    qualityPassed: 'Ready to import',
+    qualityRejected: 'Rejected by quality policy',
+    checksum: 'Preview checksum',
     successTitle: 'Dataset stored',
-    successDescription: 'The historical snapshot was successfully validated and stored.',
+    successDescription:
+      'The historical snapshot was stored with file provenance and quality evidence.',
     viewDataset: 'View dataset',
-    row: 'Row',
     timeframes: {
       '15m': '15 minutes',
       '1h': '1 hour',
@@ -139,29 +195,16 @@ const copies: Record<DashboardLocale, DatasetImportCopy> = {
       required: 'This field is required.',
       invalidAsset: 'The asset symbol must contain 2 to 15 letters or numbers.',
       identicalAssets: 'The base and quote assets must be different.',
-      fileRequired: 'Select a CSV file first.',
-      fileTooLarge: 'The CSV file cannot be larger than 10 MB.',
-      readFailed: 'The CSV file could not be read.',
-      backendValidation: 'The backend rejected the historical data quality.',
+      fileRequired: 'Select a dataset file first.',
+      fileTooLarge: 'The file cannot be larger than 10 MB.',
+      unsupportedFile: 'Only CSV, JSON, and Parquet files are supported.',
+      inspectionFailed: 'The backend could not inspect the file structure.',
+      mappingRequired: 'Select a column for every required field.',
+      duplicateMapping: 'Each source column can be selected only once.',
+      previewFailed: 'Preview failed. Check the mapping and file contents.',
+      qualityRejected: 'Dataset quality was rejected. Resolve the preview issues first.',
+      previewExpired: 'The file or mapping changed after preview. Build a new preview.',
       submitFailed: 'The dataset could not be stored. Check the backend connection.',
-    },
-    csvErrors: {
-      malformed_csv: 'The CSV structure is invalid.',
-      empty_file: 'The CSV file is empty.',
-      missing_header: 'A required CSV column is missing.',
-      duplicate_header: 'A CSV column name is duplicated.',
-      unknown_header: 'The CSV contains an unsupported column.',
-      empty_dataset: 'The CSV does not contain any candles.',
-      invalid_column_count: 'This row has an invalid number of columns.',
-      empty_value: 'A required value is empty.',
-      invalid_timestamp: 'A candle timestamp is invalid or has no timezone.',
-      invalid_number: 'A numeric value is invalid.',
-      invalid_ohlc: 'The OHLC price relationship is invalid.',
-      open_candle: 'Only closed candles can be imported.',
-      duplicate_timestamp: 'A duplicate candle timestamp was found.',
-      out_of_order: 'Candles must be sorted chronologically.',
-      missing_candle: 'One or more candles are missing from the time series.',
-      unexpected_interval: 'The candle interval does not match the selected timeframe.',
     },
   },
 };

@@ -24,6 +24,10 @@ export type DatasetDetailCopy = {
     providerId: string;
     importId: string;
     requestedRange: string;
+    originalFilename: string;
+    originalFileFormat: string;
+    originalFileChecksum: string;
+    columnMapping: string;
     kinds: {
       legacy: string;
       generated: string;
@@ -152,6 +156,10 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       providerId: 'Provider',
       importId: 'شناسه Import',
       requestedRange: 'بازه درخواستی',
+      originalFilename: 'نام فایل اصلی',
+      originalFileFormat: 'فرمت فایل',
+      originalFileChecksum: 'SHA-256 فایل',
+      columnMapping: 'نگاشت ستون‌ها',
       kinds: {
         legacy: 'قدیمی / ثبت‌نشده',
         generated: 'تولید داخلی',
@@ -161,7 +169,8 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       kindDescriptions: {
         legacy: 'این Dataset پیش از ثبت metadata منشأ ساخته شده است.',
         generated: 'این Dataset توسط یک جریان داخلی پژوهشی ساخته شده است.',
-        manual_upload: 'داده OHLCV این Dataset به‌صورت دستی به API پژوهش ارسال شده است.',
+        manual_upload:
+          'این Dataset از فایل یا payload دستی OHLCV ساخته شده است؛ metadata فایل در صورت وجود نمایش داده می‌شود.',
         market_data_import: 'این Dataset از یک Connection خواندنی Market Data وارد شده است.',
       },
     },
@@ -279,6 +288,10 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
       providerId: 'Provider',
       importId: 'Import ID',
       requestedRange: 'Requested range',
+      originalFilename: 'Original file name',
+      originalFileFormat: 'File format',
+      originalFileChecksum: 'File SHA-256',
+      columnMapping: 'Column mapping',
       kinds: {
         legacy: 'Legacy / not recorded',
         generated: 'Internally generated',
@@ -289,7 +302,7 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
         legacy: 'This dataset predates immutable provenance metadata.',
         generated: 'This dataset was created by an internal research workflow.',
         manual_upload:
-          'This dataset was created from OHLCV submitted manually to the research API.',
+          'This dataset was created from a file or manual OHLCV payload. File metadata is shown when available.',
         market_data_import:
           'This dataset was imported from a configured read-only market-data connection.',
       },

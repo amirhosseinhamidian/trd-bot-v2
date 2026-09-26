@@ -3,7 +3,7 @@ import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Protocol, Self
+from typing import Literal, Protocol, Self
 
 from pydantic import (
     BaseModel,
@@ -40,8 +40,17 @@ class DatasetProvenance(BaseModel):
     import_id: str | None = Field(default=None, min_length=1, max_length=100)
     requested_start_time: datetime | None = None
     requested_end_time: datetime | None = None
+    original_filename: str | None = Field(default=None, min_length=1, max_length=255)
+    original_file_format: Literal["csv", "json", "parquet"] | None = None
+    original_file_checksum: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+    )
+    column_mapping: dict[str, str] | None = None
 
-    @field_validator("connection_id", "provider_id", "import_id")
+    @field_validator("connection_id", "provider_id", "import_id", "original_filename")
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -69,6 +78,12 @@ class DatasetProvenance(BaseModel):
             self.requested_start_time,
             self.requested_end_time,
         )
+        file_details = (
+            self.original_filename,
+            self.original_file_format,
+            self.original_file_checksum,
+            self.column_mapping,
+        )
 
         if self.kind is DatasetProvenanceKind.MARKET_DATA_IMPORT:
             if any(value is None for value in import_details):
@@ -79,6 +94,22 @@ class DatasetProvenance(BaseModel):
                 raise ValueError("dataset provenance requested end time must be after start time")
         elif any(value is not None for value in import_details):
             raise ValueError("non-import dataset provenance cannot contain import details")
+
+        if self.kind is DatasetProvenanceKind.MANUAL_UPLOAD:
+            if any(value is not None for value in file_details) and not all(
+                value is not None for value in file_details
+            ):
+                raise ValueError("manual-upload file provenance requires complete file details")
+            if self.column_mapping is not None:
+                if not self.column_mapping:
+                    raise ValueError("manual-upload column mapping cannot be empty")
+                if any(
+                    not key.strip() or not value.strip()
+                    for key, value in self.column_mapping.items()
+                ):
+                    raise ValueError("manual-upload column mapping cannot contain empty text")
+        elif any(value is not None for value in file_details):
+            raise ValueError("non-manual dataset provenance cannot contain file details")
 
         return self
 

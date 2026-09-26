@@ -4,6 +4,10 @@ import type {
   CandidateProjectionDetail,
   CandidateProjectionSummary,
   DatasetDetailSummary,
+  DatasetFileCommitRequest,
+  DatasetFileImportPreview,
+  DatasetFileInspection,
+  DatasetFilePreviewRequest,
   DatasetImportRequest,
   DatasetSnapshot,
   DatasetSortDirection,
@@ -152,6 +156,39 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function postFormData<T>(path: string, body: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+    },
+    body,
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const payload = await parseErrorPayload(response);
+
+    throw new ApiRequestError(
+      `API request failed with status ${response.status}`,
+      response.status,
+      payload,
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
+function datasetFileForm(file: File, request?: object): FormData {
+  const form = new FormData();
+
+  form.append('file', file);
+  if (request) {
+    form.append('request', JSON.stringify(request));
+  }
+  return form;
+}
+
 export interface DatasetFilters {
   source?: string;
   baseAsset?: string;
@@ -260,6 +297,33 @@ export async function getDatasets(filters: DatasetFilters = {}): Promise<Page<Da
 
 export async function createDataset(request: DatasetImportRequest): Promise<DatasetSummary> {
   return postJson<DatasetSummary>('/api/v1/research/datasets', request);
+}
+
+export async function inspectDatasetFile(file: File): Promise<DatasetFileInspection> {
+  return postFormData<DatasetFileInspection>(
+    '/api/v1/research/datasets/files/inspect',
+    datasetFileForm(file),
+  );
+}
+
+export async function previewDatasetFile(
+  file: File,
+  request: DatasetFilePreviewRequest,
+): Promise<DatasetFileImportPreview> {
+  return postFormData<DatasetFileImportPreview>(
+    '/api/v1/research/datasets/files/preview',
+    datasetFileForm(file, request),
+  );
+}
+
+export async function importDatasetFile(
+  file: File,
+  request: DatasetFileCommitRequest,
+): Promise<DatasetSummary> {
+  return postFormData<DatasetSummary>(
+    '/api/v1/research/datasets/files',
+    datasetFileForm(file, request),
+  );
 }
 
 export async function getDatasetSummary(datasetId: string): Promise<DatasetDetailSummary> {

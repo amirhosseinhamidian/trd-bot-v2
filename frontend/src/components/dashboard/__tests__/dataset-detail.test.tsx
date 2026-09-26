@@ -44,6 +44,10 @@ function importedDataset(): DatasetDetailSummary {
       import_id: 'market-data-import-1',
       requested_start_time: '2026-08-20T10:00:00Z',
       requested_end_time: '2026-08-20T12:00:00Z',
+      original_filename: null,
+      original_file_format: null,
+      original_file_checksum: null,
+      column_mapping: null,
     },
     quality_report: {
       candles_checked: 2,
@@ -122,6 +126,10 @@ describe('DatasetDetail', () => {
         import_id: null,
         requested_start_time: null,
         requested_end_time: null,
+        original_filename: null,
+        original_file_format: null,
+        original_file_checksum: null,
+        column_mapping: null,
       },
       quality_report: null,
     };
@@ -137,6 +145,38 @@ describe('DatasetDetail', () => {
       screen.getByText('No persisted quality report is available for this legacy dataset.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('market-data-connection-1')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Version history' })).toBeNull();
+  });
+
+  it('renders immutable file provenance for a canonical upload', () => {
+    const uploaded: DatasetDetailSummary = {
+      ...importedDataset(),
+      source: 'manual-file',
+      provenance: {
+        kind: 'manual_upload',
+        connection_id: null,
+        provider_id: null,
+        import_id: null,
+        requested_start_time: null,
+        requested_end_time: null,
+        original_filename: 'candles.parquet',
+        original_file_format: 'parquet',
+        original_file_checksum: 'b'.repeat(64),
+        column_mapping: {
+          open_time: 'timestamp',
+          close_price: 'close',
+        },
+      },
+    };
+
+    render(
+      <DatasetDetail dataset={uploaded} initialCandlesPage={initialCandlesPage} locale="en" />,
+    );
+
+    expect(screen.getByText('Manual upload')).toBeInTheDocument();
+    expect(screen.getByText('candles.parquet')).toBeInTheDocument();
+    expect(screen.getByText('parquet')).toHaveClass('uppercase');
+    expect(screen.getByText('open_time → timestamp')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Version history' })).toBeNull();
   });
 });
