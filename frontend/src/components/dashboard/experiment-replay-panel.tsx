@@ -14,10 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui';
 import { verifyExperimentReplay } from '@/lib/api/client';
-import type {
-  ExperimentReplayStatus,
-  ExperimentReplayVerification,
-} from '@/lib/api/types';
+import type { ExperimentReplayStatus, ExperimentReplayVerification } from '@/lib/api/types';
 
 type ExperimentReplayPanelProps = {
   experimentId: string;
@@ -65,10 +62,7 @@ export function ExperimentReplayPanel({ experimentId, locale }: ExperimentReplay
         [copy.checkedAt, formatDate(verification.checked_at, locale)],
         [copy.recordedResult, verification.recorded_result_checksum],
         [copy.replayedResult, verification.replayed_result_checksum ?? copy.unavailable],
-        [
-          copy.recordedStrategy,
-          verification.recorded_strategy_fingerprint ?? copy.unavailable,
-        ],
+        [copy.recordedStrategy, verification.recorded_strategy_fingerprint ?? copy.unavailable],
         [copy.currentStrategy, verification.current_strategy_fingerprint ?? copy.unavailable],
       ]
     : [];

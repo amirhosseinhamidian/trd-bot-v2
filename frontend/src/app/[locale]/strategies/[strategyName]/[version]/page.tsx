@@ -11,15 +11,9 @@ type StrategyDetailPageProps = {
   }>;
 };
 
-export default async function StrategyDetailPage({ params }: StrategyDetailPageProps) {
-  const { locale, strategyName, version } = await params;
-
-  if (locale !== 'fa' && locale !== 'en') {
-    notFound();
-  }
-
+async function loadStrategyDetail(strategyName: string, version: string) {
   try {
-    const [strategy, experimentHistory] = await Promise.all([
+    return await Promise.all([
       getResearchStrategyVersion(strategyName, version),
       getExperiments({
         strategyName,
@@ -30,14 +24,25 @@ export default async function StrategyDetailPage({ params }: StrategyDetailPageP
         offset: 0,
       }),
     ]);
-
-    return (
-      <StrategyDetail locale={locale} strategy={strategy} experimentHistory={experimentHistory} />
-    );
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
       notFound();
     }
+
     throw error;
   }
+}
+
+export default async function StrategyDetailPage({ params }: StrategyDetailPageProps) {
+  const { locale, strategyName, version } = await params;
+
+  if (locale !== 'fa' && locale !== 'en') {
+    notFound();
+  }
+
+  const [strategy, experimentHistory] = await loadStrategyDetail(strategyName, version);
+
+  return (
+    <StrategyDetail locale={locale} strategy={strategy} experimentHistory={experimentHistory} />
+  );
 }

@@ -61,6 +61,12 @@ describe('DashboardShell mobile navigation', () => {
         name: 'Strategies',
       }),
     ).toHaveAttribute('href', '/en/strategies');
+
+    expect(
+      screen.getByRole('link', {
+        name: 'Optimizations',
+      }),
+    ).toHaveAttribute('href', '/en/optimizations');
   });
 
   it('moves focus into the sidebar and restores it after Escape', async () => {

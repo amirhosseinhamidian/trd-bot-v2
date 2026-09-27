@@ -8,6 +8,7 @@ export type DashboardCopy = {
   navigation: {
     overview: string;
     experiments: string;
+    optimizations: string;
     strategies: string;
     datasets: string;
     connections: string;
@@ -97,6 +98,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     navigation: {
       overview: 'نمای کلی',
       experiments: 'آزمایش‌ها',
+      optimizations: 'بهینه‌سازی‌ها',
       strategies: 'استراتژی‌ها',
       datasets: 'مجموعه‌داده‌ها',
       connections: 'اتصال‌های داده',
@@ -185,6 +187,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     navigation: {
       overview: 'Overview',
       experiments: 'Experiments',
+      optimizations: 'Optimizations',
       strategies: 'Strategies',
       datasets: 'Datasets',
       connections: 'Data connections',

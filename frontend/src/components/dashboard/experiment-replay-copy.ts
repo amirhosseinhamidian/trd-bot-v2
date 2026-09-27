@@ -40,8 +40,7 @@ const copies: Record<ExperimentDetailLocale, ExperimentReplayCopy> = {
       legacy_fingerprint_missing:
         'این Experiment قدیمی fingerprint نسخه Strategy را ثبت نکرده و با حدس تأیید نمی‌شود.',
       dataset_not_found: 'Dataset immutable موردنیاز در دسترس نیست.',
-      dataset_integrity_mismatch:
-        'محتوای Dataset با checksum immutable ثبت‌شده آن مطابقت ندارد.',
+      dataset_integrity_mismatch: 'محتوای Dataset با checksum immutable ثبت‌شده آن مطابقت ندارد.',
       strategy_version_not_found: 'نسخه دقیق Strategy دیگر در Registry موجود نیست.',
       strategy_fingerprint_mismatch: 'fingerprint ثبت‌شده با تعریف فعلی همان نسخه متفاوت است.',
       invalid_strategy_parameters: 'پارامترهای ثبت‌شده برای بازسازی معتبر یا کامل نیستند.',
@@ -75,8 +74,7 @@ const copies: Record<ExperimentDetailLocale, ExperimentReplayCopy> = {
       legacy_fingerprint_missing:
         'This legacy experiment did not record a strategy fingerprint and will not be verified by assumption.',
       dataset_not_found: 'The required immutable dataset is unavailable.',
-      dataset_integrity_mismatch:
-        'Dataset content does not match its recorded immutable checksum.',
+      dataset_integrity_mismatch: 'Dataset content does not match its recorded immutable checksum.',
       strategy_version_not_found: 'The exact strategy version is no longer registered.',
       strategy_fingerprint_mismatch:
         'The recorded fingerprint differs from the current definition of this version.',

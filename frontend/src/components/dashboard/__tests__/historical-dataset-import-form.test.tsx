@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
 import { ApiRequestError } from '@/lib/api/client';
@@ -151,6 +151,10 @@ describe('HistoricalDatasetImportForm', () => {
     mocks.previewHistoricalDatasetImport.mockReset();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('previews a valid range and then creates an immutable dataset', async () => {
     const user = userEvent.setup();
     mocks.previewHistoricalDatasetImport.mockResolvedValue(preview);
@@ -282,6 +286,8 @@ describe('HistoricalDatasetImportForm', () => {
   });
 
   it('uses provider defaults and blocks ranges outside the recent Kraken window', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-09-27T00:00:00Z').getTime());
+
     render(
       <HistoricalDatasetImportForm
         connection={{ ...connection, provider_id: krakenProvider.provider_id }}

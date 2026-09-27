@@ -62,6 +62,26 @@ function formatPercent(value: number, locale: DashboardLocale): string {
   return `${formatted}${locale === 'fa' ? '٪' : '%'}`;
 }
 
+function isOutsideProviderWindow(
+  provider: MarketDataProviderSummary | undefined,
+  timeframe: DatasetTimeframe | '',
+  startTime: string,
+  referenceTimeMs: number | null,
+): boolean {
+  if (!provider?.max_closed_candles || !timeframe || !startTime || referenceTimeMs === null) {
+    return false;
+  }
+
+  const start = new Date(startTime);
+  if (Number.isNaN(start.getTime())) {
+    return false;
+  }
+
+  const earliestSupportedStart =
+    referenceTimeMs - TIMEFRAME_DURATION_MS[timeframe] * provider.max_closed_candles;
+  return start.getTime() < earliestSupportedStart;
+}
+
 function isPreviewMismatchError(error: unknown): boolean {
   if (!(error instanceof ApiRequestError) || error.status !== 409) {
     return false;
@@ -91,6 +111,9 @@ export default function HistoricalDatasetImportForm({
   const [quoteAsset, setQuoteAsset] = useState(provider?.default_pair.quote_asset ?? 'USDT');
   const [timeframe, setTimeframe] = useState<DatasetTimeframe | ''>(availableTimeframes[0] ?? '');
   const [startTime, setStartTime] = useState('');
+  const [providerWindowReferenceTimeMs, setProviderWindowReferenceTimeMs] = useState<number | null>(
+    null,
+  );
   const [endTime, setEndTime] = useState('');
   const [preview, setPreview] = useState<HistoricalDatasetImportPreview | null>(null);
   const [importedDataset, setImportedDataset] = useState<DatasetSummary | null>(null);
@@ -109,20 +132,12 @@ export default function HistoricalDatasetImportForm({
     return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start;
   }, [endTime, startTime]);
 
-  const exceedsProviderWindow = useMemo(() => {
-    if (!provider?.max_closed_candles || !timeframe || !startTime) {
-      return false;
-    }
-
-    const start = new Date(startTime);
-    if (Number.isNaN(start.getTime())) {
-      return false;
-    }
-
-    const earliestSupportedStart =
-      Date.now() - TIMEFRAME_DURATION_MS[timeframe] * provider.max_closed_candles;
-    return start.getTime() < earliestSupportedStart;
-  }, [provider?.max_closed_candles, startTime, timeframe]);
+  const exceedsProviderWindow = isOutsideProviderWindow(
+    provider,
+    timeframe,
+    startTime,
+    providerWindowReferenceTimeMs,
+  );
 
   const canPreview = Boolean(
     provider &&
@@ -315,6 +330,7 @@ export default function HistoricalDatasetImportForm({
           disabled={isPreviewing || isImporting}
           onChange={(event) => {
             setStartTime(event.target.value);
+            setProviderWindowReferenceTimeMs(Date.now());
             invalidateResult();
           }}
         />
