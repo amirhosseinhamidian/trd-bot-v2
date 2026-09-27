@@ -8,10 +8,12 @@ import { Badge, type BadgeVariant } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
   AcceptancePolicyPreset,
+  ExperimentAnalyticsReport,
   ExperimentPerformanceSeries,
   ExperimentSummary,
 } from '@/lib/api/types';
 import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
+import { ExperimentAnalytics } from '@/components/dashboard/experiment-analytics';
 import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
 import { ExperimentReplayPanel } from '@/components/dashboard/experiment-replay-panel';
 import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
@@ -21,6 +23,7 @@ type ExperimentDetailProps = {
   experiment: ExperimentSummary;
   locale: ExperimentDetailLocale;
   acceptancePolicyPresets: AcceptancePolicyPreset[];
+  analytics: ExperimentAnalyticsReport;
   performanceSeries: ExperimentPerformanceSeries;
 };
 
@@ -118,6 +121,7 @@ function comparisonPresentation(
 
 export function ExperimentDetail({
   acceptancePolicyPresets,
+  analytics,
   experiment,
   locale,
   performanceSeries,
@@ -231,31 +235,37 @@ export function ExperimentDetail({
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Metric
               label={copy.totalReturn}
-              value={formatPercent(experiment.total_return, locale)}
+              value={formatPercent(analytics.strategy_total_return, locale)}
             />
 
             <Metric
               label={copy.excessReturn}
-              value={formatPercent(experiment.excess_return, locale)}
+              value={formatPercent(analytics.excess_return, locale)}
             />
 
             <Metric
               label={copy.maxDrawdown}
-              value={formatPercent(experiment.max_drawdown_fraction, locale)}
+              value={formatPercent(analytics.strategy_max_drawdown_fraction, locale)}
             />
 
-            <Metric label={copy.winRate} value={formatPercent(experiment.win_rate, locale)} />
+            <Metric
+              label={copy.winRate}
+              value={formatPercent(analytics.trade_distribution.win_rate, locale)}
+            />
 
-            <Metric label={copy.netPnl} value={formatDecimal(experiment.net_pnl, locale)} />
+            <Metric
+              label={copy.netPnl}
+              value={formatDecimal(analytics.trade_distribution.net_pnl, locale)}
+            />
 
             <Metric
               label={copy.profitFactor}
-              value={formatDecimal(experiment.profit_factor, locale)}
+              value={formatDecimal(analytics.trade_distribution.profit_factor, locale)}
             />
 
             <Metric
               label={copy.totalTrades}
-              value={formatInteger(experiment.total_trades, locale)}
+              value={formatInteger(analytics.trade_distribution.total_trades, locale)}
             />
 
             <Metric
@@ -267,6 +277,8 @@ export function ExperimentDetail({
       </Card>
 
       <ExperimentPerformanceCharts locale={locale} performanceSeries={performanceSeries} />
+
+      <ExperimentAnalytics analytics={analytics} locale={locale} />
 
       <Card>
         <CardHeader>
@@ -286,7 +298,7 @@ export function ExperimentDetail({
 
             <Metric
               label={copy.benchmarkReturn}
-              value={formatPercent(experiment.benchmark_return, locale)}
+              value={formatPercent(analytics.benchmark_total_return, locale)}
             />
 
             <Metric

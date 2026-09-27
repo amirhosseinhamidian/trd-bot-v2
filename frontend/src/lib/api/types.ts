@@ -740,6 +740,27 @@ export interface ExperimentComparisonResult {
   interpretation: 'historical_research_only';
 }
 
+export type ResearchMetricKey =
+  | 'total_return'
+  | 'excess_return'
+  | 'max_drawdown_fraction'
+  | 'win_rate'
+  | 'profit_factor'
+  | 'period_return_contribution'
+  | 'median_fold_return'
+  | 'worst_fold_return'
+  | 'traded_fold_fraction'
+  | 'return_consistency'
+  | 'fold_drawdown';
+
+export interface ResearchMetricDefinition {
+  key: ResearchMetricKey;
+  unit: 'fraction' | 'currency' | 'count' | 'ratio';
+  preference: 'higher_is_better' | 'lower_is_better' | 'context_only';
+  definition: string;
+  formula: string;
+}
+
 export interface WalkForwardConfig {
   train_candles: number;
   test_candles: number;
@@ -783,6 +804,7 @@ export type HistoricalFoldReturnDirection = 'positive' | 'negative' | 'flat';
 export interface WalkForwardFoldStatistics {
   fold_number: number;
   total_trades: number;
+  has_trades: boolean;
   strategy_return: string;
   benchmark_return: string;
   excess_return: string;
@@ -792,8 +814,12 @@ export interface WalkForwardFoldStatistics {
 }
 
 export interface WalkForwardStabilityReport {
+  stability_version: 'walk-forward-stability-v1';
   execution_id: string;
   total_folds: number;
+  folds_with_trades: number;
+  folds_without_trades: number;
+  traded_fold_fraction: string;
   positive_return_folds: number;
   negative_return_folds: number;
   flat_return_folds: number;
@@ -807,10 +833,14 @@ export interface WalkForwardStabilityReport {
   worst_strategy_return: string;
   strategy_return_range: string;
   strategy_return_mean_absolute_deviation: string;
+  return_consistency: string;
   average_excess_return: string;
   median_excess_return: string;
   worst_max_drawdown_fraction: string;
+  worst_return_fold_number: number;
+  worst_drawdown_fold_number: number;
   folds: WalkForwardFoldStatistics[];
+  metric_definitions: ResearchMetricDefinition[];
   interpretation: 'historical_research_only';
 }
 
@@ -994,6 +1024,16 @@ export interface HistoricalEquityPoint {
   drawdown_fraction: string;
 }
 
+export type HistoricalPerformancePointKind = 'period_start' | 'trade_close' | 'period_end';
+
+export interface HistoricalPerformancePoint {
+  timestamp: string;
+  balance: string;
+  drawdown_fraction: string;
+  kind: HistoricalPerformancePointKind;
+  trade_number: number | null;
+}
+
 export interface HistoricalPerformanceSeries {
   run_id: string;
   starting_balance: string;
@@ -1001,14 +1041,86 @@ export interface HistoricalPerformanceSeries {
   total_return: string;
   max_drawdown_fraction: string;
   points: HistoricalEquityPoint[];
+  chart_points: HistoricalPerformancePoint[];
 }
 
 export interface ExperimentPerformanceSeries {
   experiment_id: string;
   dataset_id: string;
   benchmark_type: 'buy_and_hold';
+  period_start: string;
+  period_end: string;
   strategy: HistoricalPerformanceSeries;
   benchmark: HistoricalPerformanceSeries;
+  interpretation: 'historical_research_only';
+}
+
+export interface ExperimentTradeDistribution {
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  flat_trades: number;
+  long_trades: number;
+  short_trades: number;
+  win_rate: string | null;
+  gross_profit: string;
+  gross_loss: string;
+  total_fees: string;
+  net_pnl: string;
+  profit_factor: string | null;
+  average_net_pnl: string | null;
+  median_net_pnl: string | null;
+  best_net_pnl: string | null;
+  worst_net_pnl: string | null;
+}
+
+export interface ExperimentPeriodReturn {
+  period: string;
+  started_at: string;
+  ended_at: string;
+  opening_balance: string;
+  ending_balance: string;
+  net_pnl: string;
+  return_contribution: string;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  flat_trades: number;
+}
+
+export type HistoricalDrawdownEpisodeStatus = 'recovered' | 'unrecovered';
+
+export interface HistoricalDrawdownEpisode {
+  episode_number: number;
+  started_at: string;
+  trough_at: string;
+  recovered_at: string | null;
+  peak_balance: string;
+  trough_balance: string;
+  max_drawdown: string;
+  max_drawdown_fraction: string;
+  trades_underwater: number;
+  status: HistoricalDrawdownEpisodeStatus;
+}
+
+export interface ExperimentAnalyticsReport {
+  experiment_id: string;
+  dataset_id: string;
+  analytics_version: 'research-analytics-v1';
+  period_granularity: 'utc_calendar_month';
+  period_start: string;
+  period_end: string;
+  starting_balance: string;
+  ending_balance: string;
+  strategy_total_return: string;
+  benchmark_total_return: string;
+  excess_return: string;
+  strategy_max_drawdown_fraction: string;
+  benchmark_max_drawdown_fraction: string;
+  trade_distribution: ExperimentTradeDistribution;
+  returns_by_period: ExperimentPeriodReturn[];
+  drawdown_episodes: HistoricalDrawdownEpisode[];
+  metric_definitions: ResearchMetricDefinition[];
   interpretation: 'historical_research_only';
 }
 

@@ -7,7 +7,7 @@ import {
   type ExperimentDetailLocale,
 } from '@/components/dashboard/experiment-detail-copy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import type { ExperimentPerformanceSeries, HistoricalEquityPoint } from '@/lib/api/types';
+import type { ExperimentPerformanceSeries, HistoricalPerformancePoint } from '@/lib/api/types';
 
 type ExperimentPerformanceChartsProps = {
   locale: ExperimentDetailLocale;
@@ -43,14 +43,14 @@ function formatDate(value: string, locale: ExperimentDetailLocale): string {
   }).format(date);
 }
 
-function toBalancePoints(points: HistoricalEquityPoint[]) {
+function toBalancePoints(points: HistoricalPerformancePoint[]) {
   return points.map((point) => ({
     timestamp: point.timestamp,
     value: Number(point.balance),
   }));
 }
 
-function toDrawdownPoints(points: HistoricalEquityPoint[]) {
+function toDrawdownPoints(points: HistoricalPerformancePoint[]) {
   return points.map((point) => ({
     timestamp: point.timestamp,
     value: Number(point.drawdown_fraction),
@@ -67,12 +67,14 @@ export function ExperimentPerformanceCharts({
     {
       label: copy.strategySeries,
       color: '#22d3ee',
-      points: toBalancePoints(performanceSeries.strategy.points),
+      curve: 'step_after',
+      points: toBalancePoints(performanceSeries.strategy.chart_points),
     },
     {
       label: copy.benchmarkSeries,
       color: '#f59e0b',
-      points: toBalancePoints(performanceSeries.benchmark.points),
+      curve: 'step_after',
+      points: toBalancePoints(performanceSeries.benchmark.chart_points),
     },
   ];
 
@@ -80,12 +82,14 @@ export function ExperimentPerformanceCharts({
     {
       label: copy.strategySeries,
       color: '#38bdf8',
-      points: toDrawdownPoints(performanceSeries.strategy.points),
+      curve: 'step_after',
+      points: toDrawdownPoints(performanceSeries.strategy.chart_points),
     },
     {
       label: copy.benchmarkSeries,
       color: '#fb7185',
-      points: toDrawdownPoints(performanceSeries.benchmark.points),
+      curve: 'step_after',
+      points: toDrawdownPoints(performanceSeries.benchmark.chart_points),
     },
   ];
 

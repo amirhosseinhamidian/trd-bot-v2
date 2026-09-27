@@ -5,6 +5,7 @@ export type HistoricalChartPoint = {
 
 export type HistoricalChartSeries = {
   color: string;
+  curve?: 'linear' | 'step_after';
   label: string;
   points: HistoricalChartPoint[];
 };
@@ -116,16 +117,28 @@ export function HistoricalLineChart({
     return PADDING_TOP + (1 - (value - chartMinimumValue) / valueSpan) * chartHeight;
   }
 
-  function createPath(points: NormalizedPoint[]): string {
-    return points
-      .map((point, index) => {
-        const command = index === 0 ? 'M' : 'L';
+  function createPath(item: NormalizedSeries): string {
+    if (item.points.length === 0) {
+      return '';
+    }
 
-        return `${command} ${scaleX(point.milliseconds).toFixed(
-          2,
-        )} ${scaleY(point.value).toFixed(2)}`;
-      })
-      .join(' ');
+    const [firstPoint, ...remainingPoints] = item.points;
+    const commands = [
+      `M ${scaleX(firstPoint.milliseconds).toFixed(2)} ${scaleY(firstPoint.value).toFixed(2)}`,
+    ];
+    let previousPoint = firstPoint;
+
+    for (const point of remainingPoints) {
+      const x = scaleX(point.milliseconds).toFixed(2);
+      const y = scaleY(point.value).toFixed(2);
+      if (item.curve === 'step_after') {
+        commands.push(`L ${x} ${scaleY(previousPoint.value).toFixed(2)}`);
+      }
+      commands.push(`L ${x} ${y}`);
+      previousPoint = point;
+    }
+
+    return commands.join(' ');
   }
 
   const gridLines = Array.from(
@@ -212,7 +225,7 @@ export function HistoricalLineChart({
           />
 
           {normalizedSeries.map((item) => {
-            const path = createPath(item.points);
+            const path = createPath(item);
 
             return (
               <g key={item.label}>

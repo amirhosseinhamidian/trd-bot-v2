@@ -15,11 +15,12 @@ import type {
   DatasetSortField,
   DatasetSummary,
   DatasetTimeframe,
+  ExperimentAnalyticsReport,
+  ExperimentComparisonMetric,
+  ExperimentComparisonResult,
   ExperimentSortDirection,
   ExperimentSortField,
   ExperimentSummary,
-  ExperimentComparisonMetric,
-  ExperimentComparisonResult,
   ExperimentPerformanceSeries,
   ExperimentReplayVerification,
   HistoricalDatasetCommitRequest,
@@ -723,6 +724,16 @@ export async function getExperimentPerformanceSeries(
 
   return getJson<ExperimentPerformanceSeries>(
     `/api/v1/research/experiments/${encodedExperimentId}/performance-series`,
+  );
+}
+
+export async function getExperimentAnalytics(
+  experimentId: string,
+): Promise<ExperimentAnalyticsReport> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+
+  return getJson<ExperimentAnalyticsReport>(
+    `/api/v1/research/experiments/${encodedExperimentId}/analytics`,
   );
 }
 

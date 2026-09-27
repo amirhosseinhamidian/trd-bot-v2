@@ -259,6 +259,8 @@ describe('research API client', () => {
       experiment_id: 'experiment-1234567890abcdef',
       dataset_id: 'dataset-123',
       benchmark_type: 'buy_and_hold',
+      period_start: '2026-08-01T00:00:00Z',
+      period_end: '2026-08-31T23:00:00Z',
       strategy: {
         run_id: 'backtest-123',
         starting_balance: '10000',
@@ -266,6 +268,22 @@ describe('research API client', () => {
         total_return: '0.01',
         max_drawdown_fraction: '0',
         points: [],
+        chart_points: [
+          {
+            timestamp: '2026-08-01T00:00:00Z',
+            balance: '10000',
+            drawdown_fraction: '0',
+            kind: 'period_start',
+            trade_number: null,
+          },
+          {
+            timestamp: '2026-08-31T23:00:00Z',
+            balance: '10100',
+            drawdown_fraction: '0',
+            kind: 'period_end',
+            trade_number: null,
+          },
+        ],
       },
       benchmark: {
         run_id: 'benchmark-123',
@@ -274,6 +292,22 @@ describe('research API client', () => {
         total_return: '0.005',
         max_drawdown_fraction: '0',
         points: [],
+        chart_points: [
+          {
+            timestamp: '2026-08-01T00:00:00Z',
+            balance: '10000',
+            drawdown_fraction: '0',
+            kind: 'period_start',
+            trade_number: null,
+          },
+          {
+            timestamp: '2026-08-31T23:00:00Z',
+            balance: '10050',
+            drawdown_fraction: '0',
+            kind: 'period_end',
+            trade_number: null,
+          },
+        ],
       },
       interpretation: 'historical_research_only',
     };

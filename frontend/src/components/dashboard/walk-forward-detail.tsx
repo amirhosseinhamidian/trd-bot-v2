@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { WalkForwardAnalyticsCharts } from '@/components/dashboard/walk-forward-analytics-charts';
 import { getWalkForwardDetailCopy } from '@/components/dashboard/walk-forward-detail-copy';
 import {
   Badge,
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui';
 import type {
   HistoricalFoldReturnDirection,
+  ResearchMetricKey,
   WalkForwardRunSummary,
   WalkForwardStabilityReport,
 } from '@/lib/api/types';
@@ -84,6 +86,10 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
   const copy = getWalkForwardDetailCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const strategyDisplayName = getStrategyDisplayName(run.strategy_name, locale);
+  const metricLabel = (key: ResearchMetricKey): string =>
+    copy.metricLabels[key as keyof typeof copy.metricLabels] ?? key;
+  const metricDescription = (key: ResearchMetricKey, fallback: string): string =>
+    copy.metricDescriptions[key as keyof typeof copy.metricDescriptions] ?? fallback;
 
   return (
     <div dir={direction} className="space-y-6">
@@ -143,7 +149,12 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
 
             <Metric
               label={copy.fields.foldsWithTrades}
-              value={formatNumber(run.folds_with_trades, locale)}
+              value={formatNumber(stability.folds_with_trades, locale)}
+            />
+
+            <Metric
+              label={copy.fields.foldsWithoutTrades}
+              value={formatNumber(stability.folds_without_trades, locale)}
             />
 
             <Metric label={copy.fields.mode} value={copy.modes[run.walk_forward_config.mode]} />
@@ -178,6 +189,26 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             <Metric
               label={copy.fields.positiveFraction}
               value={formatPercent(stability.positive_return_fraction, locale)}
+            />
+
+            <Metric
+              label={copy.fields.positiveFolds}
+              value={formatNumber(stability.positive_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.negativeFolds}
+              value={formatNumber(stability.negative_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.flatFolds}
+              value={formatNumber(stability.flat_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.tradedFoldFraction}
+              value={formatPercent(stability.traded_fold_fraction, locale)}
             />
 
             <Metric
@@ -216,6 +247,11 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             />
 
             <Metric
+              label={copy.fields.returnConsistency}
+              value={formatPercent(stability.return_consistency, locale)}
+            />
+
+            <Metric
               label={copy.fields.medianExcessReturn}
               value={formatPercent(stability.median_excess_return, locale)}
             />
@@ -223,6 +259,16 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             <Metric
               label={copy.fields.worstDrawdown}
               value={formatPercent(stability.worst_max_drawdown_fraction, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstReturnFold}
+              value={formatNumber(stability.worst_return_fold_number, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstDrawdownFold}
+              value={formatNumber(stability.worst_drawdown_fold_number, locale)}
             />
 
             <Metric
@@ -234,9 +280,16 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
               label={copy.fields.underperformingFolds}
               value={formatNumber(stability.underperforming_benchmark_folds, locale)}
             />
+
+            <Metric
+              label={copy.fields.benchmarkTies}
+              value={formatNumber(stability.benchmark_ties, locale)}
+            />
           </dl>
         </CardContent>
       </Card>
+
+      <WalkForwardAnalyticsCharts locale={locale} stability={stability} />
 
       <Card>
         <CardHeader>
@@ -254,6 +307,8 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
                 <TableHead>{copy.fields.benchmarkReturn}</TableHead>
                 <TableHead>{copy.fields.excessReturn}</TableHead>
                 <TableHead>{copy.fields.drawdown}</TableHead>
+                <TableHead>{copy.fields.benchmarkDrawdown}</TableHead>
+                <TableHead>{copy.fields.tradeStatus}</TableHead>
                 <TableHead>{copy.fields.direction}</TableHead>
               </TableRow>
             </TableHeader>
@@ -275,6 +330,18 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
                     {formatPercent(fold.max_drawdown_fraction, locale)}
                   </TableCell>
 
+                  <TableCell dir="ltr">
+                    {formatPercent(fold.benchmark_max_drawdown_fraction, locale)}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge variant={fold.has_trades ? 'success' : 'warning'}>
+                      {fold.has_trades
+                        ? copy.tradeStatuses.withTrades
+                        : copy.tradeStatuses.withoutTrades}
+                    </Badge>
+                  </TableCell>
+
                   <TableCell>
                     <Badge variant={directionVariant(fold.return_direction)}>
                       {copy.directions[fold.return_direction]}
@@ -284,6 +351,35 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{copy.metricDefinitions}</CardTitle>
+          <CardDescription>{copy.metricDefinitionsDescription}</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <dl className="grid gap-4 lg:grid-cols-2">
+            {stability.metric_definitions.map((definition) => (
+              <div
+                key={definition.key}
+                className="rounded-xl border border-app-border bg-app-surface-muted p-4"
+              >
+                <dt className="font-semibold text-app-foreground">{metricLabel(definition.key)}</dt>
+                <dd className="mt-2 text-sm leading-6 text-app-muted">
+                  {metricDescription(definition.key, definition.definition)}
+                </dd>
+                <dd dir="ltr" className="mt-3 font-mono text-xs break-all text-app-accent">
+                  {definition.formula}
+                </dd>
+                <dd className="mt-3 text-xs text-app-muted">
+                  {copy.metricPreferences[definition.preference]}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </CardContent>
       </Card>
 
