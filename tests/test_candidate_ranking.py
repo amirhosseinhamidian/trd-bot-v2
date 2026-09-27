@@ -167,6 +167,9 @@ def test_ranking_is_deterministic_for_input_order() -> None:
     assert tuple(entry.candidate.candidate_id for entry in forward.entries) == tuple(
         entry.candidate.candidate_id for entry in reverse.entries
     )
+    assert tuple(entry.candidate.candidate_id for entry in forward.entries) == tuple(
+        sorted((first.candidate_id, second.candidate_id))
+    )
 
 
 def test_ranker_excludes_non_selectable_candidates() -> None:

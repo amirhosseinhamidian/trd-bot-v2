@@ -12,6 +12,7 @@ from trd_bot.research.candidate_journal import (
     CandidateJournalEntry,
 )
 from trd_bot.research.candidate_projection import (
+    CandidateJournalOccurrence,
     CandidateJournalProjectionReader,
     CandidateProjection,
 )
@@ -80,6 +81,9 @@ def test_list_candidate_projections_returns_attempted_candidates() -> None:
     assert all("trade_plan" not in item for item in payload["items"])
     assert all(item["strategy_name"] for item in payload["items"])
     assert all(item["strategy_version"] for item in payload["items"])
+    assert all(item["latest_rank"] >= 1 for item in payload["items"])
+    assert all(item["latest_ranking_score"] for item in payload["items"])
+    assert all(item["latest_decision_evidence"] for item in payload["items"])
 
 
 def test_list_candidate_projections_uses_repository_pagination() -> None:
@@ -118,6 +122,9 @@ def test_get_candidate_projection_returns_complete_candidate_snapshot() -> None:
     )
     assert payload["latest"]["selected"] is True
     assert payload["latest"]["position_id"] == entries[0].position_id
+    assert payload["latest"]["decision_evidence"]["evidence_version"] == (
+        "candidate-decision-evidence-v1"
+    )
 
 
 def test_candidate_lineage_returns_persisted_occurrences() -> None:
@@ -159,3 +166,29 @@ def test_candidate_projection_rejects_invalid_pagination() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_candidate_api_marks_legacy_missing_breakdown_without_fabricating_evidence() -> None:
+    journal = CandidateJournalBuilder.from_lifecycle(build_no_position_lifecycle())
+    projection = CandidateJournalProjectionReader.build((journal,))[0]
+    occurrence_payload = projection.latest.model_dump(mode="python")
+    occurrence_payload.pop("decision_evidence")
+    legacy_occurrence = CandidateJournalOccurrence.model_validate(occurrence_payload)
+    legacy_projection = CandidateProjection(
+        candidate=legacy_occurrence.candidate,
+        latest=legacy_occurrence,
+        history=(legacy_occurrence,),
+    )
+    repository = InMemoryCandidateProjectionRepository((legacy_projection,))
+    application = FastAPI()
+    application.include_router(router)
+    application.dependency_overrides[get_candidate_projection_repository] = lambda: repository
+    client = TestClient(application)
+
+    response = client.get("/research/candidates")
+
+    assert response.status_code == 200
+    item = response.json()["items"][0]
+    assert item["latest_rank"] == legacy_occurrence.rank
+    assert item["latest_ranking_score"] == str(legacy_occurrence.ranking_score)
+    assert item["latest_decision_evidence"] is None

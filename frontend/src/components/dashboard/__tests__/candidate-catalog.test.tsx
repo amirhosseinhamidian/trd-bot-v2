@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import CandidateCatalog from '@/components/dashboard/candidate-catalog';
-import type { CandidateProjectionSummary, Page } from '@/lib/api/types';
+import type {
+  CandidateDecisionEvidence,
+  CandidateProjectionSummary,
+  CandidateRiskCheck,
+  Page,
+} from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getCandidateProjections: vi.fn(),
@@ -12,6 +17,113 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/api/client', () => ({
   getCandidateProjections: mocks.getCandidateProjections,
 }));
+
+const riskCheckNames = [
+  'candidate_selectable',
+  'portfolio_active',
+  'dataset_match',
+  'portfolio_capacity',
+  'rank_limit',
+  'ranking_score',
+  'reward_risk',
+  'simulated_budget',
+] as const;
+
+function makeRiskChecks(rejected: boolean): CandidateRiskCheck[] {
+  return riskCheckNames.map((name) =>
+    name === 'reward_risk' && rejected
+      ? {
+          name,
+          passed: false,
+          actual_value: '1.20',
+          limit_value: '1.50',
+          reason: 'Reward-to-risk ratio is below the configured floor.',
+        }
+      : {
+          name,
+          passed: true,
+          actual_value: 'true',
+          limit_value: 'true',
+          reason: 'Configured risk rule passed.',
+        },
+  );
+}
+
+function makeDecisionEvidence(
+  candidateId: string,
+  outcome: 'approved' | 'rejected' | 'not_evaluated' = 'approved',
+): CandidateDecisionEvidence {
+  return {
+    evidence_version: 'candidate-decision-evidence-v1',
+    candidate_id: candidateId,
+    ranking: {
+      score_version: 'candidate-ranking-score-v1',
+      candidate_id: candidateId,
+      rank: 1,
+      total_score: '0.818000',
+      formula: 'sum(weighted_components)',
+      components: [
+        {
+          name: 'confidence',
+          source_component: 'confidence',
+          raw_value: '0.820000',
+          weight: '0.450000',
+          weighted_value: '0.369000',
+          formula: 'round_half_up(raw_value * weight, 0.000001)',
+        },
+        {
+          name: 'signal_quality',
+          source_component: 'signal_strength',
+          raw_value: '0.740000',
+          weight: '0.350000',
+          weighted_value: '0.259000',
+          formula: 'round_half_up(raw_value * weight, 0.000001)',
+        },
+        {
+          name: 'freshness',
+          source_component: 'freshness',
+          raw_value: '0.950000',
+          weight: '0.200000',
+          weighted_value: '0.190000',
+          formula: 'round_half_up(raw_value * weight, 0.000001)',
+        },
+      ],
+      tie_break: {
+        tie_break_version: 'candidate-ranking-tie-break-v1',
+        rule: 'total_score_desc_then_candidate_id_asc',
+        applied: false,
+        tied_candidate_ids: [],
+        position_within_tie: null,
+      },
+    },
+    risk_compatibility:
+      outcome !== 'not_evaluated'
+        ? {
+            compatibility_version: 'candidate-risk-compatibility-v1',
+            status: 'evaluated',
+            affects_ranking_score: false,
+            decision: outcome,
+            passed_checks: outcome === 'rejected' ? 7 : 8,
+            failed_checks: outcome === 'rejected' ? 1 : 0,
+            compatibility_fraction: outcome === 'rejected' ? '0.875000' : '1.000000',
+            failed_check_names: outcome === 'rejected' ? ['reward_risk'] : [],
+            checks: makeRiskChecks(outcome === 'rejected'),
+            not_evaluated_reason: null,
+          }
+        : {
+            compatibility_version: 'candidate-risk-compatibility-v1',
+            status: 'not_evaluated',
+            affects_ranking_score: false,
+            decision: null,
+            passed_checks: 0,
+            failed_checks: 0,
+            compatibility_fraction: null,
+            failed_check_names: [],
+            checks: [],
+            not_evaluated_reason: 'position_opened',
+          },
+  };
+}
 
 function makeCandidate(candidateId: string): CandidateProjectionSummary {
   return {
@@ -33,6 +145,9 @@ function makeCandidate(candidateId: string): CandidateProjectionSummary {
     occurrence_count: 1,
     latest_journal_id: 'journal-0000000000000001',
     latest_recorded_at: '2026-08-26T12:00:00Z',
+    latest_rank: 1,
+    latest_ranking_score: '0.818000',
+    latest_decision_evidence: makeDecisionEvidence(candidateId),
     latest_occurrence_type: 'attempted',
     latest_replay_status: 'opened',
     latest_risk_decision: 'approved',
@@ -51,6 +166,20 @@ function makeSkippedCandidate(candidateId: string): CandidateProjectionSummary {
     latest_replay_status: null,
     latest_risk_decision: null,
     latest_skip_reason: 'position_opened',
+    latest_decision_evidence: makeDecisionEvidence(candidateId, 'not_evaluated'),
+    selected: false,
+    position_id: null,
+    exit_reason: null,
+  };
+}
+
+function makeRejectedCandidate(candidateId: string): CandidateProjectionSummary {
+  return {
+    ...makeCandidate(candidateId),
+    status: 'candidate',
+    latest_replay_status: 'risk_rejected',
+    latest_risk_decision: 'rejected',
+    latest_decision_evidence: makeDecisionEvidence(candidateId, 'rejected'),
     selected: false,
     position_id: null,
     exit_reason: null,
@@ -87,8 +216,40 @@ describe('CandidateCatalog', () => {
 
     expect(screen.getByText('candidate-skipped')).toBeInTheDocument();
     expect(screen.getByText('Skipped')).toBeInTheDocument();
-    expect(screen.getAllByText('Not evaluated')).toHaveLength(2);
-    expect(screen.getByText('Earlier candidate position opened')).toBeInTheDocument();
+    expect(screen.getAllByText('Not evaluated').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Earlier candidate position opened').length).toBeGreaterThanOrEqual(
+      1,
+    );
+  });
+
+  it('shows versioned score contributions and post-ranking risk evidence', () => {
+    render(
+      <CandidateCatalog
+        locale="en"
+        initialPage={makePage([makeRejectedCandidate('candidate-explained')], 0)}
+      />,
+    );
+
+    expect(screen.getByText('Why this rank?')).toBeInTheDocument();
+    expect(screen.getByText(/candidate-ranking-score-v1/)).toBeInTheDocument();
+    expect(screen.getByText('Signal quality')).toBeInTheDocument();
+    expect(screen.getByText('87.5% · 7/8')).toBeInTheDocument();
+    expect(screen.getByText('Reward to risk')).toBeInTheDocument();
+    expect(
+      screen.getByText('Reward-to-risk ratio is below the configured floor.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/does not affect the ranking score/i)).toBeInTheDocument();
+  });
+
+  it('marks legacy records when breakdown evidence is unavailable', () => {
+    const legacy = makeCandidate('candidate-legacy');
+    legacy.latest_decision_evidence = null;
+
+    render(<CandidateCatalog locale="en" initialPage={makePage([legacy], 0)} />);
+
+    expect(
+      screen.getByText('Breakdown evidence is unavailable for this legacy record'),
+    ).toBeInTheDocument();
   });
 
   it('loads the next persisted candidate page without exposing trade actions', async () => {

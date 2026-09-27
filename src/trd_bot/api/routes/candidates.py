@@ -9,6 +9,7 @@ from trd_bot.api.dependencies import get_candidate_projection_repository
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.db import SqlAlchemyCandidateProjectionRepository
 from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.research.candidate_decision_evidence import CandidateDecisionEvidence
 from trd_bot.research.candidate_projection import (
     CandidateJournalOccurrence,
     CandidateOccurrenceType,
@@ -56,6 +57,9 @@ class CandidateProjectionSummary(BaseModel):
     occurrence_count: int = Field(ge=1)
     latest_journal_id: str
     latest_recorded_at: datetime
+    latest_rank: int = Field(ge=1)
+    latest_ranking_score: Decimal = Field(ge=0, le=1)
+    latest_decision_evidence: CandidateDecisionEvidence | None = None
     latest_occurrence_type: CandidateOccurrenceType
     latest_replay_status: CandidateReplayStatus | None
     latest_risk_decision: CandidateRiskDecision | None
@@ -84,6 +88,9 @@ class CandidateProjectionSummary(BaseModel):
             occurrence_count=len(projection.history),
             latest_journal_id=latest.journal_id,
             latest_recorded_at=latest.recorded_at,
+            latest_rank=latest.rank,
+            latest_ranking_score=latest.ranking_score,
+            latest_decision_evidence=latest.decision_evidence,
             latest_occurrence_type=latest.occurrence_type,
             latest_replay_status=latest.replay_status,
             latest_risk_decision=latest.risk_decision,

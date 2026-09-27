@@ -1220,6 +1220,73 @@ export type CandidateOccurrenceType = 'attempted' | 'skipped';
 
 export type CandidateReplaySkipReason = 'position_opened';
 
+export type CandidateRiskCheckName =
+  | 'candidate_selectable'
+  | 'portfolio_active'
+  | 'dataset_match'
+  | 'portfolio_capacity'
+  | 'rank_limit'
+  | 'ranking_score'
+  | 'reward_risk'
+  | 'simulated_budget';
+
+export type CandidateRankingEvidenceComponentName = 'confidence' | 'signal_quality' | 'freshness';
+
+export interface CandidateRankingEvidenceComponent {
+  name: CandidateRankingEvidenceComponentName;
+  source_component: 'confidence' | 'signal_strength' | 'freshness';
+  raw_value: string;
+  weight: string;
+  weighted_value: string;
+  formula: 'round_half_up(raw_value * weight, 0.000001)';
+}
+
+export interface CandidateRankingTieBreakEvidence {
+  tie_break_version: 'candidate-ranking-tie-break-v1';
+  rule: 'total_score_desc_then_candidate_id_asc';
+  applied: boolean;
+  tied_candidate_ids: string[];
+  position_within_tie: number | null;
+}
+
+export interface CandidateRankingBreakdown {
+  score_version: 'candidate-ranking-score-v1';
+  candidate_id: string;
+  rank: number;
+  total_score: string;
+  formula: 'sum(weighted_components)';
+  components: CandidateRankingEvidenceComponent[];
+  tie_break: CandidateRankingTieBreakEvidence;
+}
+
+export interface CandidateRiskCheck {
+  name: CandidateRiskCheckName;
+  passed: boolean;
+  actual_value: string;
+  limit_value: string | null;
+  reason: string;
+}
+
+export interface CandidateRiskCompatibilityBreakdown {
+  compatibility_version: 'candidate-risk-compatibility-v1';
+  status: 'evaluated' | 'not_evaluated';
+  affects_ranking_score: false;
+  decision: CandidateRiskDecision | null;
+  passed_checks: number;
+  failed_checks: number;
+  compatibility_fraction: string | null;
+  failed_check_names: CandidateRiskCheckName[];
+  checks: CandidateRiskCheck[];
+  not_evaluated_reason: CandidateReplaySkipReason | null;
+}
+
+export interface CandidateDecisionEvidence {
+  evidence_version: 'candidate-decision-evidence-v1';
+  candidate_id: string;
+  ranking: CandidateRankingBreakdown;
+  risk_compatibility: CandidateRiskCompatibilityBreakdown;
+}
+
 export type CandidateExitReason =
   | 'invalidation'
   | 'target'
@@ -1244,6 +1311,9 @@ export interface CandidateProjectionSummary {
   occurrence_count: number;
   latest_journal_id: string;
   latest_recorded_at: string;
+  latest_rank: number;
+  latest_ranking_score: string;
+  latest_decision_evidence: CandidateDecisionEvidence | null;
   latest_occurrence_type: CandidateOccurrenceType;
   latest_replay_status: CandidateReplayStatus | null;
   latest_risk_decision: CandidateRiskDecision | null;
@@ -1273,6 +1343,8 @@ export interface ResearchCandidateSnapshot {
 export interface CandidateJournalOccurrence {
   journal_id: string;
   recorded_at: string;
+  evaluated_at: string;
+  portfolio_id: string;
   candidate: ResearchCandidateSnapshot;
   rank: number;
   ranking_score: string;
@@ -1283,6 +1355,7 @@ export interface CandidateJournalOccurrence {
   selected: boolean;
   position_id: string | null;
   exit_reason: CandidateExitReason | null;
+  decision_evidence: CandidateDecisionEvidence | null;
 }
 
 export interface CandidateProjectionDetail {

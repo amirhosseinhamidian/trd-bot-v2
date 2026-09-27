@@ -7,13 +7,17 @@ from tests.test_candidate_skipped_lineage import build_skipping_lifecycle
 from trd_bot.api.dependencies import get_candidate_projection_repository
 from trd_bot.api.routes.candidates import router
 from trd_bot.db import CandidateProjectionRow, SqlAlchemyCandidateProjectionRepository
+from trd_bot.research.candidate_decision_evidence import CandidateRiskCompatibilityStatus
 from trd_bot.research.candidate_journal import CandidateJournalBuilder
 from trd_bot.research.candidate_projection import (
     CandidateJournalProjectionReader,
     CandidateOccurrenceType,
     CandidateProjection,
 )
-from trd_bot.research.dataset_replay_orchestration import CandidateReplaySkipReason
+from trd_bot.research.dataset_replay_orchestration import (
+    CandidateReplayBatchResult,
+    CandidateReplaySkipReason,
+)
 
 
 def build_skipped_projection() -> CandidateProjection:
@@ -39,6 +43,15 @@ def test_projection_catalogs_skipped_candidate_without_replay_or_risk_outcomes()
     assert projection.latest.selected is False
     assert projection.latest.position_id is None
     assert projection.latest.exit_reason is None
+    assert projection.latest.decision_evidence is not None
+    assert (
+        projection.latest.decision_evidence.risk_compatibility.status
+        is CandidateRiskCompatibilityStatus.NOT_EVALUATED
+    )
+    assert (
+        projection.latest.decision_evidence.risk_compatibility.not_evaluated_reason
+        is CandidateReplaySkipReason.POSITION_OPENED
+    )
 
 
 def test_projection_reader_catalogs_every_candidate_with_skipped_snapshot() -> None:
@@ -50,6 +63,20 @@ def test_projection_reader_catalogs_every_candidate_with_skipped_snapshot() -> N
     assert {item.candidate.candidate_id for item in projections} == {
         entry.candidate.candidate_id for entry in entries
     }
+
+
+def test_legacy_missing_peer_snapshots_do_not_fabricate_tie_break_evidence() -> None:
+    lifecycle, _ = build_skipping_lifecycle()
+    replay_payload = lifecycle.replay.model_dump(mode="python")
+    replay_payload.pop("skipped")
+    legacy_replay = CandidateReplayBatchResult.model_validate(replay_payload)
+    legacy_lifecycle = lifecycle.model_copy(update={"replay": legacy_replay})
+    journal = CandidateJournalBuilder.from_lifecycle(legacy_lifecycle)
+
+    projections = CandidateJournalProjectionReader.build((journal,))
+
+    assert projections
+    assert all(item.latest.decision_evidence is None for item in projections)
 
 
 def test_skipped_projection_round_trips_through_repository_with_null_outcomes() -> None:
@@ -128,3 +155,7 @@ def test_candidate_api_exposes_skipped_semantics_without_fabricated_outcomes() -
     assert skipped["latest_risk_decision"] is None
     assert skipped["latest_skip_reason"] == "position_opened"
     assert skipped["selected"] is False
+    assert skipped["latest_decision_evidence"]["ranking"]["score_version"] == (
+        "candidate-ranking-score-v1"
+    )
+    assert skipped["latest_decision_evidence"]["risk_compatibility"]["status"] == ("not_evaluated")

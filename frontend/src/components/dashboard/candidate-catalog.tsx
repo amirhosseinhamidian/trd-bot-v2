@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
+import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getCandidateCopy } from '@/components/dashboard/candidate-copy';
 import {
@@ -18,7 +19,7 @@ import {
   Spinner,
 } from '@/components/ui';
 import { getCandidateProjections } from '@/lib/api/client';
-import type { CandidateProjectionSummary, Page } from '@/lib/api/types';
+import type { CandidateDecisionEvidence, CandidateProjectionSummary, Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 12;
@@ -46,6 +47,28 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   return new Intl.NumberFormat(numberLocale(locale), {
     maximumFractionDigits: 6,
   }).format(parsedValue);
+}
+
+function formatPercent(value: string, locale: DashboardLocale): string {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat(numberLocale(locale), {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  }).format(parsedValue);
+}
+
+function formatRiskCompatibility(
+  evidence: CandidateDecisionEvidence | null,
+  locale: DashboardLocale,
+  fallback: string,
+): string {
+  const fraction = evidence?.risk_compatibility.compatibility_fraction;
+  return fraction === null || fraction === undefined ? fallback : formatPercent(fraction, locale);
 }
 
 function formatDate(value: string, locale: DashboardLocale): string {
@@ -177,7 +200,14 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                 </CardHeader>
 
                 <CardContent className="space-y-6 pt-6">
-                  <dl className="grid gap-3 sm:grid-cols-3">
+                  <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.rank}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatNumber(candidate.latest_rank, locale)}
+                      </dd>
+                    </div>
+
                     <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
                       <dt className="text-xs text-app-muted">{copy.fields.confidence}</dt>
                       <dd
@@ -199,12 +229,38 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                     </div>
 
                     <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.rankingScore}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {formatDecimal(candidate.latest_ranking_score, locale)}
+                      </dd>
+                    </div>
+
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.riskCompatibility}</dt>
+                      <dd className="mt-2 text-sm font-semibold text-app-foreground">
+                        {formatRiskCompatibility(
+                          candidate.latest_decision_evidence,
+                          locale,
+                          copy.notEvaluated,
+                        )}
+                      </dd>
+                    </div>
+
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
                       <dt className="text-xs text-app-muted">{copy.fields.occurrences}</dt>
                       <dd className="mt-2 text-sm text-app-foreground">
                         {formatNumber(candidate.occurrence_count, locale)}
                       </dd>
                     </div>
                   </dl>
+
+                  <CandidateRankingBreakdown
+                    evidence={candidate.latest_decision_evidence}
+                    locale={locale}
+                  />
 
                   <dl className="grid gap-4 sm:grid-cols-2">
                     <div>

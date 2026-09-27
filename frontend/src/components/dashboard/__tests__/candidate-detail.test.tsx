@@ -17,6 +17,8 @@ function makeOccurrence(journalId: string, recordedAt: string): CandidateJournal
   return {
     journal_id: journalId,
     recorded_at: recordedAt,
+    evaluated_at: recordedAt,
+    portfolio_id: 'portfolio-0000000000000001',
     candidate: {
       candidate_id: 'candidate-1',
       status: 'selected',
@@ -46,6 +48,7 @@ function makeOccurrence(journalId: string, recordedAt: string): CandidateJournal
     selected: true,
     position_id: 'position-1',
     exit_reason: 'target',
+    decision_evidence: null,
   };
 }
 

@@ -3,13 +3,15 @@ import type {
   CandidateAction,
   CandidateExitReason,
   CandidateOccurrenceType,
+  CandidateRankingEvidenceComponentName,
   CandidateReplaySkipReason,
   CandidateReplayStatus,
+  CandidateRiskCheckName,
   CandidateRiskDecision,
   CandidateStatus,
 } from '@/lib/api/types';
 
-type CandidateCopy = {
+export type CandidateCopy = {
   eyebrow: string;
   title: string;
   description: string;
@@ -27,8 +29,23 @@ type CandidateCopy = {
   selected: string;
   notSelected: string;
   notEvaluated: string;
+  unavailableEvidence: string;
   viewDetails: string;
+  rankingBreakdown: string;
+  rankingBreakdownDescription: string;
+  scoreVersion: string;
+  tieBreakApplied: string;
+  tieBreakNotApplied: string;
+  tieOrder: string;
+  riskCompatibilityDoesNotAffectRank: string;
+  allRiskChecksPassed: string;
+  failedRiskChecks: string;
+  rankingComponents: Record<CandidateRankingEvidenceComponentName, string>;
+  riskChecks: Record<CandidateRiskCheckName, string>;
   fields: {
+    rank: string;
+    rankingScore: string;
+    riskCompatibility: string;
     confidence: string;
     signalScore: string;
     strategy: string;
@@ -70,8 +87,37 @@ const copies: Record<DashboardLocale, CandidateCopy> = {
     selected: 'انتخاب‌شده',
     notSelected: 'انتخاب‌نشده',
     notEvaluated: 'ارزیابی‌نشده',
+    unavailableEvidence: 'شاهد breakdown برای این رکورد قدیمی در دسترس نیست',
     viewDetails: 'مشاهده جزئیات و lineage',
+    rankingBreakdown: 'چرا این رتبه؟',
+    rankingBreakdownDescription: 'سهم دقیق هر مؤلفه در امتیاز رتبه‌بندی.',
+    scoreVersion: 'نسخه فرمول',
+    tieBreakApplied: 'امتیاز برابر بود و Candidate ID صعودی tie-break را تعیین کرد.',
+    tieBreakNotApplied: 'رتبه بدون نیاز به tie-break امتیاز برابر تعیین شد.',
+    tieOrder: 'ترتیب Candidateهای هم‌امتیاز',
+    riskCompatibilityDoesNotAffectRank:
+      'سازگاری ریسک پس از رتبه‌بندی ارزیابی می‌شود و در امتیاز ranking اثر ندارد.',
+    allRiskChecksPassed: 'همه کنترل‌های ریسک عبور کرده‌اند.',
+    failedRiskChecks: 'کنترل‌های ریسک ناموفق',
+    rankingComponents: {
+      confidence: 'اطمینان',
+      signal_quality: 'کیفیت سیگنال',
+      freshness: 'تازگی',
+    },
+    riskChecks: {
+      candidate_selectable: 'قابل انتخاب بودن Candidate',
+      portfolio_active: 'فعال بودن Portfolio',
+      dataset_match: 'تطابق Dataset',
+      portfolio_capacity: 'ظرفیت Portfolio',
+      rank_limit: 'سقف رتبه',
+      ranking_score: 'کف امتیاز ranking',
+      reward_risk: 'نسبت پاداش به ریسک',
+      simulated_budget: 'بودجه شبیه‌سازی‌شده',
+    },
     fields: {
+      rank: 'رتبه',
+      rankingScore: 'امتیاز رتبه‌بندی',
+      riskCompatibility: 'سازگاری ریسک',
       confidence: 'اطمینان',
       signalScore: 'امتیاز سیگنال',
       strategy: 'استراتژی',
@@ -141,8 +187,37 @@ const copies: Record<DashboardLocale, CandidateCopy> = {
     selected: 'Selected',
     notSelected: 'Not selected',
     notEvaluated: 'Not evaluated',
+    unavailableEvidence: 'Breakdown evidence is unavailable for this legacy record',
     viewDetails: 'View details and lineage',
+    rankingBreakdown: 'Why this rank?',
+    rankingBreakdownDescription: 'Exact contribution of every ranking score component.',
+    scoreVersion: 'Formula version',
+    tieBreakApplied: 'Scores were equal; ascending Candidate ID determined the tie-break.',
+    tieBreakNotApplied: 'No equal-score tie-break was needed for this rank.',
+    tieOrder: 'Equal-score candidate order',
+    riskCompatibilityDoesNotAffectRank:
+      'Risk compatibility is evaluated after ranking and does not affect the ranking score.',
+    allRiskChecksPassed: 'All configured risk checks passed.',
+    failedRiskChecks: 'Failed risk checks',
+    rankingComponents: {
+      confidence: 'Confidence',
+      signal_quality: 'Signal quality',
+      freshness: 'Freshness',
+    },
+    riskChecks: {
+      candidate_selectable: 'Candidate selectable',
+      portfolio_active: 'Portfolio active',
+      dataset_match: 'Dataset match',
+      portfolio_capacity: 'Portfolio capacity',
+      rank_limit: 'Rank limit',
+      ranking_score: 'Ranking score floor',
+      reward_risk: 'Reward to risk',
+      simulated_budget: 'Simulated budget',
+    },
     fields: {
+      rank: 'Rank',
+      rankingScore: 'Ranking score',
+      riskCompatibility: 'Risk compatibility',
       confidence: 'Confidence',
       signalScore: 'Signal score',
       strategy: 'Strategy',
