@@ -1,6 +1,7 @@
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   ArchitectureCandidate,
+  BackgroundJobStatus,
   MonitoringOverallStatus,
   RecommendationSeverity,
   SystemMetricName,
@@ -16,6 +17,37 @@ export type MonitoringCopy = {
   latestMetricsDescription: string;
   recommendations: string;
   recommendationsDescription: string;
+  operations: string;
+  operationsDescription: string;
+  queue: string;
+  providers: string;
+  imports: string;
+  averageDuration: string;
+  queued: string;
+  running: string;
+  stuck: string;
+  healthy: string;
+  unhealthy: string;
+  untested: string;
+  enabled: string;
+  succeeded: string;
+  failed: string;
+  recentSample: string;
+  noData: string;
+  recentJobs: string;
+  recentJobsDescription: string;
+  noRecentJobs: string;
+  jobId: string;
+  kind: string;
+  status: string;
+  progress: string;
+  error: string;
+  updatedAt: string;
+  latestTest: string;
+  latestSuccess: string;
+  latestFailure: string;
+  failureReasons: string;
+  noFailureReasons: string;
   emptyMetricsTitle: string;
   emptyMetricsDescription: string;
   emptyRecommendationsTitle: string;
@@ -27,6 +59,7 @@ export type MonitoringCopy = {
   severities: Record<RecommendationSeverity, string>;
   candidates: Record<ArchitectureCandidate, string>;
   metrics: Record<SystemMetricName, string>;
+  jobStatuses: Record<BackgroundJobStatus, string>;
 };
 
 const copies: Record<DashboardLocale, MonitoringCopy> = {
@@ -42,6 +75,38 @@ const copies: Record<DashboardLocale, MonitoringCopy> = {
     latestMetricsDescription: 'جدیدترین نمونه ثبت‌شده برای هر شاخص عملیاتی',
     recommendations: 'پیشنهادهای فعال معماری',
     recommendationsDescription: 'پیشنهادهایی که از چند پنجره متوالی شواهد عبور کرده‌اند',
+    operations: 'سلامت عملیاتی',
+    operationsDescription:
+      'وضعیت ماندگار اتصال‌های داده، ورودهای اخیر و صف worker؛ بدون نمایش payload یا اطلاعات محرمانه',
+    queue: 'صف پردازش',
+    providers: 'اتصال‌های داده',
+    imports: 'ورودهای اخیر',
+    averageDuration: 'میانگین زمان اجرا',
+    queued: 'در صف',
+    running: 'در حال اجرا',
+    stuck: 'گیرکرده',
+    healthy: 'سالم',
+    unhealthy: 'ناسالم',
+    untested: 'آزمایش‌نشده',
+    enabled: 'فعال',
+    succeeded: 'موفق',
+    failed: 'ناموفق',
+    recentSample: 'نمونه اخیر',
+    noData: 'داده‌ای نیست',
+    recentJobs: 'jobهای اخیر',
+    recentJobsDescription: 'وضعیت و پیشرفت persisted؛ شناسه worker و payload نمایش داده نمی‌شوند.',
+    noRecentJobs: 'هنوز jobی ثبت نشده است.',
+    jobId: 'شناسه job',
+    kind: 'نوع',
+    status: 'وضعیت',
+    progress: 'پیشرفت',
+    error: 'کد خطا',
+    updatedAt: 'آخرین تغییر',
+    latestTest: 'آخرین آزمایش',
+    latestSuccess: 'آخرین موفقیت',
+    latestFailure: 'آخرین شکست',
+    failureReasons: 'علت‌های شکست اخیر',
+    noFailureReasons: 'در نمونه اخیر شکست ثبت نشده است.',
     emptyMetricsTitle: 'هنوز متریکی ثبت نشده است',
     emptyMetricsDescription: 'Collector یا اسکریپت داده نمایشی را اجرا کنید.',
     emptyRecommendationsTitle: 'پیشنهاد فعالی وجود ندارد',
@@ -82,6 +147,13 @@ const copies: Record<DashboardLocale, MonitoringCopy> = {
       analytical_query_latency_p95: 'تأخیر P95 کوئری‌های تحلیلی',
       analytical_database_resource_share: 'سهم تحلیل از منابع دیتابیس',
     },
+    jobStatuses: {
+      queued: 'در صف',
+      running: 'در حال اجرا',
+      succeeded: 'موفق',
+      failed: 'ناموفق',
+      cancelled: 'لغوشده',
+    },
   },
   en: {
     eyebrow: 'Infrastructure capacity monitoring',
@@ -96,6 +168,39 @@ const copies: Record<DashboardLocale, MonitoringCopy> = {
     recommendations: 'Active architecture recommendations',
     recommendationsDescription:
       'Recommendations supported by evidence across consecutive evaluation windows',
+    operations: 'Operational health',
+    operationsDescription:
+      'Persisted provider, recent import, and worker queue health without exposing payloads or secrets',
+    queue: 'Worker queue',
+    providers: 'Data connections',
+    imports: 'Recent imports',
+    averageDuration: 'Average duration',
+    queued: 'Queued',
+    running: 'Running',
+    stuck: 'Stuck',
+    healthy: 'Healthy',
+    unhealthy: 'Unhealthy',
+    untested: 'Untested',
+    enabled: 'Enabled',
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    recentSample: 'Recent sample',
+    noData: 'No data',
+    recentJobs: 'Recent jobs',
+    recentJobsDescription:
+      'Persisted status and progress; worker identity and payload are not exposed.',
+    noRecentJobs: 'No jobs have been recorded yet.',
+    jobId: 'Job ID',
+    kind: 'Kind',
+    status: 'Status',
+    progress: 'Progress',
+    error: 'Error code',
+    updatedAt: 'Updated',
+    latestTest: 'Latest test',
+    latestSuccess: 'Latest success',
+    latestFailure: 'Latest failure',
+    failureReasons: 'Recent failure reasons',
+    noFailureReasons: 'No failures were recorded in the recent sample.',
     emptyMetricsTitle: 'No metrics recorded yet',
     emptyMetricsDescription: 'Run a collector or the monitoring demo seed script.',
     emptyRecommendationsTitle: 'No active recommendations',
@@ -136,6 +241,13 @@ const copies: Record<DashboardLocale, MonitoringCopy> = {
       time_series_query_latency_p95: 'Time-series query latency P95',
       analytical_query_latency_p95: 'Analytical query latency P95',
       analytical_database_resource_share: 'Analytical database resource share',
+    },
+    jobStatuses: {
+      queued: 'Queued',
+      running: 'Running',
+      succeeded: 'Succeeded',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
     },
   },
 };

@@ -8,8 +8,15 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui';
 import type {
+  BackgroundJobStatus,
   MonitoringOverallStatus,
   MonitoringSummary,
   RecommendationSeverity,
@@ -33,6 +40,14 @@ const severityVariants: Record<RecommendationSeverity, BadgeVariant> = {
   info: 'info',
   warning: 'warning',
   critical: 'danger',
+};
+
+const jobStatusVariants: Record<BackgroundJobStatus, BadgeVariant> = {
+  queued: 'info',
+  running: 'warning',
+  succeeded: 'success',
+  failed: 'danger',
+  cancelled: 'info',
 };
 
 const ratioMetricNames = new Set<SystemMetricSample['metric_name']>([
@@ -96,9 +111,46 @@ function removeDemoPrefix(title: string): string {
   return title.replace(/^\[DEMO\]\s*/u, '');
 }
 
+function formatCount(value: number, locale: DashboardLocale): string {
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
+function formatPercent(value: string | null, locale: DashboardLocale): string {
+  if (value === null) {
+    return '—';
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  }).format(parsed);
+}
+
+function formatDuration(value: string | null, locale: DashboardLocale): string {
+  if (value === null) {
+    return '—';
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return value;
+  }
+
+  const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(parsed);
+  return locale === 'fa' ? `${formatted} ثانیه` : `${formatted} seconds`;
+}
+
 export default function MonitoringDashboard({ locale, summary }: MonitoringDashboardProps) {
   const copy = getMonitoringCopy(locale);
   const isDemoRecommendation = (title: string) => title.startsWith('[DEMO]');
+  const operations = summary.operations;
 
   return (
     <div className="space-y-8">
@@ -127,6 +179,171 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
           {copy.capacityPlanningOnly}
         </div>
       </section>
+
+      {operations ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{copy.operations}</CardTitle>
+            <CardDescription>{copy.operationsDescription}</CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+                <p className="text-sm font-medium text-app-foreground">{copy.queue}</p>
+                <p className="mt-4 text-2xl font-bold text-app-foreground">
+                  {formatCount(operations.jobs.total_count, locale)}
+                </p>
+                <p className="mt-3 text-xs leading-6 text-app-muted">
+                  {copy.queued}: {formatCount(operations.jobs.queued_count, locale)} ·{' '}
+                  {copy.running}: {formatCount(operations.jobs.running_count, locale)} ·{' '}
+                  {copy.stuck}: {formatCount(operations.jobs.stuck_count, locale)}
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+                <p className="text-sm font-medium text-app-foreground">{copy.providers}</p>
+                <p className="mt-4 text-2xl font-bold text-app-foreground">
+                  {formatCount(operations.connections.total_count, locale)}
+                </p>
+                <p className="mt-3 text-xs leading-6 text-app-muted">
+                  {copy.healthy}: {formatCount(operations.connections.healthy_count, locale)} ·{' '}
+                  {copy.unhealthy}: {formatCount(operations.connections.unhealthy_count, locale)} ·{' '}
+                  {copy.untested}: {formatCount(operations.connections.untested_count, locale)}
+                </p>
+                {operations.connections.latest_error_code ? (
+                  <p dir="ltr" className="mt-2 text-left text-xs text-red-300">
+                    {operations.connections.latest_error_code}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs leading-5 text-app-muted">
+                  {copy.latestTest}:{' '}
+                  {operations.connections.latest_tested_at
+                    ? formatDate(operations.connections.latest_tested_at, locale)
+                    : copy.noData}
+                </p>
+              </article>
+
+              <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+                <p className="text-sm font-medium text-app-foreground">{copy.imports}</p>
+                <p dir="ltr" className="mt-4 text-left text-2xl font-bold text-app-foreground">
+                  {formatPercent(operations.imports.failure_rate, locale)}
+                </p>
+                <p className="mt-3 text-xs leading-6 text-app-muted">
+                  {copy.failed}: {formatCount(operations.imports.failed_count, locale)} ·{' '}
+                  {copy.succeeded}: {formatCount(operations.imports.succeeded_count, locale)} ·{' '}
+                  {copy.recentSample}: {formatCount(operations.imports.sample_size, locale)}
+                </p>
+                <dl className="mt-2 space-y-1 text-xs leading-5 text-app-muted">
+                  <div>
+                    <dt className="inline">{copy.latestSuccess}: </dt>
+                    <dd className="inline">
+                      {operations.imports.latest_success_at
+                        ? formatDate(operations.imports.latest_success_at, locale)
+                        : copy.noData}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline">{copy.latestFailure}: </dt>
+                    <dd className="inline">
+                      {operations.imports.latest_failure_at
+                        ? formatDate(operations.imports.latest_failure_at, locale)
+                        : copy.noData}
+                      {operations.imports.latest_failure_code
+                        ? ` · ${operations.imports.latest_failure_code}`
+                        : ''}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+
+              <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+                <p className="text-sm font-medium text-app-foreground">{copy.averageDuration}</p>
+                <p dir="ltr" className="mt-4 text-left text-2xl font-bold text-app-foreground">
+                  {formatDuration(operations.jobs.average_duration_seconds, locale)}
+                </p>
+                <p className="mt-3 text-xs leading-6 text-app-muted">
+                  {copy.recentSample}:{' '}
+                  {formatCount(operations.jobs.recent_terminal_sample_size, locale)}
+                </p>
+              </article>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
+              <div className="overflow-hidden rounded-2xl border border-app-border">
+                <div className="border-b border-app-border bg-app-surface-muted px-5 py-4">
+                  <h3 className="font-semibold text-app-foreground">{copy.recentJobs}</h3>
+                  <p className="mt-1 text-xs leading-5 text-app-muted">
+                    {copy.recentJobsDescription}
+                  </p>
+                </div>
+
+                {operations.jobs.recent_jobs.length === 0 ? (
+                  <p className="px-5 py-8 text-sm text-app-muted">{copy.noRecentJobs}</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{copy.jobId}</TableHead>
+                        <TableHead>{copy.kind}</TableHead>
+                        <TableHead>{copy.status}</TableHead>
+                        <TableHead>{copy.progress}</TableHead>
+                        <TableHead>{copy.error}</TableHead>
+                        <TableHead>{copy.updatedAt}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {operations.jobs.recent_jobs.map((job) => (
+                        <TableRow key={job.job_id}>
+                          <TableCell dir="ltr" className="font-mono text-xs">
+                            {job.job_id}
+                          </TableCell>
+                          <TableCell dir="ltr" className="text-xs">
+                            {job.kind}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={jobStatusVariants[job.status]}>
+                              {copy.jobStatuses[job.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell dir="ltr">{job.progress_percent}%</TableCell>
+                          <TableCell dir="ltr" className="text-xs">
+                            {job.error_code ?? '—'}
+                          </TableCell>
+                          <TableCell>{formatDate(job.updated_at, locale)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
+                <h3 className="font-semibold text-app-foreground">{copy.failureReasons}</h3>
+                {operations.jobs.failure_reasons.length === 0 ? (
+                  <p className="mt-4 text-sm leading-6 text-app-muted">{copy.noFailureReasons}</p>
+                ) : (
+                  <dl className="mt-4 space-y-3">
+                    {operations.jobs.failure_reasons.map((reason) => (
+                      <div
+                        key={reason.error_code}
+                        className="flex items-center justify-between gap-4 border-b border-app-border pb-3 last:border-0 last:pb-0"
+                      >
+                        <dt dir="ltr" className="text-left font-mono text-xs text-app-muted">
+                          {reason.error_code}
+                        </dt>
+                        <dd className="font-semibold text-app-foreground">
+                          {formatCount(reason.count, locale)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

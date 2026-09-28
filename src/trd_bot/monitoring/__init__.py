@@ -50,9 +50,15 @@ from trd_bot.monitoring.runtime_state import (
     MonitoringRuntimeStateRepository,
 )
 from trd_bot.monitoring.summary import (
+    ConnectionHealthSummary,
+    ImportOperationsSummary,
+    JobQueueSummary,
     MonitoringOverallStatus,
     MonitoringSummary,
     MonitoringSummaryBuilder,
+    OperationalFailureReason,
+    OperationalJobSummary,
+    OperationalMonitoringSummary,
 )
 
 __all__ = [
@@ -68,9 +74,12 @@ __all__ = [
     "CheckpointEvaluationResult",
     "CheckpointOutcome",
     "CollectorCycle",
+    "ConnectionHealthSummary",
+    "ImportOperationsSummary",
     "InMemoryArchitectureRecommendationRepository",
     "InMemoryMonitoringRuntimeStateRepository",
     "InMemorySystemMetricRepository",
+    "JobQueueSummary",
     "MetricSampleQuery",
     "MetricThresholdRule",
     "MonitoringCollectionResult",
@@ -82,6 +91,9 @@ __all__ = [
     "MonitoringSortDirection",
     "MonitoringSummary",
     "MonitoringSummaryBuilder",
+    "OperationalFailureReason",
+    "OperationalJobSummary",
+    "OperationalMonitoringSummary",
     "PeriodicMonitoringCollector",
     "RecommendationQuery",
     "RecommendationSeverity",
