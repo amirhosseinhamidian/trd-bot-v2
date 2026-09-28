@@ -239,6 +239,15 @@ from trd_bot.research.reporting import (
     StrategyEvaluationSummary,
     StrategyReportBuilder,
 )
+from trd_bot.research.risk_dashboard import (
+    PortfolioRiskSnapshot,
+    RiskBudgetUtilization,
+    RiskDashboardBuilder,
+    RiskDashboardReport,
+    RiskDecisionEvent,
+    RiskDecisionSummary,
+    RiskRejectionReasonSummary,
+)
 from trd_bot.research.risk_policy import (
     CandidateRiskAssessment,
     CandidateRiskCheck,
@@ -458,6 +467,7 @@ __all__ = [
     "OptimizationTrial",
     "OptimizationTrialEvaluation",
     "OptimizationTrialRejectionReason",
+    "PortfolioRiskSnapshot",
     "PresetExperimentResearchReport",
     "RSIThresholdExecutionParameters",
     "ResearchActivityBuilder",
@@ -467,6 +477,12 @@ __all__ = [
     "ResearchExperiment",
     "ResearchPipeline",
     "ResearchPipelineResult",
+    "RiskBudgetUtilization",
+    "RiskDashboardBuilder",
+    "RiskDashboardReport",
+    "RiskDecisionEvent",
+    "RiskDecisionSummary",
+    "RiskRejectionReasonSummary",
     "SMACrossoverExecutionParameters",
     "SignalEvaluation",
     "SignalEvaluationReport",

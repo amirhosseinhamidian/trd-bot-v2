@@ -19,6 +19,7 @@ from trd_bot.api.routes.optimization_executions import router as optimization_ex
 from trd_bot.api.routes.overview import router as overview_router
 from trd_bot.api.routes.portfolios import router as portfolios_router
 from trd_bot.api.routes.research import router as research_router
+from trd_bot.api.routes.risk import router as risk_router
 from trd_bot.core.config import get_settings
 from trd_bot.monitoring import MonitoringObservationRecorder
 
@@ -91,6 +92,11 @@ def create_app() -> FastAPI:
 
     application.include_router(
         research_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        risk_router,
         prefix="/api/v1",
     )
 

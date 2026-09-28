@@ -14,6 +14,7 @@ export type DashboardCopy = {
     connections: string;
     walkForward: string;
     portfolios: string;
+    risk: string;
     candidates: string;
     signals: string;
     settings: string;
@@ -104,6 +105,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       connections: 'اتصال‌های داده',
       walkForward: 'تحلیل Walk-forward',
       portfolios: 'گزارش‌های پرتفوی تاریخی',
+      risk: 'داشبورد ریسک',
       candidates: 'کاندیدهای پژوهشی',
       signals: 'سیگنال‌های پژوهشی',
       settings: 'تنظیمات',
@@ -193,6 +195,7 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
       connections: 'Data connections',
       walkForward: 'Walk-forward analysis',
       portfolios: 'Historical portfolio reports',
+      risk: 'Risk dashboard',
       candidates: 'Research candidates',
       signals: 'Research signals',
       settings: 'Settings',
