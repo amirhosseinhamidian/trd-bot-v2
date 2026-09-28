@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { PortfolioAnalytics } from '@/components/dashboard/portfolio-analytics';
 import { getPortfolioDetailCopy } from '@/components/dashboard/portfolio-detail-copy';
 import {
   Badge,
@@ -17,6 +18,7 @@ import {
   Spinner,
 } from '@/components/ui';
 import { getSimulatedPortfolioPositions, getSimulatedPortfolioTimeline } from '@/lib/api/client';
+import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 import type {
   Page,
   PortfolioTimelineEvent,
@@ -27,6 +29,7 @@ import type {
 const RESOURCE_PAGE_SIZE = 10;
 
 type PortfolioDetailProps = {
+  analytics?: PortfolioAnalyticsReport;
   portfolio: SimulatedPortfolio;
   initialPositions: Page<SimulatedPosition>;
   initialTimeline: Page<PortfolioTimelineEvent>;
@@ -89,6 +92,7 @@ function pnlClassName(value: string | null): string {
 }
 
 export default function PortfolioDetail({
+  analytics,
   portfolio,
   initialPositions,
   initialTimeline,
@@ -190,6 +194,17 @@ export default function PortfolioDetail({
           {copy.description}
         </p>
       </section>
+
+      {analytics &&
+        (new Date(analytics.as_of).getTime() === new Date(portfolio.updated_at).getTime() ? (
+          <PortfolioAnalytics report={analytics} locale={locale} />
+        ) : (
+          <p role="status">
+            {locale === 'fa'
+              ? 'پرتفوی هنگام دریافت گزارش تغییر کرده است؛ صفحه را دوباره بارگذاری کنید.'
+              : 'The portfolio changed while loading analytics. Reload to view a matching snapshot.'}
+          </p>
+        ))}
 
       <Card>
         <CardHeader>

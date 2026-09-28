@@ -1,3 +1,4 @@
+import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 import type {
   AcceptancePolicyPreset,
   BackgroundJobSummary,
@@ -889,6 +890,14 @@ export async function getSimulatedPortfolios(
 export async function getSimulatedPortfolio(portfolioId: string): Promise<SimulatedPortfolio> {
   return getJson<SimulatedPortfolio>(
     `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}`,
+  );
+}
+
+export async function getPortfolioAnalytics(
+  portfolioId: string,
+): Promise<PortfolioAnalyticsReport> {
+  return getJson<PortfolioAnalyticsReport>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/analytics`,
   );
 }
 

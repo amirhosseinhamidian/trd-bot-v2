@@ -6,10 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.api.dependencies import (
+    get_candidate_journal_repository,
     get_dataset_repository,
     get_simulated_portfolio_repository,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
+from trd_bot.db import SqlAlchemyCandidateJournalRepository
 from trd_bot.paper import (
     PortfolioStatus,
     PortfolioTimelineEvent,
@@ -20,6 +22,7 @@ from trd_bot.paper import (
     SimulationMode,
 )
 from trd_bot.research import DatasetRepository
+from trd_bot.research.portfolio_analytics import PortfolioAnalyticsBuilder, PortfolioAnalyticsReport
 
 router = APIRouter(
     prefix="/research/portfolios",
@@ -165,6 +168,21 @@ def list_simulated_portfolios(
         summaries,
         total=portfolios.count(),
         pagination=pagination,
+    )
+
+
+@router.get("/{portfolio_id}/analytics", response_model=PortfolioAnalyticsReport)
+def get_portfolio_analytics(
+    portfolio_id: str,
+    portfolios: PortfolioRepositoryDependency,
+    journals: Annotated[
+        SqlAlchemyCandidateJournalRepository, Depends(get_candidate_journal_repository)
+    ],
+) -> PortfolioAnalyticsReport:
+    """Project fee-aware performance without changing the stored simulation."""
+    portfolio = _get_portfolio_or_404(portfolio_id, portfolios)
+    return PortfolioAnalyticsBuilder().build(
+        portfolio, journals=journals.list_by_portfolio(portfolio_id)
     )
 
 
