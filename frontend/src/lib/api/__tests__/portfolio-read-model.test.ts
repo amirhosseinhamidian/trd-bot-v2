@@ -7,6 +7,7 @@ import {
   getSimulatedPortfolios,
   getSimulatedPortfolioTimeline,
   getSimulatedPosition,
+  getSimulatedPositionDetail,
 } from '@/lib/api/client';
 import type {
   Page,
@@ -165,6 +166,23 @@ describe('simulated portfolio read-model client', () => {
     );
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       `/api/v1/research/portfolios/${portfolioId}/positions/${positionId}`,
+    );
+  });
+
+  it('loads encoded position detail lineage', async () => {
+    const detail = {
+      position_detail_version: 'position-detail-v1',
+      position,
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(detail));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getSimulatedPositionDetail('portfolio/id', 'position/id')).resolves.toEqual(
+      detail,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE_URL}/api/v1/research/portfolios/portfolio%2Fid/positions/position%2Fid/detail`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
   });
 

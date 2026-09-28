@@ -1160,6 +1160,22 @@ export interface SimulatedPosition {
   realized_pnl: string;
 }
 
+export type PositionLineageStatus = 'complete' | 'unavailable' | 'conflict';
+
+export interface PositionDetailReport {
+  position_detail_version: 'position-detail-v1';
+  as_of: string;
+  dataset_id: string;
+  position: SimulatedPosition;
+  lineage_status: PositionLineageStatus;
+  journal_id: string | null;
+  candidate: ResearchCandidateSnapshot | null;
+  decision_evidence: CandidateDecisionEvidence | null;
+  nodes: CandidateDecisionLineageNode[];
+  events: PortfolioTimelineEvent[];
+  interpretation: 'historical_research_only';
+}
+
 export interface PortfolioTimelineEvent {
   event_id: string;
   portfolio_id: string;

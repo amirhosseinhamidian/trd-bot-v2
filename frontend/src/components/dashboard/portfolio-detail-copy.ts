@@ -12,6 +12,7 @@ export type PortfolioDetailCopy = {
   positionsDescription: string;
   positionsEmpty: string;
   positionsError: string;
+  viewPosition: string;
   timelineTitle: string;
   timelineDescription: string;
   timelineEmpty: string;
@@ -85,6 +86,7 @@ const copies: Record<DashboardLocale, PortfolioDetailCopy> = {
     positionsDescription: 'رکوردهای باز و بسته‌شده این پرتفوی تاریخی.',
     positionsEmpty: 'هیچ موقعیتی برای این پرتفوی ثبت نشده است.',
     positionsError: 'دریافت موقعیت‌ها ناموفق بود.',
+    viewPosition: 'مشاهده جزئیات و lineage',
     timelineTitle: 'Timeline پرتفوی',
     timelineDescription: 'رویدادهای ثبت‌شده به ترتیب زمانی برای بازبینی و ممیزی.',
     timelineEmpty: 'هیچ رویدادی برای این پرتفوی ثبت نشده است.',
@@ -156,6 +158,7 @@ const copies: Record<DashboardLocale, PortfolioDetailCopy> = {
     positionsDescription: 'Open and closed position records stored for this historical portfolio.',
     positionsEmpty: 'No positions are recorded for this portfolio.',
     positionsError: 'Unable to retrieve positions.',
+    viewPosition: 'View details and lineage',
     timelineTitle: 'Portfolio timeline',
     timelineDescription: 'Recorded lifecycle events in audit order.',
     timelineEmpty: 'No timeline events are recorded for this portfolio.',

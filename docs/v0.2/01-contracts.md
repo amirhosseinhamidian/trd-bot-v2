@@ -30,6 +30,8 @@
 
 قرارداد TB2-020: `portfolio-analytics-v1` فقط از اسنپ‌شات کامل پرتفوی و journal منطبق محاسبه می‌شود. سود خالص با equity و کارمزد ورود موقعیت باز تطبیق دارد؛ آمار معامله فقط از معاملات بسته پس از کارمزد است. مخرج صفر `null`، زمان پایان آخرین رویداد، علت خروج فاقد شاهد `unknown` و نمودار/جدول از نقاط مشترک‌اند. تعریف کامل: `22-portfolio-performance.md`.
 
+قرارداد TB2-021: `position-detail-v1` یک projection فقط‌خواندنی از Position، رویدادهای دقیق همان Position و journal منطبق است. تطبیق با `(portfolio_id, position_id)` انجام می‌شود؛ رکورد تکراری یکسان deduplicate و چند شاهد ناسازگار `conflict` می‌شود. Dataset و Position موجود نمایش داده می‌شوند، اما Experiment/Signal/Candidate/Risk/Exit بدون شاهد ساخته یا حدس زده نمی‌شوند. تعریف کامل: `23-position-detail-lineage.md`.
+
 | ADR | سؤال و پیشنهاد برای بررسی | تکلیف نهایی |
 | --- | --- | --- |
 | ADR-01 | **تصمیم TB2-004:** Preview checksum محتوایی برمی‌گرداند؛ Import داده را دوباره fetch و checksum را مقایسه می‌کند و تغییر را با HTTP 409 رد می‌کند. | بسته در TB2-004 |

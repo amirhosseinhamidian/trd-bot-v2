@@ -39,6 +39,7 @@ import type {
   OptimizationExecutionSubmission,
   CreateOptimizationExecutionRequest,
   Page,
+  PositionDetailReport,
   PortfolioTimelineEvent,
   PresetExperimentResearchReport,
   ResearchActivityItem,
@@ -920,6 +921,15 @@ export async function getSimulatedPosition(
 ): Promise<SimulatedPosition> {
   return getJson<SimulatedPosition>(
     `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}`,
+  );
+}
+
+export async function getSimulatedPositionDetail(
+  portfolioId: string,
+  positionId: string,
+): Promise<PositionDetailReport> {
+  return getJson<PositionDetailReport>(
+    `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/positions/${encodeURIComponent(positionId)}/detail`,
   );
 }
 

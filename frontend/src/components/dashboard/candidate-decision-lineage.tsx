@@ -46,7 +46,7 @@ function nodeHref(
   if ((node.kind === 'position' || node.kind === 'exit') && node.portfolio_id) {
     const encodedPortfolioId = encodeURIComponent(node.portfolio_id);
     const encodedPositionId = encodeURIComponent(node.resource_id);
-    return `/${locale}/portfolios/${encodedPortfolioId}#${encodedPositionId}`;
+    return `/${locale}/portfolios/${encodedPortfolioId}/positions/${encodedPositionId}`;
   }
   return null;
 }

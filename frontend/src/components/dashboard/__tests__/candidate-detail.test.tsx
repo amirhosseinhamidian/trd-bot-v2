@@ -237,7 +237,7 @@ describe('CandidateDetail', () => {
     );
     expect(screen.getAllByRole('link', { name: 'View source: position-1' })[0]).toHaveAttribute(
       'href',
-      '/en/portfolios/portfolio-0000000000000001#position-1',
+      '/en/portfolios/portfolio-0000000000000001/positions/position-1',
     );
 
     await user.click(screen.getByRole('button', { name: 'Next' }));
