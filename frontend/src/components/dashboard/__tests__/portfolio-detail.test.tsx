@@ -107,6 +107,7 @@ describe('PortfolioDetail', () => {
     expect(screen.getByText('Historical portfolio detail')).toBeInTheDocument();
     expect(screen.getAllByText('portfolio-test')).toHaveLength(2);
     expect(screen.getByText('position-initial')).toBeInTheDocument();
+    expect(document.getElementById('position-initial')).toBeInTheDocument();
     expect(screen.getByText('Portfolio timeline')).toBeInTheDocument();
     expect(screen.getByText('Position closed')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /create|buy|sell|open|close/i })).toBeNull();

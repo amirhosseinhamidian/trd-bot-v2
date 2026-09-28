@@ -3,7 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import CandidateDetail from '@/components/dashboard/candidate-detail';
-import type { CandidateJournalOccurrence, CandidateProjectionDetail, Page } from '@/lib/api/types';
+import type {
+  CandidateDecisionLineage,
+  CandidateJournalOccurrence,
+  CandidateProjectionDetail,
+  Page,
+} from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getCandidateLineage: vi.fn(),
@@ -74,10 +79,92 @@ function makeSkippedOccurrence(journalId: string, recordedAt: string): Candidate
 function makeDetail(): CandidateProjectionDetail {
   const latest = makeOccurrence('journal-1', '2026-08-26T12:00:00Z');
 
+  return makeDetailForOccurrence(latest);
+}
+
+function makeDecisionLineage(occurrence: CandidateJournalOccurrence): CandidateDecisionLineage {
+  const hasPosition = occurrence.position_id !== null;
+
+  return {
+    lineage_version: 'candidate-decision-lineage-v1',
+    journal_id: occurrence.journal_id,
+    nodes: [
+      {
+        kind: 'dataset',
+        status: 'available',
+        resource_id: occurrence.candidate.dataset_id,
+        portfolio_id: null,
+        outcome: null,
+        reason: null,
+      },
+      {
+        kind: 'experiment',
+        status: 'available',
+        resource_id: occurrence.candidate.experiment_id,
+        portfolio_id: null,
+        outcome: null,
+        reason: null,
+      },
+      {
+        kind: 'signal',
+        status: 'available',
+        resource_id: occurrence.candidate.signal_id,
+        portfolio_id: null,
+        outcome: null,
+        reason: null,
+      },
+      {
+        kind: 'candidate',
+        status: 'available',
+        resource_id: occurrence.candidate.candidate_id,
+        portfolio_id: null,
+        outcome: null,
+        reason: null,
+      },
+      {
+        kind: 'risk',
+        status: occurrence.risk_decision ? 'available' : 'not_evaluated',
+        resource_id: null,
+        portfolio_id: null,
+        outcome: occurrence.risk_decision,
+        reason: occurrence.skip_reason,
+      },
+      {
+        kind: 'position',
+        status: hasPosition ? 'available' : 'not_created',
+        resource_id: occurrence.position_id,
+        portfolio_id: occurrence.portfolio_id,
+        outcome: null,
+        reason: hasPosition ? null : (occurrence.replay_status ?? occurrence.skip_reason),
+      },
+      {
+        kind: 'exit',
+        status: occurrence.exit_reason ? 'available' : 'not_created',
+        resource_id: occurrence.position_id,
+        portfolio_id: occurrence.portfolio_id,
+        outcome: occurrence.exit_reason,
+        reason: occurrence.exit_reason ? null : 'position_not_created',
+      },
+    ],
+  };
+}
+
+function makeDetailForOccurrence(latest: CandidateJournalOccurrence): CandidateProjectionDetail {
   return {
     candidate: latest.candidate,
-    occurrence_count: 2,
-    journal_ids: ['journal-1', 'journal-0'],
+    occurrence_count: 1,
+    journal_ids: [latest.journal_id],
+    rank_history: [
+      {
+        journal_id: latest.journal_id,
+        recorded_at: latest.recorded_at,
+        rank: latest.rank,
+        ranking_score: latest.ranking_score,
+        selected: latest.selected,
+        evidence_available: latest.decision_evidence !== null,
+      },
+    ],
+    decision_lineage: makeDecisionLineage(latest),
     latest,
   };
 }
@@ -104,12 +191,7 @@ describe('CandidateDetail', () => {
 
   it('renders skipped detail and lineage without fabricated evaluation outcomes', () => {
     const skipped = makeSkippedOccurrence('journal-skipped', '2026-08-26T12:00:00Z');
-    const detail: CandidateProjectionDetail = {
-      candidate: skipped.candidate,
-      occurrence_count: 1,
-      journal_ids: [skipped.journal_id],
-      latest: skipped,
-    };
+    const detail = makeDetailForOccurrence(skipped);
 
     render(
       <CandidateDetail locale="en" candidate={detail} initialLineage={makePage([skipped], 0)} />,
@@ -141,6 +223,22 @@ describe('CandidateDetail', () => {
     expect(screen.getByText('Research only')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'RSI Threshold' })).toBeInTheDocument();
     expect(screen.getByText('RSI Threshold · 1.0.0')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View source: dataset-1' })).toHaveAttribute(
+      'href',
+      '/en/datasets/dataset-1',
+    );
+    expect(screen.getByRole('link', { name: 'View source: experiment-1' })).toHaveAttribute(
+      'href',
+      '/en/experiments/experiment-1',
+    );
+    expect(screen.getByRole('link', { name: 'View source: signal-1' })).toHaveAttribute(
+      'href',
+      '/en/signals/experiment-1/signal-1',
+    );
+    expect(screen.getAllByRole('link', { name: 'View source: position-1' })[0]).toHaveAttribute(
+      'href',
+      '/en/portfolios/portfolio-0000000000000001#position-1',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Next' }));
 
@@ -153,5 +251,30 @@ describe('CandidateDetail', () => {
 
     expect(await screen.findByText('journal-next')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /buy|sell|open|close/i })).toBeNull();
+  });
+
+  it('shows rejected candidates without fabricating position or exit resources', () => {
+    const attempted = makeOccurrence('journal-rejected', '2026-08-26T12:00:00Z');
+    const rejected: CandidateJournalOccurrence = {
+      ...attempted,
+      candidate: { ...attempted.candidate, status: 'candidate' },
+      replay_status: 'risk_rejected',
+      risk_decision: 'rejected',
+      selected: false,
+      position_id: null,
+      exit_reason: null,
+    };
+
+    render(
+      <CandidateDetail
+        locale="en"
+        candidate={makeDetailForOccurrence(rejected)}
+        initialLineage={makePage([rejected], 0)}
+      />,
+    );
+
+    expect(screen.getAllByText('Rejected').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Not created yet')).toHaveLength(2);
+    expect(screen.queryByRole('link', { name: /position-1/i })).toBeNull();
   });
 });

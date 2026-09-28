@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
+import { getCandidateComparisonCopy } from '@/components/dashboard/candidate-comparison-copy';
+import CandidateComparisonPanel from '@/components/dashboard/candidate-comparison-panel';
 import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getCandidateCopy } from '@/components/dashboard/candidate-copy';
@@ -13,6 +15,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Checkbox,
   EmptyState,
   ErrorState,
   Pagination,
@@ -89,7 +92,35 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
   const [page, setPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [selectedCandidates, setSelectedCandidates] = useState<CandidateProjectionSummary[]>([]);
   const requestSequence = useRef(0);
+  const comparisonCopy = getCandidateComparisonCopy(locale);
+
+  function isCandidateSelected(candidateId: string): boolean {
+    return selectedCandidates.some((candidate) => candidate.candidate_id === candidateId);
+  }
+
+  function isCandidateCompatible(candidate: CandidateProjectionSummary): boolean {
+    return (
+      selectedCandidates.length === 0 ||
+      candidate.latest_journal_id === selectedCandidates[0].latest_journal_id
+    );
+  }
+
+  function toggleCandidate(candidate: CandidateProjectionSummary): void {
+    if (isCandidateSelected(candidate.candidate_id)) {
+      setSelectedCandidates((current) =>
+        current.filter((item) => item.candidate_id !== candidate.candidate_id),
+      );
+      return;
+    }
+
+    if (selectedCandidates.length >= 4 || !isCandidateCompatible(candidate)) {
+      return;
+    }
+
+    setSelectedCandidates((current) => [...current, candidate]);
+  }
 
   async function loadCandidates(offset: number): Promise<void> {
     const requestId = ++requestSequence.current;
@@ -144,6 +175,13 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
         </p>
       </section>
 
+      <CandidateComparisonPanel
+        key={selectedCandidates.map((candidate) => candidate.candidate_id).join(':')}
+        locale={locale}
+        selectedCandidates={selectedCandidates}
+        onClearSelection={() => setSelectedCandidates([])}
+      />
+
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (
           <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
@@ -163,7 +201,15 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
         ) : (
           <div className="grid gap-4 xl:grid-cols-2">
             {page.items.map((candidate) => (
-              <Card key={candidate.candidate_id} className="overflow-hidden">
+              <Card
+                key={candidate.candidate_id}
+                className={[
+                  'overflow-hidden',
+                  isCandidateSelected(candidate.candidate_id)
+                    ? 'border-app-accent-border bg-app-accent-soft'
+                    : '',
+                ].join(' ')}
+              >
                 <CardHeader className="border-b border-app-border">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -180,21 +226,42 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                       </CardDescription>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant={candidate.selected ? 'success' : 'info'}>
-                        {candidate.selected ? copy.selected : copy.notSelected}
-                      </Badge>
+                    <div className="flex flex-col items-end gap-3">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Badge variant={candidate.selected ? 'success' : 'info'}>
+                          {candidate.selected ? copy.selected : copy.notSelected}
+                        </Badge>
 
-                      <Badge
-                        variant={
-                          candidate.latest_occurrence_type === 'skipped' ? 'warning' : 'info'
+                        <Badge
+                          variant={
+                            candidate.latest_occurrence_type === 'skipped' ? 'warning' : 'info'
+                          }
+                        >
+                          {copy.occurrenceTypes[candidate.latest_occurrence_type]}
+                        </Badge>
+
+                        <Badge variant="info">{copy.statuses[candidate.status]}</Badge>
+                        <Badge variant="warning">{copy.actions[candidate.action]}</Badge>
+                      </div>
+
+                      <Checkbox
+                        label={comparisonCopy.selectCandidate}
+                        checked={isCandidateSelected(candidate.candidate_id)}
+                        disabled={
+                          !isCandidateCompatible(candidate) ||
+                          (selectedCandidates.length >= 4 &&
+                            !isCandidateSelected(candidate.candidate_id))
                         }
-                      >
-                        {copy.occurrenceTypes[candidate.latest_occurrence_type]}
-                      </Badge>
-
-                      <Badge variant="info">{copy.statuses[candidate.status]}</Badge>
-                      <Badge variant="warning">{copy.actions[candidate.action]}</Badge>
+                        description={
+                          !isCandidateCompatible(candidate)
+                            ? comparisonCopy.incompatibleCandidate
+                            : selectedCandidates.length >= 4 &&
+                                !isCandidateSelected(candidate.candidate_id)
+                              ? comparisonCopy.limitReached
+                              : undefined
+                        }
+                        onChange={() => toggleCandidate(candidate)}
+                      />
                     </div>
                   </div>
                 </CardHeader>

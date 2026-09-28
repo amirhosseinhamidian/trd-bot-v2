@@ -4,17 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import CandidateCatalog from '@/components/dashboard/candidate-catalog';
 import type {
+  CandidateComparisonResult,
   CandidateDecisionEvidence,
+  CandidateJournalOccurrence,
   CandidateProjectionSummary,
   CandidateRiskCheck,
   Page,
 } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
+  compareCandidates: vi.fn(),
   getCandidateProjections: vi.fn(),
 }));
 
 vi.mock('@/lib/api/client', () => ({
+  compareCandidates: mocks.compareCandidates,
   getCandidateProjections: mocks.getCandidateProjections,
 }));
 
@@ -201,8 +205,46 @@ function makePage(
   };
 }
 
+function makeComparisonOccurrence(
+  candidate: CandidateProjectionSummary,
+): CandidateJournalOccurrence {
+  return {
+    journal_id: candidate.latest_journal_id,
+    recorded_at: candidate.latest_recorded_at,
+    evaluated_at: candidate.latest_recorded_at,
+    portfolio_id: 'portfolio-0000000000000001',
+    candidate: {
+      candidate_id: candidate.candidate_id,
+      status: candidate.status,
+      action: candidate.action,
+      dataset_id: 'dataset-1',
+      experiment_id: 'experiment-1',
+      signal_id: 'signal-1',
+      pair: candidate.pair,
+      timeframe: candidate.timeframe,
+      strategy_name: candidate.strategy_name,
+      strategy_version: candidate.strategy_version,
+      confidence: candidate.confidence,
+      signal_score: candidate.signal_score,
+      created_at: candidate.created_at,
+      valid_until: candidate.valid_until,
+    },
+    rank: candidate.latest_rank,
+    ranking_score: candidate.latest_ranking_score,
+    occurrence_type: candidate.latest_occurrence_type,
+    replay_status: candidate.latest_replay_status,
+    risk_decision: candidate.latest_risk_decision,
+    skip_reason: candidate.latest_skip_reason,
+    selected: candidate.selected,
+    position_id: candidate.position_id,
+    exit_reason: candidate.exit_reason,
+    decision_evidence: candidate.latest_decision_evidence,
+  };
+}
+
 describe('CandidateCatalog', () => {
   beforeEach(() => {
+    mocks.compareCandidates.mockReset();
     mocks.getCandidateProjections.mockReset();
   });
 
@@ -250,6 +292,49 @@ describe('CandidateCatalog', () => {
     expect(
       screen.getByText('Breakdown evidence is unavailable for this legacy record'),
     ).toBeInTheDocument();
+  });
+
+  it('compares same-journal candidates side by side including rejection evidence', async () => {
+    const user = userEvent.setup();
+    const selected = makeCandidate('candidate-selected');
+    const rejected = makeRejectedCandidate('candidate-rejected');
+    const comparison: CandidateComparisonResult = {
+      journal_id: selected.latest_journal_id,
+      compared_candidates: 2,
+      entries: [
+        {
+          comparison_position: 1,
+          occurrence: makeComparisonOccurrence(selected),
+        },
+        {
+          comparison_position: 2,
+          occurrence: makeComparisonOccurrence(rejected),
+        },
+      ],
+      interpretation: 'historical_research_only',
+    };
+    mocks.compareCandidates.mockResolvedValue(comparison);
+
+    render(<CandidateCatalog locale="en" initialPage={makePage([selected, rejected], 0)} />);
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: 'Select for comparison' });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: 'Compare candidates' }));
+
+    await waitFor(() => {
+      expect(mocks.compareCandidates).toHaveBeenCalledWith([
+        'candidate-selected',
+        'candidate-rejected',
+      ]);
+    });
+    expect(await screen.findByText('Side-by-side breakdown')).toBeInTheDocument();
+    expect(screen.getByText('journal-0000000000000001')).toBeInTheDocument();
+    expect(screen.getAllByText('Rejected').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Reward to risk').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('Reward-to-risk ratio is below the configured floor.').length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it('loads the next persisted candidate page without exposing trade actions', async () => {

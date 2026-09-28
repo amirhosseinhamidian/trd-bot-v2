@@ -1,6 +1,8 @@
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   CandidateAction,
+  CandidateDecisionLineageKind,
+  CandidateDecisionLineageStatus,
   CandidateExitReason,
   CandidateOccurrenceType,
   CandidateReplaySkipReason,
@@ -8,6 +10,16 @@ import type {
   CandidateRiskDecision,
   CandidateStatus,
 } from '@/lib/api/types';
+
+export type CandidateLineageReason =
+  | 'exit_not_created'
+  | 'legacy_evidence_unavailable'
+  | 'no_fill'
+  | 'not_selected'
+  | 'position_not_created'
+  | 'position_opened'
+  | 'risk_rejected'
+  | 'skipped';
 
 type CandidateDetailCopy = {
   eyebrow: string;
@@ -18,6 +30,15 @@ type CandidateDetailCopy = {
   lineageLoading: string;
   lineageErrorTitle: string;
   lineageErrorDescription: string;
+  decisionLineageTitle: string;
+  decisionLineageDescription: string;
+  decisionBreakdownTitle: string;
+  decisionBreakdownDescription: string;
+  rankHistoryTitle: string;
+  rankHistoryDescription: string;
+  evidenceAvailable: string;
+  evidenceUnavailable: string;
+  viewResource: string;
   retry: string;
   page: string;
   previous: string;
@@ -55,6 +76,9 @@ type CandidateDetailCopy = {
   riskDecisions: Record<CandidateRiskDecision, string>;
   skipReasons: Record<CandidateReplaySkipReason, string>;
   exitReasons: Record<CandidateExitReason, string>;
+  lineageKinds: Record<CandidateDecisionLineageKind, string>;
+  lineageStatuses: Record<CandidateDecisionLineageStatus, string>;
+  lineageReasons: Record<CandidateLineageReason, string>;
 };
 
 const copies: Record<DashboardLocale, CandidateDetailCopy> = {
@@ -67,6 +91,16 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
     lineageLoading: 'در حال دریافت lineage',
     lineageErrorTitle: 'دریافت lineage ناموفق بود',
     lineageErrorDescription: 'اتصال Backend را بررسی و دوباره تلاش کنید.',
+    decisionLineageTitle: 'زنجیره تصمیم',
+    decisionLineageDescription:
+      'منابع پژوهشی و مراحل تصمیم، از Dataset تا Exit، با وضعیت دقیق هر مرحله.',
+    decisionBreakdownTitle: 'شواهد آخرین تصمیم',
+    decisionBreakdownDescription: 'اجزای رتبه و کنترل‌های ریسک آخرین رخداد ذخیره‌شده.',
+    rankHistoryTitle: 'تاریخچه رتبه',
+    rankHistoryDescription: 'رتبه‌های ذخیره‌شده این Candidate از جدیدترین به قدیمی‌ترین.',
+    evidenceAvailable: 'شاهد موجود',
+    evidenceUnavailable: 'شاهد قدیمی ناموجود',
+    viewResource: 'مشاهده منبع',
     retry: 'تلاش مجدد',
     page: 'صفحه',
     previous: 'قبلی',
@@ -134,6 +168,31 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       time_expiry: 'پایان زمان',
       end_of_data: 'پایان داده',
     },
+    lineageKinds: {
+      dataset: 'Dataset',
+      experiment: 'Experiment',
+      signal: 'Signal',
+      candidate: 'Candidate',
+      risk: 'Risk',
+      position: 'Position',
+      exit: 'Exit',
+    },
+    lineageStatuses: {
+      available: 'موجود',
+      not_created: 'هنوز ایجاد نشده',
+      not_evaluated: 'ارزیابی‌نشده',
+      unavailable: 'برای رکورد قدیمی در دسترس نیست',
+    },
+    lineageReasons: {
+      exit_not_created: 'خروج هنوز ثبت نشده است',
+      legacy_evidence_unavailable: 'شواهد تفصیلی در رکورد قدیمی موجود نیست',
+      no_fill: 'سفارش شبیه‌سازی‌شده Fill نشد',
+      not_selected: 'Candidate انتخاب نشد',
+      position_not_created: 'Position ایجاد نشده است',
+      position_opened: 'Position کاندید قبلی باز شد',
+      risk_rejected: 'Candidate در کنترل ریسک رد شد',
+      skipped: 'Candidate عبور داده شد',
+    },
   },
   en: {
     eyebrow: 'Candidate detail',
@@ -144,6 +203,16 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
     lineageLoading: 'Loading lineage',
     lineageErrorTitle: 'Unable to load lineage',
     lineageErrorDescription: 'Check the backend connection and try again.',
+    decisionLineageTitle: 'Decision lineage',
+    decisionLineageDescription:
+      'Research sources and decision stages from Dataset through Exit, with explicit availability.',
+    decisionBreakdownTitle: 'Latest decision evidence',
+    decisionBreakdownDescription: 'Ranking components and risk checks from the latest occurrence.',
+    rankHistoryTitle: 'Rank history',
+    rankHistoryDescription: 'Persisted ranks for this candidate, newest first.',
+    evidenceAvailable: 'Evidence available',
+    evidenceUnavailable: 'Legacy evidence unavailable',
+    viewResource: 'View source',
     retry: 'Try again',
     page: 'Page',
     previous: 'Previous',
@@ -210,6 +279,31 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
       data_unreliable: 'Data unreliable',
       time_expiry: 'Time expiry',
       end_of_data: 'End of data',
+    },
+    lineageKinds: {
+      dataset: 'Dataset',
+      experiment: 'Experiment',
+      signal: 'Signal',
+      candidate: 'Candidate',
+      risk: 'Risk',
+      position: 'Position',
+      exit: 'Exit',
+    },
+    lineageStatuses: {
+      available: 'Available',
+      not_created: 'Not created yet',
+      not_evaluated: 'Not evaluated',
+      unavailable: 'Unavailable for legacy record',
+    },
+    lineageReasons: {
+      exit_not_created: 'An exit has not been recorded yet',
+      legacy_evidence_unavailable: 'Detailed evidence is unavailable for this legacy record',
+      no_fill: 'The simulated order did not fill',
+      not_selected: 'The candidate was not selected',
+      position_not_created: 'A position was not created',
+      position_opened: 'An earlier candidate position opened',
+      risk_rejected: 'The candidate was rejected by risk controls',
+      skipped: 'The candidate was skipped',
     },
   },
 };

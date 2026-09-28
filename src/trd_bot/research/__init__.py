@@ -11,6 +11,12 @@ from trd_bot.research.activity import (
     ResearchActivityItem,
     ResearchActivityType,
 )
+from trd_bot.research.candidate_comparisons import (
+    CandidateComparator,
+    CandidateComparisonEntry,
+    CandidateComparisonRequest,
+    CandidateComparisonResult,
+)
 from trd_bot.research.candidate_decision_evidence import (
     CandidateDecisionEvidence,
     CandidateDecisionEvidenceBuilder,
@@ -20,6 +26,14 @@ from trd_bot.research.candidate_decision_evidence import (
     CandidateRankingTieBreakEvidence,
     CandidateRiskCompatibilityBreakdown,
     CandidateRiskCompatibilityStatus,
+)
+from trd_bot.research.candidate_decision_lineage import (
+    CandidateDecisionLineage,
+    CandidateDecisionLineageBuilder,
+    CandidateDecisionLineageKind,
+    CandidateDecisionLineageNode,
+    CandidateDecisionLineageStatus,
+    CandidateRankHistoryEntry,
 )
 from trd_bot.research.candidate_ranking import (
     CandidateRanker,
@@ -293,16 +307,26 @@ __all__ = [
     "AcceptancePolicyPresetCatalog",
     "CandidateAction",
     "CandidateBuilder",
+    "CandidateComparator",
+    "CandidateComparisonEntry",
+    "CandidateComparisonRequest",
+    "CandidateComparisonResult",
     "CandidateDatasetReplayOrchestrator",
     "CandidateDatasetReplayRunner",
     "CandidateDecisionEvidence",
     "CandidateDecisionEvidenceBuilder",
+    "CandidateDecisionLineage",
+    "CandidateDecisionLineageBuilder",
+    "CandidateDecisionLineageKind",
+    "CandidateDecisionLineageNode",
+    "CandidateDecisionLineageStatus",
     "CandidateEntryZone",
     "CandidateEvidence",
     "CandidateExitReason",
     "CandidateExitTrigger",
     "CandidatePositionMonitor",
     "CandidatePositionMonitoringResult",
+    "CandidateRankHistoryEntry",
     "CandidateRanker",
     "CandidateRankingBreakdown",
     "CandidateRankingComponent",

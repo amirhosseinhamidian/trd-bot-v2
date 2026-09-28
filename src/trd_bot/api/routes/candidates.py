@@ -9,7 +9,17 @@ from trd_bot.api.dependencies import get_candidate_projection_repository
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.db import SqlAlchemyCandidateProjectionRepository
 from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.research.candidate_comparisons import (
+    CandidateComparator,
+    CandidateComparisonRequest,
+    CandidateComparisonResult,
+)
 from trd_bot.research.candidate_decision_evidence import CandidateDecisionEvidence
+from trd_bot.research.candidate_decision_lineage import (
+    CandidateDecisionLineage,
+    CandidateDecisionLineageBuilder,
+    CandidateRankHistoryEntry,
+)
 from trd_bot.research.candidate_projection import (
     CandidateJournalOccurrence,
     CandidateOccurrenceType,
@@ -109,6 +119,8 @@ class CandidateProjectionDetail(BaseModel):
     candidate: ResearchCandidate
     occurrence_count: int = Field(ge=1)
     journal_ids: tuple[str, ...]
+    rank_history: tuple[CandidateRankHistoryEntry, ...]
+    decision_lineage: CandidateDecisionLineage
     latest: CandidateJournalOccurrence
 
     @classmethod
@@ -117,6 +129,10 @@ class CandidateProjectionDetail(BaseModel):
             candidate=projection.candidate,
             occurrence_count=len(projection.history),
             journal_ids=tuple(item.journal_id for item in projection.history),
+            rank_history=tuple(
+                CandidateRankHistoryEntry.from_occurrence(item) for item in projection.history
+            ),
+            decision_lineage=CandidateDecisionLineageBuilder.build(projection),
             latest=projection.latest,
         )
 
@@ -152,6 +168,44 @@ def list_candidate_projections(
         total=projections.count(),
         pagination=pagination,
     )
+
+
+@router.post(
+    "/compare",
+    response_model=CandidateComparisonResult,
+)
+def compare_candidate_projections(
+    request: CandidateComparisonRequest,
+    projections: CandidateProjectionRepositoryDependency,
+) -> CandidateComparisonResult:
+    """Compare candidates from one persisted latest decision cohort."""
+
+    selected: list[CandidateProjection] = []
+    missing_ids: list[str] = []
+
+    for candidate_id in request.candidate_ids:
+        projection = projections.get(candidate_id)
+        if projection is None:
+            missing_ids.append(candidate_id)
+        else:
+            selected.append(projection)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "message": "candidate projections not found",
+                "candidate_ids": missing_ids,
+            },
+        )
+
+    try:
+        return CandidateComparator().compare(selected)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        ) from error
 
 
 @router.get(

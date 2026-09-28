@@ -1032,6 +1032,31 @@ def test_api_filters_historical_signals_by_direction(
     assert non_matching_response.json()["items"] == []
 
 
+def test_api_returns_one_exact_historical_signal(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+    created_experiment = create_response.json()
+    experiment_id = created_experiment["experiment_id"]
+    expected_signal = created_experiment["result"]["signals"][0]
+
+    response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals/{expected_signal['signal_id']}"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == expected_signal
+
+    missing_response = client.get(
+        f"/api/v1/research/experiments/{experiment_id}/signals/signal-0000000000000000"
+    )
+    assert missing_response.status_code == 404
+    assert missing_response.json()["detail"] == "experiment signal not found"
+
+
 @pytest.mark.parametrize(
     "params",
     [

@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
+import CandidateDecisionLineageView from '@/components/dashboard/candidate-decision-lineage';
 import { getCandidateDetailCopy } from '@/components/dashboard/candidate-detail-copy';
+import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import {
   Badge,
@@ -259,6 +261,71 @@ export default function CandidateDetail({
           </div>
         </CardContent>
       </Card>
+
+      <Card id="risk-decision" className="scroll-mt-6">
+        <CardHeader>
+          <CardTitle>{copy.decisionBreakdownTitle}</CardTitle>
+          <CardDescription>{copy.decisionBreakdownDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CandidateRankingBreakdown evidence={latest.decision_evidence} locale={locale} />
+        </CardContent>
+      </Card>
+
+      <CandidateDecisionLineageView lineage={candidate.decision_lineage} locale={locale} />
+
+      <section>
+        <div>
+          <h2 className="text-xl font-semibold text-app-foreground">{copy.rankHistoryTitle}</h2>
+          <p className="mt-2 text-sm text-app-muted">{copy.rankHistoryDescription}</p>
+        </div>
+
+        <ol className="mt-5 grid gap-3 lg:grid-cols-2">
+          {candidate.rank_history.map((entry) => (
+            <li
+              key={entry.journal_id}
+              className="rounded-2xl border border-app-border bg-app-surface p-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs text-app-muted">{copy.fields.journal}</p>
+                  <p
+                    dir="ltr"
+                    className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+                  >
+                    {entry.journal_id}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="info">#{formatNumber(entry.rank, locale)}</Badge>
+                  <Badge variant={entry.selected ? 'success' : 'neutral'}>
+                    {entry.selected ? copy.selected : copy.notSelected}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                  <p dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
+                    {formatDecimal(entry.ranking_score, locale)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
+                  <p className="mt-1 text-app-foreground">
+                    {formatDate(entry.recorded_at, locale)}
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-app-muted">
+                {entry.evidence_available ? copy.evidenceAvailable : copy.evidenceUnavailable}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section>
         <div>

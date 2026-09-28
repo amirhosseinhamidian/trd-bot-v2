@@ -125,6 +125,86 @@ def test_get_candidate_projection_returns_complete_candidate_snapshot() -> None:
     assert payload["latest"]["decision_evidence"]["evidence_version"] == (
         "candidate-decision-evidence-v1"
     )
+    assert payload["rank_history"] == [
+        {
+            "journal_id": entries[0].journal_id,
+            "recorded_at": payload["latest"]["recorded_at"],
+            "rank": payload["latest"]["rank"],
+            "ranking_score": payload["latest"]["ranking_score"],
+            "selected": True,
+            "evidence_available": True,
+        }
+    ]
+    assert payload["decision_lineage"]["lineage_version"] == ("candidate-decision-lineage-v1")
+    nodes = {node["kind"]: node for node in payload["decision_lineage"]["nodes"]}
+    assert nodes["dataset"]["resource_id"] == payload["candidate"]["dataset_id"]
+    assert nodes["experiment"]["resource_id"] == payload["candidate"]["experiment_id"]
+    assert nodes["signal"]["resource_id"] == payload["candidate"]["signal_id"]
+    assert nodes["position"]["resource_id"] == entries[0].position_id
+    assert nodes["exit"]["outcome"] == "target"
+
+
+def test_compare_candidate_projections_returns_same_journal_breakdowns() -> None:
+    client, entries = build_client()
+    cohort_ids = entries[0].attempted_candidate_ids + entries[0].skipped_candidate_ids
+    assert len(cohort_ids) >= 2
+
+    response = client.post(
+        "/research/candidates/compare",
+        json={"candidate_ids": list(cohort_ids[:2])},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["journal_id"] == entries[0].journal_id
+    assert payload["compared_candidates"] == 2
+    assert [item["occurrence"]["rank"] for item in payload["entries"]] == sorted(
+        item["occurrence"]["rank"] for item in payload["entries"]
+    )
+    assert all(item["occurrence"]["decision_evidence"] is not None for item in payload["entries"])
+
+
+def test_compare_candidate_projections_rejects_mixed_latest_journals() -> None:
+    client, entries = build_client()
+    first_id = (entries[0].attempted_candidate_ids + entries[0].skipped_candidate_ids)[0]
+    second_id = entries[1].attempted_candidate_ids[0]
+
+    response = client.post(
+        "/research/candidates/compare",
+        json={"candidate_ids": [first_id, second_id]},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "candidates must use the same latest journal"
+
+
+def test_compare_candidate_projections_reports_missing_ids() -> None:
+    client, entries = build_client()
+    candidate_id = entries[0].attempted_candidate_ids[0]
+    missing_id = "candidate-0000000000000000"
+
+    response = client.post(
+        "/research/candidates/compare",
+        json={"candidate_ids": [candidate_id, missing_id]},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == {
+        "message": "candidate projections not found",
+        "candidate_ids": [missing_id],
+    }
+
+
+def test_compare_candidate_projections_rejects_duplicate_ids() -> None:
+    client, entries = build_client()
+    candidate_id = entries[0].attempted_candidate_ids[0]
+
+    response = client.post(
+        "/research/candidates/compare",
+        json={"candidate_ids": [candidate_id, candidate_id]},
+    )
+
+    assert response.status_code == 422
 
 
 def test_candidate_lineage_returns_persisted_occurrences() -> None:
@@ -192,3 +272,13 @@ def test_candidate_api_marks_legacy_missing_breakdown_without_fabricating_eviden
     assert item["latest_rank"] == legacy_occurrence.rank
     assert item["latest_ranking_score"] == str(legacy_occurrence.ranking_score)
     assert item["latest_decision_evidence"] is None
+
+    detail_response = client.get(f"/research/candidates/{legacy_occurrence.candidate.candidate_id}")
+
+    assert detail_response.status_code == 200
+    detail = detail_response.json()
+    risk_node = next(node for node in detail["decision_lineage"]["nodes"] if node["kind"] == "risk")
+    assert legacy_occurrence.risk_decision is not None
+    assert risk_node["status"] == "unavailable"
+    assert risk_node["outcome"] == legacy_occurrence.risk_decision.value
+    assert detail["rank_history"][0]["evidence_available"] is False

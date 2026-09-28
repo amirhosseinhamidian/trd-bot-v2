@@ -302,7 +302,7 @@ export default function PortfolioDetail({
           ) : (
             <div className="grid gap-4 xl:grid-cols-2">
               {positions.items.map((position) => (
-                <Card key={position.position_id}>
+                <Card key={position.position_id} id={position.position_id} className="scroll-mt-6">
                   <CardHeader>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>

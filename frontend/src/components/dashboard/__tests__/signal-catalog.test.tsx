@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import SignalCatalog from '@/components/dashboard/signal-catalog';
+import SignalDetail from '@/components/dashboard/signal-detail';
 import type { ExperimentSummary, Page, StrategySignal } from '@/lib/api/types';
 
 vi.mock('@/components/dashboard/signal-filter-panel', () => ({
@@ -87,5 +88,19 @@ describe('SignalCatalog', () => {
     expect(screen.getByText('RSI Threshold v1.0.0')).toBeInTheDocument();
     expect(screen.getByText(signal.signal_id)).toBeInTheDocument();
     expect(screen.getByText(signal.dataset_id)).toBeInTheDocument();
+  });
+
+  it('links an exact signal detail back to its dataset and experiment sources', () => {
+    render(<SignalDetail experiment={experiment} locale="en" signal={signal} />);
+
+    expect(screen.getByText(signal.signal_id)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View dataset' })).toHaveAttribute(
+      'href',
+      '/en/datasets/dataset-rsi',
+    );
+    expect(screen.getByRole('link', { name: 'View experiment' })).toHaveAttribute(
+      'href',
+      '/en/experiments/experiment-0123456789abcdef',
+    );
   });
 });

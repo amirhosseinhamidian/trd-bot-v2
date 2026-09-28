@@ -1358,9 +1358,53 @@ export interface CandidateJournalOccurrence {
   decision_evidence: CandidateDecisionEvidence | null;
 }
 
+export type CandidateDecisionLineageKind =
+  'dataset' | 'experiment' | 'signal' | 'candidate' | 'risk' | 'position' | 'exit';
+
+export type CandidateDecisionLineageStatus =
+  'available' | 'not_created' | 'not_evaluated' | 'unavailable';
+
+export interface CandidateDecisionLineageNode {
+  kind: CandidateDecisionLineageKind;
+  status: CandidateDecisionLineageStatus;
+  resource_id: string | null;
+  portfolio_id: string | null;
+  outcome: string | null;
+  reason: string | null;
+}
+
+export interface CandidateDecisionLineage {
+  lineage_version: 'candidate-decision-lineage-v1';
+  journal_id: string;
+  nodes: CandidateDecisionLineageNode[];
+}
+
+export interface CandidateRankHistoryEntry {
+  journal_id: string;
+  recorded_at: string;
+  rank: number;
+  ranking_score: string;
+  selected: boolean;
+  evidence_available: boolean;
+}
+
 export interface CandidateProjectionDetail {
   candidate: ResearchCandidateSnapshot;
   occurrence_count: number;
   journal_ids: string[];
+  rank_history: CandidateRankHistoryEntry[];
+  decision_lineage: CandidateDecisionLineage;
   latest: CandidateJournalOccurrence;
+}
+
+export interface CandidateComparisonEntry {
+  comparison_position: number;
+  occurrence: CandidateJournalOccurrence;
+}
+
+export interface CandidateComparisonResult {
+  journal_id: string;
+  compared_candidates: number;
+  entries: CandidateComparisonEntry[];
+  interpretation: 'historical_research_only';
 }

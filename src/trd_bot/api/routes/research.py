@@ -1639,6 +1639,31 @@ def list_experiment_signals(
 
 
 @router.get(
+    "/experiments/{experiment_id}/signals/{signal_id}",
+    response_model=StrategySignal,
+)
+def get_experiment_signal(
+    experiment_id: str,
+    signal_id: str,
+    registry: ExperimentRegistryDependency,
+) -> StrategySignal:
+    """Return one exact historical signal from a stored experiment."""
+
+    experiment = registry.get(experiment_id)
+    if experiment is None:
+        raise HTTPException(status_code=404, detail="experiment not found")
+
+    signal = next(
+        (item for item in experiment.result.signals if item.signal_id == signal_id),
+        None,
+    )
+    if signal is None:
+        raise HTTPException(status_code=404, detail="experiment signal not found")
+
+    return signal
+
+
+@router.get(
     "/experiments/{experiment_id}/summary",
     response_model=ExperimentSummary,
 )

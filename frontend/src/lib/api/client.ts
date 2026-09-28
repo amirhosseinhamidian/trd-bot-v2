@@ -1,6 +1,7 @@
 import type {
   AcceptancePolicyPreset,
   BackgroundJobSummary,
+  CandidateComparisonResult,
   CandidateJournalOccurrence,
   CandidateProjectionDetail,
   CandidateProjectionSummary,
@@ -765,6 +766,18 @@ export async function getExperimentSignals(
   );
 }
 
+export async function getExperimentSignal(
+  experimentId: string,
+  signalId: string,
+): Promise<StrategySignal> {
+  const encodedExperimentId = encodeURIComponent(experimentId);
+  const encodedSignalId = encodeURIComponent(signalId);
+
+  return getJson<StrategySignal>(
+    `/api/v1/research/experiments/${encodedExperimentId}/signals/${encodedSignalId}`,
+  );
+}
+
 export async function getAcceptancePolicyPresets(): Promise<AcceptancePolicyPreset[]> {
   return getJson<AcceptancePolicyPreset[]>('/api/v1/research/acceptance-policies');
 }
@@ -901,6 +914,14 @@ export async function getCandidateProjections(
   return getJson<Page<CandidateProjectionSummary>>(
     `/api/v1/research/candidates?${params.toString()}`,
   );
+}
+
+export async function compareCandidates(
+  candidateIds: string[],
+): Promise<CandidateComparisonResult> {
+  return postJson<CandidateComparisonResult>('/api/v1/research/candidates/compare', {
+    candidate_ids: candidateIds,
+  });
 }
 
 export async function getCandidateProjection(
