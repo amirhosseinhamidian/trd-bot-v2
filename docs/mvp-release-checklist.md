@@ -31,12 +31,14 @@ docker compose ps
 
 Wait until the `postgres` service reports `healthy`.
 
-## 3. Fresh schema migration
+## 3. Reversible fresh schema migration
 
 Load the development environment and upgrade an empty database:
 
 ```bash
 cp -n .env.example .env
+python -m alembic upgrade head
+python -m alembic downgrade base
 python -m alembic upgrade head
 python -m alembic check
 ```
@@ -44,6 +46,7 @@ python -m alembic check
 Expected result:
 
 - the full migration chain upgrades successfully from an empty database;
+- the complete chain downgrades to `base` and rebuilds to `head`;
 - `alembic check` reports no pending schema operations.
 
 ## 4. Backend release gates
@@ -62,10 +65,24 @@ The MVP end-to-end acceptance test must also pass:
 
 ```bash
 python -m pytest tests/test_mvp_acceptance.py -q
+python -m pytest tests/test_release_security_boundary.py -q
 ```
 
-It verifies that a closed historical candidate lifecycle can be persisted and
-read back through candidate, lineage, portfolio, position, and timeline APIs.
+These checks verify that a closed historical candidate lifecycle can be persisted and
+read back through candidate, lineage, portfolio, position, and timeline APIs, and that
+the release exposes no live execution route, credential input, or frontend execution page.
+
+The PostgreSQL race and restart acceptance test must run against the isolated
+`trd_bot_test` database:
+
+```bash
+python -m pytest \
+  tests/test_postgresql_integration.py::test_postgresql_background_job_races_and_expired_lease_recovery \
+  -m integration -v
+```
+
+It proves idempotent concurrent enqueue, single-worker claim, expired lease reclaim, and
+rejection of the stale worker after recovery.
 
 ## 5. API smoke check
 
@@ -117,9 +134,11 @@ The MVP can be marked complete only when all of the following are true:
 
 - PostgreSQL starts cleanly through Docker Compose.
 - The complete Alembic chain upgrades an empty database.
+- The complete Alembic chain downgrades to `base` and rebuilds to `head`.
 - `alembic check` reports no pending migration.
 - Backend formatting, lint, type checking, unit tests, and integration tests pass.
 - The end-to-end MVP acceptance test passes.
+- The PostgreSQL job race/recovery and release security boundary tests pass.
 - Frontend formatting, lint, tests, and production build pass.
 - The API health smoke check returns HTTP 200.
 - Candidate journal/projection and paper portfolio dashboards remain read-only.

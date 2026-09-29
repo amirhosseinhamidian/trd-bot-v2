@@ -98,6 +98,12 @@ jobs:
       - name: Upgrade PostgreSQL schema
         run: python -m alembic upgrade head
 
+      - name: Downgrade PostgreSQL schema to base
+        run: python -m alembic downgrade base
+
+      - name: Rebuild PostgreSQL schema from base
+        run: python -m alembic upgrade head
+
       - name: Check pending migrations
         run: python -m alembic check
 
