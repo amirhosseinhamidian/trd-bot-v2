@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from trd_bot.core.config import get_settings
 from trd_bot.main import app
 
 client = TestClient(app)
@@ -7,15 +8,16 @@ client = TestClient(app)
 
 def test_health_check_returns_ok() -> None:
     response = client.get("/api/v1/health")
+    settings = get_settings()
 
     assert response.status_code == 200
 
     data = response.json()
 
     assert data["status"] == "ok"
-    assert data["service"] == "TRD BOT v2"
-    assert data["version"] == "0.1.0"
-    assert data["environment"] == "development"
+    assert data["service"] == settings.app_name
+    assert data["version"] == settings.app_version
+    assert data["environment"] == settings.environment
     assert "timestamp" in data
 
 

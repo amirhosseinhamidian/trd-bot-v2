@@ -4,6 +4,8 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from trd_bot import __version__
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -16,7 +18,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "TRD BOT v2"
-    app_version: str = "0.1.0"
+    app_version: str = __version__
     environment: Literal["development", "test", "production"] = "development"
     debug: bool = False
 

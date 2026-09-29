@@ -1,5 +1,8 @@
 # TRD BOT v2
 
+Current local release candidate: **v0.2.0**. This repository is configured for
+local research use; server staging and deployment are intentionally deferred.
+
 TRD BOT v2 is a single-user research platform for:
 
 - market-data research
@@ -75,6 +78,14 @@ Start the backend API:
 python -m uvicorn trd_bot.main:app --reload
 ```
 
+Provider imports and optimization executions use the durable background queue.
+Keep a worker running in a separate terminal:
+
+```bash
+source .venv/bin/activate
+python scripts/run_background_worker.py
+```
+
 The health endpoint is:
 
 ```text
@@ -132,6 +143,8 @@ well as pull requests targeting `main`.
 
 The final fresh-start and release checklist is documented in
 [`docs/mvp-release-checklist.md`](docs/mvp-release-checklist.md).
+The local v0.2.0 candidate runbook and evidence template are documented in
+[`docs/v0.2/26-local-release-candidate.md`](docs/v0.2/26-local-release-candidate.md).
 
 ## Project structure
 
