@@ -48,6 +48,7 @@ class MarketDataProviderMetadata:
     default_pair: TradingPair
     access_mode: MarketDataProviderAccessMode
     max_closed_candles: int | None
+    normalization_version: str | None = None
 
 
 class MarketDataProviderError(RuntimeError):

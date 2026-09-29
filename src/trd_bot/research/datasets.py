@@ -40,6 +40,7 @@ class DatasetProvenance(BaseModel):
     import_id: str | None = Field(default=None, min_length=1, max_length=100)
     requested_start_time: datetime | None = None
     requested_end_time: datetime | None = None
+    normalization_version: str | None = Field(default=None, min_length=1, max_length=100)
     original_filename: str | None = Field(default=None, min_length=1, max_length=255)
     original_file_format: Literal["csv", "json", "parquet"] | None = None
     original_file_checksum: str | None = Field(
@@ -50,7 +51,13 @@ class DatasetProvenance(BaseModel):
     )
     column_mapping: dict[str, str] | None = None
 
-    @field_validator("connection_id", "provider_id", "import_id", "original_filename")
+    @field_validator(
+        "connection_id",
+        "provider_id",
+        "import_id",
+        "normalization_version",
+        "original_filename",
+    )
     @classmethod
     def normalize_optional_text(cls, value: str | None) -> str | None:
         if value is None:
@@ -92,7 +99,7 @@ class DatasetProvenance(BaseModel):
             assert self.requested_end_time is not None
             if self.requested_end_time <= self.requested_start_time:
                 raise ValueError("dataset provenance requested end time must be after start time")
-        elif any(value is not None for value in import_details):
+        elif any(value is not None for value in (*import_details, self.normalization_version)):
             raise ValueError("non-import dataset provenance cannot contain import details")
 
         if self.kind is DatasetProvenanceKind.MANUAL_UPLOAD:

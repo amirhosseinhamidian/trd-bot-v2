@@ -108,6 +108,7 @@ def test_api_lists_allowlisted_provider_capabilities(
             },
             "access_mode": "direct",
             "max_closed_candles": None,
+            "normalization_version": None,
         }
     ]
 

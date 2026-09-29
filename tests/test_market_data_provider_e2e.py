@@ -71,7 +71,7 @@ def provider_e2e_dependencies() -> Iterator[dict[str, list[str]]]:
     async def fetch_nobitex(url: str, timeout_seconds: float) -> object:
         del timeout_seconds
         requests["nobitex"].append(url)
-        return build_nobitex_payload(START, START + timedelta(hours=1))
+        return build_nobitex_payload(*(START + timedelta(minutes=15 * index) for index in range(8)))
 
     async def fetch_kraken(url: str, timeout_seconds: float) -> object:
         del timeout_seconds
@@ -126,6 +126,7 @@ def test_nobitex_api_lifecycle_imports_a_dataset_with_real_adapter_logic(
         "market_type": "spot",
     }
     assert providers["nobitex-public"]["max_closed_candles"] is None
+    assert providers["nobitex-public"]["normalization_version"] == "nobitex-utc-grid-v1"
     assert providers["kraken-public"]["access_mode"] == "vpn_required"
     assert providers["kraken-public"]["max_closed_candles"] == 719
 
@@ -182,6 +183,7 @@ def test_nobitex_api_lifecycle_imports_a_dataset_with_real_adapter_logic(
     assert dataset.status_code == 200
     assert dataset.json()["provenance"]["connection_id"] == connection_id
     assert dataset.json()["provenance"]["provider_id"] == "nobitex-public"
+    assert dataset.json()["provenance"]["normalization_version"] == "nobitex-utc-grid-v1"
 
     history = client.get(f"/api/v1/market-data/connections/{connection_id}/imports")
     assert history.status_code == 200

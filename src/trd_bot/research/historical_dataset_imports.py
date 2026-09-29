@@ -82,7 +82,7 @@ class HistoricalDatasetImportService:
         start_time: datetime,
         end_time: datetime,
     ) -> HistoricalDatasetImportPreview:
-        connection, candles, quality_report = await self._fetch_and_check(
+        connection, candles, quality_report, _ = await self._fetch_and_check(
             connection_id=connection_id,
             pair=pair,
             timeframe=timeframe,
@@ -118,7 +118,7 @@ class HistoricalDatasetImportService:
         end_time: datetime,
         expected_preview_checksum: str | None = None,
     ) -> DatasetSnapshot:
-        connection, candles, quality_report = await self._fetch_and_check(
+        connection, candles, quality_report, normalization_version = await self._fetch_and_check(
             connection_id=connection_id,
             pair=pair,
             timeframe=timeframe,
@@ -145,6 +145,7 @@ class HistoricalDatasetImportService:
                 import_id=import_id,
                 requested_start_time=start_time,
                 requested_end_time=end_time,
+                normalization_version=normalization_version,
             ),
             requested_start_time=start_time,
             requested_end_time=end_time,
@@ -159,7 +160,12 @@ class HistoricalDatasetImportService:
         timeframe: Timeframe,
         start_time: datetime,
         end_time: datetime,
-    ) -> tuple[MarketDataConnection, tuple[OHLCVCandle, ...], DataQualityReport]:
+    ) -> tuple[
+        MarketDataConnection,
+        tuple[OHLCVCandle, ...],
+        DataQualityReport,
+        str | None,
+    ]:
         connection = self._connections.get(connection_id)
         if connection is None:
             raise MarketDataConnectionNotFoundError("market-data connection not found")
@@ -208,4 +214,4 @@ class HistoricalDatasetImportService:
             requested_end_time=end_time,
             requested_timeframe=timeframe,
         )
-        return connection, candles, quality_report
+        return connection, candles, quality_report, metadata.normalization_version

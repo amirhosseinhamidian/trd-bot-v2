@@ -30,6 +30,7 @@ export interface MarketDataProviderSummary {
   default_pair: TradingPair;
   access_mode: MarketDataProviderAccessMode;
   max_closed_candles: number | null;
+  normalization_version?: string | null;
 }
 
 export interface MarketDataConnection {
@@ -232,6 +233,7 @@ export interface DatasetProvenance {
   import_id: string | null;
   requested_start_time: string | null;
   requested_end_time: string | null;
+  normalization_version?: string | null;
   original_filename: string | null;
   original_file_format: DatasetFileFormat | null;
   original_file_checksum: string | null;

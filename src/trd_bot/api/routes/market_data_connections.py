@@ -53,6 +53,7 @@ class MarketDataProviderSummary(BaseModel):
     default_pair: TradingPair
     access_mode: MarketDataProviderAccessMode
     max_closed_candles: int | None = Field(default=None, ge=1)
+    normalization_version: str | None = None
 
     @classmethod
     def from_metadata(cls, metadata: MarketDataProviderMetadata) -> Self:
@@ -65,6 +66,7 @@ class MarketDataProviderSummary(BaseModel):
             default_pair=metadata.default_pair,
             access_mode=metadata.access_mode,
             max_closed_candles=metadata.max_closed_candles,
+            normalization_version=metadata.normalization_version,
         )
 
 
