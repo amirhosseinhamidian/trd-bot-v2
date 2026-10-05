@@ -35,6 +35,10 @@ from trd_bot.research.candidate_decision_lineage import (
     CandidateDecisionLineageStatus,
     CandidateRankHistoryEntry,
 )
+from trd_bot.research.candidate_generation import (
+    CandidateGenerationPolicy,
+    CandidateGenerator,
+)
 from trd_bot.research.candidate_ranking import (
     CandidateRanker,
     CandidateRankingComponent,
@@ -333,6 +337,8 @@ __all__ = [
     "CandidateEvidence",
     "CandidateExitReason",
     "CandidateExitTrigger",
+    "CandidateGenerationPolicy",
+    "CandidateGenerator",
     "CandidatePositionMonitor",
     "CandidatePositionMonitoringResult",
     "CandidateRankHistoryEntry",
