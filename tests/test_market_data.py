@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -84,3 +84,19 @@ def test_candle_rejects_timestamp_without_timezone() -> None:
         create_valid_candle(
             open_time=datetime(2026, 8, 21, 12),
         )
+
+
+@pytest.mark.parametrize(
+    ("timeframe", "expected_duration"),
+    (
+        (Timeframe.MINUTES_15, timedelta(minutes=15)),
+        (Timeframe.HOUR_1, timedelta(hours=1)),
+        (Timeframe.HOURS_4, timedelta(hours=4)),
+        (Timeframe.DAY_1, timedelta(days=1)),
+    ),
+)
+def test_timeframe_exposes_canonical_duration(
+    timeframe: Timeframe,
+    expected_duration: timedelta,
+) -> None:
+    assert timeframe.duration == expected_duration

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import StrEnum
 from typing import Self
@@ -19,6 +19,22 @@ class Timeframe(StrEnum):
     HOUR_1 = "1h"
     HOURS_4 = "4h"
     DAY_1 = "1d"
+
+    @property
+    def duration(self) -> timedelta:
+        """Return the canonical duration represented by this timeframe."""
+
+        match self:
+            case Timeframe.MINUTES_15:
+                return timedelta(minutes=15)
+            case Timeframe.HOUR_1:
+                return timedelta(hours=1)
+            case Timeframe.HOURS_4:
+                return timedelta(hours=4)
+            case Timeframe.DAY_1:
+                return timedelta(days=1)
+
+        raise ValueError(f"unsupported timeframe: {self}")
 
 
 class TradingPair(BaseModel):
