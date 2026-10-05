@@ -10,6 +10,8 @@ from trd_bot.research.candidate_generation import (
     CandidateGenerator,
 )
 from trd_bot.research.candidates import CandidateAction
+from trd_bot.research.datasets import DatasetSnapshot
+from trd_bot.research.experiments import ResearchExperiment
 
 
 def test_generates_long_candidate_from_source_signal_without_lookahead() -> None:
@@ -57,7 +59,7 @@ def experiment_with_signal(
     *,
     direction: SignalDirection,
     score: Decimal,
-):
+) -> tuple[DatasetSnapshot, ResearchExperiment]:
     dataset, experiment = build_experiment()
     source = experiment.result.signals[0]
 

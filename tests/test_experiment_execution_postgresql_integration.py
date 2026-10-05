@@ -19,6 +19,15 @@ from trd_bot.db import (
     create_database_engine,
     create_session_factory,
 )
+from trd_bot.db.candidate_journal_repositories import (
+    SqlAlchemyCandidateJournalRepository,
+)
+from trd_bot.db.candidate_projection_repositories import (
+    SqlAlchemyCandidateProjectionRepository,
+)
+from trd_bot.db.simulated_portfolio_repositories import (
+    SqlAlchemySimulatedPortfolioRepository,
+)
 from trd_bot.domain.market_data import OHLCVCandle
 from trd_bot.research import (
     DatasetBuilder,
@@ -109,6 +118,11 @@ def clean_execution_tables(database_url: str) -> None:
             connection.execute(
                 text(
                     "TRUNCATE TABLE "
+                    "candidate_projections, "
+                    "candidate_journals, "
+                    "portfolio_timeline_events, "
+                    "simulated_positions, "
+                    "simulated_portfolios, "
                     "experiment_executions, "
                     "research_experiments, "
                     "dataset_snapshots "
@@ -184,6 +198,116 @@ def test_background_execution_lifecycle_with_postgresql() -> None:
             assert experiment.strategy_fingerprint is not None
             assert experiment.dataset_id == dataset.dataset_id
             assert experiment.strategy_name == "ema-crossover"
+
+            journal_repository = SqlAlchemyCandidateJournalRepository(session)
+            portfolio_repository = SqlAlchemySimulatedPortfolioRepository(session)
+            projection_repository = SqlAlchemyCandidateProjectionRepository(session)
+
+            # The production background runtime must continue beyond Experiment
+            # persistence into Candidate -> Risk -> Portfolio persistence.
+            assert journal_repository.count() == 1
+            assert portfolio_repository.count() == 1
+
+            journals = journal_repository.list_by_dataset(
+                dataset_id=dataset.dataset_id,
+                limit=10,
+                offset=0,
+            )
+            assert len(journals) == 1
+
+            journal = journals[0]
+            portfolio = portfolio_repository.get(journal.portfolio_id)
+
+            assert portfolio is not None
+            assert portfolio.dataset_id == dataset.dataset_id
+
+            projections = projection_repository.list_page(
+                limit=100,
+                offset=0,
+            )
+
+            assert projections
+            assert all(
+                projection.candidate.dataset_id == dataset.dataset_id for projection in projections
+            )
+            assert all(
+                projection.candidate.experiment_id == completed.experiment_id
+                for projection in projections
+            )
+
+            first_experiment_id = completed.experiment_id
+            first_journal_ids = tuple(
+                journal.journal_id
+                for journal in journal_repository.list_by_dataset(
+                    dataset_id=dataset.dataset_id,
+                    limit=100,
+                    offset=0,
+                )
+            )
+            first_portfolio_ids = tuple(
+                portfolio.portfolio_id
+                for portfolio in portfolio_repository.list_page(
+                    limit=100,
+                    offset=0,
+                )
+            )
+            first_projection_ids = tuple(
+                projection.candidate.candidate_id
+                for projection in projection_repository.list_page(
+                    limit=100,
+                    offset=0,
+                )
+            )
+
+        # Retry the exact same completed execution through the production
+        # background runtime.
+        run_experiment_execution_with_session_factory(
+            queued.execution_id,
+            session_factory,
+        )
+
+        with session_factory() as session:
+            execution_repository = SqlAlchemyExperimentExecutionRepository(session)
+            journal_repository = SqlAlchemyCandidateJournalRepository(session)
+            portfolio_repository = SqlAlchemySimulatedPortfolioRepository(session)
+            projection_repository = SqlAlchemyCandidateProjectionRepository(session)
+
+            retried = execution_repository.get(queued.execution_id)
+
+            assert retried is not None
+            assert retried.status is ExperimentExecutionStatus.SUCCEEDED
+            assert retried.experiment_id == first_experiment_id
+
+            retry_journal_ids = tuple(
+                journal.journal_id
+                for journal in journal_repository.list_by_dataset(
+                    dataset_id=dataset.dataset_id,
+                    limit=100,
+                    offset=0,
+                )
+            )
+            retry_portfolio_ids = tuple(
+                portfolio.portfolio_id
+                for portfolio in portfolio_repository.list_page(
+                    limit=100,
+                    offset=0,
+                )
+            )
+            retry_projection_ids = tuple(
+                projection.candidate.candidate_id
+                for projection in projection_repository.list_page(
+                    limit=100,
+                    offset=0,
+                )
+            )
+
+            assert retry_journal_ids == first_journal_ids
+            assert retry_portfolio_ids == first_portfolio_ids
+            assert retry_projection_ids == first_projection_ids
+
+            assert journal_repository.count() == len(first_journal_ids)
+            assert portfolio_repository.count() == len(first_portfolio_ids)
+            assert projection_repository.count() == len(first_projection_ids)
 
     finally:
         clean_execution_tables(database_url)

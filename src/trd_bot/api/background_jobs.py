@@ -10,7 +10,17 @@ from trd_bot.db import (
     SqlAlchemyWalkForwardRunRegistry,
     get_session_factory,
 )
+from trd_bot.db.candidate_lifecycle_persistence import (
+    SqlAlchemyCandidateLifecycleRecorder,
+)
 from trd_bot.research import ExperimentExecutionRunner
+from trd_bot.research.candidate_application import (
+    CandidateApplicationOrchestrator,
+)
+from trd_bot.research.experiment_candidate_handoff import (
+    ExperimentCandidateHandoff,
+)
+from trd_bot.research.experiment_executions import ExperimentExecutionStatus
 from trd_bot.research.walk_forward_execution_runner import (
     WalkForwardExecutionRunner,
 )
@@ -26,13 +36,31 @@ def run_experiment_execution_with_session_factory(
     """Run one historical experiment using an explicit session factory."""
 
     with session_factory() as session:
+        execution_repository = SqlAlchemyExperimentExecutionRepository(session)
+        dataset_repository = SqlAlchemyDatasetRepository(session)
+        experiment_registry = SqlAlchemyExperimentRegistry(session)
+
         runner = ExperimentExecutionRunner(
-            executions=SqlAlchemyExperimentExecutionRepository(session),
-            datasets=SqlAlchemyDatasetRepository(session),
-            experiments=SqlAlchemyExperimentRegistry(session),
+            executions=execution_repository,
+            datasets=dataset_repository,
+            experiments=experiment_registry,
         )
 
-        runner.run(execution_id)
+        completed_execution = runner.run(execution_id)
+
+        if completed_execution.status is not ExperimentExecutionStatus.SUCCEEDED:
+            return
+
+        candidate_application = CandidateApplicationOrchestrator(
+            recorder=SqlAlchemyCandidateLifecycleRecorder(session),
+        )
+        candidate_handoff = ExperimentCandidateHandoff(
+            datasets=dataset_repository,
+            experiments=experiment_registry,
+            application=candidate_application,
+        )
+
+        candidate_handoff.run(completed_execution)
 
 
 def run_experiment_execution_job(
