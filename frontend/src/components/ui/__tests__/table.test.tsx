@@ -30,6 +30,8 @@ describe('Table', () => {
     expect(region).toHaveClass(
       'overflow-x-auto',
       'overscroll-x-contain',
+      '[scrollbar-gutter:stable]',
+      'focus-visible:border-app-control-border',
       'focus-visible:ring-2',
       'focus-visible:ring-app-accent',
     );
@@ -65,5 +67,35 @@ describe('Table', () => {
     );
 
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
+  });
+
+  it('propagates direction and provides compact responsive cells', () => {
+    render(
+      <Table dir="rtl" scrollLabel="جدول نتایج">
+        <TableHeader>
+          <TableRow>
+            <TableHead>مجموعه‌داده</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow data-state="selected">
+            <TableCell>BTC/USDT</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+
+    const region = screen.getByRole('region', { name: 'جدول نتایج' });
+    const table = screen.getByRole('table');
+    const selectedRow = screen.getByRole('row', { name: 'BTC/USDT' });
+
+    expect(region).toHaveAttribute('dir', 'rtl');
+    expect(table).toHaveAttribute('dir', 'rtl');
+    expect(screen.getByRole('columnheader')).toHaveClass('px-3', 'sm:px-4', 'font-semibold');
+    expect(screen.getByRole('cell')).toHaveClass('px-3', 'sm:px-4', 'align-middle');
+    expect(selectedRow).toHaveClass(
+      'focus-within:bg-app-hover',
+      'data-[state=selected]:bg-app-accent-soft',
+    );
   });
 });

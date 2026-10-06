@@ -14,18 +14,20 @@ export type TableProps = TableHTMLAttributes<HTMLTableElement> & {
 };
 
 export const Table = forwardRef<HTMLTableElement, TableProps>(
-  ({ className, containerClassName, scrollLabel, ...props }, ref) => (
+  ({ className, containerClassName, dir, scrollLabel, ...props }, ref) => (
     <div
       role={scrollLabel ? 'region' : undefined}
       aria-label={scrollLabel}
       tabIndex={scrollLabel ? 0 : undefined}
+      dir={dir}
       className={cn(
-        'relative w-full overflow-x-auto overscroll-x-contain rounded-xl border border-app-border bg-app-surface focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset',
+        'relative w-full [scrollbar-gutter:stable] overflow-x-auto overscroll-x-contain rounded-xl border border-app-border bg-app-surface focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset',
         containerClassName,
       )}
     >
       <table
         ref={ref}
+        dir={dir}
         className={cn('w-full min-w-full caption-bottom text-sm', className)}
         {...props}
       />
@@ -59,7 +61,14 @@ TableBody.displayName = 'TableBody';
 
 export const TableRow = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElement>>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn('transition-colors hover:bg-app-hover', className)} {...props} />
+    <tr
+      ref={ref}
+      className={cn(
+        'transition-colors focus-within:bg-app-hover hover:bg-app-hover data-[state=selected]:bg-app-accent-soft',
+        className,
+      )}
+      {...props}
+    />
   ),
 );
 
@@ -71,7 +80,7 @@ export const TableHead = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLT
       ref={ref}
       scope={scope}
       className={cn(
-        'h-11 px-4 text-start text-xs font-medium whitespace-nowrap text-app-muted',
+        'h-11 px-3 text-start text-xs font-semibold whitespace-nowrap text-app-muted sm:px-4',
         className,
       )}
       {...props}
@@ -85,7 +94,10 @@ export const TableCell = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLT
   ({ className, ...props }, ref) => (
     <td
       ref={ref}
-      className={cn('px-4 py-3 text-sm whitespace-nowrap text-app-foreground', className)}
+      className={cn(
+        'px-3 py-3 align-middle text-sm whitespace-nowrap text-app-foreground sm:px-4',
+        className,
+      )}
       {...props}
     />
   ),

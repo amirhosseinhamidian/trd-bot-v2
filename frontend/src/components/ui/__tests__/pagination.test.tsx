@@ -32,6 +32,13 @@ describe('Pagination', () => {
     expect(nextButton).toHaveClass('w-full', 'sm:w-auto');
     expect(nextButton.parentElement).toHaveClass('grid', 'w-full', 'grid-cols-2', 'sm:flex');
 
+    const currentPage = screen.getByText('1 / 4');
+
+    expect(currentPage).toHaveAttribute('aria-current', 'page');
+    expect(currentPage).toHaveAttribute('dir', 'ltr');
+    expect(currentPage.parentElement).toHaveAttribute('aria-live', 'polite');
+    expect(currentPage.parentElement).toHaveAttribute('aria-atomic', 'true');
+
     await user.click(nextButton);
 
     expect(onOffsetChange).toHaveBeenCalledWith(25);
@@ -52,6 +59,42 @@ describe('Pagination', () => {
     );
 
     expect(screen.getByRole('navigation', { name: 'Page' })).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('inherits an explicit RTL direction while isolating page numbers', () => {
+    render(
+      <Pagination
+        dir="rtl"
+        total={50}
+        limit={25}
+        offset={25}
+        pageLabel="صفحه"
+        previousLabel="قبلی"
+        nextLabel="بعدی"
+        onOffsetChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('navigation', { name: 'صفحه' })).toHaveAttribute('dir', 'rtl');
+    expect(screen.getByText('2 / 2')).toHaveAttribute('dir', 'ltr');
+  });
+
+  it('keeps empty and invalid paging inputs finite and non-interactive', () => {
+    render(
+      <Pagination
+        total={0}
+        limit={0}
+        offset={500}
+        pageLabel="Page"
+        previousLabel="Previous"
+        nextLabel="Next"
+        onOffsetChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('0 / 0')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
