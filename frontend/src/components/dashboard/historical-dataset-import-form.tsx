@@ -249,7 +249,7 @@ export default function HistoricalDatasetImportForm({
       <p
         className={`mt-4 rounded-xl border p-3 text-sm leading-6 ${
           provider.access_mode === 'direct'
-            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600'
+            ? 'border-app-success-border bg-app-success-soft text-app-success'
             : 'border-app-warning-border bg-app-warning-soft text-app-warning'
         }`}
       >
@@ -370,7 +370,7 @@ export default function HistoricalDatasetImportForm({
       {hasRequestError ? (
         <p
           role="alert"
-          className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500"
+          className="mt-4 rounded-xl border border-app-danger-border bg-app-danger-soft p-3 text-sm text-app-danger"
         >
           {copy.requestError}
         </p>
@@ -531,8 +531,8 @@ export default function HistoricalDatasetImportForm({
       ) : null}
 
       {importedDataset ? (
-        <section className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
-          <h4 className="font-semibold text-emerald-500">{copy.importedTitle}</h4>
+        <section className="mt-5 rounded-2xl border border-app-success-border bg-app-success-soft p-4">
+          <h4 className="font-semibold text-app-success">{copy.importedTitle}</h4>
           <p dir="ltr" className="mt-2 text-left text-sm break-all text-app-foreground">
             {importedDataset.dataset_id}
           </p>

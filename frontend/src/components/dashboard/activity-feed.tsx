@@ -208,8 +208,8 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
           <EmptyState
             title={copy.errorTitle}
             description={copy.errorDescription}
-            className="border-red-500/20 bg-red-500/10"
-            icon={<span className="font-bold text-red-500">!</span>}
+            className="border-app-danger-border bg-app-danger-soft"
+            icon={<span className="font-bold text-app-danger">!</span>}
             action={
               <Button variant="danger" size="sm" onClick={() => void loadActivity(page.offset)}>
                 {copy.retry}

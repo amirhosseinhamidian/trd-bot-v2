@@ -451,7 +451,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
                 ))}
               </div>
               {errors.mapping ? (
-                <p role="alert" className="mt-4 text-sm text-red-500">
+                <p role="alert" className="mt-4 text-sm text-app-danger">
                   {errors.mapping}
                 </p>
               ) : null}
@@ -524,7 +524,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
                 </div>
               </dl>
               {preview.quality_report.issues.length > 0 ? (
-                <ul className="mt-5 space-y-2 text-sm text-amber-600">
+                <ul className="mt-5 space-y-2 text-sm text-app-warning">
                   {preview.quality_report.issues.map((issue, index) => (
                     <li key={`${issue.code}-${issue.timestamp ?? index}`}>{issue.message}</li>
                   ))}
@@ -536,7 +536,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
           {submitError ? (
             <p
               role="alert"
-              className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-500"
+              className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4 text-sm text-app-danger"
             >
               {submitError}
             </p>
@@ -545,9 +545,9 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
           {createdDataset ? (
             <div
               role="status"
-              className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-5"
+              className="rounded-xl border border-app-success-border bg-app-success-soft p-5"
             >
-              <p className="font-semibold text-emerald-500">{copy.successTitle}</p>
+              <p className="font-semibold text-app-success">{copy.successTitle}</p>
               <p className="mt-2 text-sm leading-6 text-app-muted">{copy.successDescription}</p>
               <p
                 dir="ltr"
@@ -557,7 +557,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
               </p>
               <Link
                 href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
-                className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-emerald-500/30 px-4 py-2 text-center text-sm font-semibold text-emerald-500 transition hover:bg-emerald-500/10 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
+                className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-app-success-border px-4 py-2 text-center text-sm font-semibold text-app-success transition hover:bg-app-success-soft focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
               >
                 {copy.viewDataset}
               </Link>

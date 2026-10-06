@@ -412,7 +412,7 @@ export default function MarketDataConnectionsPanel({
                     </dl>
 
                     {connection.last_error ? (
-                      <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
+                      <div className="mt-4 rounded-xl border border-app-danger-border bg-app-danger-soft p-3 text-sm text-app-danger">
                         <span className="font-semibold">{copy.lastError}: </span>
                         {connection.last_error}
                       </div>

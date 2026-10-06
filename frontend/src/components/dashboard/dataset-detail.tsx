@@ -554,8 +554,8 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
             <EmptyState
               title={copy.candles.errorTitle}
               description={copy.candles.errorDescription}
-              className="border-red-500/20 bg-red-500/10"
-              icon={<span className="font-bold text-red-500">!</span>}
+              className="border-app-danger-border bg-app-danger-soft"
+              icon={<span className="font-bold text-app-danger">!</span>}
               action={
                 <Button
                   size="sm"
@@ -596,11 +596,11 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                         {candle.open_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-semibold text-emerald-500">
+                      <TableCell dir="ltr" className="text-left font-semibold text-app-success">
                         {candle.high_price}
                       </TableCell>
 
-                      <TableCell dir="ltr" className="text-left font-semibold text-red-500">
+                      <TableCell dir="ltr" className="text-left font-semibold text-app-danger">
                         {candle.low_price}
                       </TableCell>
 

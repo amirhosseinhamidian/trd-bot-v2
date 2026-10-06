@@ -235,8 +235,8 @@ export default function MarketDataImportHistory({
                     </dl>
 
                     {record.status === 'succeeded' && record.dataset_id ? (
-                      <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-                        <p className="text-xs font-semibold text-emerald-500">{copy.datasetId}</p>
+                      <div className="mt-4 rounded-xl border border-app-success-border bg-app-success-soft p-3">
+                        <p className="text-xs font-semibold text-app-success">{copy.datasetId}</p>
                         <p
                           dir="ltr"
                           className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
@@ -253,7 +253,7 @@ export default function MarketDataImportHistory({
                     ) : null}
 
                     {record.status === 'failed' ? (
-                      <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
+                      <div className="mt-4 rounded-xl border border-app-danger-border bg-app-danger-soft p-3 text-sm text-app-danger">
                         {record.error_code ? (
                           <p>
                             <span className="font-semibold">{copy.errorCode}: </span>

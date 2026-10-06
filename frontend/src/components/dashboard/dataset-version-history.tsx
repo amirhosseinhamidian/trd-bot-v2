@@ -193,8 +193,8 @@ export default function DatasetVersionHistory({
           <EmptyState
             title={copy.versions.refreshErrorTitle}
             description={copy.versions.refreshErrorDescription}
-            className="mb-5 border-red-500/20 bg-red-500/10"
-            icon={<span className="font-bold text-red-500">!</span>}
+            className="mb-5 border-app-danger-border bg-app-danger-soft"
+            icon={<span className="font-bold text-app-danger">!</span>}
             action={
               <Button size="sm" variant="secondary" onClick={() => void loadVersions(0)}>
                 {copy.versions.reload}
@@ -207,7 +207,7 @@ export default function DatasetVersionHistory({
           <EmptyState
             title={copy.versions.errorTitle}
             description={copy.versions.errorDescription}
-            icon={<span className="font-bold text-red-500">!</span>}
+            icon={<span className="font-bold text-app-danger">!</span>}
             action={
               <Button size="sm" variant="secondary" onClick={() => void loadVersions(0)}>
                 {copy.versions.retry}
@@ -302,9 +302,9 @@ export default function DatasetVersionHistory({
                   ) : null}
 
                   {record.status === 'failed' ? (
-                    <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+                    <div className="mt-3 rounded-lg border border-app-danger-border bg-app-danger-soft p-3">
                       {record.error_code ? (
-                        <p dir="ltr" className="text-left text-xs font-semibold text-red-500">
+                        <p dir="ltr" className="text-left text-xs font-semibold text-app-danger">
                           {record.error_code}
                         </p>
                       ) : null}
