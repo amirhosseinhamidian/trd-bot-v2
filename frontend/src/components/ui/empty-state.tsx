@@ -22,7 +22,7 @@ export function EmptyState({
       role="status"
       aria-live="polite"
       className={cn(
-        'flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-app-border bg-app-surface/70 p-6 text-center',
+        'flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-app-border bg-app-surface p-5 text-center sm:p-6',
         className,
       )}
       {...props}

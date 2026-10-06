@@ -13,6 +13,10 @@ describe('RouteLoadingState', () => {
 
     expect(status).toHaveAttribute('aria-busy', 'true');
     expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status.querySelector('[aria-hidden="true"]')).toHaveClass(
+      'bg-app-surface-muted',
+      'motion-reduce:animate-none',
+    );
   });
 
   it('supports custom classes', () => {

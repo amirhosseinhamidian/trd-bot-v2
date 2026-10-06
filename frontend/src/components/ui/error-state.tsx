@@ -29,9 +29,9 @@ export function ErrorState({
       aria-live="assertive"
       title={title}
       description={description}
-      className={cn('border-solid border-red-500/20 bg-red-500/5', className)}
+      className={cn('border-solid border-app-danger-border bg-app-danger-soft', className)}
       icon={
-        <span aria-hidden="true" className="font-bold text-red-500">
+        <span aria-hidden="true" className="font-bold text-app-danger">
           !
         </span>
       }

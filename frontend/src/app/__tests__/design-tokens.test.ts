@@ -97,6 +97,12 @@ describe('Nexora design token contract', () => {
     }
   });
 
+  it('provides a theme-aware elevated-surface shadow', () => {
+    expect(tailwindTheme).toContain('--shadow-app-surface: 0 16px 36px var(--app-shadow-color);');
+    expect(darkTheme).toContain('--app-shadow-color: rgba(0, 0, 0, 0.28);');
+    expect(lightTheme).toContain('--app-shadow-color: rgba(10, 26, 47, 0.12);');
+  });
+
   it('keeps the frozen dark palette and complete semantic coverage', () => {
     expectDeclarations(darkTheme, {
       background: '#020817',

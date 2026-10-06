@@ -165,6 +165,8 @@ series tokens and must also expose a textual metric/summary.
   `24px` on mobile. Technical IDs, formulas, and numerical data may use LTR isolation and tabular
   numerals.
 - Focus indicators use the semantic accent and must remain visible in both themes.
+- Elevated surfaces use the theme-aware `--app-shadow-color` token; component code must not
+  hard-code a dark-only shadow color.
 
 Phase 1 contrast amendment: the hue family and product identity remain unchanged. Muted surfaces,
 neutral borders, and secondary text receive small luminance adjustments, while interactive

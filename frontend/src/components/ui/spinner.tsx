@@ -22,7 +22,7 @@ export function Spinner({ className, label, size = 'md', ...props }: SpinnerProp
       aria-label={label}
       aria-hidden={label ? undefined : true}
       className={cn(
-        'inline-block shrink-0 animate-spin rounded-full border-current border-e-transparent',
+        'inline-block shrink-0 animate-spin rounded-full border-current border-e-transparent motion-reduce:animate-none',
         sizes[size],
         className,
       )}
