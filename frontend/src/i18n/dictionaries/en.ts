@@ -2,7 +2,7 @@ import type { DashboardDictionary } from '@/i18n/dictionary';
 
 const en: DashboardDictionary = {
   metadata: {
-    title: 'TRD BOT v2 | Market Research Dashboard',
+    title: 'Nexora / TRD BOT | Market Research Dashboard',
     description: 'Historical research, backtesting, and paper-analysis dashboard.',
   },
 

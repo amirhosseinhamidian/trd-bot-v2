@@ -29,6 +29,23 @@ vi.mock('@/components/theme/theme-toggle', () => ({
 }));
 
 describe('DashboardShell mobile navigation', () => {
+  it('renders the Nexora platform and TRD BOT product context', () => {
+    const { container } = render(
+      <DashboardShell locale="en">
+        <div>Content</div>
+      </DashboardShell>,
+    );
+
+    expect(screen.getByText('Nexora')).toBeInTheDocument();
+    expect(screen.getByText('TRD BOT')).toBeInTheDocument();
+    expect(screen.getByText('Market research platform')).toBeInTheDocument();
+    expect(screen.queryByText('TRD Research')).not.toBeInTheDocument();
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('nexora-mark.jpg'),
+    );
+  });
+
   it('connects the menu button to the navigation and marks the active page', () => {
     render(
       <DashboardShell locale="en">
@@ -156,5 +173,7 @@ describe('DashboardShell mobile navigation', () => {
         name: 'ناوبری داشبورد',
       }),
     ).toBeInTheDocument();
+
+    expect(screen.getByText('پلتفرم پژوهش بازار')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -159,12 +160,27 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
               : 'invisible -translate-x-full',
         ].join(' ')}
       >
-        <div className="flex items-center justify-between border-b border-app-border pb-5">
-          <div>
-            <p className="text-lg font-bold tracking-tight text-app-foreground">
-              {copy.brand.name}
-            </p>
-            <p className="mt-1 text-xs text-app-subtle">{copy.brand.description}</p>
+        <div className="flex items-center justify-between gap-3 border-b border-app-border pb-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/brand/nexora-mark.jpg"
+              alt=""
+              width={48}
+              height={48}
+              loading="eager"
+              className="h-12 w-12 shrink-0 rounded-xl border border-app-accent-border object-cover shadow-lg shadow-black/20"
+            />
+
+            <div className="min-w-0">
+              <p className="flex items-baseline gap-1.5 text-lg font-bold tracking-tight text-app-foreground">
+                <span>{copy.brand.platformName}</span>
+                <span aria-hidden="true" className="text-app-subtle">
+                  /
+                </span>
+                <span className="text-app-accent">{copy.brand.productName}</span>
+              </p>
+              <p className="mt-1 truncate text-xs text-app-subtle">{copy.brand.description}</p>
+            </div>
           </div>
 
           <button

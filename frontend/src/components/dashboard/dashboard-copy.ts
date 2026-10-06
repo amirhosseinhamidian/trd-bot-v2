@@ -1,8 +1,11 @@
+import { NEXORA_PLATFORM_NAME, TRD_BOT_PRODUCT_NAME } from '@/platform/brand';
+
 export type DashboardLocale = 'fa' | 'en';
 
 export type DashboardCopy = {
   brand: {
-    name: string;
+    platformName: string;
+    productName: string;
     description: string;
   };
   navigation: {
@@ -93,8 +96,9 @@ export type DashboardCopy = {
 const copies: Record<DashboardLocale, DashboardCopy> = {
   fa: {
     brand: {
-      name: 'TRD Research',
-      description: 'آزمایشگاه پژوهش بازار',
+      platformName: NEXORA_PLATFORM_NAME,
+      productName: TRD_BOT_PRODUCT_NAME,
+      description: 'پلتفرم پژوهش بازار',
     },
     navigation: {
       overview: 'نمای کلی',
@@ -183,8 +187,9 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
   },
   en: {
     brand: {
-      name: 'TRD Research',
-      description: 'Market research laboratory',
+      platformName: NEXORA_PLATFORM_NAME,
+      productName: TRD_BOT_PRODUCT_NAME,
+      description: 'Market research platform',
     },
     navigation: {
       overview: 'Overview',

@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 
 import DashboardShell from '@/components/layout/dashboard-shell';
 import { THEME_BOOTSTRAP_SCRIPT } from '@/components/theme/theme';
+import { NEXORA_TRD_BOT_BRAND_NAME, NEXORA_TRD_BOT_METADATA_DESCRIPTION } from '@/platform/brand';
 
 import '../globals.css';
 
@@ -18,8 +19,9 @@ const vazirmatn = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'TRD Research',
-  description: 'Research, backtesting, and paper-analysis dashboard',
+  applicationName: NEXORA_TRD_BOT_BRAND_NAME,
+  title: NEXORA_TRD_BOT_BRAND_NAME,
+  description: NEXORA_TRD_BOT_METADATA_DESCRIPTION,
 };
 
 type LocaleLayoutProps = {
