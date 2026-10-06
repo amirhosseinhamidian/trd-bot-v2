@@ -1,4 +1,5 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
+import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getWalkForwardDetailCopy } from '@/components/dashboard/walk-forward-detail-copy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
@@ -44,7 +45,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
             series={[
               {
                 label: copy.strategySeries,
-                color: '#22d3ee',
+                color: CHART_SERIES_COLORS.cyan,
                 points: stability.folds.map((fold) => ({
                   category: foldLabel(fold.fold_number, locale),
                   value: Number(fold.strategy_return),
@@ -52,7 +53,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
               },
               {
                 label: copy.benchmarkSeries,
-                color: '#f59e0b',
+                color: CHART_SERIES_COLORS.amber,
                 points: stability.folds.map((fold) => ({
                   category: foldLabel(fold.fold_number, locale),
                   value: Number(fold.benchmark_return),
@@ -74,7 +75,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
             series={[
               {
                 label: copy.strategySeries,
-                color: '#38bdf8',
+                color: CHART_SERIES_COLORS.blue,
                 points: stability.folds.map((fold) => ({
                   category: foldLabel(fold.fold_number, locale),
                   value: Number(fold.max_drawdown_fraction),
@@ -82,7 +83,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
               },
               {
                 label: copy.benchmarkSeries,
-                color: '#fb7185',
+                color: CHART_SERIES_COLORS.rose,
                 points: stability.folds.map((fold) => ({
                   category: foldLabel(fold.fold_number, locale),
                   value: Number(fold.benchmark_max_drawdown_fraction),

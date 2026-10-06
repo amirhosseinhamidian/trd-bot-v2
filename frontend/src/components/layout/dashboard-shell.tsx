@@ -239,7 +239,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
 
         <div className="rounded-2xl border border-app-warning-border bg-app-warning-soft p-4">
           <div className="flex items-center gap-2 text-xs font-medium text-app-warning">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            <span className="h-2 w-2 rounded-full bg-app-warning" />
             {copy.header.researchMode}
           </div>
         </div>
@@ -261,7 +261,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
             </button>
 
             <div className="hidden items-center gap-2 text-xs text-app-subtle sm:flex">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-2 w-2 rounded-full bg-app-success" />
               {copy.header.researchMode}
             </div>
 

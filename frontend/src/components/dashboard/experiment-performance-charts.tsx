@@ -2,6 +2,7 @@ import {
   HistoricalLineChart,
   type HistoricalChartSeries,
 } from '@/components/charts/historical-line-chart';
+import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import {
   experimentDetailCopy,
   type ExperimentDetailLocale,
@@ -66,13 +67,13 @@ export function ExperimentPerformanceCharts({
   const equitySeries: HistoricalChartSeries[] = [
     {
       label: copy.strategySeries,
-      color: '#22d3ee',
+      color: CHART_SERIES_COLORS.cyan,
       curve: 'step_after',
       points: toBalancePoints(performanceSeries.strategy.chart_points),
     },
     {
       label: copy.benchmarkSeries,
-      color: '#f59e0b',
+      color: CHART_SERIES_COLORS.amber,
       curve: 'step_after',
       points: toBalancePoints(performanceSeries.benchmark.chart_points),
     },
@@ -81,13 +82,13 @@ export function ExperimentPerformanceCharts({
   const drawdownSeries: HistoricalChartSeries[] = [
     {
       label: copy.strategySeries,
-      color: '#38bdf8',
+      color: CHART_SERIES_COLORS.blue,
       curve: 'step_after',
       points: toDrawdownPoints(performanceSeries.strategy.chart_points),
     },
     {
       label: copy.benchmarkSeries,
-      color: '#fb7185',
+      color: CHART_SERIES_COLORS.rose,
       curve: 'step_after',
       points: toDrawdownPoints(performanceSeries.benchmark.chart_points),
     },

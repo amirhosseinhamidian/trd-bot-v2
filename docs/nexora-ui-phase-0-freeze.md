@@ -135,7 +135,7 @@ inside feature components.
 | Border | `#1a3554` | `#c9d9e8` |
 | Foreground | `#f2f8ff` | `#0a1a2f` |
 | Muted text | `#9cb0c8` | `#4d647d` |
-| Subtle text | `#70859f` | `#6b8096` |
+| Subtle text | `#70859f` | `#5f748a` |
 | Accent | `#22d3ee` | `#0e7490` |
 | Accent soft | `rgba(34, 211, 238, 0.12)` | `rgba(6, 182, 212, 0.10)` |
 | Accent border | `rgba(34, 211, 238, 0.30)` | `rgba(8, 145, 178, 0.28)` |
