@@ -96,7 +96,7 @@ export function Select({
             sideOffset={6}
             avoidCollisions={false}
             className={cn(
-              'trd-select-content z-100 max-h-72 w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-xl border border-app-border bg-app-surface p-1 text-app-foreground shadow-2xl shadow-black/20',
+              'app-select-content z-100 max-h-72 w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-xl border border-app-border bg-app-surface p-1 text-app-foreground shadow-2xl shadow-black/20',
               contentClassName,
             )}
           >

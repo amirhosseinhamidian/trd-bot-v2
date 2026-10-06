@@ -5,11 +5,13 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import {
   DEFAULT_THEME,
+  LEGACY_THEME_STORAGE_KEY,
   THEME_CHANGE_EVENT,
   THEME_STORAGE_KEY,
   applyTheme,
   getAppliedTheme,
   getStoredTheme,
+  isTheme,
   resolveTheme,
   setStoredTheme,
   type Theme,
@@ -21,11 +23,37 @@ type ThemeToggleProps = {
 
 function subscribeToTheme(onStoreChange: () => void): () => void {
   function handleStorage(event: StorageEvent): void {
-    if (event.key !== THEME_STORAGE_KEY && event.key !== null) {
+    if (
+      event.key !== THEME_STORAGE_KEY &&
+      event.key !== LEGACY_THEME_STORAGE_KEY &&
+      event.key !== null
+    ) {
       return;
     }
 
-    const nextTheme = event.key === null ? DEFAULT_THEME : resolveTheme(event.newValue);
+    let nextTheme = DEFAULT_THEME;
+
+    if (event.key === THEME_STORAGE_KEY) {
+      nextTheme = resolveTheme(event.newValue);
+    } else if (event.key === LEGACY_THEME_STORAGE_KEY) {
+      let storedTheme: string | null = null;
+
+      try {
+        storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+      } catch {
+        // Continue with the storage event payload when storage is unavailable.
+      }
+
+      if (isTheme(storedTheme)) {
+        nextTheme = storedTheme;
+      } else {
+        nextTheme = resolveTheme(event.newValue);
+
+        if (isTheme(event.newValue)) {
+          setStoredTheme(event.newValue);
+        }
+      }
+    }
 
     applyTheme(nextTheme);
     onStoreChange();

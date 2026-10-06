@@ -82,6 +82,13 @@ const semanticColorTokens = [
 ] as const;
 
 describe('Nexora design token contract', () => {
+  it('uses app-scoped Select animation identifiers', () => {
+    expect(globalsCss).toContain('@keyframes app-select-open');
+    expect(globalsCss).toContain('@keyframes app-select-close');
+    expect(globalsCss).toContain(".app-select-content[data-state='open']");
+    expect(globalsCss).not.toContain('trd-select');
+  });
+
   it('exports every semantic status and chart token to Tailwind', () => {
     for (const token of semanticColorTokens) {
       expect(tailwindTheme).toContain(`--color-app-${token}: var(--app-${token});`);

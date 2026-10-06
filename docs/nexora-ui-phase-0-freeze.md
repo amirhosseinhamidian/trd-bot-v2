@@ -195,7 +195,7 @@ series tokens and must also expose a textual metric/summary.
 | `lib/api/client.ts` | transport core plus domain clients | Phase 4 |
 | `lib/api/types.ts` | feature/domain-owned types | Phase 4 |
 | `TRD Research` brand copy | `Nexora / TRD BOT` | Phase 1 |
-| `trd-theme`, `trd-theme-change`, `trd-theme-bootstrap` | app/Nexora identifiers with compatibility read | Phase 1 |
+| `trd-theme`, `trd-theme-change`, `trd-theme-bootstrap` | `app-theme`, `app-theme-change`, `app-theme-bootstrap` with compatibility read | Phase 1 |
 | `.trd-select-content`, `trd-select-*` | `.app-select-content`, `app-select-*` | Phase 1 |
 | Hard-coded emerald/red/amber/cyan statuses | semantic status tokens | Phase 1 and feature migrations |
 | Scattered feature copy | feature-local copy with one convention | Phase 3–5 |

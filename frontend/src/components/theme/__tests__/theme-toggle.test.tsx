@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { THEME_BOOTSTRAP_SCRIPT, THEME_STORAGE_KEY } from '@/components/theme/theme';
+import {
+  LEGACY_THEME_STORAGE_KEY,
+  THEME_BOOTSTRAP_SCRIPT,
+  THEME_BOOTSTRAP_SCRIPT_ID,
+  THEME_CHANGE_EVENT,
+  THEME_STORAGE_KEY,
+} from '@/components/theme/theme';
 import ThemeToggle from '@/components/theme/theme-toggle';
 
 function runThemeBootstrap(): void {
@@ -17,6 +23,12 @@ describe('ThemeToggle', () => {
     document.documentElement.style.colorScheme = '';
   });
 
+  it('uses app-scoped identifiers for the active theme contract', () => {
+    expect(THEME_STORAGE_KEY).toBe('app-theme');
+    expect(THEME_CHANGE_EVENT).toBe('app-theme-change');
+    expect(THEME_BOOTSTRAP_SCRIPT_ID).toBe('app-theme-bootstrap');
+  });
+
   it('bootstraps a stored light preference before hydration', () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
 
@@ -27,6 +39,38 @@ describe('ThemeToggle', () => {
   });
 
   it('bootstraps dark when no preference is stored', () => {
+    runThemeBootstrap();
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+  });
+
+  it('migrates a valid legacy preference during bootstrap', () => {
+    window.localStorage.setItem(LEGACY_THEME_STORAGE_KEY, 'light');
+
+    runThemeBootstrap();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
+  });
+
+  it('still applies a legacy preference when migration writes are blocked', () => {
+    window.localStorage.setItem(LEGACY_THEME_STORAGE_KEY, 'light');
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage unavailable', 'SecurityError');
+    });
+
+    runThemeBootstrap();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+  });
+
+  it('gives the app-scoped preference priority over a legacy preference', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    window.localStorage.setItem(LEGACY_THEME_STORAGE_KEY, 'light');
+
     runThemeBootstrap();
 
     expect(document.documentElement.dataset.theme).toBe('dark');
@@ -113,6 +157,27 @@ describe('ThemeToggle', () => {
     ).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(document.documentElement.style.colorScheme).toBe('light');
+  });
+
+  it('syncs and migrates a legacy theme change received from another tab', async () => {
+    render(<ThemeToggle locale="en" />);
+
+    window.localStorage.setItem(LEGACY_THEME_STORAGE_KEY, 'light');
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: LEGACY_THEME_STORAGE_KEY,
+        newValue: 'light',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Switch to dark theme',
+      }),
+    ).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.style.colorScheme).toBe('light');
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
   });
 
   it('falls back to dark when local storage is cleared in another tab', async () => {

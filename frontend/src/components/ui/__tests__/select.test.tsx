@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { Select, SelectOption } from '@/components/ui/select';
@@ -26,5 +26,20 @@ describe('Select', () => {
     const selectedValue = trigger.querySelector('[data-slot="select-value"]');
 
     expect(selectedValue).toHaveClass('min-w-0', 'flex-1', 'truncate');
+  });
+
+  it('uses the app-scoped animation hook for its popup content', async () => {
+    render(
+      <Select label="Dataset" defaultValue="btc">
+        <SelectOption value="btc">BTC/USDT</SelectOption>
+      </Select>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'Dataset' }), {
+      key: 'ArrowDown',
+    });
+
+    expect(await screen.findByRole('listbox')).toHaveClass('app-select-content');
+    expect(document.querySelector('.trd-select-content')).not.toBeInTheDocument();
   });
 });

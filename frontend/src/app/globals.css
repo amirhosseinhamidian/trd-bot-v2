@@ -137,7 +137,7 @@ select {
   font: inherit;
 }
 
-@keyframes trd-select-open {
+@keyframes app-select-open {
   from {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
@@ -149,7 +149,7 @@ select {
   }
 }
 
-@keyframes trd-select-close {
+@keyframes app-select-close {
   from {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -161,17 +161,17 @@ select {
   }
 }
 
-.trd-select-content[data-state='open'] {
-  animation: trd-select-open 160ms cubic-bezier(0.16, 1, 0.3, 1);
+.app-select-content[data-state='open'] {
+  animation: app-select-open 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.trd-select-content[data-state='closed'] {
-  animation: trd-select-close 120ms ease-in;
+.app-select-content[data-state='closed'] {
+  animation: app-select-close 120ms ease-in;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trd-select-content[data-state='open'],
-  .trd-select-content[data-state='closed'] {
+  .app-select-content[data-state='open'],
+  .app-select-content[data-state='closed'] {
     animation-duration: 1ms;
   }
 }

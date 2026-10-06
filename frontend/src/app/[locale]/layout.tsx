@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import DashboardShell from '@/components/layout/dashboard-shell';
-import { THEME_BOOTSTRAP_SCRIPT } from '@/components/theme/theme';
+import { THEME_BOOTSTRAP_SCRIPT, THEME_BOOTSTRAP_SCRIPT_ID } from '@/components/theme/theme';
 import { NEXORA_TRD_BOT_BRAND_NAME, NEXORA_TRD_BOT_METADATA_DESCRIPTION } from '@/platform/brand';
 
 import '../globals.css';
@@ -42,7 +42,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <body className={`${vazirmatn.variable} font-sans antialiased`}>
         <DashboardShell locale={locale}>{children}</DashboardShell>
-        <Script id="trd-theme-bootstrap" strategy="beforeInteractive">
+        <Script id={THEME_BOOTSTRAP_SCRIPT_ID} strategy="beforeInteractive">
           {THEME_BOOTSTRAP_SCRIPT}
         </Script>
       </body>
