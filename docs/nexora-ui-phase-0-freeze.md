@@ -131,12 +131,14 @@ inside feature components.
 | --- | --- | --- |
 | Background | `#020817` | `#f5f9fc` |
 | Surface | `#08162a` | `#ffffff` |
-| Muted surface | `#0d1d34` | `#eaf2f8` |
-| Border | `#1a3554` | `#c9d9e8` |
+| Muted surface | `#0e2038` | `#e4eef6` |
+| Border | `#244666` | `#b8cce0` |
+| Control border | `#3c678f` | `#7795b2` |
 | Foreground | `#f2f8ff` | `#0a1a2f` |
-| Muted text | `#9cb0c8` | `#4d647d` |
-| Subtle text | `#70859f` | `#5f748a` |
+| Muted text | `#a3b6cc` | `#455d76` |
+| Subtle text | `#7c91aa` | `#526a82` |
 | Accent | `#22d3ee` | `#0e7490` |
+| Accent hover | `#67e8f9` | `#155e75` |
 | Accent soft | `rgba(34, 211, 238, 0.12)` | `rgba(6, 182, 212, 0.10)` |
 | Accent border | `rgba(34, 211, 238, 0.30)` | `rgba(8, 145, 178, 0.28)` |
 
@@ -163,6 +165,11 @@ series tokens and must also expose a textual metric/summary.
   `24px` on mobile. Technical IDs, formulas, and numerical data may use LTR isolation and tabular
   numerals.
 - Focus indicators use the semantic accent and must remain visible in both themes.
+
+Phase 1 contrast amendment: the hue family and product identity remain unchanged. Muted surfaces,
+neutral borders, and secondary text receive small luminance adjustments, while interactive
+controls use a dedicated `--app-control-border` token with at least `3:1` contrast against their
+surface in both themes.
 
 ## 6. Frozen responsive behavior
 

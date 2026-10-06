@@ -22,7 +22,31 @@ describe('Button', () => {
     });
 
     expect(onClick).toHaveBeenCalledOnce();
-    expect(button).toHaveClass('bg-app-accent', 'text-app-background');
+    expect(button).toHaveClass(
+      'bg-app-accent',
+      'text-app-background',
+      'hover:bg-app-accent-hover',
+      'focus-visible:ring-app-accent',
+    );
+  });
+
+  it('uses semantic contrast states for secondary and danger actions', () => {
+    const { rerender } = render(<Button variant="secondary">Cancel</Button>);
+
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveClass(
+      'border-app-control-border',
+      'hover:border-app-muted',
+      'focus-visible:ring-app-accent',
+    );
+
+    rerender(<Button variant="danger">Delete</Button>);
+
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass(
+      'border-app-danger-border',
+      'bg-app-danger-soft',
+      'text-app-danger',
+      'focus-visible:ring-app-danger',
+    );
   });
 
   it('is disabled while loading', () => {

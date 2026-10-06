@@ -9,16 +9,30 @@ export type CheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> 
 };
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, containerClassName, description, disabled, id, label, ...props }, ref) => {
+  (
+    {
+      'aria-describedby': ariaDescribedBy,
+      className,
+      containerClassName,
+      description,
+      disabled,
+      id,
+      label,
+      ...props
+    },
+    ref,
+  ) => {
     const generatedId = useId();
     const checkboxId = id ?? generatedId;
+    const descriptionId = `${checkboxId}-description`;
+    const describedBy =
+      [ariaDescribedBy, description ? descriptionId : null].filter(Boolean).join(' ') || undefined;
 
     return (
-      <label
-        htmlFor={checkboxId}
+      <div
         className={cn(
-          'inline-flex cursor-pointer items-start gap-3',
-          disabled && 'cursor-not-allowed opacity-50',
+          'inline-flex items-start gap-3',
+          disabled && 'cursor-not-allowed opacity-60',
           containerClassName,
         )}
       >
@@ -27,8 +41,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           id={checkboxId}
           type="checkbox"
           disabled={disabled}
+          aria-describedby={describedBy}
           className={cn(
-            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-app-border bg-app-surface accent-app-accent',
+            'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-app-control-border bg-app-surface accent-app-accent hover:border-app-muted',
             'focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
             'disabled:cursor-not-allowed',
             className,
@@ -37,13 +52,23 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         />
 
         <span>
-          <span className="block text-sm font-medium text-app-foreground">{label}</span>
+          <label
+            htmlFor={checkboxId}
+            className={cn(
+              'block cursor-pointer text-sm font-medium text-app-foreground',
+              disabled && 'cursor-not-allowed',
+            )}
+          >
+            {label}
+          </label>
 
           {description ? (
-            <span className="mt-1 block text-xs leading-5 text-app-muted">{description}</span>
+            <span id={descriptionId} className="mt-1 block text-xs leading-5 text-app-muted">
+              {description}
+            </span>
           ) : null}
         </span>
-      </label>
+      </div>
     );
   },
 );

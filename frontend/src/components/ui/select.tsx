@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  type AriaAttributes,
   type ComponentPropsWithoutRef,
   type ComponentRef,
   type ReactNode,
@@ -13,19 +14,22 @@ import { cn } from '@/lib/utils/cn';
 
 type SelectRootProps = ComponentPropsWithoutRef<typeof SelectPrimitive.Root>;
 
-export type SelectProps = Omit<SelectRootProps, 'children'> & {
-  children: ReactNode;
-  className?: string;
-  containerClassName?: string;
-  contentClassName?: string;
-  error?: string;
-  hint?: string;
-  id?: string;
-  label?: string;
-  placeholder?: string;
-};
+export type SelectProps = Omit<SelectRootProps, 'children'> &
+  Pick<AriaAttributes, 'aria-describedby' | 'aria-invalid'> & {
+    children: ReactNode;
+    className?: string;
+    containerClassName?: string;
+    contentClassName?: string;
+    error?: string;
+    hint?: string;
+    id?: string;
+    label?: string;
+    placeholder?: string;
+  };
 
 export function Select({
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
   children,
   className,
   containerClassName,
@@ -42,6 +46,8 @@ export function Select({
   const generatedId = useId();
   const selectId = id ?? generatedId;
   const messageId = `${selectId}-message`;
+  const describedBy =
+    [ariaDescribedBy, error || hint ? messageId : null].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={cn('w-full', containerClassName)}>
@@ -54,16 +60,17 @@ export function Select({
       <SelectPrimitive.Root dir={dir} disabled={disabled} {...props}>
         <SelectPrimitive.Trigger
           id={selectId}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error || hint ? messageId : undefined}
+          aria-invalid={error ? true : ariaInvalid}
+          aria-describedby={describedBy}
           dir={dir}
           className={cn(
-            'flex min-h-11 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-app-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition outline-none',
-            'hover:bg-app-hover',
-            'focus:border-app-accent-border focus:ring-2 focus:ring-app-accent-soft',
-            'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+            'flex min-h-11 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-app-control-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition-colors outline-none',
+            'hover:border-app-muted hover:bg-app-hover',
+            'focus:border-app-accent focus:ring-2 focus:ring-app-accent-soft',
+            'data-[disabled]:cursor-not-allowed data-[disabled]:bg-app-surface-muted data-[disabled]:text-app-muted data-[disabled]:opacity-70',
             'data-[placeholder]:text-app-subtle',
-            error && 'border-red-500/50 focus:border-red-500 focus:ring-red-500/10',
+            error &&
+              'border-app-danger hover:border-app-danger focus:border-app-danger focus:ring-app-danger-soft',
             className,
           )}
         >
@@ -134,7 +141,7 @@ export function Select({
         <p
           id={messageId}
           role={error ? 'alert' : undefined}
-          className={cn('mt-2 text-xs', error ? 'text-red-500' : 'text-app-muted')}
+          className={cn('mt-2 text-xs', error ? 'text-app-danger' : 'text-app-muted')}
         >
           {error ?? hint}
         </p>

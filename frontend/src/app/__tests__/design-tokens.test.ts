@@ -61,6 +61,8 @@ const lightTheme = extractBlock(/:root\[data-theme='light'\]\s*\{([\s\S]*?)\n\}/
 const tailwindTheme = extractBlock(/@theme inline\s*\{([\s\S]*?)\n\}/, 'Tailwind theme');
 
 const semanticColorTokens = [
+  'accent-hover',
+  'control-border',
   'success',
   'success-soft',
   'success-border',
@@ -99,12 +101,14 @@ describe('Nexora design token contract', () => {
     expectDeclarations(darkTheme, {
       background: '#020817',
       surface: '#08162a',
-      'surface-muted': '#0d1d34',
-      border: '#1a3554',
+      'surface-muted': '#0e2038',
+      border: '#244666',
+      'control-border': '#3c678f',
       foreground: '#f2f8ff',
-      muted: '#9cb0c8',
-      subtle: '#70859f',
+      muted: '#a3b6cc',
+      subtle: '#7c91aa',
       accent: '#22d3ee',
+      'accent-hover': '#67e8f9',
       success: '#34d399',
       danger: '#fb7185',
       warning: '#fbbf24',
@@ -126,12 +130,14 @@ describe('Nexora design token contract', () => {
     expectDeclarations(lightTheme, {
       background: '#f5f9fc',
       surface: '#ffffff',
-      'surface-muted': '#eaf2f8',
-      border: '#c9d9e8',
+      'surface-muted': '#e4eef6',
+      border: '#b8cce0',
+      'control-border': '#7795b2',
       foreground: '#0a1a2f',
-      muted: '#4d647d',
-      subtle: '#5f748a',
+      muted: '#455d76',
+      subtle: '#526a82',
       accent: '#0e7490',
+      'accent-hover': '#155e75',
       success: '#047857',
       danger: '#be123c',
       warning: '#b45309',
@@ -180,6 +186,22 @@ describe('Nexora design token contract', () => {
       const ratio = contrastRatio(readHexToken(block, foreground), readHexToken(block, background));
 
       expect(ratio, `${foreground} on ${background}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('keeps interactive boundaries and primary actions distinguishable in both themes', () => {
+    for (const block of [darkTheme, lightTheme]) {
+      expect(
+        contrastRatio(readHexToken(block, 'control-border'), readHexToken(block, 'surface')),
+        'control border on surface',
+      ).toBeGreaterThanOrEqual(3);
+
+      for (const background of ['accent', 'accent-hover']) {
+        expect(
+          contrastRatio(readHexToken(block, 'background'), readHexToken(block, background)),
+          `background text on ${background}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
     }
   });
 });

@@ -42,4 +42,24 @@ describe('Select', () => {
     expect(await screen.findByRole('listbox')).toHaveClass('app-select-content');
     expect(document.querySelector('.trd-select-content')).not.toBeInTheDocument();
   });
+
+  it('exposes semantic focus and error states accessibly', () => {
+    render(
+      <Select label="Dataset" defaultValue="btc" error="Choose an available dataset">
+        <SelectOption value="btc">BTC/USDT</SelectOption>
+      </Select>,
+    );
+
+    const trigger = screen.getByRole('combobox', { name: 'Dataset' });
+    const error = screen.getByRole('alert');
+
+    expect(trigger).toHaveAttribute('aria-invalid', 'true');
+    expect(trigger).toHaveAttribute('aria-describedby', error.id);
+    expect(trigger).toHaveClass(
+      'border-app-danger',
+      'focus:border-app-danger',
+      'focus:ring-app-danger-soft',
+    );
+    expect(error).toHaveClass('text-app-danger');
+  });
 });
