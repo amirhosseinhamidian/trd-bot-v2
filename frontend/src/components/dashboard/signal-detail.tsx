@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getSignalsCopy } from '@/components/dashboard/signals-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type { ExperimentSummary, SignalDirection, StrategySignal } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
@@ -51,35 +53,32 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
   const viewExperiment = locale === 'fa' ? 'مشاهده Experiment' : 'View experiment';
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/signals`}
-          className="rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          {locale === 'fa' ? '→' : '←'} {back}
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold text-app-foreground">
-              {getStrategyDisplayName(signal.strategy_name, locale)}
-            </h1>
-            <p dir="ltr" className="mt-2 text-left text-xs font-semibold text-app-muted">
-              {signal.signal_id}
-            </p>
-          </div>
-          <div className="flex gap-2">
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/signals`}
+            className="rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            {locale === 'fa' ? '→' : '←'} {back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={getStrategyDisplayName(signal.strategy_name, locale)}
+        metadata={
+          <p dir="ltr" className="text-left text-xs font-semibold text-app-muted">
+            {signal.signal_id}
+          </p>
+        }
+        actions={
+          <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
             <Badge variant={directionVariant(signal.direction)}>
               {copy.directions[signal.direction]}
             </Badge>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -152,6 +151,6 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
           </Link>
         </CardContent>
       </Card>
-    </div>
+    </PageFrame>
   );
 }

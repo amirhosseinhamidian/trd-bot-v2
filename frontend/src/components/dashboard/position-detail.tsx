@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getPositionDetailCopy } from '@/components/dashboard/position-detail-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type {
   CandidateDecisionLineageNode,
@@ -94,27 +96,26 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
   ];
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/portfolios/${encodeURIComponent(position.portfolio_id)}`}
-          className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
-        >
-          {locale === 'fa' ? '→' : '←'} {copy.back}
-        </Link>
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-            <p dir="ltr" className="mt-2 text-left text-xs font-semibold break-all text-app-muted">
-              {position.position_id}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/portfolios/${encodeURIComponent(position.portfolio_id)}`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+          >
+            {locale === 'fa' ? '→' : '←'} {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        metadata={
+          <p dir="ltr" className="text-left text-xs font-semibold break-all text-app-muted">
+            {position.position_id}
+          </p>
+        }
+        actions={
+          <>
             <Badge variant="warning">{copy.readOnly}</Badge>
             <Badge variant={position.side === 'long' ? 'info' : 'warning'}>
               {copy.sides[position.side]}
@@ -125,12 +126,9 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
             <Badge variant={report.lineage_status === 'complete' ? 'success' : 'warning'}>
               {copy.lineageStatuses[report.lineage_status]}
             </Badge>
-          </div>
-        </div>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-      </section>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -323,6 +321,6 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
           </div>
         )}
       </section>
-    </div>
+    </PageFrame>
   );
 }

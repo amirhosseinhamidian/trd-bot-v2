@@ -1,5 +1,7 @@
 import { getMonitoringCopy } from '@/components/dashboard/monitoring-copy';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Card,
@@ -153,32 +155,21 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
   const operations = summary.operations;
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-          </div>
-
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        actions={
           <Badge variant={overallStatusVariants[summary.overall_status]}>
             {copy.overallStatus}: {copy.statuses[summary.overall_status]}
           </Badge>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-
-        <div className="mt-5 rounded-2xl border border-app-info-border bg-app-info-soft px-5 py-4 text-sm leading-7 text-app-info">
+        }
+      >
+        <div className="rounded-2xl border border-app-info-border bg-app-info-soft px-5 py-4 text-sm leading-7 text-app-info">
           {copy.capacityPlanningOnly}
         </div>
-      </section>
+      </PageHeader>
 
       {operations ? (
         <Card>
@@ -437,6 +428,6 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageFrame>
   );
 }

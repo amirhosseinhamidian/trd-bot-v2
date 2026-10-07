@@ -23,6 +23,8 @@ import {
 import { getExperimentSignals, type ExperimentSignalFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page, SignalDirection, StrategySignal } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 
 const PAGE_SIZE = 20;
 
@@ -156,36 +158,24 @@ export default function SignalCatalog({
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        actions={
+          <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
-
             <Badge variant="info">
               {copy.total}: {page.total}
             </Badge>
-          </div>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-
-        <p className="mt-5 rounded-2xl border border-app-warning-border bg-app-warning-soft p-4 text-sm leading-7 text-app-warning">
+          </>
+        }
+      >
+        <p className="rounded-2xl border border-app-warning-border bg-app-warning-soft p-4 text-sm leading-7 text-app-warning">
           {copy.disclaimer}
         </p>
-      </section>
+      </PageHeader>
 
       <SignalFilterPanel
         experiments={experiments}
@@ -344,6 +334,6 @@ export default function SignalCatalog({
           />
         </section>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }

@@ -19,6 +19,8 @@ import {
 } from '@/components/ui';
 import { getDatasets, type DatasetFilters } from '@/lib/api/client';
 import type { DatasetSummary, Page } from '@/lib/api/types';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import DatasetFilterPanel, {
   DEFAULT_DATASET_FILTERS,
   type DatasetFilterValues,
@@ -138,28 +140,17 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-          </div>
-
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        actions={
           <Badge variant="info">
             {copy.total}: {formatNumber(page.total, locale)}
           </Badge>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-      </section>
+        }
+      />
       <DatasetImportForm locale={locale} onImported={handleDatasetImported} />
       <DatasetFilterPanel
         key={filterResetVersion}
@@ -287,6 +278,6 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           />
         </section>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }

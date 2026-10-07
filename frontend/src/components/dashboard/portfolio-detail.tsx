@@ -6,6 +6,8 @@ import { useRef, useState } from 'react';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { PortfolioAnalytics } from '@/components/dashboard/portfolio-analytics';
 import { getPortfolioDetailCopy } from '@/components/dashboard/portfolio-detail-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Card,
@@ -159,41 +161,34 @@ export default function PortfolioDetail({
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/portfolios`}
-          className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          {locale === 'fa' ? '→' : '←'} {copy.back}
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-            <p dir="ltr" className="mt-2 text-xs font-semibold text-app-muted">
-              {portfolio.portfolio_id}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/portfolios`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            {locale === 'fa' ? '→' : '←'} {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        metadata={
+          <p dir="ltr" className="text-xs font-semibold text-app-muted">
+            {portfolio.portfolio_id}
+          </p>
+        }
+        actions={
+          <>
             <Badge variant="warning">{copy.readOnly}</Badge>
             <Badge variant="info">{copy.modes[portfolio.mode]}</Badge>
             <Badge variant={portfolio.status === 'completed' ? 'success' : 'info'}>
               {copy.portfolioStatuses[portfolio.status]}
             </Badge>
-          </div>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-      </section>
+          </>
+        }
+      />
 
       {analytics &&
         (new Date(analytics.as_of).getTime() === new Date(portfolio.updated_at).getTime() ? (
@@ -526,6 +521,6 @@ export default function PortfolioDetail({
           />
         ) : null}
       </section>
-    </div>
+    </PageFrame>
   );
 }

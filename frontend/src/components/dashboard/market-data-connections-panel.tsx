@@ -6,6 +6,8 @@ import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getConnectionsCopy } from '@/components/dashboard/connections-copy';
 import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
 import MarketDataImportHistory from '@/components/dashboard/market-data-import-history';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Button,
@@ -194,21 +196,12 @@ export default function MarketDataConnectionsPanel({
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-          {copy.eyebrow}
-        </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-          {copy.title}
-        </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-        <p className="mt-4 rounded-2xl border border-app-warning-border bg-app-warning-soft px-4 py-3 text-sm leading-6 text-app-warning">
+    <PageFrame>
+      <PageHeader eyebrow={copy.eyebrow} title={copy.title} description={copy.description}>
+        <p className="rounded-2xl border border-app-warning-border bg-app-warning-soft px-4 py-3 text-sm leading-6 text-app-warning">
           {copy.readOnlyNotice}
         </p>
-      </section>
+      </PageHeader>
 
       <section>
         <div className="mb-4">
@@ -490,6 +483,6 @@ export default function MarketDataConnectionsPanel({
           />
         </section>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }

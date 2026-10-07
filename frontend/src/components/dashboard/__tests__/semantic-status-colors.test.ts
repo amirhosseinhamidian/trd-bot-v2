@@ -32,6 +32,8 @@ const migratedComponentFiles = [
   'dashboard/walk-forward-run-form.tsx',
   'language-switcher.tsx',
   'platform/mobile-platform-navigation.tsx',
+  'platform/page-frame.tsx',
+  'platform/page-header.tsx',
   'platform/platform-shell.tsx',
   'ui/select.tsx',
 ] as const;

@@ -3,6 +3,8 @@ import Link from 'next/link';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { WalkForwardAnalyticsCharts } from '@/components/dashboard/walk-forward-analytics-charts';
 import { getWalkForwardDetailCopy } from '@/components/dashboard/walk-forward-detail-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   type BadgeVariant,
@@ -92,31 +94,25 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
     copy.metricDescriptions[key as keyof typeof copy.metricDescriptions] ?? fallback;
 
   return (
-    <div dir={direction} className="space-y-6">
-      <section>
-        <Link
-          href={`/${locale}/walk-forward`}
-          className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.back}
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-app-accent">{copy.eyebrow}</p>
-
-            <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
-              {strategyDisplayName}
-            </h1>
-
-            <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
-              {run.execution_id}
-            </p>
-          </div>
-
-          <Badge variant="warning">{copy.historicalOnly}</Badge>
-        </div>
-      </section>
+    <PageFrame dir={direction} className="space-y-6">
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/walk-forward`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={strategyDisplayName}
+        metadata={
+          <p dir="ltr" className="text-sm font-semibold break-all text-app-muted">
+            {run.execution_id}
+          </p>
+        }
+        actions={<Badge variant="warning">{copy.historicalOnly}</Badge>}
+      />
 
       <Card className="border-app-warning-border bg-app-warning-soft">
         <CardContent className="pt-6">
@@ -425,6 +421,6 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageFrame>
   );
 }

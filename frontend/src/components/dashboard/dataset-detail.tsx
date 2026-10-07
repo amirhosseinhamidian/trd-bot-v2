@@ -6,6 +6,8 @@ import { useRef, useState } from 'react';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getDatasetDetailCopy } from '@/components/dashboard/dataset-detail-copy';
 import DatasetVersionHistory from '@/components/dashboard/dataset-version-history';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Button,
@@ -146,36 +148,29 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
   ];
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/datasets`}
-          className="inline-flex items-center gap-2 rounded-sm text-sm text-app-muted transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span>
-          {copy.back}
-        </Link>
-
-        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 truncate text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {dataset.name}
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/datasets`}
+            className="inline-flex items-center gap-2 rounded-sm text-sm text-app-muted transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span>
+            {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={dataset.name}
+        titleClassName="truncate"
+        actions={
+          <>
             <Badge variant="info">
               {dataset.pair.base_asset}/{dataset.pair.quote_asset}
             </Badge>
-
             <Badge variant="neutral">{dataset.timeframe}</Badge>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -638,6 +633,6 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageFrame>
   );
 }

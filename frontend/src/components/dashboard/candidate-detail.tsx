@@ -7,6 +7,8 @@ import CandidateDecisionLineageView from '@/components/dashboard/candidate-decis
 import { getCandidateDetailCopy } from '@/components/dashboard/candidate-detail-copy';
 import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Card,
@@ -104,31 +106,25 @@ export default function CandidateDetail({
   const latest = candidate.latest;
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/candidates`}
-          className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          {locale === 'fa' ? '→' : '←'} {copy.back}
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {snapshot.pair.base_asset}/{snapshot.pair.quote_asset}
-            </h1>
-
-            <p dir="ltr" className="mt-2 text-xs font-semibold text-app-muted">
-              {snapshot.candidate_id}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/candidates`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            {locale === 'fa' ? '→' : '←'} {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={`${snapshot.pair.base_asset}/${snapshot.pair.quote_asset}`}
+        metadata={
+          <p dir="ltr" className="text-xs font-semibold text-app-muted">
+            {snapshot.candidate_id}
+          </p>
+        }
+        actions={
+          <>
             <Badge variant="warning">{copy.readOnly}</Badge>
             <Badge variant={latest.selected ? 'success' : 'info'}>
               {latest.selected ? copy.selected : copy.notSelected}
@@ -138,9 +134,9 @@ export default function CandidateDetail({
             </Badge>
             <Badge variant="info">{copy.statuses[snapshot.status]}</Badge>
             <Badge variant="warning">{copy.actions[snapshot.action]}</Badge>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -454,6 +450,6 @@ export default function CandidateDetail({
           </div>
         ) : null}
       </section>
-    </div>
+    </PageFrame>
   );
 }

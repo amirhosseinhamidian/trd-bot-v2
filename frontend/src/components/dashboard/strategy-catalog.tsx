@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getStrategyWorkspaceCopy } from '@/components/dashboard/strategy-workspace-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import {
   Badge,
   Card,
@@ -27,27 +29,17 @@ export default function StrategyCatalog({ locale, strategies }: StrategyCatalogP
   const copy = getStrategyWorkspaceCopy(locale);
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.catalog.eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.catalog.title}
-            </h1>
-          </div>
-
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.catalog.eyebrow}
+        title={copy.catalog.title}
+        description={copy.catalog.description}
+        actions={
           <Badge variant="info">
             {copy.catalog.total}: {formatNumber(strategies.length, locale)}
           </Badge>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.catalog.description}
-        </p>
-      </section>
+        }
+      />
 
       {strategies.length === 0 ? (
         <EmptyState title={copy.catalog.emptyTitle} description={copy.catalog.emptyDescription} />
@@ -98,6 +90,6 @@ export default function StrategyCatalog({ locale, strategies }: StrategyCatalogP
           ))}
         </section>
       )}
-    </div>
+    </PageFrame>
   );
 }

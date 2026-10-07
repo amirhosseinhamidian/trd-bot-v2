@@ -16,6 +16,8 @@ import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acc
 import { ExperimentAnalytics } from '@/components/dashboard/experiment-analytics';
 import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
 import { ExperimentReplayPanel } from '@/components/dashboard/experiment-replay-panel';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
 import { getStrategyDisplayName, getStrategyParameterLabel } from '@/lib/strategies/presentation';
 
@@ -133,40 +135,37 @@ export function ExperimentDetail({
   const strategyDisplayName = getStrategyDisplayName(experiment.strategy_name, locale);
 
   return (
-    <main dir={direction} className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+    <PageFrame dir={direction} className="space-y-6">
+      <PageHeader
+        backLink={
           <Link
             href={`/${locale}/experiments`}
             className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
             ← {copy.back}
           </Link>
-
-          <p className="mt-5 text-sm font-medium text-app-accent">{copy.eyebrow}</p>
-
-          <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
-            {strategyDisplayName}
-          </h1>
-
-          <p dir="ltr" className="mt-2 text-sm font-semibold break-all text-app-muted">
+        }
+        eyebrow={copy.eyebrow}
+        title={strategyDisplayName}
+        metadata={
+          <p dir="ltr" className="text-sm font-semibold break-all text-app-muted">
             {experiment.experiment_id}
           </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="info">{copy.historicalOnly}</Badge>
-
-          {rerunHref ? (
-            <Link
-              href={rerunHref}
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
-            >
-              {copy.runAgain}
-            </Link>
-          ) : null}
-        </div>
-      </div>
+        }
+        actions={
+          <>
+            <Badge variant="info">{copy.historicalOnly}</Badge>
+            {rerunHref ? (
+              <Link
+                href={rerunHref}
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+              >
+                {copy.runAgain}
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
       <Card className="border-app-warning-border bg-app-warning-soft">
         <CardContent className="pt-6">
@@ -348,6 +347,6 @@ export function ExperimentDetail({
         locale={locale}
         presets={acceptancePolicyPresets}
       />
-    </main>
+    </PageFrame>
   );
 }

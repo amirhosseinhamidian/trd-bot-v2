@@ -26,6 +26,8 @@ import { getWalkForwardRuns, type WalkForwardRunFilters } from '@/lib/api/client
 import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 
 const PAGE_SIZE = 12;
 
@@ -146,32 +148,20 @@ export default function WalkForwardCatalog({
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.title}
-            </h1>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        actions={
+          <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
-
             <Badge variant="info">
               {copy.total}: {formatNumber(page.total, locale)}
             </Badge>
-          </div>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.description}
-        </p>
-      </section>
+          </>
+        }
+      />
 
       <WalkForwardRunForm
         locale={locale}
@@ -371,6 +361,6 @@ export default function WalkForwardCatalog({
           />
         </section>
       ) : null}
-    </div>
+    </PageFrame>
   );
 }

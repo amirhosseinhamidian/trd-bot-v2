@@ -29,6 +29,8 @@ import type {
   OptimizationTrialEvaluation,
 } from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 
 const POLLING_INTERVAL_MS = 1000;
 
@@ -204,33 +206,32 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
   );
 
   return (
-    <div dir={direction} className="space-y-6">
-      <section>
-        <Link
-          href={`/${locale}/optimizations`}
-          className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.detail.back}
-        </Link>
-
-        <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-app-accent">{copy.detail.eyebrow}</p>
-            <h1 className="mt-2 text-2xl font-bold text-app-foreground sm:text-3xl">
-              {getStrategyDisplayName(execution.strategy_name, locale)}
-            </h1>
-            <p dir="ltr" className="mt-2 text-left text-sm font-semibold break-all text-app-muted">
-              {execution.execution_id}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+    <PageFrame dir={direction} className="space-y-6">
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/optimizations`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.detail.back}
+          </Link>
+        }
+        eyebrow={copy.detail.eyebrow}
+        title={getStrategyDisplayName(execution.strategy_name, locale)}
+        metadata={
+          <p dir="ltr" className="text-left text-sm font-semibold break-all text-app-muted">
+            {execution.execution_id}
+          </p>
+        }
+        actions={
+          <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
             <Badge variant={statusVariant(execution.status)}>
               {copy.statuses[execution.status]}
             </Badge>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <Card className="border-app-warning-border bg-app-warning-soft">
         <CardContent className="pt-6">
@@ -630,6 +631,6 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
           </dl>
         </CardContent>
       </Card>
-    </div>
+    </PageFrame>
   );
 }

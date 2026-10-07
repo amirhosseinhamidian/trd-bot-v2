@@ -1,5 +1,7 @@
 import ActivityFeed from '@/components/dashboard/activity-feed';
 import { type DashboardLocale, getDashboardCopy } from '@/components/dashboard/dashboard-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import type { Page, ResearchActivityItem, ResearchOverview, ResearchStage } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
@@ -74,29 +76,18 @@ export default function OverviewDashboard({
   ];
 
   return (
-    <div className="space-y-8">
-      <section>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.overview.eyebrow}
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {copy.overview.title}
-            </h1>
-          </div>
-
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.overview.eyebrow}
+        title={copy.overview.title}
+        description={copy.overview.description}
+        actions={
           <div className="flex items-center gap-2 rounded-full border border-app-success-border bg-app-success-soft px-3 py-2 text-xs font-medium text-app-success">
             <span className="h-2 w-2 rounded-full bg-app-success" />
             {copy.overview.connected}
           </div>
-        </div>
-
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {copy.overview.description}
-        </p>
-      </section>
+        }
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
@@ -277,6 +268,6 @@ export default function OverviewDashboard({
           </article>
         </div>
       </section>
-    </div>
+    </PageFrame>
   );
 }

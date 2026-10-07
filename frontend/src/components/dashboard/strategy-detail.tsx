@@ -2,6 +2,8 @@ import Link from 'next/link';
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getStrategyWorkspaceCopy } from '@/components/dashboard/strategy-workspace-copy';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type {
   ExperimentSummary,
@@ -95,34 +97,25 @@ export default function StrategyDetail({
   ];
 
   return (
-    <div className="space-y-8">
-      <section>
-        <Link
-          href={`/${locale}/strategies`}
-          className="text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-        >
-          ← {copy.detail.back}
-        </Link>
-
-        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.25em] text-app-accent uppercase">
-              {copy.detail.eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-app-foreground sm:text-4xl">
-              {strategy.display_name}
-            </h1>
-          </div>
-
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/strategies`}
+            className="text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            ← {copy.detail.back}
+          </Link>
+        }
+        eyebrow={copy.detail.eyebrow}
+        title={strategy.display_name}
+        description={strategy.description}
+        actions={
           <Badge variant="info">
             {copy.detail.version} {strategy.version}
           </Badge>
-        </div>
-
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
-          {strategy.description}
-        </p>
-      </section>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -312,6 +305,6 @@ export default function StrategyDetail({
           <CardDescription>{copy.detail.registryDescription}</CardDescription>
         </CardHeader>
       </Card>
-    </div>
+    </PageFrame>
   );
 }
