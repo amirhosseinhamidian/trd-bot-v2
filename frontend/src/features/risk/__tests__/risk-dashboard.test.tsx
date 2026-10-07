@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import RiskDashboard from '@/components/dashboard/risk-dashboard';
+import RiskDashboard from '@/features/risk/risk-dashboard';
 import type {
   CandidateRiskCheckName,
   RiskDashboardReport,

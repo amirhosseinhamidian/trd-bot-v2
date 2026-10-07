@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import RiskDashboard from '@/components/dashboard/risk-dashboard';
+import RiskDashboard from '@/features/risk/risk-dashboard';
 import { getRiskDashboard, getSimulatedPortfolios } from '@/lib/api/client';
 
 type RiskPageProps = {

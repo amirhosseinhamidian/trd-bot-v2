@@ -27,7 +27,7 @@ const migratedComponentFiles = [
   'components/dashboard/portfolio-catalog.tsx',
   'components/dashboard/portfolio-detail.tsx',
   'components/dashboard/position-detail.tsx',
-  'components/dashboard/risk-dashboard.tsx',
+  'features/risk/risk-dashboard.tsx',
   'components/dashboard/walk-forward-catalog.tsx',
   'components/dashboard/walk-forward-run-form.tsx',
   'components/language-switcher.tsx',

@@ -18,7 +18,7 @@ const screenComponentPaths = [
   'components/dashboard/portfolio-catalog.tsx',
   'components/dashboard/portfolio-detail.tsx',
   'components/dashboard/position-detail.tsx',
-  'components/dashboard/risk-dashboard.tsx',
+  'features/risk/risk-dashboard.tsx',
   'components/dashboard/signal-catalog.tsx',
   'components/dashboard/signal-detail.tsx',
   'components/dashboard/strategy-catalog.tsx',
@@ -50,6 +50,11 @@ const localeRoutes = [
   'walk-forward/[executionId]/page.tsx',
   'walk-forward/page.tsx',
 ].sort();
+
+const featureBoundaries = [
+  ['monitoring', 'monitoring', 'monitoring-dashboard', 'monitoring-copy'],
+  ['risk', 'risk', 'risk-dashboard', 'risk-copy'],
+] as const;
 
 function collectPageFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -93,30 +98,31 @@ describe('platform architecture contract', () => {
     expect(source).not.toContain('<main');
   });
 
-  it('keeps monitoring UI and copy inside its feature boundary', () => {
-    const routeSource = readFileSync(
-      resolve(process.cwd(), 'src/app/[locale]/monitoring/page.tsx'),
-      'utf8',
-    );
-    const dashboardSource = readFileSync(
-      resolve(process.cwd(), 'src/features/monitoring/monitoring-dashboard.tsx'),
-      'utf8',
-    );
-    const copySource = readFileSync(
-      resolve(process.cwd(), 'src/features/monitoring/monitoring-copy.ts'),
-      'utf8',
-    );
+  it.each(featureBoundaries)(
+    'keeps %s UI and copy inside its feature boundary',
+    (feature, route, screen, copy) => {
+      const routeSource = readFileSync(
+        resolve(process.cwd(), `src/app/[locale]/${route}/page.tsx`),
+        'utf8',
+      );
+      const dashboardSource = readFileSync(
+        resolve(process.cwd(), `src/features/${feature}/${screen}.tsx`),
+        'utf8',
+      );
+      const copySource = readFileSync(
+        resolve(process.cwd(), `src/features/${feature}/${copy}.ts`),
+        'utf8',
+      );
 
-    expect(routeSource).toContain('@/features/monitoring/monitoring-dashboard');
-    expect(
-      existsSync(resolve(process.cwd(), 'src/components/dashboard/monitoring-dashboard.tsx')),
-    ).toBe(false);
-    expect(existsSync(resolve(process.cwd(), 'src/components/dashboard/monitoring-copy.ts'))).toBe(
-      false,
-    );
-    expect(dashboardSource).not.toContain('@/components/dashboard');
-    expect(copySource).not.toContain('@/components/dashboard');
-  });
+      expect(routeSource).toContain(`@/features/${feature}/${screen}`);
+      expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${screen}.tsx`))).toBe(
+        false,
+      );
+      expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${copy}.ts`))).toBe(false);
+      expect(dashboardSource).not.toContain('@/components/dashboard');
+      expect(copySource).not.toContain('@/components/dashboard');
+    },
+  );
 
   it('preserves the frozen 21-route locale inventory', () => {
     const localeRoot = resolve(process.cwd(), 'src/app/[locale]');

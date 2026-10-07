@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { type FormEvent, useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getRiskCopy } from '@/components/dashboard/risk-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -22,14 +20,16 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
+import { getRiskCopy } from '@/features/risk/risk-copy';
 import { getRiskDashboard, type RiskDashboardFilters } from '@/lib/api/client';
 import type { RiskDashboardReport, SimulatedPortfolioSummary } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const ALL_PORTFOLIOS = '__all_portfolios__';
 
 type RiskDashboardProps = {
   initialReport: RiskDashboardReport;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   portfolios: SimulatedPortfolioSummary[];
 };
 
@@ -38,22 +38,22 @@ type RiskGaugeProps = {
   label: string;
   limit: string;
   limitLabel: string;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   noDataLabel: string;
   overLimitLabel: string;
   withinLimit: boolean | null;
   withinLimitLabel: string;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return value;
@@ -63,7 +63,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatPercent(value: string | null, locale: DashboardLocale): string {
+function formatPercent(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -77,7 +77,7 @@ function formatPercent(value: string | null, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;

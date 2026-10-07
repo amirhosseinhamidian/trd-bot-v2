@@ -1,5 +1,5 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type { CandidateRiskCheckName } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type RiskCopy = {
   eyebrow: string;
@@ -85,7 +85,7 @@ export type RiskCopy = {
   retry: string;
 };
 
-const riskCheckLabels: Record<DashboardLocale, Record<CandidateRiskCheckName, string>> = {
+const riskCheckLabels: Record<PlatformLocale, Record<CandidateRiskCheckName, string>> = {
   fa: {
     candidate_selectable: 'قابل انتخاب بودن کاندید',
     portfolio_active: 'فعال بودن پرتفوی',
@@ -108,7 +108,7 @@ const riskCheckLabels: Record<DashboardLocale, Record<CandidateRiskCheckName, st
   },
 };
 
-const copies: Record<DashboardLocale, RiskCopy> = {
+const copies: Record<PlatformLocale, RiskCopy> = {
   fa: {
     eyebrow: 'Historical risk oversight',
     title: 'داشبورد ریسک پژوهشی',
@@ -293,6 +293,6 @@ const copies: Record<DashboardLocale, RiskCopy> = {
   },
 };
 
-export function getRiskCopy(locale: DashboardLocale): RiskCopy {
+export function getRiskCopy(locale: PlatformLocale): RiskCopy {
   return copies[locale];
 }
