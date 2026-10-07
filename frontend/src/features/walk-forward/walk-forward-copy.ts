@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type WalkForwardCopy = {
   eyebrow: string;
@@ -73,7 +73,7 @@ export type WalkForwardCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, WalkForwardCopy> = {
+const copies: Record<PlatformLocale, WalkForwardCopy> = {
   fa: {
     eyebrow: 'Out-of-sample historical validation',
     title: 'تحلیل Walk-forward',
@@ -222,6 +222,6 @@ const copies: Record<DashboardLocale, WalkForwardCopy> = {
   },
 };
 
-export function getWalkForwardCopy(locale: DashboardLocale): WalkForwardCopy {
+export function getWalkForwardCopy(locale: PlatformLocale): WalkForwardCopy {
   return copies[locale];
 }

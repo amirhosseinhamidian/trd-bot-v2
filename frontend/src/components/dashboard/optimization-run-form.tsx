@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { getOptimizationCopy } from '@/components/dashboard/optimization-copy';
-import { getWalkForwardRunCopy } from '@/components/dashboard/walk-forward-run-copy';
+import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
 import {
   Badge,
   Button,

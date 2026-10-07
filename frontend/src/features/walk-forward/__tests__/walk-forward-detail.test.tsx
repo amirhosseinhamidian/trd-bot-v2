@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { WalkForwardDetail } from '@/components/dashboard/walk-forward-detail';
+import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
 import type { WalkForwardRunSummary, WalkForwardStabilityReport } from '@/lib/api/types';
 
 const run: WalkForwardRunSummary = {

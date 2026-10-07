@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import WalkForwardFilterPanel, {
   DEFAULT_WALK_FORWARD_FILTERS,
   type WalkForwardFilterValues,
-} from '@/components/dashboard/walk-forward-filter-panel';
-import { getWalkForwardCopy } from '@/components/dashboard/walk-forward-copy';
-import WalkForwardRunForm from '@/components/dashboard/walk-forward-run-form';
+} from '@/features/walk-forward/walk-forward-filter-panel';
+import { getWalkForwardCopy } from '@/features/walk-forward/walk-forward-copy';
+import WalkForwardRunForm from '@/features/walk-forward/walk-forward-run-form';
 import {
   Badge,
   Card,
@@ -33,16 +33,16 @@ const PAGE_SIZE = 12;
 
 type WalkForwardCatalogProps = {
   initialPage: Page<WalkForwardRunSummary>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialRunValues?: WalkForwardRunInitialValues;
   initialExecutionId?: string;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -55,7 +55,7 @@ function formatPercent(value: string, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

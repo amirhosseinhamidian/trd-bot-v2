@@ -1,23 +1,23 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getWalkForwardDetailCopy } from '@/components/dashboard/walk-forward-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type { WalkForwardStabilityReport } from '@/lib/api/types';
 
 type WalkForwardAnalyticsChartsProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   stability: WalkForwardStabilityReport;
 };
 
-function formatPercent(value: number, locale: DashboardLocale): string {
+function formatPercent(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     style: 'percent',
     maximumFractionDigits: 2,
   }).format(value);
 }
 
-function foldLabel(foldNumber: number, locale: DashboardLocale): string {
+function foldLabel(foldNumber: number, locale: PlatformLocale): string {
   const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(foldNumber);
   return `Fold ${formatted}`;
 }

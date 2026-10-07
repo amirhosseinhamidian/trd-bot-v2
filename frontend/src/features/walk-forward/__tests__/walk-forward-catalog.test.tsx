@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import WalkForwardCatalog from '@/components/dashboard/walk-forward-catalog';
+import WalkForwardCatalog from '@/features/walk-forward/walk-forward-catalog';
 import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
 
-vi.mock('@/components/dashboard/walk-forward-run-form', () => ({
+vi.mock('@/features/walk-forward/walk-forward-run-form', () => ({
   default: function MockWalkForwardRunForm({
     initialValues,
   }: {
@@ -18,7 +18,7 @@ vi.mock('@/components/dashboard/walk-forward-run-form', () => ({
   },
 }));
 
-vi.mock('@/components/dashboard/walk-forward-filter-panel', () => ({
+vi.mock('@/features/walk-forward/walk-forward-filter-panel', () => ({
   DEFAULT_WALK_FORWARD_FILTERS: {
     sourceDatasetId: '',
     planId: '',

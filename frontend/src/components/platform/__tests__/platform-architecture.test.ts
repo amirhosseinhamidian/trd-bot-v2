@@ -23,8 +23,8 @@ const screenComponentPaths = [
   'features/signals/signal-detail.tsx',
   'features/strategies/strategy-catalog.tsx',
   'features/strategies/strategy-detail.tsx',
-  'components/dashboard/walk-forward-catalog.tsx',
-  'components/dashboard/walk-forward-detail.tsx',
+  'features/walk-forward/walk-forward-catalog.tsx',
+  'features/walk-forward/walk-forward-detail.tsx',
 ] as const;
 
 const localeRoutes = [
@@ -103,6 +103,14 @@ const featureBoundaries = [
       ['strategies/[strategyName]/[version]', 'strategy-detail'],
     ],
     'strategy-workspace-copy',
+  ],
+  [
+    'walk-forward',
+    [
+      ['walk-forward', 'walk-forward-catalog'],
+      ['walk-forward/[executionId]', 'walk-forward-detail'],
+    ],
+    'walk-forward-copy',
   ],
 ] as const;
 

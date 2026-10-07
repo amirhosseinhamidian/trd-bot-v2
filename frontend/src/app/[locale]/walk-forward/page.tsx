@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import WalkForwardCatalog from '@/components/dashboard/walk-forward-catalog';
+import WalkForwardCatalog from '@/features/walk-forward/walk-forward-catalog';
 import { getWalkForwardRuns } from '@/lib/api/client';
 import {
   parseWalkForwardExecutionId,

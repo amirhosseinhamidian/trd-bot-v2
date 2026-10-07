@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import WalkForwardRunForm from '@/components/dashboard/walk-forward-run-form';
+import WalkForwardRunForm from '@/features/walk-forward/walk-forward-run-form';
 import { ApiRequestError } from '@/lib/api/client';
 import type {
   DatasetSummary,

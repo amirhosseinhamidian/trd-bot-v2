@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type WalkForwardDetailCopy = {
   back: string;
@@ -111,7 +111,7 @@ export type WalkForwardDetailCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
+const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
   fa: {
     back: 'بازگشت به Walk-forward',
     notFoundTitle: 'اجرای Walk-forward پیدا نشد',
@@ -340,6 +340,6 @@ const copies: Record<DashboardLocale, WalkForwardDetailCopy> = {
   },
 };
 
-export function getWalkForwardDetailCopy(locale: DashboardLocale): WalkForwardDetailCopy {
+export function getWalkForwardDetailCopy(locale: PlatformLocale): WalkForwardDetailCopy {
   return copies[locale];
 }

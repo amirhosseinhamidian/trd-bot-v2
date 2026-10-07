@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getWalkForwardCopy } from '@/components/dashboard/walk-forward-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getWalkForwardCopy } from '@/features/walk-forward/walk-forward-copy';
 import {
   Button,
   Card,
@@ -43,7 +43,7 @@ export const DEFAULT_WALK_FORWARD_FILTERS: WalkForwardFilterValues = {
 
 type WalkForwardFilterPanelProps = {
   isLoading: boolean;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onApply: (filters: WalkForwardFilterValues) => void;
 };
 

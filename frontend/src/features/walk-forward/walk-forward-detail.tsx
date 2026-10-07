@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { WalkForwardAnalyticsCharts } from '@/components/dashboard/walk-forward-analytics-charts';
-import { getWalkForwardDetailCopy } from '@/components/dashboard/walk-forward-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { WalkForwardAnalyticsCharts } from '@/features/walk-forward/walk-forward-analytics-charts';
+import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -29,7 +29,7 @@ import type {
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type WalkForwardDetailProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   run: WalkForwardRunSummary;
   stability: WalkForwardStabilityReport;
 };
@@ -39,11 +39,11 @@ type MetricProps = {
   value: string;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -56,7 +56,7 @@ function formatPercent(value: string, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',

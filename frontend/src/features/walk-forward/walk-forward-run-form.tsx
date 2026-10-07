@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getWalkForwardRunCopy } from '@/components/dashboard/walk-forward-run-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
 import {
   Badge,
   Button,
@@ -48,7 +48,7 @@ import { estimateWalkForwardFoldCount } from '@/lib/walk-forward/fold-estimate';
 import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
 
 type WalkForwardRunFormProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialValues?: WalkForwardRunInitialValues;
   initialExecutionId?: string;
 };

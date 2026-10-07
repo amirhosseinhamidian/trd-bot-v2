@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { WalkForwardDetail } from '@/components/dashboard/walk-forward-detail';
+import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
 import {
   ApiRequestError,
   getWalkForwardRunSummary,
