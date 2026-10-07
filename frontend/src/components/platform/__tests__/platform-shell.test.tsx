@@ -112,7 +112,8 @@ describe('PlatformShell', () => {
     });
 
     expect(navigation).toHaveAttribute('id', 'platform-navigation');
-    expect(navigation).toHaveClass('invisible', 'lg:visible');
+    expect(navigation).toHaveClass('hidden', 'md:flex', 'invisible', 'lg:visible');
+    expect(openButton).toHaveClass('hidden', 'md:block', 'lg:hidden');
     expect(
       within(navigation).getByRole('link', {
         name: 'Datasets',
@@ -125,7 +126,86 @@ describe('PlatformShell', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
-  it('moves focus into the mobile drawer and restores it after Escape', async () => {
+  it('renders compact mobile navigation and manages group menu focus', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <PlatformShell locale="en">
+        <div>Content</div>
+      </PlatformShell>,
+    );
+
+    const mobileNavigation = screen.getByRole('navigation', {
+      name: 'Mobile navigation',
+    });
+
+    expect(mobileNavigation.parentElement).toHaveClass('md:hidden');
+    expect(within(mobileNavigation).getByRole('link', { name: 'Overview' })).toHaveAttribute(
+      'href',
+      '/en',
+    );
+    expect(within(mobileNavigation).getByRole('button', { name: 'Research' })).toBeInTheDocument();
+    expect(
+      within(mobileNavigation).getByRole('button', { name: 'Strategy & Decision' }),
+    ).toBeInTheDocument();
+    expect(within(mobileNavigation).getByRole('button', { name: 'More' })).toBeInTheDocument();
+
+    const researchButton = within(mobileNavigation).getByRole('button', { name: 'Research' });
+
+    await user.click(researchButton);
+
+    expect(researchButton).toHaveAttribute('aria-expanded', 'true');
+
+    const researchMenu = document.getElementById('mobile-navigation-research');
+
+    expect(researchMenu).not.toBeNull();
+    expect(within(researchMenu!).getByRole('link', { name: 'Datasets' })).toHaveFocus();
+    expect(
+      within(researchMenu!)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Datasets', 'Experiments', 'Walk-forward', 'Optimizations']);
+
+    await user.keyboard('{Escape}');
+
+    expect(researchButton).toHaveAttribute('aria-expanded', 'false');
+    expect(researchButton).toHaveFocus();
+  });
+
+  it('places secondary destinations in More and marks its section active', async () => {
+    const user = userEvent.setup();
+    navigationState.pathname = '/en/risk';
+
+    render(
+      <PlatformShell locale="en">
+        <div>Content</div>
+      </PlatformShell>,
+    );
+
+    const mobileNavigation = screen.getByRole('navigation', {
+      name: 'Mobile navigation',
+    });
+    const moreButton = within(mobileNavigation).getByRole('button', { name: 'More' });
+
+    expect(moreButton).toHaveAttribute('aria-current', 'page');
+
+    await user.click(moreButton);
+
+    const moreMenu = document.getElementById('mobile-navigation-more');
+
+    expect(moreMenu).not.toBeNull();
+    expect(
+      within(moreMenu!)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Risk', 'Historical Portfolios', 'Connections', 'Monitoring']);
+    expect(within(moreMenu!).getByRole('link', { name: 'Risk' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('moves focus into the tablet drawer and restores it after Escape', async () => {
     const user = userEvent.setup();
 
     render(
@@ -160,7 +240,7 @@ describe('PlatformShell', () => {
     expect(openButton).toHaveFocus();
   });
 
-  it('restores focus when the mobile drawer close button is activated', async () => {
+  it('restores focus when the tablet drawer close button is activated', async () => {
     const user = userEvent.setup();
 
     render(
@@ -207,9 +287,14 @@ describe('PlatformShell', () => {
       name: 'ناوبری پلتفرم',
     });
 
+    const mobileNavigation = screen.getByRole('navigation', {
+      name: 'ناوبری موبایل',
+    });
+
     expect(within(sidebar).getByRole('heading', { name: 'پژوهش' })).toBeInTheDocument();
     expect(within(sidebar).getByRole('heading', { name: 'سامانه' })).toBeInTheDocument();
     expect(within(sidebar).getByRole('link', { name: 'ریسک' })).toHaveAttribute('href', '/fa/risk');
+    expect(within(mobileNavigation).getByRole('button', { name: 'بیشتر' })).toBeInTheDocument();
     expect(screen.getByText('پلتفرم پژوهش بازار')).toBeInTheDocument();
   });
 });

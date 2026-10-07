@@ -39,6 +39,15 @@ export type PlatformNavigationGroup = {
   items: PlatformNavigationItem[];
 };
 
+export type MobilePlatformNavigationKey = 'overview' | 'research' | 'strategyDecision' | 'more';
+
+export type MobilePlatformNavigationEntry = {
+  key: MobilePlatformNavigationKey;
+  label: string;
+  href?: string;
+  items: PlatformNavigationItem[];
+};
+
 export const PLATFORM_NAVIGATION_GROUPS = [
   {
     key: 'root',
@@ -88,6 +97,68 @@ export function getPlatformNavigation(locale: PlatformLocale): PlatformNavigatio
       label: copy.navigation.items[item.key],
     })),
   }));
+}
+
+export function getMobilePlatformNavigation(
+  locale: PlatformLocale,
+): MobilePlatformNavigationEntry[] {
+  const copy = getPlatformCopy(locale);
+  const groups = getPlatformNavigation(locale);
+  const groupsByKey = new Map(groups.map((group) => [group.key, group]));
+
+  function getGroup(key: PlatformNavigationGroupKey): PlatformNavigationGroup {
+    const group = groupsByKey.get(key);
+
+    if (!group) {
+      throw new Error(`Missing platform navigation group: ${key}`);
+    }
+
+    return group;
+  }
+
+  const root = getGroup('root');
+  const research = getGroup('research');
+  const strategyDecision = getGroup('strategyDecision');
+  const simulation = getGroup('simulation');
+  const data = getGroup('data');
+  const system = getGroup('system');
+  const overview = root.items[0];
+  const risk = strategyDecision.items.find((item) => item.key === 'risk');
+
+  if (!overview || !risk) {
+    throw new Error('Missing required mobile platform navigation destination');
+  }
+
+  return [
+    {
+      key: 'overview',
+      label: root.label,
+      href: overview.href,
+      items: [overview],
+    },
+    {
+      key: 'research',
+      label: research.label,
+      items: research.items,
+    },
+    {
+      key: 'strategyDecision',
+      label: strategyDecision.label,
+      items: strategyDecision.items.filter((item) => item.key !== 'risk'),
+    },
+    {
+      key: 'more',
+      label: copy.navigation.mobile.more,
+      items: [risk, ...simulation.items, ...data.items, ...system.items],
+    },
+  ];
+}
+
+export function isMobilePlatformNavigationEntryActive(
+  entry: MobilePlatformNavigationEntry,
+  pathname: string,
+): boolean {
+  return entry.items.some((item) => isPlatformNavigationItemActive(item, pathname));
 }
 
 export function isPlatformNavigationItemActive(

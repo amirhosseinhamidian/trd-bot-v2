@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { getPlatformCopy } from '@/platform/i18n';
 import {
+  getMobilePlatformNavigation,
   getPlatformNavigation,
+  isMobilePlatformNavigationEntryActive,
   isPlatformNavigationItemActive,
   PLATFORM_NAVIGATION_GROUPS,
 } from '@/platform/navigation';
@@ -55,6 +57,54 @@ describe('platform navigation contract', () => {
     expect(persianHrefs).toEqual(englishHrefs.map((href) => href.replace('/en', '/fa')));
   });
 
+  it('builds the frozen compact mobile navigation without losing destinations', () => {
+    const mobileNavigation = getMobilePlatformNavigation('en');
+
+    expect(
+      mobileNavigation.map((entry) => ({
+        key: entry.key,
+        label: entry.label,
+        href: entry.href,
+        items: entry.items.map((item) => item.key),
+      })),
+    ).toEqual([
+      {
+        key: 'overview',
+        label: 'Overview',
+        href: '/en',
+        items: ['overview'],
+      },
+      {
+        key: 'research',
+        label: 'Research',
+        href: undefined,
+        items: ['datasets', 'experiments', 'walkForward', 'optimizations'],
+      },
+      {
+        key: 'strategyDecision',
+        label: 'Strategy & Decision',
+        href: undefined,
+        items: ['strategies', 'signals', 'candidates'],
+      },
+      {
+        key: 'more',
+        label: 'More',
+        href: undefined,
+        items: ['risk', 'portfolios', 'connections', 'monitoring'],
+      },
+    ]);
+
+    const allMobileDestinations = new Set(
+      mobileNavigation.flatMap((entry) => entry.items.map((item) => item.href)),
+    );
+
+    expect(allMobileDestinations).toEqual(
+      new Set(getPlatformNavigation('en').flatMap((group) => group.items.map((item) => item.href))),
+    );
+    expect(isMobilePlatformNavigationEntryActive(mobileNavigation[3], '/en/risk')).toBe(true);
+    expect(isMobilePlatformNavigationEntryActive(mobileNavigation[2], '/en/risk')).toBe(false);
+  });
+
   it('localizes group labels and keeps shell terminology outside dashboard copy', () => {
     const english = getPlatformCopy('en');
     const persian = getPlatformCopy('fa');
@@ -93,6 +143,12 @@ describe('platform navigation contract', () => {
     });
     expect(persian.navigation.items.risk).toBe('ریسک');
     expect(persian.navigation.items.monitoring).toBe('پایش سامانه');
+    expect(english.navigation.mobile).toEqual({
+      label: 'Mobile navigation',
+      more: 'More',
+      closeMenu: 'Close menu',
+    });
+    expect(persian.navigation.mobile.more).toBe('بیشتر');
     expect(persian.header.navigation).toBe('ناوبری پلتفرم');
   });
 

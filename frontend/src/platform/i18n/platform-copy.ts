@@ -14,6 +14,11 @@ export type PlatformCopy = {
     groups: Record<PlatformNavigationGroupKey, string>;
     items: Record<PlatformNavigationItemKey, string>;
     comingSoon: string;
+    mobile: {
+      label: string;
+      more: string;
+      closeMenu: string;
+    };
   };
   header: {
     researchMode: string;
@@ -55,6 +60,11 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
         monitoring: 'پایش سامانه',
       },
       comingSoon: 'به‌زودی',
+      mobile: {
+        label: 'ناوبری موبایل',
+        more: 'بیشتر',
+        closeMenu: 'بستن منو',
+      },
     },
     header: {
       researchMode: 'حالت پژوهشی — بدون اجرای معامله واقعی',
@@ -94,6 +104,11 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
         monitoring: 'Monitoring',
       },
       comingSoon: 'Coming soon',
+      mobile: {
+        label: 'Mobile navigation',
+        more: 'More',
+        closeMenu: 'Close menu',
+      },
     },
     header: {
       researchMode: 'Research mode — no live trade execution',

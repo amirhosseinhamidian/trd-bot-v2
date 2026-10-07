@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import MobilePlatformNavigation from '@/components/platform/mobile-platform-navigation';
 import ThemeToggle from '@/components/theme/theme-toggle';
 import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import { getPlatformNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
@@ -71,7 +72,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
           type="button"
           aria-label={copy.header.closeNavigation}
           tabIndex={-1}
-          className="fixed inset-0 z-40 bg-app-overlay backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 hidden bg-app-overlay backdrop-blur-sm md:block lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       ) : null}
@@ -80,7 +81,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
         id={PLATFORM_NAVIGATION_ID}
         aria-label={copy.header.navigation}
         className={[
-          'fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-app-border bg-app-chrome p-5 shadow-2xl backdrop-blur transition-transform duration-200 lg:visible lg:translate-x-0',
+          'fixed inset-y-0 start-0 z-50 hidden w-72 flex-col border-e border-app-border bg-app-chrome p-5 shadow-2xl backdrop-blur transition-transform duration-200 md:flex lg:visible lg:translate-x-0',
           isSidebarOpen
             ? 'visible translate-x-0'
             : locale === 'fa'
@@ -190,7 +191,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
               aria-label={copy.header.openNavigation}
               aria-controls={PLATFORM_NAVIGATION_ID}
               aria-expanded={isSidebarOpen}
-              className="rounded-xl border border-app-border p-2.5 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none lg:hidden"
+              className="hidden rounded-xl border border-app-border p-2.5 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none md:block lg:hidden"
               onClick={() => setIsSidebarOpen(true)}
             >
               <span aria-hidden="true">☰</span>
@@ -201,7 +202,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
               {copy.header.researchMode}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="ms-auto flex items-center gap-2">
               <ThemeToggle locale={locale} />
 
               <Link
@@ -214,10 +215,12 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-8 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-7xl min-w-0 px-4 pt-8 pb-28 sm:px-6 md:pb-8 lg:px-8">
           {children}
         </main>
       </div>
+
+      <MobilePlatformNavigation locale={locale} pathname={pathname} />
     </div>
   );
 }
