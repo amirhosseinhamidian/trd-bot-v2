@@ -1,21 +1,22 @@
-import ActivityFeed from '@/components/dashboard/activity-feed';
-import { type DashboardLocale, getDashboardCopy } from '@/components/dashboard/dashboard-copy';
+import ActivityFeed from '@/features/overview/activity-feed';
+import { getOverviewCopy } from '@/features/overview/overview-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import type { Page, ResearchActivityItem, ResearchOverview, ResearchStage } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type OverviewDashboardProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   overview: ResearchOverview;
   activityPage: Page<ResearchActivityItem>;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const numericValue = Number(value);
 
   if (!Number.isFinite(numericValue)) {
@@ -34,7 +35,7 @@ export default function OverviewDashboard({
   overview,
   activityPage,
 }: OverviewDashboardProps) {
-  const copy = getDashboardCopy(locale);
+  const copy = getOverviewCopy(locale);
 
   const stageLabels: Record<ResearchStage, string> = {
     empty: copy.overview.stages.empty,

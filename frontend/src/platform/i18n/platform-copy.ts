@@ -27,6 +27,18 @@ export type PlatformCopy = {
     openNavigation: string;
     closeNavigation: string;
   };
+  feedback: {
+    notFound: {
+      title: string;
+      description: string;
+      back: string;
+    };
+    error: {
+      title: string;
+      description: string;
+      retry: string;
+    };
+  };
 };
 
 const platformCopies: Record<PlatformLocale, PlatformCopy> = {
@@ -73,6 +85,18 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
       openNavigation: 'باز کردن ناوبری',
       closeNavigation: 'بستن ناوبری',
     },
+    feedback: {
+      notFound: {
+        title: 'صفحه موردنظر پیدا نشد',
+        description: 'ممکن است نشانی صفحه اشتباه باشد یا این بخش دیگر در دسترس نباشد.',
+        back: 'بازگشت به نمای کلی',
+      },
+      error: {
+        title: 'دریافت اطلاعات ناموفق بود',
+        description: 'اتصال Backend و مقدار NEXT_PUBLIC_API_BASE_URL را بررسی و دوباره تلاش کنید.',
+        retry: 'تلاش مجدد',
+      },
+    },
   },
   en: {
     brand: {
@@ -116,6 +140,18 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
       navigation: 'Platform navigation',
       openNavigation: 'Open navigation',
       closeNavigation: 'Close navigation',
+    },
+    feedback: {
+      notFound: {
+        title: 'Page not found',
+        description: 'The address may be incorrect, or this page may no longer be available.',
+        back: 'Back to overview',
+      },
+      error: {
+        title: 'Unable to load information',
+        description: 'Check the backend connection and NEXT_PUBLIC_API_BASE_URL, then try again.',
+        retry: 'Try again',
+      },
     },
   },
 };

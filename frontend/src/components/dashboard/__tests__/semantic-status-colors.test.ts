@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 const migratedComponentFiles = [
   'components/charts/category-bar-chart.tsx',
   'components/charts/historical-line-chart.tsx',
-  'components/dashboard/activity-feed.tsx',
+  'features/overview/activity-feed.tsx',
   'features/candidates/candidate-comparison-panel.tsx',
   'features/datasets/dataset-detail.tsx',
   'features/datasets/dataset-import-form.tsx',
@@ -22,7 +22,7 @@ const migratedComponentFiles = [
   'features/monitoring/monitoring-dashboard.tsx',
   'features/optimizations/optimization-detail.tsx',
   'features/optimizations/optimization-run-form.tsx',
-  'components/dashboard/overview-dashboard.tsx',
+  'features/overview/overview-dashboard.tsx',
   'features/portfolios/portfolio-analytics.tsx',
   'features/portfolios/portfolio-catalog.tsx',
   'features/portfolios/portfolio-detail.tsx',

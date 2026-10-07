@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import OverviewDashboard from '@/components/dashboard/overview-dashboard';
+import OverviewDashboard from '@/features/overview/overview-dashboard';
 import type { Page, ResearchActivityItem, ResearchOverview } from '@/lib/api/types';
 
-vi.mock('@/components/dashboard/activity-feed', () => ({
+vi.mock('@/features/overview/activity-feed', () => ({
   default: function MockActivityFeed() {
     return <div data-testid="activity-feed" />;
   },

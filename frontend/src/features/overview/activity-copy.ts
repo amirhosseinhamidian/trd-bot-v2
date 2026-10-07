@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type ActivityPeriod = 'all' | '7d' | '30d';
 
@@ -26,7 +26,7 @@ export type ActivityCopy = {
   loading: string;
 };
 
-const copies: Record<DashboardLocale, ActivityCopy> = {
+const copies: Record<PlatformLocale, ActivityCopy> = {
   fa: {
     title: 'فعالیت‌های اخیر',
     description: 'آخرین داده‌ها و اجرای فرآیندهای پژوهشی',
@@ -75,6 +75,6 @@ const copies: Record<DashboardLocale, ActivityCopy> = {
   },
 };
 
-export function getActivityCopy(locale: DashboardLocale): ActivityCopy {
+export function getActivityCopy(locale: PlatformLocale): ActivityCopy {
   return copies[locale];
 }

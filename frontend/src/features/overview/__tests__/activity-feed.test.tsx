@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import ActivityFeed from '@/components/dashboard/activity-feed';
+import ActivityFeed from '@/features/overview/activity-feed';
 import type { Page, ResearchActivityItem } from '@/lib/api/types';
 
 vi.mock('@/lib/api/client', () => ({

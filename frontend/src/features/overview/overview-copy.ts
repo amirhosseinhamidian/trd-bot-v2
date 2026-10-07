@@ -1,8 +1,6 @@
 import type { PlatformLocale } from '@/platform/i18n';
 
-export type DashboardLocale = PlatformLocale;
-
-export type DashboardCopy = {
+export type OverviewCopy = {
   overview: {
     eyebrow: string;
     title: string;
@@ -49,23 +47,9 @@ export type DashboardCopy = {
       excessReturn: string;
     };
   };
-  loading: {
-    title: string;
-    description: string;
-  };
-  notFound: {
-    title: string;
-    description: string;
-    back: string;
-  };
-  error: {
-    title: string;
-    description: string;
-    retry: string;
-  };
 };
 
-const copies: Record<DashboardLocale, DashboardCopy> = {
+const copies: Record<PlatformLocale, OverviewCopy> = {
   fa: {
     overview: {
       eyebrow: 'Research workspace',
@@ -113,20 +97,6 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
         folds: 'تعداد Fold',
         excessReturn: 'بازده مازاد تاریخی',
       },
-    },
-    loading: {
-      title: 'در حال دریافت اطلاعات پژوهش',
-      description: 'داده‌های داشبورد از Backend دریافت می‌شوند.',
-    },
-    notFound: {
-      title: 'صفحه موردنظر پیدا نشد',
-      description: 'ممکن است نشانی صفحه اشتباه باشد یا این بخش دیگر در دسترس نباشد.',
-      back: 'بازگشت به نمای کلی',
-    },
-    error: {
-      title: 'دریافت اطلاعات ناموفق بود',
-      description: 'اتصال Backend و مقدار NEXT_PUBLIC_API_BASE_URL را بررسی و دوباره تلاش کنید.',
-      retry: 'تلاش مجدد',
     },
   },
   en: {
@@ -176,23 +146,9 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
         excessReturn: 'Historical excess return',
       },
     },
-    loading: {
-      title: 'Loading research information',
-      description: 'Dashboard data is being retrieved from the backend.',
-    },
-    notFound: {
-      title: 'Page not found',
-      description: 'The address may be incorrect, or this page may no longer be available.',
-      back: 'Back to overview',
-    },
-    error: {
-      title: 'Unable to load information',
-      description: 'Check the backend connection and NEXT_PUBLIC_API_BASE_URL, then try again.',
-      retry: 'Try again',
-    },
   },
 };
 
-export function getDashboardCopy(locale: DashboardLocale): DashboardCopy {
+export function getOverviewCopy(locale: PlatformLocale): OverviewCopy {
   return copies[locale];
 }

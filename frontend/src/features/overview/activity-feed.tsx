@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react';
 
-import { type ActivityPeriod, getActivityCopy } from '@/components/dashboard/activity-copy';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import { type ActivityPeriod, getActivityCopy } from '@/features/overview/activity-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
   Button,
@@ -28,10 +28,10 @@ type ActivityTypeFilter = 'all' | ResearchActivityType;
 
 type ActivityFeedProps = {
   initialPage: Page<ResearchActivityItem>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -44,7 +44,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 

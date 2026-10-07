@@ -105,7 +105,7 @@ describe('platform navigation contract', () => {
     expect(isMobilePlatformNavigationEntryActive(mobileNavigation[2], '/en/risk')).toBe(false);
   });
 
-  it('localizes group labels and keeps shell terminology outside dashboard copy', () => {
+  it('localizes platform navigation and route feedback copy', () => {
     const english = getPlatformCopy('en');
     const persian = getPlatformCopy('fa');
 
@@ -127,6 +127,8 @@ describe('platform navigation contract', () => {
     });
     expect(english.brand.platformName).toBe('Nexora');
     expect(english.brand.productName).toBe('TRD BOT');
+    expect(english.feedback.notFound.back).toBe('Back to overview');
+    expect(persian.feedback.error.retry).toBe('تلاش مجدد');
     expect(english.navigation.items).toEqual({
       overview: 'Overview',
       datasets: 'Datasets',

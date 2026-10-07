@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import OverviewDashboard from '@/components/dashboard/overview-dashboard';
+import OverviewDashboard from '@/features/overview/overview-dashboard';
 import { getResearchActivity, getResearchOverview } from '@/lib/api/client';
 
 type LocalePageProps = {
