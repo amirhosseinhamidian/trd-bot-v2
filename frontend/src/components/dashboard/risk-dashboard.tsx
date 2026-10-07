@@ -141,7 +141,7 @@ function RiskGauge({
       >
         <div
           className={`h-full rounded-full ${
-            withinLimit === false ? 'bg-red-500' : 'bg-app-accent'
+            withinLimit === false ? 'bg-app-danger' : 'bg-app-accent'
           }`}
           style={{ width: `${barPercent}%` }}
         />

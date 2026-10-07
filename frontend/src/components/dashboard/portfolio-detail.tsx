@@ -81,11 +81,11 @@ function pnlClassName(value: string | null): string {
   const parsedValue = Number(value ?? '0');
 
   if (parsedValue > 0) {
-    return 'text-emerald-300';
+    return 'text-app-success';
   }
 
   if (parsedValue < 0) {
-    return 'text-red-300';
+    return 'text-app-danger';
   }
 
   return 'text-app-foreground';

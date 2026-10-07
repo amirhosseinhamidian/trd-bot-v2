@@ -175,7 +175,7 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
           {copy.description}
         </p>
 
-        <div className="mt-5 rounded-2xl border border-blue-400/20 bg-blue-400/5 px-5 py-4 text-sm leading-7 text-blue-200">
+        <div className="mt-5 rounded-2xl border border-app-info-border bg-app-info-soft px-5 py-4 text-sm leading-7 text-app-info">
           {copy.capacityPlanningOnly}
         </div>
       </section>
@@ -212,7 +212,7 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
                   {copy.untested}: {formatCount(operations.connections.untested_count, locale)}
                 </p>
                 {operations.connections.latest_error_code ? (
-                  <p dir="ltr" className="mt-2 text-left text-xs text-red-300">
+                  <p dir="ltr" className="mt-2 text-left text-xs text-app-danger">
                     {operations.connections.latest_error_code}
                   </p>
                 ) : null}

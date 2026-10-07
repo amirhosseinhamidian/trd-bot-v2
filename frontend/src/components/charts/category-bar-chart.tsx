@@ -112,13 +112,13 @@ export function CategoryBarChart({
                 x2={canvasWidth - PADDING_RIGHT}
                 y1={line.y}
                 y2={line.y}
-                stroke="#334155"
+                stroke="var(--app-border)"
                 strokeWidth="1"
               />
               <text
                 x={PADDING_LEFT - 10}
                 y={line.y + 4}
-                fill="#64748b"
+                fill="var(--app-subtle)"
                 fontSize="11"
                 textAnchor="end"
               >
@@ -132,7 +132,7 @@ export function CategoryBarChart({
             x2={canvasWidth - PADDING_RIGHT}
             y1={zeroY}
             y2={zeroY}
-            stroke="#94a3b8"
+            stroke="var(--app-muted)"
             strokeWidth="1.5"
           />
 
@@ -173,7 +173,7 @@ export function CategoryBarChart({
                 <text
                   x={PADDING_LEFT + (categoryIndex + 0.5) * categoryWidth}
                   y={HEIGHT - 22}
-                  fill="#64748b"
+                  fill="var(--app-subtle)"
                   fontSize="11"
                   textAnchor="middle"
                 >

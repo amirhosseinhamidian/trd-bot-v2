@@ -168,7 +168,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
               width={48}
               height={48}
               loading="eager"
-              className="h-12 w-12 shrink-0 rounded-xl border border-app-accent-border object-cover shadow-lg shadow-black/20"
+              className="h-12 w-12 shrink-0 rounded-xl border border-app-accent-border object-cover shadow-app-surface"
             />
 
             <div className="min-w-0">

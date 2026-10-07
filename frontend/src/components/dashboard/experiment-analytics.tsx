@@ -1,4 +1,5 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
+import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import {
   experimentDetailCopy,
   type ExperimentDetailLocale,
@@ -153,7 +154,7 @@ export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsPr
             series={[
               {
                 label: copy.closedTrades,
-                color: '#22d3ee',
+                color: CHART_SERIES_COLORS.cyan,
                 points:
                   distribution.total_trades === 0
                     ? []
@@ -183,7 +184,7 @@ export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsPr
             series={[
               {
                 label: copy.returnContribution,
-                color: '#38bdf8',
+                color: CHART_SERIES_COLORS.blue,
                 points: analytics.returns_by_period.map((period) => ({
                   category: formatMonth(period.started_at, locale),
                   value: Number(period.return_contribution),

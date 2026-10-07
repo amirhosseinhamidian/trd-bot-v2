@@ -44,8 +44,8 @@ function formatDate(value: string | null, locale: DashboardLocale): string {
 
 function pnlClassName(value: string | null): string {
   const parsed = Number(value ?? '0');
-  if (parsed > 0) return 'text-emerald-300';
-  if (parsed < 0) return 'text-red-300';
+  if (parsed > 0) return 'text-app-success';
+  if (parsed < 0) return 'text-app-danger';
   return 'text-app-foreground';
 }
 

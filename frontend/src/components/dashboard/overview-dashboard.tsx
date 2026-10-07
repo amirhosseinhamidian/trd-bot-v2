@@ -54,22 +54,22 @@ export default function OverviewDashboard({
     {
       label: copy.overview.cards.datasets,
       value: overview.dataset_count,
-      accent: 'bg-violet-400',
+      accent: 'bg-app-chart-4',
     },
     {
       label: copy.overview.cards.experiments,
       value: overview.experiment_count,
-      accent: 'bg-cyan-400',
+      accent: 'bg-app-chart-1',
     },
     {
       label: copy.overview.cards.walkForward,
       value: overview.walk_forward_run_count,
-      accent: 'bg-blue-400',
+      accent: 'bg-app-chart-2',
     },
     {
       label: copy.overview.cards.policies,
       value: overview.acceptance_policy_preset_count,
-      accent: 'bg-emerald-400',
+      accent: 'bg-app-chart-3',
     },
   ];
 
@@ -87,8 +87,8 @@ export default function OverviewDashboard({
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-500">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          <div className="flex items-center gap-2 rounded-full border border-app-success-border bg-app-success-soft px-3 py-2 text-xs font-medium text-app-success">
+            <span className="h-2 w-2 rounded-full bg-app-success" />
             {copy.overview.connected}
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function OverviewDashboard({
         {cards.map((card) => (
           <article
             key={card.label}
-            className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-lg shadow-black/10"
+            className="rounded-2xl border border-app-border bg-app-surface p-5 shadow-app-surface"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm text-app-muted">{card.label}</p>
@@ -143,7 +143,7 @@ export default function OverviewDashboard({
                   <span
                     className={[
                       'h-3 w-3 shrink-0 rounded-full',
-                      isCompleted ? 'bg-emerald-400' : 'bg-app-border',
+                      isCompleted ? 'bg-app-success' : 'bg-app-border',
                     ].join(' ')}
                   />
 
@@ -168,7 +168,7 @@ export default function OverviewDashboard({
 
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
-            <p className="text-sm font-medium text-violet-500">{copy.overview.latest.dataset}</p>
+            <p className="text-sm font-medium text-app-chart-4">{copy.overview.latest.dataset}</p>
 
             {overview.latest_dataset ? (
               <div className="mt-4 space-y-3">
@@ -235,7 +235,9 @@ export default function OverviewDashboard({
           </article>
 
           <article className="rounded-2xl border border-app-border bg-app-surface-muted p-5">
-            <p className="text-sm font-medium text-blue-500">{copy.overview.latest.walkForward}</p>
+            <p className="text-sm font-medium text-app-chart-2">
+              {copy.overview.latest.walkForward}
+            </p>
 
             {overview.latest_walk_forward_run ? (
               <div className="mt-4 space-y-3">

@@ -24,13 +24,13 @@ export default function LanguageSwitcher({
     'transition-colors',
   ].join(' ');
 
-  const activeClassName = [baseClassName, 'bg-cyan-400', 'text-slate-950'].join(' ');
+  const activeClassName = [baseClassName, 'bg-app-accent', 'text-app-background'].join(' ');
 
   const inactiveClassName = [
     baseClassName,
-    'text-slate-300',
-    'hover:bg-white/5',
-    'hover:text-white',
+    'text-app-muted',
+    'hover:bg-app-hover',
+    'hover:text-app-foreground',
   ].join(' ');
 
   return (
@@ -42,8 +42,8 @@ export default function LanguageSwitcher({
         'gap-1',
         'rounded-xl',
         'border',
-        'border-white/10',
-        'bg-slate-900/70',
+        'border-app-border',
+        'bg-app-surface',
         'p-1',
       ].join(' ')}
       dir="ltr"

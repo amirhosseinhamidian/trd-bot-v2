@@ -1,4 +1,5 @@
 import { HistoricalLineChart } from '@/components/charts/historical-line-chart';
+import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { portfolioAnalyticsCopy } from '@/components/dashboard/portfolio-analytics-copy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
@@ -101,7 +102,10 @@ export function PortfolioAnalytics({
                 series={[
                   {
                     label,
-                    color: key === 'drawdown_fraction' ? '#fb7185' : '#22d3ee',
+                    color:
+                      key === 'drawdown_fraction'
+                        ? CHART_SERIES_COLORS.rose
+                        : CHART_SERIES_COLORS.cyan,
                     curve: 'step_after',
                     points: report.equity_points.map((point) => ({
                       timestamp: point.timestamp,

@@ -64,8 +64,8 @@ export function HistoricalLineChart({
 
   if (allPoints.length === 0) {
     return (
-      <div className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center">
-        <p className="text-sm text-slate-500">{emptyLabel}</p>
+      <div className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-app-border bg-app-surface-muted p-6 text-center">
+        <p className="text-sm text-app-muted">{emptyLabel}</p>
       </div>
     );
   }
@@ -163,7 +163,7 @@ export function HistoricalLineChart({
     <div>
       <div className="mb-4 flex flex-wrap gap-4">
         {normalizedSeries.map((item) => (
-          <div key={item.label} className="flex items-center gap-2 text-xs text-slate-400">
+          <div key={item.label} className="flex items-center gap-2 text-xs text-app-muted">
             <span
               className="h-2.5 w-2.5 rounded-full"
               style={{
@@ -176,7 +176,7 @@ export function HistoricalLineChart({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/50 p-3">
+      <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface-muted p-3">
         <svg
           role="img"
           aria-label={ariaLabel}
@@ -190,14 +190,14 @@ export function HistoricalLineChart({
                 x2={WIDTH - PADDING_RIGHT}
                 y1={line.y}
                 y2={line.y}
-                stroke="#1e293b"
+                stroke="var(--app-border)"
                 strokeWidth="1"
               />
 
               <text
                 x={PADDING_LEFT - 10}
                 y={line.y + 4}
-                fill="#64748b"
+                fill="var(--app-subtle)"
                 fontSize="11"
                 textAnchor="end"
               >
@@ -211,7 +211,7 @@ export function HistoricalLineChart({
             x2={PADDING_LEFT}
             y1={PADDING_TOP}
             y2={HEIGHT - PADDING_BOTTOM}
-            stroke="#334155"
+            stroke="var(--app-border)"
             strokeWidth="1"
           />
 
@@ -220,7 +220,7 @@ export function HistoricalLineChart({
             x2={WIDTH - PADDING_RIGHT}
             y1={HEIGHT - PADDING_BOTTOM}
             y2={HEIGHT - PADDING_BOTTOM}
-            stroke="#334155"
+            stroke="var(--app-border)"
             strokeWidth="1"
           />
 
@@ -248,7 +248,7 @@ export function HistoricalLineChart({
                     cy={scaleY(point.value)}
                     r="4"
                     fill={item.color}
-                    stroke="#020617"
+                    stroke="var(--app-background)"
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
                   >
@@ -261,14 +261,20 @@ export function HistoricalLineChart({
             );
           })}
 
-          <text x={PADDING_LEFT} y={HEIGHT - 15} fill="#64748b" fontSize="11" textAnchor="start">
+          <text
+            x={PADDING_LEFT}
+            y={HEIGHT - 15}
+            fill="var(--app-subtle)"
+            fontSize="11"
+            textAnchor="start"
+          >
             {formatDate(firstTimestamp)}
           </text>
 
           <text
             x={WIDTH - PADDING_RIGHT}
             y={HEIGHT - 15}
-            fill="#64748b"
+            fill="var(--app-subtle)"
             fontSize="11"
             textAnchor="end"
           >

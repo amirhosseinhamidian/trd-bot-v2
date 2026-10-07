@@ -64,11 +64,11 @@ function pnlClassName(value: string): string {
   const parsedValue = Number(value);
 
   if (parsedValue > 0) {
-    return 'text-emerald-300';
+    return 'text-app-success';
   }
 
   if (parsedValue < 0) {
-    return 'text-red-300';
+    return 'text-app-danger';
   }
 
   return 'text-app-foreground';
