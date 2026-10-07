@@ -8,7 +8,7 @@ import type {
   DatasetFileImportPreview,
   DatasetFileInspection,
   DatasetSummary,
-} from '@/lib/api/types';
+} from '@/features/datasets/api/types';
 
 const mocks = vi.hoisted(() => ({
   importDatasetFile: vi.fn(),
@@ -16,10 +16,7 @@ const mocks = vi.hoisted(() => ({
   previewDatasetFile: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api/client')>();
-  return { ...actual, ...mocks };
-});
+vi.mock('@/features/datasets/api/client', () => mocks);
 
 const mapping = {
   open_time: 'timestamp',

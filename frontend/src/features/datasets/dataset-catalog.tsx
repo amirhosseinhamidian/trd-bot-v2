@@ -21,8 +21,9 @@ import DatasetFilterPanel, {
 } from '@/features/datasets/dataset-filter-panel';
 import DatasetImportForm from '@/features/datasets/dataset-import-form';
 import { getDatasetsCopy } from '@/features/datasets/datasets-copy';
-import { getDatasets, type DatasetFilters } from '@/lib/api/client';
-import type { DatasetSummary, Page } from '@/lib/api/types';
+import { getDatasets, type DatasetFilters } from '@/features/datasets/api/client';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import type { Page } from '@/lib/api/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import Link from 'next/link';

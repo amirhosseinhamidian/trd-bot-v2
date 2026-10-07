@@ -1,4 +1,4 @@
-import type { DatasetFileField } from '@/lib/api/types';
+import type { DatasetFileField } from '@/features/datasets/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type DatasetImportCopy = {

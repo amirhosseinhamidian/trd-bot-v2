@@ -14,7 +14,7 @@ import {
   getJson,
   postFormData,
   postJson,
-} from '@/lib/api/transport';
+} from '@/lib/api/core/transport';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -24,13 +24,13 @@ describe('API transport boundary', () => {
   it('preserves the public client exports while keeping transport domain-agnostic', () => {
     const clientSource = readFileSync(resolve(process.cwd(), 'src/lib/api/client.ts'), 'utf8');
     const transportSource = readFileSync(
-      resolve(process.cwd(), 'src/lib/api/transport.ts'),
+      resolve(process.cwd(), 'src/lib/api/core/transport.ts'),
       'utf8',
     );
 
     expect(clientApiBaseUrl).toBe(API_BASE_URL);
     expect(ClientApiRequestError).toBe(ApiRequestError);
-    expect(clientSource).toContain("from '@/lib/api/transport'");
+    expect(clientSource).toContain("from '@/lib/api/core/transport'");
     expect(clientSource).not.toContain('fetch(');
     expect(transportSource).not.toContain('@/lib/api/types');
   });

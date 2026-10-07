@@ -2,10 +2,14 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import DatasetDetail from '@/features/datasets/dataset-detail';
-import type { DatasetDetailSummary, Page, OHLCVCandle } from '@/lib/api/types';
+import type { DatasetDetailSummary, OHLCVCandle } from '@/features/datasets/api/types';
+import type { Page } from '@/lib/api/types';
+
+vi.mock('@/features/datasets/api/client', () => ({
+  getDatasetCandles: vi.fn(),
+}));
 
 vi.mock('@/lib/api/client', () => ({
-  getDatasetCandles: vi.fn(),
   getMarketDataImportVersions: vi.fn(),
   refreshMarketDataImport: vi.fn(),
 }));

@@ -25,8 +25,9 @@ import {
 } from '@/components/ui';
 import { getDatasetDetailCopy } from '@/features/datasets/dataset-detail-copy';
 import DatasetVersionHistory from '@/features/datasets/dataset-version-history';
-import { getDatasetCandles } from '@/lib/api/client';
-import type { DatasetDetailSummary, OHLCVCandle, Page } from '@/lib/api/types';
+import { getDatasetCandles } from '@/features/datasets/api/client';
+import type { DatasetDetailSummary, OHLCVCandle } from '@/features/datasets/api/types';
+import type { Page } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const CANDLES_PER_PAGE = 25;

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getDatasets } from '@/features/datasets/api/client';
 import DatasetCatalog from '@/features/datasets/dataset-catalog';
-import { getDatasets } from '@/lib/api/client';
 
 type DatasetsPageProps = {
   params: Promise<{

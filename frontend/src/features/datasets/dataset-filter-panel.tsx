@@ -14,7 +14,11 @@ import {
   SelectOption,
 } from '@/components/ui';
 import { getDatasetsCopy } from '@/features/datasets/datasets-copy';
-import type { DatasetSortDirection, DatasetSortField, DatasetTimeframe } from '@/lib/api/types';
+import type {
+  DatasetSortDirection,
+  DatasetSortField,
+  DatasetTimeframe,
+} from '@/features/datasets/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type DatasetFilterValues = {

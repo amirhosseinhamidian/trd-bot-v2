@@ -17,11 +17,10 @@ import {
 } from '@/components/ui';
 import { getDatasetImportCopy } from '@/features/datasets/dataset-import-copy';
 import {
-  ApiRequestError,
   importDatasetFile,
   inspectDatasetFile,
   previewDatasetFile,
-} from '@/lib/api/client';
+} from '@/features/datasets/api/client';
 import type {
   DatasetColumnMapping,
   DatasetFileField,
@@ -30,7 +29,8 @@ import type {
   DatasetFilePreviewRequest,
   DatasetSummary,
   DatasetTimeframe,
-} from '@/lib/api/types';
+} from '@/features/datasets/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;

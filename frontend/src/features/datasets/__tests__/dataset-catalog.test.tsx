@@ -3,14 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DatasetCatalog from '@/features/datasets/dataset-catalog';
-import type { DatasetSummary, Page } from '@/lib/api/types';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
   filterInstance: 0,
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/datasets/api/client', () => ({
   getDatasets: mocks.getDatasets,
 }));
 
