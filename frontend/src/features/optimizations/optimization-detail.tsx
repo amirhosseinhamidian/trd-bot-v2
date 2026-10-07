@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getOptimizationCopy } from '@/components/dashboard/optimization-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import {
   Badge,
   type BadgeVariant,
@@ -36,7 +36,7 @@ const POLLING_INTERVAL_MS = 1000;
 
 type OptimizationDetailProps = {
   initialExecution: OptimizationExecution;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
 type MetricProps = {
@@ -44,11 +44,11 @@ type MetricProps = {
   value: string;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDate(value: string | null, locale: DashboardLocale, fallback: string): string {
+function formatDate(value: string | null, locale: PlatformLocale, fallback: string): string {
   if (value === null) {
     return fallback;
   }
@@ -65,7 +65,7 @@ function formatDate(value: string | null, locale: DashboardLocale, fallback: str
   }).format(date);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed)) {
@@ -77,7 +77,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed)) {
@@ -90,7 +90,7 @@ function formatPercent(value: string, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatObjectiveValue(value: string, locale: DashboardLocale): string {
+function formatObjectiveValue(value: string, locale: PlatformLocale): string {
   return formatPercent(value, locale);
 }
 
@@ -130,7 +130,7 @@ function EvidenceLinks({
   locale,
 }: {
   evaluation: OptimizationTrialEvaluation;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 }) {
   return (
     <div className="flex min-w-48 flex-col gap-2 text-xs">

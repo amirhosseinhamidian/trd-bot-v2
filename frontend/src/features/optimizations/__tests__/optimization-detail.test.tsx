@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import OptimizationDetail from '@/components/dashboard/optimization-detail';
+import OptimizationDetail from '@/features/optimizations/optimization-detail';
 import { successfulOptimizationExecution } from '@/test/optimization-fixtures';
 
 const mocks = vi.hoisted(() => ({

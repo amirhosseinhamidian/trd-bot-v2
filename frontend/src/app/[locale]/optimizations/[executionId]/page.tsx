@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import OptimizationDetail from '@/components/dashboard/optimization-detail';
+import OptimizationDetail from '@/features/optimizations/optimization-detail';
 import { ApiRequestError, getOptimizationExecution } from '@/lib/api/client';
 
 type OptimizationDetailPageProps = {

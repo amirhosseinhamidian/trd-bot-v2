@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getOptimizationCopy } from '@/components/dashboard/optimization-copy';
-import OptimizationRunForm from '@/components/dashboard/optimization-run-form';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
+import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
 import {
   Badge,
   type BadgeVariant,
@@ -29,15 +29,15 @@ const PAGE_SIZE = 12;
 
 type OptimizationCatalogProps = {
   initialPage: Page<OptimizationExecution>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialExecutionId?: string;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

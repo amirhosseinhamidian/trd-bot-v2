@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getOptimizationCopy } from '@/components/dashboard/optimization-copy';
 import { EmptyState } from '@/components/ui';
+import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export default function OptimizationNotFound() {
   const params = useParams<{ locale: string }>();
-  const locale: DashboardLocale = params.locale === 'en' ? 'en' : 'fa';
+  const locale: PlatformLocale = params.locale === 'en' ? 'en' : 'fa';
   const copy = getOptimizationCopy(locale);
 
   return (

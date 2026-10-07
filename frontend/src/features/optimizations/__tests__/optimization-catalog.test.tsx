@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import OptimizationCatalog from '@/components/dashboard/optimization-catalog';
+import OptimizationCatalog from '@/features/optimizations/optimization-catalog';
 import type { OptimizationExecution, Page } from '@/lib/api/types';
 import { queuedOptimizationExecution } from '@/test/optimization-fixtures';
 
-vi.mock('@/components/dashboard/optimization-run-form', () => ({
+vi.mock('@/features/optimizations/optimization-run-form', () => ({
   default: function MockOptimizationRunForm({
     initialExecutionId,
   }: {

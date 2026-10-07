@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getOptimizationCopy } from '@/components/dashboard/optimization-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
 import {
   Badge,
@@ -50,7 +50,7 @@ import { getStrategyDisplayName, getStrategyParameterLabel } from '@/lib/strateg
 import { estimateWalkForwardFoldCount } from '@/lib/walk-forward/fold-estimate';
 
 type OptimizationRunFormProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialExecutionId?: string;
 };
 

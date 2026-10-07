@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import OptimizationRunForm from '@/components/dashboard/optimization-run-form';
+import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
 import type { DatasetSummary, Page, ResearchStrategyMetadata } from '@/lib/api/types';
 import { optimizationSubmission } from '@/test/optimization-fixtures';
 

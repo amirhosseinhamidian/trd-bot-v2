@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import OptimizationCatalog from '@/components/dashboard/optimization-catalog';
+import OptimizationCatalog from '@/features/optimizations/optimization-catalog';
 import { getOptimizationExecutions } from '@/lib/api/client';
 import {
   parseOptimizationExecutionId,
