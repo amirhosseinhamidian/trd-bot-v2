@@ -2,8 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getExperimentsCopy } from '@/components/dashboard/experiments-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getExperimentsCopy } from '@/features/experiments/experiments-copy';
 import {
   Button,
   Card,
@@ -41,7 +41,7 @@ export const DEFAULT_EXPERIMENT_FILTERS: ExperimentFilterValues = {
 
 type ExperimentFilterPanelProps = {
   isLoading: boolean;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onApply: (filters: ExperimentFilterValues) => void;
 };
 

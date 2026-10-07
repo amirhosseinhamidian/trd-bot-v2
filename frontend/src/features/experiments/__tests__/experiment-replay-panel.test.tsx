@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ExperimentReplayPanel } from '@/components/dashboard/experiment-replay-panel';
+import { ExperimentReplayPanel } from '@/features/experiments/experiment-replay-panel';
 import type { ExperimentReplayVerification } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({

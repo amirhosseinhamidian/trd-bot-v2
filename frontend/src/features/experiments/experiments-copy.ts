@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type ExperimentsCopy = {
   eyebrow: string;
@@ -64,7 +64,7 @@ export type ExperimentsCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, ExperimentsCopy> = {
+const copies: Record<PlatformLocale, ExperimentsCopy> = {
   fa: {
     eyebrow: 'Historical strategy research',
     title: 'آزمایش‌ها',
@@ -194,6 +194,6 @@ const copies: Record<DashboardLocale, ExperimentsCopy> = {
   },
 };
 
-export function getExperimentsCopy(locale: DashboardLocale): ExperimentsCopy {
+export function getExperimentsCopy(locale: PlatformLocale): ExperimentsCopy {
   return copies[locale];
 }

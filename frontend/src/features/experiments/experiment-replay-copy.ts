@@ -1,4 +1,4 @@
-import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import type { ExperimentReplayCode, ExperimentReplayStatus } from '@/lib/api/types';
 
 export type ExperimentReplayCopy = {
@@ -20,7 +20,7 @@ export type ExperimentReplayCopy = {
   unavailable: string;
 };
 
-const copies: Record<ExperimentDetailLocale, ExperimentReplayCopy> = {
+const copies: Record<PlatformLocale, ExperimentReplayCopy> = {
   fa: {
     title: 'تأیید بازاجرای Experiment',
     description:
@@ -92,6 +92,6 @@ const copies: Record<ExperimentDetailLocale, ExperimentReplayCopy> = {
   },
 };
 
-export function getExperimentReplayCopy(locale: ExperimentDetailLocale): ExperimentReplayCopy {
+export function getExperimentReplayCopy(locale: PlatformLocale): ExperimentReplayCopy {
   return copies[locale];
 }

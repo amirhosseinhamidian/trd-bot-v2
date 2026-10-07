@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
+import { ExperimentPerformanceCharts } from '@/features/experiments/experiment-performance-charts';
 import type { ExperimentPerformanceSeries } from '@/lib/api/types';
 
 const performanceSeries: ExperimentPerformanceSeries = {

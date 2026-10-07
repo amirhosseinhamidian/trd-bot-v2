@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from 'react';
 
-import { getExperimentAcceptanceCopy } from '@/components/dashboard/experiment-acceptance-copy';
-import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
+import { getExperimentAcceptanceCopy } from '@/features/experiments/experiment-acceptance-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
   Button,
@@ -25,15 +25,15 @@ import type {
 
 type ExperimentAcceptancePanelProps = {
   experimentId: string;
-  locale: ExperimentDetailLocale;
+  locale: PlatformLocale;
   presets: AcceptancePolicyPreset[];
 };
 
-function formatInteger(value: number, locale: ExperimentDetailLocale): string {
+function formatInteger(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string, locale: ExperimentDetailLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -49,7 +49,7 @@ function formatPercent(value: string, locale: ExperimentDetailLocale): string {
 function formatCheckValue(
   check: ExperimentAcceptanceCheck,
   value: string,
-  locale: ExperimentDetailLocale,
+  locale: PlatformLocale,
 ): string {
   if (check.name === 'minimum_total_trades') {
     return formatInteger(Number(value), locale);

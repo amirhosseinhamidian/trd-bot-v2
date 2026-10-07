@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 
-import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
-import { getExperimentReplayCopy } from '@/components/dashboard/experiment-replay-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getExperimentReplayCopy } from '@/features/experiments/experiment-replay-copy';
 import {
   Badge,
   Button,
@@ -18,7 +18,7 @@ import type { ExperimentReplayStatus, ExperimentReplayVerification } from '@/lib
 
 type ExperimentReplayPanelProps = {
   experimentId: string;
-  locale: ExperimentDetailLocale;
+  locale: PlatformLocale;
 };
 
 function statusVariant(status: ExperimentReplayStatus): 'success' | 'danger' | 'warning' {
@@ -31,7 +31,7 @@ function statusVariant(status: ExperimentReplayStatus): 'success' | 'danger' | '
   return 'warning';
 }
 
-function formatDate(value: string, locale: ExperimentDetailLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',

@@ -3,26 +3,24 @@ import {
   type HistoricalChartSeries,
 } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
-import {
-  experimentDetailCopy,
-  type ExperimentDetailLocale,
-} from '@/components/dashboard/experiment-detail-copy';
+import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type { ExperimentPerformanceSeries, HistoricalPerformancePoint } from '@/lib/api/types';
 
 type ExperimentPerformanceChartsProps = {
-  locale: ExperimentDetailLocale;
+  locale: PlatformLocale;
   performanceSeries: ExperimentPerformanceSeries;
 };
 
-function formatBalance(value: number, locale: ExperimentDetailLocale): string {
+function formatBalance(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
 }
 
-function formatPercent(value: number, locale: ExperimentDetailLocale): string {
+function formatPercent(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     style: 'percent',
     minimumFractionDigits: 0,
@@ -30,7 +28,7 @@ function formatPercent(value: number, locale: ExperimentDetailLocale): string {
   }).format(value);
 }
 
-function formatDate(value: string, locale: ExperimentDetailLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

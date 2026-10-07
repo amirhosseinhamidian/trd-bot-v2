@@ -1,9 +1,7 @@
 import Link from 'next/link';
 
-import {
-  experimentDetailCopy,
-  type ExperimentDetailLocale,
-} from '@/components/dashboard/experiment-detail-copy';
+import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
@@ -12,10 +10,10 @@ import type {
   ExperimentPerformanceSeries,
   ExperimentSummary,
 } from '@/lib/api/types';
-import { ExperimentAcceptancePanel } from '@/components/dashboard/experiment-acceptance-panel';
-import { ExperimentAnalytics } from '@/components/dashboard/experiment-analytics';
-import { ExperimentPerformanceCharts } from '@/components/dashboard/experiment-performance-charts';
-import { ExperimentReplayPanel } from '@/components/dashboard/experiment-replay-panel';
+import { ExperimentAcceptancePanel } from '@/features/experiments/experiment-acceptance-panel';
+import { ExperimentAnalytics } from '@/features/experiments/experiment-analytics';
+import { ExperimentPerformanceCharts } from '@/features/experiments/experiment-performance-charts';
+import { ExperimentReplayPanel } from '@/features/experiments/experiment-replay-panel';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { buildExperimentRerunHref } from '@/lib/experiments/run-params';
@@ -23,7 +21,7 @@ import { getStrategyDisplayName, getStrategyParameterLabel } from '@/lib/strateg
 
 type ExperimentDetailProps = {
   experiment: ExperimentSummary;
-  locale: ExperimentDetailLocale;
+  locale: PlatformLocale;
   acceptancePolicyPresets: AcceptancePolicyPreset[];
   analytics: ExperimentAnalyticsReport;
   performanceSeries: ExperimentPerformanceSeries;
@@ -34,13 +32,13 @@ type MetricProps = {
   value: string;
 };
 
-function formatInteger(value: number, locale: ExperimentDetailLocale): string {
+function formatInteger(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
 function formatDecimal(
   value: string | null,
-  locale: ExperimentDetailLocale,
+  locale: PlatformLocale,
   maximumFractionDigits = 4,
 ): string {
   if (value === null) {
@@ -58,7 +56,7 @@ function formatDecimal(
   }).format(parsedValue);
 }
 
-function formatPercent(value: string | null, locale: ExperimentDetailLocale): string {
+function formatPercent(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return experimentDetailCopy[locale].unavailable;
   }
@@ -76,7 +74,7 @@ function formatPercent(value: string | null, locale: ExperimentDetailLocale): st
   }).format(parsedValue);
 }
 
-function formatDate(value: string, locale: ExperimentDetailLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -94,7 +92,7 @@ function Metric({ label, value }: MetricProps) {
 
 function comparisonPresentation(
   outcome: ExperimentSummary['comparison_outcome'],
-  locale: ExperimentDetailLocale,
+  locale: PlatformLocale,
 ): {
   label: string;
   variant: BadgeVariant;

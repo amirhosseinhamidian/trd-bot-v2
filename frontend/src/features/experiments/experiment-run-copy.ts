@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const copies = {
   en: {
@@ -156,6 +156,6 @@ const copies = {
   },
 } as const;
 
-export function getExperimentRunCopy(locale: DashboardLocale) {
+export function getExperimentRunCopy(locale: PlatformLocale) {
   return copies[locale];
 }

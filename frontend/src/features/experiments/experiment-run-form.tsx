@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getExperimentRunCopy } from '@/components/dashboard/experiment-run-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getExperimentRunCopy } from '@/features/experiments/experiment-run-copy';
 import {
   Badge,
   Button,
@@ -48,7 +48,7 @@ import {
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type ExperimentRunFormProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialValues?: ExperimentRunInitialValues;
   initialExecutionId?: string;
   onCreated?: (experiment: CreatedResearchExperiment) => Promise<void> | void;

@@ -1,9 +1,7 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
-import {
-  experimentDetailCopy,
-  type ExperimentDetailLocale,
-} from '@/components/dashboard/experiment-detail-copy';
+import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
   Card,
@@ -22,7 +20,7 @@ import type { ExperimentAnalyticsReport, ResearchMetricKey } from '@/lib/api/typ
 
 type ExperimentAnalyticsProps = {
   analytics: ExperimentAnalyticsReport;
-  locale: ExperimentDetailLocale;
+  locale: PlatformLocale;
 };
 
 type MetricProps = {
@@ -30,13 +28,13 @@ type MetricProps = {
   value: string;
 };
 
-function formatInteger(value: number, locale: ExperimentDetailLocale): string {
+function formatInteger(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
 function formatDecimal(
   value: string | null,
-  locale: ExperimentDetailLocale,
+  locale: PlatformLocale,
   maximumFractionDigits = 4,
 ): string {
   if (value === null) {
@@ -51,7 +49,7 @@ function formatDecimal(
   }).format(parsed);
 }
 
-function formatPercent(value: string | number, locale: ExperimentDetailLocale): string {
+function formatPercent(value: string | number, locale: PlatformLocale): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return String(value);
@@ -62,13 +60,13 @@ function formatPercent(value: string | number, locale: ExperimentDetailLocale): 
   }).format(parsed);
 }
 
-function formatDate(value: string, locale: ExperimentDetailLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     dateStyle: 'medium',
   }).format(new Date(value));
 }
 
-function formatMonth(value: string, locale: ExperimentDetailLocale): string {
+function formatMonth(value: string, locale: PlatformLocale): string {
   return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     month: 'short',
     year: 'numeric',

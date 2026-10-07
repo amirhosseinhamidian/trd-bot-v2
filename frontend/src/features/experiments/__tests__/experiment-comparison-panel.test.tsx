@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import ExperimentComparisonPanel from '@/components/dashboard/experiment-comparison-panel';
+import ExperimentComparisonPanel from '@/features/experiments/experiment-comparison-panel';
 import type { ExperimentComparisonResult, ExperimentSummary } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({

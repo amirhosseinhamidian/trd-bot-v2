@@ -1,4 +1,4 @@
-import type { ExperimentDetailLocale } from '@/components/dashboard/experiment-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type ExperimentAcceptanceCopy = {
   title: string;
@@ -37,7 +37,7 @@ export type ExperimentAcceptanceCopy = {
   presetNames: Record<string, string>;
 };
 
-const copies: Record<ExperimentDetailLocale, ExperimentAcceptanceCopy> = {
+const copies: Record<PlatformLocale, ExperimentAcceptanceCopy> = {
   fa: {
     title: 'ارزیابی پژوهشی',
     description: 'نتایج تاریخی آزمایش را با یک Policy نسخه‌بندی‌شده و قابل‌بازتولید بررسی کنید.',
@@ -120,8 +120,6 @@ const copies: Record<ExperimentDetailLocale, ExperimentAcceptanceCopy> = {
   },
 };
 
-export function getExperimentAcceptanceCopy(
-  locale: ExperimentDetailLocale,
-): ExperimentAcceptanceCopy {
+export function getExperimentAcceptanceCopy(locale: PlatformLocale): ExperimentAcceptanceCopy {
   return copies[locale];
 }

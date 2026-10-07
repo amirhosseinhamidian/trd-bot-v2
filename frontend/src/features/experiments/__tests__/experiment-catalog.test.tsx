@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ExperimentCatalog from '@/components/dashboard/experiment-catalog';
+import ExperimentCatalog from '@/features/experiments/experiment-catalog';
 import type { ExperimentSummary, Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +14,7 @@ vi.mock('@/lib/api/client', () => ({
   getExperiments: mocks.getExperiments,
 }));
 
-vi.mock('@/components/dashboard/experiment-run-form', () => ({
+vi.mock('@/features/experiments/experiment-run-form', () => ({
   default: function MockExperimentRunForm({
     onCreated,
   }: {
@@ -35,7 +35,7 @@ vi.mock('@/components/dashboard/experiment-run-form', () => ({
   },
 }));
 
-vi.mock('@/components/dashboard/experiment-filter-panel', async () => {
+vi.mock('@/features/experiments/experiment-filter-panel', async () => {
   const { useState } = await import('react');
 
   return {
@@ -60,7 +60,7 @@ vi.mock('@/components/dashboard/experiment-filter-panel', async () => {
   };
 });
 
-vi.mock('@/components/dashboard/experiment-comparison-panel', () => ({
+vi.mock('@/features/experiments/experiment-comparison-panel', () => ({
   default: function MockExperimentComparisonPanel() {
     return <div data-testid="comparison-panel" />;
   },

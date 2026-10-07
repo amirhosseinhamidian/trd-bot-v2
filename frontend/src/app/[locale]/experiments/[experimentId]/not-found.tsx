@@ -3,15 +3,13 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import {
-  experimentDetailCopy,
-  type ExperimentDetailLocale,
-} from '@/components/dashboard/experiment-detail-copy';
+import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
 import { EmptyState } from '@/components/ui';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export default function ExperimentNotFound() {
   const params = useParams<{ locale: string }>();
-  const locale: ExperimentDetailLocale = params.locale === 'en' ? 'en' : 'fa';
+  const locale: PlatformLocale = params.locale === 'en' ? 'en' : 'fa';
   const copy = experimentDetailCopy[locale];
 
   return (

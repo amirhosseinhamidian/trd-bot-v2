@@ -3,12 +3,12 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 import ExperimentFilterPanel, {
   DEFAULT_EXPERIMENT_FILTERS,
   type ExperimentFilterValues,
-} from '@/components/dashboard/experiment-filter-panel';
-import { getExperimentsCopy } from '@/components/dashboard/experiments-copy';
+} from '@/features/experiments/experiment-filter-panel';
+import { getExperimentsCopy } from '@/features/experiments/experiments-copy';
 import {
   Badge,
   Card,
@@ -24,9 +24,9 @@ import {
 } from '@/components/ui';
 import { getExperiments, type ExperimentFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page } from '@/lib/api/types';
-import ExperimentComparisonPanel from '@/components/dashboard/experiment-comparison-panel';
-import { getExperimentComparisonCopy } from '@/components/dashboard/experiment-comparison-copy';
-import ExperimentRunForm from '@/components/dashboard/experiment-run-form';
+import ExperimentComparisonPanel from '@/features/experiments/experiment-comparison-panel';
+import { getExperimentComparisonCopy } from '@/features/experiments/experiment-comparison-copy';
+import ExperimentRunForm from '@/features/experiments/experiment-run-form';
 import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { PageFrame } from '@/components/platform/page-frame';
@@ -36,12 +36,12 @@ const PAGE_SIZE = 12;
 
 type ExperimentCatalogProps = {
   initialPage: Page<ExperimentSummary>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   initialRunValues?: ExperimentRunInitialValues;
   initialExecutionId?: string;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -54,11 +54,11 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string | null, locale: DashboardLocale): string {
+function formatPercent(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -76,7 +76,7 @@ function formatPercent(value: string | null, locale: DashboardLocale): string {
   }).format(numericValue);
 }
 
-function formatDecimal(value: string | null, locale: DashboardLocale): string {
+function formatDecimal(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }

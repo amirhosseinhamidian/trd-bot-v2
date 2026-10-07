@@ -1,5 +1,3 @@
-export type ExperimentDetailLocale = 'fa' | 'en';
-
 export const experimentDetailCopy = {
   fa: {
     back: 'بازگشت به آزمایش‌ها',

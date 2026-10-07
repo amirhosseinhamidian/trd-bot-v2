@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getExperimentComparisonCopy } from '@/components/dashboard/experiment-comparison-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+import { getExperimentComparisonCopy } from '@/features/experiments/experiment-comparison-copy';
 import {
   Badge,
   Button,
@@ -30,16 +30,16 @@ import type {
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type ExperimentComparisonPanelProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onClearSelection: () => void;
   selectedExperiments: ExperimentSummary[];
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {

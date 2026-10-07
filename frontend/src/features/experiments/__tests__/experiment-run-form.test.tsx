@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ExperimentRunForm from '@/components/dashboard/experiment-run-form';
+import ExperimentRunForm from '@/features/experiments/experiment-run-form';
 import { ApiRequestError } from '@/lib/api/client';
 import type {
   DatasetSummary,

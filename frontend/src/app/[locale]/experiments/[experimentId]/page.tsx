@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { ExperimentDetail } from '@/components/dashboard/experiment-detail';
+import { ExperimentDetail } from '@/features/experiments/experiment-detail';
 import {
   ApiRequestError,
   getAcceptancePolicyPresets,
