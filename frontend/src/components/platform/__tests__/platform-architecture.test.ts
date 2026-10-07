@@ -10,7 +10,7 @@ const screenComponentPaths = [
   'components/dashboard/dataset-detail.tsx',
   'components/dashboard/experiment-catalog.tsx',
   'components/dashboard/experiment-detail.tsx',
-  'components/dashboard/market-data-connections-panel.tsx',
+  'features/connections/market-data-connections-panel.tsx',
   'features/monitoring/monitoring-dashboard.tsx',
   'components/dashboard/optimization-catalog.tsx',
   'components/dashboard/optimization-detail.tsx',
@@ -60,6 +60,7 @@ const featureBoundaries = [
     ],
     'candidate-copy',
   ],
+  ['connections', [['connections', 'market-data-connections-panel']], 'connections-copy'],
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
   [
     'portfolios',

@@ -3,22 +3,22 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getImportHistoryCopy } from '@/components/dashboard/import-history-copy';
 import { Badge, Button, EmptyState, ErrorState, Pagination, Spinner } from '@/components/ui';
+import { getImportHistoryCopy } from '@/features/connections/import-history-copy';
 import { getMarketDataImportHistory } from '@/lib/api/client';
 import type { MarketDataImportRecord, MarketDataImportStatus, Page } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 5;
 type StatusFilter = 'all' | MarketDataImportStatus;
 
 type MarketDataImportHistoryProps = {
   connectionId: string;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   refreshVersion?: number;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -30,7 +30,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 

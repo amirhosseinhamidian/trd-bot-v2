@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import MarketDataConnectionsPanel from '@/components/dashboard/market-data-connections-panel';
+import MarketDataConnectionsPanel from '@/features/connections/market-data-connections-panel';
 import { getMarketDataConnections, getMarketDataProviders } from '@/lib/api/client';
 
 type ConnectionsPageProps = {

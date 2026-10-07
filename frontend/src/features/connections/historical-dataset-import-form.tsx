@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getHistoricalImportCopy } from '@/components/dashboard/historical-import-copy';
 import { Badge, Button, Input, Select, SelectOption } from '@/components/ui';
+import { getHistoricalImportCopy } from '@/features/connections/historical-import-copy';
 import {
   ApiRequestError,
   importHistoricalDataset,
@@ -20,10 +19,11 @@ import type {
   MarketDataConnection,
   MarketDataProviderSummary,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type HistoricalDatasetImportFormProps = {
   connection: MarketDataConnection;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onImported?: () => void;
   provider: MarketDataProviderSummary | undefined;
 };
@@ -35,7 +35,7 @@ const TIMEFRAME_DURATION_MS: Record<DatasetTimeframe, number> = {
   '1d': 24 * 60 * 60 * 1000,
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -51,11 +51,11 @@ function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
-function formatCandleLimit(value: number, locale: DashboardLocale): string {
+function formatCandleLimit(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: number, locale: DashboardLocale): string {
+function formatPercent(value: number, locale: PlatformLocale): string {
   const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     maximumFractionDigits: 2,
   }).format(value);

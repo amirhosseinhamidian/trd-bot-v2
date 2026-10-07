@@ -2,10 +2,6 @@
 
 import { type FormEvent, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getConnectionsCopy } from '@/components/dashboard/connections-copy';
-import HistoricalDatasetImportForm from '@/components/dashboard/historical-dataset-import-form';
-import MarketDataImportHistory from '@/components/dashboard/market-data-import-history';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -24,6 +20,9 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
+import { getConnectionsCopy } from '@/features/connections/connections-copy';
+import HistoricalDatasetImportForm from '@/features/connections/historical-dataset-import-form';
+import MarketDataImportHistory from '@/features/connections/market-data-import-history';
 import {
   createMarketDataConnection,
   disableMarketDataConnection,
@@ -37,6 +36,7 @@ import type {
   MarketDataProviderSummary,
   Page,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;
 
@@ -45,7 +45,7 @@ type ConnectionAction = 'test' | 'enable' | 'disable';
 type MarketDataConnectionsPanelProps = {
   initialProviders: MarketDataProviderSummary[];
   initialPage: Page<MarketDataConnection>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
 function getInitialProviderId(providers: MarketDataProviderSummary[]): string {
@@ -56,11 +56,11 @@ function getInitialProviderId(providers: MarketDataProviderSummary[]): string {
   );
 }
 
-function formatCandleLimit(value: number, locale: DashboardLocale): string {
+function formatCandleLimit(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;

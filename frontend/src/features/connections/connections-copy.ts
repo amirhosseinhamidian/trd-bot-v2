@@ -1,9 +1,9 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   MarketDataConnectionHealth,
   MarketDataConnectionState,
   MarketDataProviderAccessMode,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type ConnectionsCopy = {
   eyebrow: string;
@@ -59,7 +59,7 @@ export type ConnectionsCopy = {
   healthStatuses: Record<MarketDataConnectionHealth, string>;
 };
 
-const copies: Record<DashboardLocale, ConnectionsCopy> = {
+const copies: Record<PlatformLocale, ConnectionsCopy> = {
   fa: {
     eyebrow: 'Read-only market data',
     title: 'اتصال‌های داده بازار',
@@ -192,6 +192,6 @@ const copies: Record<DashboardLocale, ConnectionsCopy> = {
   },
 };
 
-export function getConnectionsCopy(locale: DashboardLocale): ConnectionsCopy {
+export function getConnectionsCopy(locale: PlatformLocale): ConnectionsCopy {
   return copies[locale];
 }

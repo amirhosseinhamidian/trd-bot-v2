@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import MarketDataImportHistory from '@/components/dashboard/market-data-import-history';
+import MarketDataImportHistory from '@/features/connections/market-data-import-history';
 import type { MarketDataImportRecord, Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({

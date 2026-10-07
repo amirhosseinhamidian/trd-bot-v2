@@ -1,5 +1,5 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type { MarketDataQualityIssueCode } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type HistoricalImportCopy = {
   title: string;
@@ -53,7 +53,7 @@ export type HistoricalImportCopy = {
   issueLabels: Record<MarketDataQualityIssueCode, string>;
 };
 
-const copies: Record<DashboardLocale, HistoricalImportCopy> = {
+const copies: Record<PlatformLocale, HistoricalImportCopy> = {
   fa: {
     title: 'ساخت Dataset از داده تاریخی',
     description:
@@ -189,6 +189,6 @@ const copies: Record<DashboardLocale, HistoricalImportCopy> = {
   },
 };
 
-export function getHistoricalImportCopy(locale: DashboardLocale): HistoricalImportCopy {
+export function getHistoricalImportCopy(locale: PlatformLocale): HistoricalImportCopy {
   return copies[locale];
 }

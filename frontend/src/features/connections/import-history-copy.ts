@@ -1,5 +1,5 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type { MarketDataImportStatus } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type ImportHistoryCopy = {
   title: string;
@@ -30,7 +30,7 @@ export type ImportHistoryCopy = {
   next: string;
 };
 
-const copies: Record<DashboardLocale, ImportHistoryCopy> = {
+const copies: Record<PlatformLocale, ImportHistoryCopy> = {
   fa: {
     title: 'تاریخچه ورود داده',
     description: 'تلاش‌های واقعی ورود داده تاریخی برای این Connection را مشاهده کنید.',
@@ -101,6 +101,6 @@ const copies: Record<DashboardLocale, ImportHistoryCopy> = {
   },
 };
 
-export function getImportHistoryCopy(locale: DashboardLocale): ImportHistoryCopy {
+export function getImportHistoryCopy(locale: PlatformLocale): ImportHistoryCopy {
   return copies[locale];
 }
