@@ -509,7 +509,7 @@ export default function RiskDashboard({ initialReport, locale, portfolios }: Ris
                             <Link
                               key={event.event_id}
                               href={`#${event.event_id}`}
-                              className="rounded-md bg-app-surface px-2 py-1 font-mono text-[11px] text-app-accent hover:underline"
+                              className="rounded-md bg-app-surface px-2 py-1 font-mono text-[11px] text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                             >
                               {event.candidate_id}
                             </Link>

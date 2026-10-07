@@ -238,3 +238,29 @@ user's selected theme is not reset.
 
 Token expansion, global identifier migration, theme palette changes, primitive restyling, and
 shell/navigation restructuring are explicitly deferred to later Phase 1/2 patches.
+
+## 10. Phase 1 acceptance record
+
+Phase 1 is complete through `P1-08` on `refactor/nexora-ui-foundation`.
+
+- [x] Nexora platform identity and TRD BOT product context replace stale product branding.
+- [x] App-scoped theme and Select identifiers retain compatibility reads for legacy preferences.
+- [x] Dark and light palettes expose semantic core, status, chart, control-border, and shadow
+      tokens with automated contrast coverage.
+- [x] Interactive, surface, feedback, loading, table, and pagination primitives use the shared
+      semantic contract.
+- [x] Production components contain no raw Tailwind palette utilities or hard-coded hexadecimal
+      colors outside token definitions.
+- [x] Locale layout owns `lang` and `dir`; technical values remain explicitly isolated as LTR.
+- [x] Focus indicators cover primitives, shell controls, text links, disclosure controls, and
+      keyboard-scrollable table/chart regions.
+- [x] Reduced-motion preferences shorten animations and transitions globally and disable smooth
+      scrolling.
+- [x] The shell preserves 16px mobile gutters, a 320px minimum viewport contract, bounded desktop
+      content, and `min-width: 0` overflow containment.
+- [x] All 21 locale routes and existing business/API behavior remain unchanged.
+- [x] Final gates pass: 72 test files / 270 tests, ESLint, Prettier, and Next.js production build.
+
+Phase 2 may begin only after explicit approval. Its first patch is the typed, grouped navigation
+configuration and platform-level navigation copy extraction; it must preserve the current route
+URLs and defer the new shell rendering to the following patch.

@@ -97,7 +97,12 @@ export function CategoryBarChart({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-app-border bg-app-surface-muted p-3">
+      <div
+        role="region"
+        aria-label={ariaLabel}
+        tabIndex={0}
+        className="overflow-x-auto rounded-2xl border border-app-border bg-app-surface-muted p-3 focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset"
+      >
         <svg
           role="img"
           aria-label={ariaLabel}

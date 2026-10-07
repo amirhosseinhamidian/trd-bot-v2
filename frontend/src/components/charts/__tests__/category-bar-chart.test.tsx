@@ -32,6 +32,12 @@ describe('CategoryBarChart', () => {
     );
 
     expect(screen.getByRole('img', { name: 'Fold returns' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Fold returns' })).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('region', { name: 'Fold returns' })).toHaveClass(
+      'overflow-x-auto',
+      'focus-visible:ring-2',
+      'focus-visible:ring-app-accent',
+    );
     expect(screen.getByText('Strategy')).toBeInTheDocument();
     expect(screen.getByText('Benchmark')).toBeInTheDocument();
     expect(container.querySelectorAll('rect')).toHaveLength(4);

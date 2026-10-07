@@ -22,6 +22,11 @@ export default function LanguageSwitcher({
     'text-xs',
     'font-semibold',
     'transition-colors',
+    'focus-visible:ring-2',
+    'focus-visible:ring-app-accent',
+    'focus-visible:ring-offset-2',
+    'focus-visible:ring-offset-app-background',
+    'focus-visible:outline-none',
   ].join(' ');
 
   const activeClassName = [baseClassName, 'bg-app-accent', 'text-app-background'].join(' ');

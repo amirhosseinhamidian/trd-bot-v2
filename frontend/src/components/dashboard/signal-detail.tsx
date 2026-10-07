@@ -55,7 +55,7 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
       <section>
         <Link
           href={`/${locale}/signals`}
-          className="text-sm font-semibold text-app-accent hover:opacity-80"
+          className="rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
         >
           {locale === 'fa' ? '→' : '←'} {back}
         </Link>
@@ -140,13 +140,13 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
         <CardContent className="flex flex-wrap gap-3">
           <Link
             href={`/${locale}/datasets/${encodeURIComponent(signal.dataset_id)}`}
-            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent hover:bg-app-hover"
+            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
             {viewDataset}
           </Link>
           <Link
             href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
-            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent hover:bg-app-hover"
+            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
             {viewExperiment}
           </Link>

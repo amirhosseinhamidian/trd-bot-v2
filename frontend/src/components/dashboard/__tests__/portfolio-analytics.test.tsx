@@ -89,6 +89,7 @@ describe('PortfolioAnalytics', () => {
     expect(screen.getByText(/Net PnL = closed net PnL/)).toBeInTheDocument();
     expect(screen.getByText(/no losing closed trades/)).toBeInTheDocument();
     const pairs = screen.getByRole('table', { name: 'Trades by pair' });
+    expect(screen.getByRole('region', { name: 'Trades by pair' })).toHaveAttribute('tabindex', '0');
     expect(within(pairs).getByText('19.58')).toBeInTheDocument();
     expect(within(pairs).getByText('ETH/USDT')).toBeInTheDocument();
     expect(screen.getByText('Unknown: 1')).toBeInTheDocument();
@@ -117,6 +118,10 @@ describe('PortfolioAnalytics', () => {
     const table = screen.getByRole('table', {
       name: 'Event values used by the charts',
     });
+    expect(screen.getByRole('region', { name: 'Event values used by the charts' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
     expect(within(table).getByText('1,009.48')).toBeInTheDocument();
     expect(within(table).getByText('0.948%')).toBeInTheDocument();
   });

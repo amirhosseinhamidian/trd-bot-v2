@@ -135,14 +135,14 @@ function EvidenceLinks({
       <Link
         href={`/${locale}/experiments/${encodeURIComponent(evaluation.experiment_id)}`}
         dir="ltr"
-        className="text-left font-semibold break-all text-app-accent hover:opacity-80"
+        className="rounded-sm text-left font-semibold break-all text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
       >
         {evaluation.experiment_id}
       </Link>
       <Link
         href={`/${locale}/walk-forward/${encodeURIComponent(evaluation.walk_forward_run_id)}`}
         dir="ltr"
-        className="text-left font-semibold break-all text-app-accent hover:opacity-80"
+        className="rounded-sm text-left font-semibold break-all text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
       >
         {evaluation.walk_forward_run_id}
       </Link>

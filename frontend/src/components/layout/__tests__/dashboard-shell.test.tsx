@@ -44,6 +44,7 @@ describe('DashboardShell mobile navigation', () => {
       'src',
       expect.stringContaining('nexora-mark.jpg'),
     );
+    expect(container.querySelector('main')).toHaveClass('w-full', 'min-w-0', 'px-4');
   });
 
   it('connects the menu button to the navigation and marks the active page', () => {

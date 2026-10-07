@@ -409,7 +409,7 @@ export default function PortfolioDetail({
                     </dl>
                     <Link
                       href={`/${locale}/portfolios/${encodeURIComponent(portfolio.portfolio_id)}/positions/${encodeURIComponent(position.position_id)}`}
-                      className="mt-5 inline-flex text-sm font-semibold text-app-accent hover:opacity-80"
+                      className="mt-5 inline-flex rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                     >
                       {copy.viewPosition}
                     </Link>

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 
 const globalsCss = readFileSync(resolve(process.cwd(), 'src/app/globals.css'), 'utf8');
+const localeLayout = readFileSync(resolve(process.cwd(), 'src/app/[locale]/layout.tsx'), 'utf8');
 
 function extractBlock(pattern: RegExp, label: string): string {
   const match = globalsCss.match(pattern);
@@ -84,6 +85,22 @@ const semanticColorTokens = [
 ] as const;
 
 describe('Nexora design token contract', () => {
+  it('keeps the 320px viewport and locale direction contracts explicit', () => {
+    expect(globalsCss).toMatch(/html\s*\{[\s\S]*?min-width:\s*320px;/);
+    expect(localeLayout).toContain('lang={locale}');
+    expect(localeLayout).toContain("dir={locale === 'fa' ? 'rtl' : 'ltr'}");
+  });
+
+  it('reduces animations, transitions, and smooth scrolling at the user preference level', () => {
+    expect(globalsCss).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(globalsCss).toContain('*::before');
+    expect(globalsCss).toContain('*::after');
+    expect(globalsCss).toContain('scroll-behavior: auto !important;');
+    expect(globalsCss).toContain('animation-duration: 1ms !important;');
+    expect(globalsCss).toContain('animation-iteration-count: 1 !important;');
+    expect(globalsCss).toContain('transition-duration: 1ms !important;');
+  });
+
   it('uses app-scoped Select animation identifiers', () => {
     expect(globalsCss).toContain('@keyframes app-select-open');
     expect(globalsCss).toContain('@keyframes app-select-close');

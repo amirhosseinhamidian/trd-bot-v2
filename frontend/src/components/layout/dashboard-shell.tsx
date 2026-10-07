@@ -245,7 +245,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
         </div>
       </aside>
 
-      <div className="lg:ps-72">
+      <div className="min-w-0 lg:ps-72">
         <header className="sticky top-0 z-30 border-b border-app-border bg-app-chrome px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <button
@@ -278,7 +278,9 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-7xl min-w-0 px-4 py-8 sm:px-6 lg:px-8">
+          {children}
+        </main>
       </div>
     </div>
   );

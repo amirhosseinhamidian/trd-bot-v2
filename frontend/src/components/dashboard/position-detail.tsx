@@ -208,7 +208,10 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
                     </p>
                   ) : null}
                   {href ? (
-                    <Link href={href} className="inline-flex text-sm font-semibold text-app-accent">
+                    <Link
+                      href={href}
+                      className="inline-flex rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                    >
                       {copy.viewResource}
                     </Link>
                   ) : null}

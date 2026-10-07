@@ -2,7 +2,19 @@ import { HistoricalLineChart } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { portfolioAnalyticsCopy } from '@/components/dashboard/portfolio-analytics-copy';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui';
 import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 
 const metrics = [
@@ -117,14 +129,14 @@ export function PortfolioAnalytics({
             </section>
           );
         })}
-        <section className="overflow-x-auto">
+        <section>
           <h3 className="mb-3 font-semibold">{copy.pairs}</h3>
           {report.trades_by_pair.length === 0 ? (
             <p>{copy.empty}</p>
           ) : (
-            <table className="w-full text-start text-sm" aria-label={copy.pairs}>
-              <thead>
-                <tr>
+            <Table scrollLabel={copy.pairs} aria-label={copy.pairs}>
+              <TableHeader>
+                <TableRow>
                   {[
                     copy.pair,
                     copy.closed_count,
@@ -132,28 +144,26 @@ export function PortfolioAnalytics({
                     copy.closed_net_pnl,
                     copy.fees_paid,
                   ].map((label) => (
-                    <th key={label} className="p-2 text-start">
-                      {label}
-                    </th>
+                    <TableHead key={label}>{label}</TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {report.trades_by_pair.map((item) => (
-                  <tr
+                  <TableRow
                     key={`${item.pair.base_asset}/${item.pair.quote_asset}/${item.pair.market_type}`}
                   >
-                    <th className="p-2 text-start" scope="row">
+                    <TableHead className="h-auto" scope="row">
                       {item.pair.base_asset}/{item.pair.quote_asset}
-                    </th>
-                    <td className="p-2">{value(item.closed_count)}</td>
-                    <td className="p-2">{value(item.open_count)}</td>
-                    <td className="p-2">{value(item.net_realized_pnl)}</td>
-                    <td className="p-2">{value(item.fees_paid)}</td>
-                  </tr>
+                    </TableHead>
+                    <TableCell>{value(item.closed_count)}</TableCell>
+                    <TableCell>{value(item.open_count)}</TableCell>
+                    <TableCell>{value(item.net_realized_pnl)}</TableCell>
+                    <TableCell>{value(item.fees_paid)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </section>
         <section>
@@ -169,35 +179,37 @@ export function PortfolioAnalytics({
           </ul>
         </section>
         <details>
-          <summary className="cursor-pointer">{copy.evidence}</summary>
-          <div className="max-h-96 overflow-auto">
-            <table className="w-full text-sm" aria-label={copy.evidence}>
-              <thead>
-                <tr>
-                  {[copy.sequence, copy.asOf, copy.equity, copy.returns, copy.drawdown].map(
-                    (label) => (
-                      <th key={label} className="p-2 text-start">
-                        {label}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {report.equity_points.map((point) => (
-                  <tr key={point.event_id}>
-                    <th scope="row" className="p-2 text-start">
-                      {point.sequence_number}
-                    </th>
-                    <td className="p-2">{date(point.timestamp)}</td>
-                    <td className="p-2">{value(point.equity)}</td>
-                    <td className="p-2">{value(point.return_fraction, true)}</td>
-                    <td className="p-2">{value(point.drawdown_fraction, true)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <summary className="cursor-pointer rounded-sm focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none">
+            {copy.evidence}
+          </summary>
+          <Table
+            scrollLabel={copy.evidence}
+            aria-label={copy.evidence}
+            containerClassName="mt-3 max-h-96"
+          >
+            <TableHeader>
+              <TableRow>
+                {[copy.sequence, copy.asOf, copy.equity, copy.returns, copy.drawdown].map(
+                  (label) => (
+                    <TableHead key={label}>{label}</TableHead>
+                  ),
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {report.equity_points.map((point) => (
+                <TableRow key={point.event_id}>
+                  <TableHead scope="row" className="h-auto">
+                    {point.sequence_number}
+                  </TableHead>
+                  <TableCell>{date(point.timestamp)}</TableCell>
+                  <TableCell>{value(point.equity)}</TableCell>
+                  <TableCell>{value(point.return_fraction, true)}</TableCell>
+                  <TableCell>{value(point.drawdown_fraction, true)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </details>
         <p className="text-xs text-app-muted">{report.analytics_version}</p>
       </CardContent>
