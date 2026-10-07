@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import StrategyCatalog from '@/components/dashboard/strategy-catalog';
+import StrategyCatalog from '@/features/strategies/strategy-catalog';
 import { getResearchStrategies } from '@/lib/api/client';
 
 type StrategiesPageProps = {

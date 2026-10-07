@@ -1,10 +1,9 @@
 import Link from 'next/link';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getStrategyWorkspaceCopy } from '@/components/dashboard/strategy-workspace-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
 import type {
   ExperimentSummary,
   Page,
@@ -13,18 +12,19 @@ import type {
 } from '@/lib/api/types';
 import { getExecutableResearchStrategies } from '@/lib/strategies/catalog';
 import { getStrategyParameterLabel } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type StrategyDetailProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   strategy: ResearchStrategyMetadata;
   experimentHistory?: Page<ExperimentSummary>;
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;

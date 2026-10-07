@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { type AnchorHTMLAttributes, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import StrategyDetail from '@/components/dashboard/strategy-detail';
+import StrategyDetail from '@/features/strategies/strategy-detail';
 import type { ExperimentSummary, Page, ResearchStrategyMetadata } from '@/lib/api/types';
 
 vi.mock('next/link', () => ({

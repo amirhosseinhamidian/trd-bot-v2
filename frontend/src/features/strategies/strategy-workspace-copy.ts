@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type StrategyWorkspaceCopy = {
   catalog: {
@@ -58,7 +58,7 @@ export type StrategyWorkspaceCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
+const copies: Record<PlatformLocale, StrategyWorkspaceCopy> = {
   fa: {
     catalog: {
       eyebrow: 'Strategy workspace',
@@ -186,6 +186,6 @@ const copies: Record<DashboardLocale, StrategyWorkspaceCopy> = {
   },
 };
 
-export function getStrategyWorkspaceCopy(locale: DashboardLocale): StrategyWorkspaceCopy {
+export function getStrategyWorkspaceCopy(locale: PlatformLocale): StrategyWorkspaceCopy {
   return copies[locale];
 }

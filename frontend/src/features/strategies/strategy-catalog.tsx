@@ -1,7 +1,5 @@
 import Link from 'next/link';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getStrategyWorkspaceCopy } from '@/components/dashboard/strategy-workspace-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -14,14 +12,16 @@ import {
   CardTitle,
   EmptyState,
 } from '@/components/ui';
+import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
 import type { ResearchStrategyMetadata } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type StrategyCatalogProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   strategies: ResearchStrategyMetadata[];
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 

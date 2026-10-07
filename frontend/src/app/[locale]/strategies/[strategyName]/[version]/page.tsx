@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import StrategyDetail from '@/components/dashboard/strategy-detail';
+import StrategyDetail from '@/features/strategies/strategy-detail';
 import { ApiRequestError, getExperiments, getResearchStrategyVersion } from '@/lib/api/client';
 
 type StrategyDetailPageProps = {

@@ -21,8 +21,8 @@ const screenComponentPaths = [
   'features/risk/risk-dashboard.tsx',
   'components/dashboard/signal-catalog.tsx',
   'components/dashboard/signal-detail.tsx',
-  'components/dashboard/strategy-catalog.tsx',
-  'components/dashboard/strategy-detail.tsx',
+  'features/strategies/strategy-catalog.tsx',
+  'features/strategies/strategy-detail.tsx',
   'components/dashboard/walk-forward-catalog.tsx',
   'components/dashboard/walk-forward-detail.tsx',
 ] as const;
@@ -52,8 +52,16 @@ const localeRoutes = [
 ].sort();
 
 const featureBoundaries = [
-  ['monitoring', 'monitoring', 'monitoring-dashboard', 'monitoring-copy'],
-  ['risk', 'risk', 'risk-dashboard', 'risk-copy'],
+  ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
+  ['risk', [['risk', 'risk-dashboard']], 'risk-copy'],
+  [
+    'strategies',
+    [
+      ['strategies', 'strategy-catalog'],
+      ['strategies/[strategyName]/[version]', 'strategy-detail'],
+    ],
+    'strategy-workspace-copy',
+  ],
 ] as const;
 
 function collectPageFiles(directory: string): string[] {
@@ -100,26 +108,30 @@ describe('platform architecture contract', () => {
 
   it.each(featureBoundaries)(
     'keeps %s UI and copy inside its feature boundary',
-    (feature, route, screen, copy) => {
-      const routeSource = readFileSync(
-        resolve(process.cwd(), `src/app/[locale]/${route}/page.tsx`),
-        'utf8',
-      );
-      const dashboardSource = readFileSync(
-        resolve(process.cwd(), `src/features/${feature}/${screen}.tsx`),
-        'utf8',
-      );
+    (feature, screens, copy) => {
       const copySource = readFileSync(
         resolve(process.cwd(), `src/features/${feature}/${copy}.ts`),
         'utf8',
       );
 
-      expect(routeSource).toContain(`@/features/${feature}/${screen}`);
-      expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${screen}.tsx`))).toBe(
-        false,
-      );
+      for (const [route, screen] of screens) {
+        const routeSource = readFileSync(
+          resolve(process.cwd(), `src/app/[locale]/${route}/page.tsx`),
+          'utf8',
+        );
+        const screenSource = readFileSync(
+          resolve(process.cwd(), `src/features/${feature}/${screen}.tsx`),
+          'utf8',
+        );
+
+        expect(routeSource).toContain(`@/features/${feature}/${screen}`);
+        expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${screen}.tsx`))).toBe(
+          false,
+        );
+        expect(screenSource).not.toContain('@/components/dashboard');
+      }
+
       expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${copy}.ts`))).toBe(false);
-      expect(dashboardSource).not.toContain('@/components/dashboard');
       expect(copySource).not.toContain('@/components/dashboard');
     },
   );
