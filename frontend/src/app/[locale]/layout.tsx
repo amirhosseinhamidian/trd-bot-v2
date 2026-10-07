@@ -4,7 +4,7 @@ import localFont from 'next/font/local';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
-import DashboardShell from '@/components/layout/dashboard-shell';
+import PlatformShell from '@/components/platform/platform-shell';
 import { THEME_BOOTSTRAP_SCRIPT, THEME_BOOTSTRAP_SCRIPT_ID } from '@/components/theme/theme';
 import { NEXORA_TRD_BOT_BRAND_NAME, NEXORA_TRD_BOT_METADATA_DESCRIPTION } from '@/platform/brand';
 
@@ -41,7 +41,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} suppressHydrationWarning>
       <body className={`${vazirmatn.variable} font-sans antialiased`}>
-        <DashboardShell locale={locale}>{children}</DashboardShell>
+        <PlatformShell locale={locale}>{children}</PlatformShell>
         <Script id={THEME_BOOTSTRAP_SCRIPT_ID} strategy="beforeInteractive">
           {THEME_BOOTSTRAP_SCRIPT}
         </Script>

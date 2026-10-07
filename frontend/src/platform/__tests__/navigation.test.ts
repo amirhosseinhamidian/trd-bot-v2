@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import { getPlatformCopy } from '@/platform/i18n';
 import {
-  getLegacyShellNavigation,
   getPlatformNavigation,
   isPlatformNavigationItemActive,
   PLATFORM_NAVIGATION_GROUPS,
@@ -78,37 +77,34 @@ describe('platform navigation contract', () => {
     });
     expect(english.brand.platformName).toBe('Nexora');
     expect(english.brand.productName).toBe('TRD BOT');
-    expect(persian.header.navigation).toBe('ناوبری داشبورد');
-  });
-
-  it('preserves the current shell order until grouped rendering lands in P2-02', () => {
-    expect(getLegacyShellNavigation('en').map((item) => item.key)).toEqual([
-      'overview',
-      'experiments',
-      'optimizations',
-      'strategies',
-      'datasets',
-      'connections',
-      'monitoring',
-      'walkForward',
-      'portfolios',
-      'risk',
-      'candidates',
-      'signals',
-    ]);
+    expect(english.navigation.items).toEqual({
+      overview: 'Overview',
+      datasets: 'Datasets',
+      experiments: 'Experiments',
+      walkForward: 'Walk-forward',
+      optimizations: 'Optimizations',
+      strategies: 'Strategies',
+      signals: 'Signals',
+      candidates: 'Candidates',
+      risk: 'Risk',
+      portfolios: 'Historical Portfolios',
+      connections: 'Connections',
+      monitoring: 'Monitoring',
+    });
+    expect(persian.navigation.items.risk).toBe('ریسک');
+    expect(persian.navigation.items.monitoring).toBe('پایش سامانه');
+    expect(persian.header.navigation).toBe('ناوبری پلتفرم');
   });
 
   it('uses exact matching for overview and nested matching for sections', () => {
-    const [overview, experiments] = getLegacyShellNavigation('en');
-    const datasetItem = getPlatformNavigation('en')
-      .flatMap((group) => group.items)
-      .find((item) => item.key === 'datasets');
+    const items = getPlatformNavigation('en').flatMap((group) => group.items);
+    const overview = items.find((item) => item.key === 'overview');
+    const datasetItem = items.find((item) => item.key === 'datasets');
 
-    expect(overview.key).toBe('overview');
-    expect(experiments.key).toBe('experiments');
+    expect(overview).toBeDefined();
     expect(datasetItem).toBeDefined();
-    expect(isPlatformNavigationItemActive(overview, '/en')).toBe(true);
-    expect(isPlatformNavigationItemActive(overview, '/en/datasets')).toBe(false);
+    expect(isPlatformNavigationItemActive(overview!, '/en')).toBe(true);
+    expect(isPlatformNavigationItemActive(overview!, '/en/datasets')).toBe(false);
     expect(isPlatformNavigationItemActive(datasetItem!, '/en/datasets/data-1')).toBe(true);
     expect(isPlatformNavigationItemActive(datasetItem!, '/en/experiments')).toBe(false);
   });

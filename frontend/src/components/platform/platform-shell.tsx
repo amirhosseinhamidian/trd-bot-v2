@@ -7,16 +7,16 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import ThemeToggle from '@/components/theme/theme-toggle';
 import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
-import { getLegacyShellNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
+import { getPlatformNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
 
-const DASHBOARD_NAVIGATION_ID = 'dashboard-navigation';
+const PLATFORM_NAVIGATION_ID = 'platform-navigation';
 
-type DashboardShellProps = {
+type PlatformShellProps = {
   children: ReactNode;
   locale: PlatformLocale;
 };
 
-export default function DashboardShell({ children, locale }: DashboardShellProps) {
+export default function PlatformShell({ children, locale }: PlatformShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const openNavigationButtonRef = useRef<HTMLButtonElement>(null);
   const closeNavigationButtonRef = useRef<HTMLButtonElement>(null);
@@ -62,7 +62,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
     return segments.join('/') || `/${alternateLocale}`;
   })();
 
-  const navigation = getLegacyShellNavigation(locale);
+  const navigation = getPlatformNavigation(locale);
 
   return (
     <div className="min-h-screen bg-app-background text-app-foreground">
@@ -77,7 +77,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
       ) : null}
 
       <aside
-        id={DASHBOARD_NAVIGATION_ID}
+        id={PLATFORM_NAVIGATION_ID}
         aria-label={copy.header.navigation}
         className={[
           'fixed inset-y-0 start-0 z-50 flex w-72 flex-col border-e border-app-border bg-app-chrome p-5 shadow-2xl backdrop-blur transition-transform duration-200 lg:visible lg:translate-x-0',
@@ -88,7 +88,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
               : 'invisible -translate-x-full',
         ].join(' ')}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-app-border pb-5">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border pb-5">
           <div className="flex min-w-0 items-center gap-3">
             <Image
               src="/brand/nexora-mark.jpg"
@@ -122,46 +122,58 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
           </button>
         </div>
 
-        <nav className="mt-6 flex flex-1 flex-col gap-2">
-          {navigation.map((item) => {
-            const isActive = isPlatformNavigationItemActive(item, pathname);
+        <nav className="mt-6 min-h-0 flex-1 space-y-5 overflow-y-auto pe-1">
+          {navigation.map((group) => (
+            <div key={group.key} data-navigation-group={group.key}>
+              {group.key === 'root' ? null : (
+                <h2 className="mb-2 hidden px-4 text-xs font-semibold tracking-wide text-app-subtle lg:block">
+                  {group.label}
+                </h2>
+              )}
 
-            if (item.enabled) {
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={() => setIsSidebarOpen(false)}
-                  className={[
-                    'rounded-xl border px-4 py-3 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
-                    isActive
-                      ? 'border-app-accent-border bg-app-accent-soft text-app-accent'
-                      : 'border-transparent text-app-muted hover:bg-app-hover hover:text-app-foreground',
-                  ].join(' ')}
-                >
-                  {item.label}
-                </Link>
-              );
-            }
+              <div className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const isActive = isPlatformNavigationItemActive(item, pathname);
 
-            return (
-              <div
-                key={item.key}
-                aria-disabled="true"
-                className="flex cursor-not-allowed items-center justify-between rounded-xl px-4 py-3 text-sm text-app-subtle"
-              >
-                <span>{item.label}</span>
+                  if (item.enabled) {
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        aria-current={isActive ? 'page' : undefined}
+                        onClick={() => setIsSidebarOpen(false)}
+                        className={[
+                          'rounded-xl border px-4 py-3 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
+                          isActive
+                            ? 'border-app-accent-border bg-app-accent-soft text-app-accent'
+                            : 'border-transparent text-app-muted hover:bg-app-hover hover:text-app-foreground',
+                        ].join(' ')}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
 
-                <span className="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] text-app-subtle">
-                  {copy.navigation.comingSoon}
-                </span>
+                  return (
+                    <div
+                      key={item.key}
+                      aria-disabled="true"
+                      className="flex cursor-not-allowed items-center justify-between rounded-xl px-4 py-3 text-sm text-app-subtle"
+                    >
+                      <span>{item.label}</span>
+
+                      <span className="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] text-app-subtle">
+                        {copy.navigation.comingSoon}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </nav>
 
-        <div className="rounded-2xl border border-app-warning-border bg-app-warning-soft p-4">
+        <div className="mt-5 shrink-0 rounded-2xl border border-app-warning-border bg-app-warning-soft p-4">
           <div className="flex items-center gap-2 text-xs font-medium text-app-warning">
             <span className="h-2 w-2 rounded-full bg-app-warning" />
             {copy.header.researchMode}
@@ -176,7 +188,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
               ref={openNavigationButtonRef}
               type="button"
               aria-label={copy.header.openNavigation}
-              aria-controls={DASHBOARD_NAVIGATION_ID}
+              aria-controls={PLATFORM_NAVIGATION_ID}
               aria-expanded={isSidebarOpen}
               className="rounded-xl border border-app-border p-2.5 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none lg:hidden"
               onClick={() => setIsSidebarOpen(true)}

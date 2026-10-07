@@ -1,12 +1,16 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type AnchorHTMLAttributes, type ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import DashboardShell from '@/components/layout/dashboard-shell';
+import PlatformShell from '@/components/platform/platform-shell';
+
+const navigationState = vi.hoisted(() => ({
+  pathname: '/en',
+}));
 
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/en',
+  usePathname: () => navigationState.pathname,
 }));
 
 vi.mock('next/link', () => ({
@@ -28,12 +32,16 @@ vi.mock('@/components/theme/theme-toggle', () => ({
   default: () => <button type="button">Theme</button>,
 }));
 
-describe('DashboardShell mobile navigation', () => {
+describe('PlatformShell', () => {
+  beforeEach(() => {
+    navigationState.pathname = '/en';
+  });
+
   it('renders the Nexora platform and TRD BOT product context', () => {
     const { container } = render(
-      <DashboardShell locale="en">
+      <PlatformShell locale="en">
         <div>Content</div>
-      </DashboardShell>,
+      </PlatformShell>,
     );
 
     expect(screen.getByText('Nexora')).toBeInTheDocument();
@@ -47,59 +55,83 @@ describe('DashboardShell mobile navigation', () => {
     expect(container.querySelector('main')).toHaveClass('w-full', 'min-w-0', 'px-4');
   });
 
-  it('connects the menu button to the navigation and marks the active page', () => {
+  it('renders the frozen navigation groups and destinations in platform order', () => {
     render(
-      <DashboardShell locale="en">
+      <PlatformShell locale="en">
         <div>Content</div>
-      </DashboardShell>,
+      </PlatformShell>,
+    );
+
+    const sidebar = screen.getByRole('complementary', {
+      name: 'Platform navigation',
+    });
+
+    expect(
+      within(sidebar)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent),
+    ).toEqual(['Research', 'Strategy & Decision', 'Simulation', 'Data', 'System']);
+    expect(
+      within(sidebar)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual([
+      'Overview',
+      'Datasets',
+      'Experiments',
+      'Walk-forward',
+      'Optimizations',
+      'Strategies',
+      'Signals',
+      'Candidates',
+      'Risk',
+      'Historical Portfolios',
+      'Connections',
+      'Monitoring',
+    ]);
+  });
+
+  it('connects the menu button to platform navigation and marks nested routes active', () => {
+    navigationState.pathname = '/en/datasets/data-1';
+
+    render(
+      <PlatformShell locale="en">
+        <div>Content</div>
+      </PlatformShell>,
     );
 
     const openButton = screen.getByRole('button', {
       name: 'Open navigation',
     });
 
-    expect(openButton).toHaveAttribute('aria-controls', 'dashboard-navigation');
+    expect(openButton).toHaveAttribute('aria-controls', 'platform-navigation');
     expect(openButton).toHaveAttribute('aria-expanded', 'false');
 
     const navigation = screen.getByRole('complementary', {
-      name: 'Dashboard navigation',
+      name: 'Platform navigation',
     });
 
-    expect(navigation).toHaveAttribute('id', 'dashboard-navigation');
+    expect(navigation).toHaveAttribute('id', 'platform-navigation');
     expect(navigation).toHaveClass('invisible', 'lg:visible');
-
     expect(
-      screen.getByRole('link', {
-        name: 'Overview',
+      within(navigation).getByRole('link', {
+        name: 'Datasets',
       }),
     ).toHaveAttribute('aria-current', 'page');
-
     expect(
-      screen.getByRole('link', {
-        name: 'Strategies',
+      within(navigation).getByRole('link', {
+        name: 'Overview',
       }),
-    ).toHaveAttribute('href', '/en/strategies');
-
-    expect(
-      screen.getByRole('link', {
-        name: 'Optimizations',
-      }),
-    ).toHaveAttribute('href', '/en/optimizations');
-
-    expect(
-      screen.getByRole('link', {
-        name: 'Risk dashboard',
-      }),
-    ).toHaveAttribute('href', '/en/risk');
+    ).not.toHaveAttribute('aria-current');
   });
 
-  it('moves focus into the sidebar and restores it after Escape', async () => {
+  it('moves focus into the mobile drawer and restores it after Escape', async () => {
     const user = userEvent.setup();
 
     render(
-      <DashboardShell locale="en">
+      <PlatformShell locale="en">
         <div>Content</div>
-      </DashboardShell>,
+      </PlatformShell>,
     );
 
     const openButton = screen.getByRole('button', {
@@ -111,7 +143,7 @@ describe('DashboardShell mobile navigation', () => {
     expect(openButton).toHaveAttribute('aria-expanded', 'true');
 
     const navigation = screen.getByRole('complementary', {
-      name: 'Dashboard navigation',
+      name: 'Platform navigation',
     });
 
     expect(navigation).toHaveClass('visible');
@@ -128,13 +160,13 @@ describe('DashboardShell mobile navigation', () => {
     expect(openButton).toHaveFocus();
   });
 
-  it('restores focus when the close button is activated', async () => {
+  it('restores focus when the mobile drawer close button is activated', async () => {
     const user = userEvent.setup();
 
     render(
-      <DashboardShell locale="en">
+      <PlatformShell locale="en">
         <div>Content</div>
-      </DashboardShell>,
+      </PlatformShell>,
     );
 
     const openButton = screen.getByRole('button', {
@@ -144,7 +176,7 @@ describe('DashboardShell mobile navigation', () => {
     await user.click(openButton);
 
     const navigation = screen.getByRole('complementary', {
-      name: 'Dashboard navigation',
+      name: 'Platform navigation',
     });
     const closeButton = within(navigation).getByRole('button', {
       name: 'Close navigation',
@@ -156,11 +188,13 @@ describe('DashboardShell mobile navigation', () => {
     expect(openButton).toHaveFocus();
   });
 
-  it('uses localized accessible navigation labels in Persian', () => {
+  it('uses the frozen Persian groups, labels, and accessible names', () => {
+    navigationState.pathname = '/fa';
+
     render(
-      <DashboardShell locale="fa">
+      <PlatformShell locale="fa">
         <div>محتوا</div>
-      </DashboardShell>,
+      </PlatformShell>,
     );
 
     expect(
@@ -169,12 +203,13 @@ describe('DashboardShell mobile navigation', () => {
       }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByRole('complementary', {
-        name: 'ناوبری داشبورد',
-      }),
-    ).toBeInTheDocument();
+    const sidebar = screen.getByRole('complementary', {
+      name: 'ناوبری پلتفرم',
+    });
 
+    expect(within(sidebar).getByRole('heading', { name: 'پژوهش' })).toBeInTheDocument();
+    expect(within(sidebar).getByRole('heading', { name: 'سامانه' })).toBeInTheDocument();
+    expect(within(sidebar).getByRole('link', { name: 'ریسک' })).toHaveAttribute('href', '/fa/risk');
     expect(screen.getByText('پلتفرم پژوهش بازار')).toBeInTheDocument();
   });
 });

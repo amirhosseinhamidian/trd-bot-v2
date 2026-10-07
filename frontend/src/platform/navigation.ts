@@ -76,21 +76,6 @@ export const PLATFORM_NAVIGATION_GROUPS = [
   },
 ] as const satisfies readonly PlatformNavigationGroupDefinition[];
 
-const LEGACY_SHELL_NAVIGATION_ORDER: readonly PlatformNavigationItemKey[] = [
-  'overview',
-  'experiments',
-  'optimizations',
-  'strategies',
-  'datasets',
-  'connections',
-  'monitoring',
-  'walkForward',
-  'portfolios',
-  'risk',
-  'candidates',
-  'signals',
-];
-
 export function getPlatformNavigation(locale: PlatformLocale): PlatformNavigationGroup[] {
   const copy = getPlatformCopy(locale);
 
@@ -103,21 +88,6 @@ export function getPlatformNavigation(locale: PlatformLocale): PlatformNavigatio
       label: copy.navigation.items[item.key],
     })),
   }));
-}
-
-export function getLegacyShellNavigation(locale: PlatformLocale): PlatformNavigationItem[] {
-  const items = getPlatformNavigation(locale).flatMap((group) => group.items);
-  const itemsByKey = new Map(items.map((item) => [item.key, item]));
-
-  return LEGACY_SHELL_NAVIGATION_ORDER.map((key) => {
-    const item = itemsByKey.get(key);
-
-    if (!item) {
-      throw new Error(`Missing platform navigation item: ${key}`);
-    }
-
-    return item;
-  });
 }
 
 export function isPlatformNavigationItemActive(
