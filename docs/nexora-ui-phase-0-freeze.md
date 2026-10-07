@@ -264,3 +264,32 @@ Phase 1 is complete through `P1-08` on `refactor/nexora-ui-foundation`.
 Phase 2 may begin only after explicit approval. Its first patch is the typed, grouped navigation
 configuration and platform-level navigation copy extraction; it must preserve the current route
 URLs and defer the new shell rendering to the following patch.
+
+## 11. Phase 2 acceptance record
+
+Phase 2 is complete through `P2-05` on `refactor/nexora-ui-foundation`.
+
+- [x] Navigation is typed, config-driven, grouped by the frozen information architecture, and
+      localized in platform-owned English/Persian copy.
+- [x] `PlatformShell` owns the platform identity, desktop sidebar, tablet drawer, header, and
+      content frame; the legacy dashboard shell and temporary navigation order are removed.
+- [x] Desktop navigation renders the frozen Research, Strategy & Decision, Simulation, Data, and
+      System groups while preserving exact and nested active-route behavior.
+- [x] Mobile navigation provides Overview, Research, Strategy & Decision, and More below `768px`;
+      Risk, Historical Portfolios, Connections, and Monitoring remain reachable through More.
+- [x] The `768–1023px` tablet range retains the accessible drawer, and the grouped sidebar remains
+      active from `1024px` upward.
+- [x] Mobile menus and the tablet drawer preserve keyboard focus, Escape dismissal, trigger-focus
+      restoration, localized accessible names, and RTL behavior.
+- [x] Shared `PageFrame` and `PageHeader` primitives own page rhythm, level-one headings,
+      descriptions, metadata, back links, and responsive action layout across all 21 screens.
+- [x] Feature components contain no local `<h1>` or nested `<main>` elements; page titles start at
+      24px on mobile, and actions remain visible and wrapping within the viewport.
+- [x] Automated architecture coverage prevents restoration of the legacy shell, loss of the shared
+      page-layout contract, or changes to the frozen 21-route locale inventory.
+- [x] Platform components do not import dashboard feature components, and all existing business/API
+      behavior and route URLs remain unchanged.
+- [x] Final gates pass: 75 test files / 306 tests, ESLint, Prettier, and Next.js production build.
+
+Phase 3 may begin only after explicit approval. Feature ownership and feature-local copy migration
+must proceed in bounded patches without changing route URLs or business/API behavior.
