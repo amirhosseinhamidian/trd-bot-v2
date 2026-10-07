@@ -1,27 +1,27 @@
 import Link from 'next/link';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getPositionDetailCopy } from '@/components/dashboard/position-detail-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { getPositionDetailCopy } from '@/features/portfolios/position-detail-copy';
 import type {
   CandidateDecisionLineageNode,
   CandidateExitReason,
   CandidateRiskDecision,
   PositionDetailReport,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   report: PositionDetailReport;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatDecimal(value: string | null, locale: DashboardLocale): string {
+function formatDecimal(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -31,7 +31,7 @@ function formatDecimal(value: string | null, locale: DashboardLocale): string {
     : value;
 }
 
-function formatDate(value: string | null, locale: DashboardLocale): string {
+function formatDate(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -54,7 +54,7 @@ function pnlClassName(value: string | null): string {
 function nodeHref(
   node: CandidateDecisionLineageNode,
   experimentId: string | undefined,
-  locale: DashboardLocale,
+  locale: PlatformLocale,
   portfolioId: string,
 ): string | null {
   if (node.status !== 'available' || node.resource_id === null) return null;

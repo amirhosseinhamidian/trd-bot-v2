@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type PortfolioDetailCopy = {
   back: string;
@@ -72,7 +72,7 @@ export type PortfolioDetailCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, PortfolioDetailCopy> = {
+const copies: Record<PlatformLocale, PortfolioDetailCopy> = {
   fa: {
     back: 'بازگشت به گزارش‌های پرتفوی',
     eyebrow: 'Historical portfolio report',
@@ -219,6 +219,6 @@ const copies: Record<DashboardLocale, PortfolioDetailCopy> = {
   },
 };
 
-export function getPortfolioDetailCopy(locale: DashboardLocale): PortfolioDetailCopy {
+export function getPortfolioDetailCopy(locale: PlatformLocale): PortfolioDetailCopy {
   return copies[locale];
 }

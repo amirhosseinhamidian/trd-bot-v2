@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import PortfolioCatalog from '@/components/dashboard/portfolio-catalog';
+import PortfolioCatalog from '@/features/portfolios/portfolio-catalog';
 import type { Page, SimulatedPortfolioSummary } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({

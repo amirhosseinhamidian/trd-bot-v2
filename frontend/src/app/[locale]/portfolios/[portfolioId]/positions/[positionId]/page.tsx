@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import PositionDetail from '@/components/dashboard/position-detail';
+import PositionDetail from '@/features/portfolios/position-detail';
 import { getSimulatedPositionDetail } from '@/lib/api/client';
 
 type PositionDetailPageProps = {

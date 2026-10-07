@@ -1,4 +1,3 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   CandidateDecisionLineageKind,
   CandidateDecisionLineageStatus,
@@ -9,6 +8,7 @@ import type {
   SimulatedPositionSide,
   SimulatedPositionStatus,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailCopy = {
   back: string;
@@ -39,7 +39,7 @@ type PositionDetailCopy = {
   fields: Record<string, string>;
 };
 
-const copies: Record<DashboardLocale, PositionDetailCopy> = {
+const copies: Record<PlatformLocale, PositionDetailCopy> = {
   fa: {
     back: 'بازگشت به پرتفوی',
     eyebrow: 'Historical position lineage',
@@ -228,6 +228,6 @@ const copies: Record<DashboardLocale, PositionDetailCopy> = {
   },
 };
 
-export function getPositionDetailCopy(locale: DashboardLocale): PositionDetailCopy {
+export function getPositionDetailCopy(locale: PlatformLocale): PositionDetailCopy {
   return copies[locale];
 }

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import PortfolioDetail from '@/components/dashboard/portfolio-detail';
+import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 import {
   getPortfolioAnalytics,
   getSimulatedPortfolio,

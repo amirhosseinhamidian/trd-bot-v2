@@ -3,9 +3,6 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { PortfolioAnalytics } from '@/components/dashboard/portfolio-analytics';
-import { getPortfolioDetailCopy } from '@/components/dashboard/portfolio-detail-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -19,6 +16,8 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { PortfolioAnalytics } from '@/features/portfolios/portfolio-analytics';
+import { getPortfolioDetailCopy } from '@/features/portfolios/portfolio-detail-copy';
 import { getSimulatedPortfolioPositions, getSimulatedPortfolioTimeline } from '@/lib/api/client';
 import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 import type {
@@ -27,6 +26,7 @@ import type {
   SimulatedPortfolio,
   SimulatedPosition,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const RESOURCE_PAGE_SIZE = 10;
 
@@ -35,18 +35,18 @@ type PortfolioDetailProps = {
   portfolio: SimulatedPortfolio;
   initialPositions: Page<SimulatedPosition>;
   initialTimeline: Page<PortfolioTimelineEvent>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatDecimal(value: string | null, locale: DashboardLocale): string {
+function formatDecimal(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -62,7 +62,7 @@ function formatDecimal(value: string | null, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatDate(value: string | null, locale: DashboardLocale): string {
+function formatDate(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }

@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getPortfolioCopy } from '@/components/dashboard/portfolio-copy';
 import {
   Badge,
   Card,
@@ -17,27 +15,29 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { getPortfolioCopy } from '@/features/portfolios/portfolio-copy';
 import { getSimulatedPortfolios } from '@/lib/api/client';
 import type { Page, SimulatedPortfolioSummary } from '@/lib/api/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;
 
 type PortfolioCatalogProps = {
   initialPage: Page<SimulatedPortfolioSummary>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -49,7 +49,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

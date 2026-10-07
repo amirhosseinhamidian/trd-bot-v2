@@ -15,9 +15,9 @@ const screenComponentPaths = [
   'components/dashboard/optimization-catalog.tsx',
   'components/dashboard/optimization-detail.tsx',
   'components/dashboard/overview-dashboard.tsx',
-  'components/dashboard/portfolio-catalog.tsx',
-  'components/dashboard/portfolio-detail.tsx',
-  'components/dashboard/position-detail.tsx',
+  'features/portfolios/portfolio-catalog.tsx',
+  'features/portfolios/portfolio-detail.tsx',
+  'features/portfolios/position-detail.tsx',
   'features/risk/risk-dashboard.tsx',
   'features/signals/signal-catalog.tsx',
   'features/signals/signal-detail.tsx',
@@ -61,6 +61,15 @@ const featureBoundaries = [
     'candidate-copy',
   ],
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
+  [
+    'portfolios',
+    [
+      ['portfolios', 'portfolio-catalog'],
+      ['portfolios/[portfolioId]', 'portfolio-detail'],
+      ['portfolios/[portfolioId]/positions/[positionId]', 'position-detail'],
+    ],
+    'portfolio-copy',
+  ],
   ['risk', [['risk', 'risk-dashboard']], 'risk-copy'],
   [
     'signals',

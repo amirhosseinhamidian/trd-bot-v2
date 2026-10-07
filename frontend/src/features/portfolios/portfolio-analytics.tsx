@@ -1,7 +1,5 @@
 import { HistoricalLineChart } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { portfolioAnalyticsCopy } from '@/components/dashboard/portfolio-analytics-copy';
 import {
   Card,
   CardContent,
@@ -15,7 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
+import { portfolioAnalyticsCopy } from '@/features/portfolios/portfolio-analytics-copy';
 import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const metrics = [
   'starting_equity',
@@ -49,7 +49,7 @@ export function PortfolioAnalytics({
   locale,
 }: {
   report: PortfolioAnalyticsReport;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 }) {
   const copy = portfolioAnalyticsCopy[locale];
   const numberLocale = locale === 'fa' ? 'fa-IR' : 'en-US';

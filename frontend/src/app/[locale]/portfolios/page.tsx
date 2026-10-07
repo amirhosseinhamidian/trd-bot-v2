@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import PortfolioCatalog from '@/components/dashboard/portfolio-catalog';
+import PortfolioCatalog from '@/features/portfolios/portfolio-catalog';
 import { getSimulatedPortfolios } from '@/lib/api/client';
 
 type PortfoliosPageProps = {
