@@ -1,36 +1,8 @@
-import { NEXORA_PLATFORM_NAME, TRD_BOT_PRODUCT_NAME } from '@/platform/brand';
+import type { PlatformLocale } from '@/platform/i18n';
 
-export type DashboardLocale = 'fa' | 'en';
+export type DashboardLocale = PlatformLocale;
 
 export type DashboardCopy = {
-  brand: {
-    platformName: string;
-    productName: string;
-    description: string;
-  };
-  navigation: {
-    overview: string;
-    experiments: string;
-    optimizations: string;
-    strategies: string;
-    datasets: string;
-    connections: string;
-    walkForward: string;
-    portfolios: string;
-    risk: string;
-    candidates: string;
-    signals: string;
-    settings: string;
-    comingSoon: string;
-    monitoring: string;
-  };
-  header: {
-    researchMode: string;
-    language: string;
-    navigation: string;
-    openNavigation: string;
-    closeNavigation: string;
-  };
   overview: {
     eyebrow: string;
     title: string;
@@ -95,34 +67,6 @@ export type DashboardCopy = {
 
 const copies: Record<DashboardLocale, DashboardCopy> = {
   fa: {
-    brand: {
-      platformName: NEXORA_PLATFORM_NAME,
-      productName: TRD_BOT_PRODUCT_NAME,
-      description: 'پلتفرم پژوهش بازار',
-    },
-    navigation: {
-      overview: 'نمای کلی',
-      experiments: 'آزمایش‌ها',
-      optimizations: 'بهینه‌سازی‌ها',
-      strategies: 'استراتژی‌ها',
-      datasets: 'مجموعه‌داده‌ها',
-      connections: 'اتصال‌های داده',
-      walkForward: 'تحلیل Walk-forward',
-      portfolios: 'گزارش‌های پرتفوی تاریخی',
-      risk: 'داشبورد ریسک',
-      candidates: 'کاندیدهای پژوهشی',
-      signals: 'سیگنال‌های پژوهشی',
-      settings: 'تنظیمات',
-      comingSoon: 'به‌زودی',
-      monitoring: 'پایش سیستم',
-    },
-    header: {
-      researchMode: 'حالت پژوهشی — بدون اجرای معامله واقعی',
-      language: 'English',
-      navigation: 'ناوبری داشبورد',
-      openNavigation: 'باز کردن ناوبری',
-      closeNavigation: 'بستن ناوبری',
-    },
     overview: {
       eyebrow: 'Research workspace',
       title: 'نمای کلی پژوهش',
@@ -186,34 +130,6 @@ const copies: Record<DashboardLocale, DashboardCopy> = {
     },
   },
   en: {
-    brand: {
-      platformName: NEXORA_PLATFORM_NAME,
-      productName: TRD_BOT_PRODUCT_NAME,
-      description: 'Market research platform',
-    },
-    navigation: {
-      overview: 'Overview',
-      experiments: 'Experiments',
-      optimizations: 'Optimizations',
-      strategies: 'Strategies',
-      datasets: 'Datasets',
-      connections: 'Data connections',
-      walkForward: 'Walk-forward analysis',
-      portfolios: 'Historical portfolio reports',
-      risk: 'Risk dashboard',
-      candidates: 'Research candidates',
-      signals: 'Research signals',
-      settings: 'Settings',
-      comingSoon: 'Coming soon',
-      monitoring: 'System monitoring',
-    },
-    header: {
-      researchMode: 'Research mode — no live trade execution',
-      language: 'فارسی',
-      navigation: 'Dashboard navigation',
-      openNavigation: 'Open navigation',
-      closeNavigation: 'Close navigation',
-    },
     overview: {
       eyebrow: 'Research workspace',
       title: 'Research overview',

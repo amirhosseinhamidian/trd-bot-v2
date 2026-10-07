@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { type DashboardLocale, getDashboardCopy } from '@/components/dashboard/dashboard-copy';
 import ThemeToggle from '@/components/theme/theme-toggle';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+import { getLegacyShellNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
 
 const DASHBOARD_NAVIGATION_ID = 'dashboard-navigation';
 
 type DashboardShellProps = {
   children: ReactNode;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
 export default function DashboardShell({ children, locale }: DashboardShellProps) {
@@ -21,7 +22,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
   const closeNavigationButtonRef = useRef<HTMLButtonElement>(null);
   const wasSidebarOpenRef = useRef(false);
   const pathname = usePathname();
-  const copy = getDashboardCopy(locale);
+  const copy = getPlatformCopy(locale);
 
   useEffect(() => {
     if (!isSidebarOpen) {
@@ -49,7 +50,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
     };
   }, [isSidebarOpen]);
 
-  const alternateLocale: DashboardLocale = locale === 'fa' ? 'en' : 'fa';
+  const alternateLocale: PlatformLocale = locale === 'fa' ? 'en' : 'fa';
 
   const alternatePath = (() => {
     const segments = pathname.split('/');
@@ -61,80 +62,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
     return segments.join('/') || `/${alternateLocale}`;
   })();
 
-  const navigation = [
-    {
-      key: 'overview',
-      label: copy.navigation.overview,
-      href: `/${locale}`,
-      enabled: true,
-    },
-    {
-      key: 'experiments',
-      label: copy.navigation.experiments,
-      href: `/${locale}/experiments`,
-      enabled: true,
-    },
-    {
-      key: 'optimizations',
-      label: copy.navigation.optimizations,
-      href: `/${locale}/optimizations`,
-      enabled: true,
-    },
-    {
-      key: 'strategies',
-      label: copy.navigation.strategies,
-      href: `/${locale}/strategies`,
-      enabled: true,
-    },
-    {
-      key: 'datasets',
-      label: copy.navigation.datasets,
-      href: `/${locale}/datasets`,
-      enabled: true,
-    },
-    {
-      key: 'connections',
-      label: copy.navigation.connections,
-      href: `/${locale}/connections`,
-      enabled: true,
-    },
-    {
-      key: 'monitoring',
-      label: copy.navigation.monitoring,
-      href: `/${locale}/monitoring`,
-      enabled: true,
-    },
-    {
-      key: 'walk-forward',
-      label: copy.navigation.walkForward,
-      href: `/${locale}/walk-forward`,
-      enabled: true,
-    },
-    {
-      key: 'portfolios',
-      label: copy.navigation.portfolios,
-      href: `/${locale}/portfolios`,
-      enabled: true,
-    },
-    {
-      key: 'risk',
-      label: copy.navigation.risk,
-      href: `/${locale}/risk`,
-      enabled: true,
-    },
-    {
-      key: 'candidates',
-      label: copy.navigation.candidates,
-      href: `/${locale}/candidates`,
-      enabled: true,
-    },
-    {
-      key: 'signals',
-      label: copy.navigation.signals,
-      href: `/${locale}/signals`,
-      enabled: true,
-    },
-  ];
+  const navigation = getLegacyShellNavigation(locale);
 
   return (
     <div className="min-h-screen bg-app-background text-app-foreground">
@@ -196,11 +124,7 @@ export default function DashboardShell({ children, locale }: DashboardShellProps
 
         <nav className="mt-6 flex flex-1 flex-col gap-2">
           {navigation.map((item) => {
-            const isOverview = item.key === 'overview';
-
-            const isActive = isOverview
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = isPlatformNavigationItemActive(item, pathname);
 
             if (item.enabled) {
               return (

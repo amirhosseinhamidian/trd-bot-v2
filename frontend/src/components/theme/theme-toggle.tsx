@@ -2,7 +2,6 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import {
   DEFAULT_THEME,
   LEGACY_THEME_STORAGE_KEY,
@@ -16,9 +15,10 @@ import {
   setStoredTheme,
   type Theme,
 } from '@/components/theme/theme';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type ThemeToggleProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
 function subscribeToTheme(onStoreChange: () => void): () => void {
