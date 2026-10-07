@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import SignalDetail from '@/components/dashboard/signal-detail';
+import SignalDetail from '@/features/signals/signal-detail';
 import { ApiRequestError, getExperimentSignal, getExperimentSummary } from '@/lib/api/client';
 
 type SignalDetailPageProps = {

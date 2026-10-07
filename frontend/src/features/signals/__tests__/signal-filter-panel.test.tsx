@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import SignalFilterPanel from '@/components/dashboard/signal-filter-panel';
+import SignalFilterPanel from '@/features/signals/signal-filter-panel';
 import type { ExperimentSummary } from '@/lib/api/types';
 
 const rsiExperiment: ExperimentSummary = {

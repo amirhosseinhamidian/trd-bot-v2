@@ -2,8 +2,6 @@
 
 import { useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getSignalsCopy } from '@/components/dashboard/signals-copy';
 import {
   Button,
   Card,
@@ -15,12 +13,14 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
+import { getSignalsCopy } from '@/features/signals/signals-copy';
 import type {
   ExperimentSignalSortDirection,
   ExperimentSummary,
   SignalDirection,
 } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type SignalFilterValues = {
   experimentId: string;
@@ -34,7 +34,7 @@ type SignalFilterPanelProps = {
   experiments: ExperimentSummary[];
   initialExperimentId: string;
   isLoading: boolean;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onApply: (filters: SignalFilterValues) => void;
 };
 

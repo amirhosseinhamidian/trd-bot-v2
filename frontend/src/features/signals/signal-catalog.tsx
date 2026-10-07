@@ -2,11 +2,8 @@
 
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import SignalFilterPanel, {
-  type SignalFilterValues,
-} from '@/components/dashboard/signal-filter-panel';
-import { getSignalsCopy } from '@/components/dashboard/signals-copy';
+import SignalFilterPanel, { type SignalFilterValues } from '@/features/signals/signal-filter-panel';
+import { getSignalsCopy } from '@/features/signals/signals-copy';
 import {
   Badge,
   Card,
@@ -23,6 +20,7 @@ import {
 import { getExperimentSignals, type ExperimentSignalFilters } from '@/lib/api/client';
 import type { ExperimentSummary, Page, SignalDirection, StrategySignal } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 
@@ -32,10 +30,10 @@ type SignalCatalogProps = {
   experiments: ExperimentSummary[];
   initialExperimentId: string;
   initialPage: Page<StrategySignal>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -48,7 +46,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {

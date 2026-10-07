@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import SignalCatalog from '@/components/dashboard/signal-catalog';
+import SignalCatalog from '@/features/signals/signal-catalog';
 import { getExperiments, getExperimentSignals } from '@/lib/api/client';
 import type { Page, StrategySignal } from '@/lib/api/types';
 

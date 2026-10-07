@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import SignalCatalog from '@/components/dashboard/signal-catalog';
-import SignalDetail from '@/components/dashboard/signal-detail';
+import SignalCatalog from '@/features/signals/signal-catalog';
+import SignalDetail from '@/features/signals/signal-detail';
 import type { ExperimentSummary, Page, StrategySignal } from '@/lib/api/types';
 
-vi.mock('@/components/dashboard/signal-filter-panel', () => ({
+vi.mock('@/features/signals/signal-filter-panel', () => ({
   default: function MockSignalFilterPanel() {
     return <div data-testid="signal-filter-panel" />;
   },

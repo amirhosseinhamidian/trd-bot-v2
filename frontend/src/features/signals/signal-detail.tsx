@@ -1,20 +1,20 @@
 import Link from 'next/link';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getSignalsCopy } from '@/components/dashboard/signals-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { getSignalsCopy } from '@/features/signals/signals-copy';
 import type { ExperimentSummary, SignalDirection, StrategySignal } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type SignalDetailProps = {
   experiment: ExperimentSummary;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   signal: StrategySignal;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
@@ -25,7 +25,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
     return value;
@@ -47,10 +47,6 @@ function directionVariant(direction: SignalDirection): 'success' | 'danger' | 'n
 
 export default function SignalDetail({ experiment, locale, signal }: SignalDetailProps) {
   const copy = getSignalsCopy(locale);
-  const back = locale === 'fa' ? 'بازگشت به سیگنال‌ها' : 'Back to signals';
-  const sourceTitle = locale === 'fa' ? 'منابع lineage' : 'Lineage sources';
-  const viewDataset = locale === 'fa' ? 'مشاهده Dataset' : 'View dataset';
-  const viewExperiment = locale === 'fa' ? 'مشاهده Experiment' : 'View experiment';
 
   return (
     <PageFrame>
@@ -60,7 +56,7 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
             href={`/${locale}/signals`}
             className="rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
-            {locale === 'fa' ? '→' : '←'} {back}
+            {locale === 'fa' ? '→' : '←'} {copy.detail.back}
           </Link>
         }
         eyebrow={copy.eyebrow}
@@ -133,7 +129,7 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
 
       <Card>
         <CardHeader>
-          <CardTitle>{sourceTitle}</CardTitle>
+          <CardTitle>{copy.detail.sourcesTitle}</CardTitle>
           <CardDescription dir="ltr">{experiment.experiment_id}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
@@ -141,13 +137,13 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
             href={`/${locale}/datasets/${encodeURIComponent(signal.dataset_id)}`}
             className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
-            {viewDataset}
+            {copy.detail.viewDataset}
           </Link>
           <Link
             href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
             className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
-            {viewExperiment}
+            {copy.detail.viewExperiment}
           </Link>
         </CardContent>
       </Card>

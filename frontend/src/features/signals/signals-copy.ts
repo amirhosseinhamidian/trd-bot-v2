@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type SignalsCopy = {
   eyebrow: string;
@@ -18,6 +18,12 @@ export type SignalsCopy = {
   previous: string;
   next: string;
   page: string;
+  detail: {
+    back: string;
+    sourcesTitle: string;
+    viewDataset: string;
+    viewExperiment: string;
+  };
   filters: {
     title: string;
     description: string;
@@ -53,7 +59,7 @@ export type SignalsCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, SignalsCopy> = {
+const copies: Record<PlatformLocale, SignalsCopy> = {
   fa: {
     eyebrow: 'Historical strategy output',
     title: 'سیگنال‌های پژوهشی',
@@ -75,6 +81,12 @@ const copies: Record<DashboardLocale, SignalsCopy> = {
     previous: 'قبلی',
     next: 'بعدی',
     page: 'صفحه',
+    detail: {
+      back: 'بازگشت به سیگنال‌ها',
+      sourcesTitle: 'منابع lineage',
+      viewDataset: 'مشاهده Dataset',
+      viewExperiment: 'مشاهده Experiment',
+    },
     filters: {
       title: 'انتخاب آزمایش و فیلترها',
       description:
@@ -132,6 +144,12 @@ const copies: Record<DashboardLocale, SignalsCopy> = {
     previous: 'Previous',
     next: 'Next',
     page: 'Page',
+    detail: {
+      back: 'Back to signals',
+      sourcesTitle: 'Lineage sources',
+      viewDataset: 'View dataset',
+      viewExperiment: 'View experiment',
+    },
     filters: {
       title: 'Experiment and filters',
       description:
@@ -169,6 +187,6 @@ const copies: Record<DashboardLocale, SignalsCopy> = {
   },
 };
 
-export function getSignalsCopy(locale: DashboardLocale): SignalsCopy {
+export function getSignalsCopy(locale: PlatformLocale): SignalsCopy {
   return copies[locale];
 }

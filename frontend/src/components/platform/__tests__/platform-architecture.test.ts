@@ -19,8 +19,8 @@ const screenComponentPaths = [
   'components/dashboard/portfolio-detail.tsx',
   'components/dashboard/position-detail.tsx',
   'features/risk/risk-dashboard.tsx',
-  'components/dashboard/signal-catalog.tsx',
-  'components/dashboard/signal-detail.tsx',
+  'features/signals/signal-catalog.tsx',
+  'features/signals/signal-detail.tsx',
   'features/strategies/strategy-catalog.tsx',
   'features/strategies/strategy-detail.tsx',
   'components/dashboard/walk-forward-catalog.tsx',
@@ -54,6 +54,14 @@ const localeRoutes = [
 const featureBoundaries = [
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
   ['risk', [['risk', 'risk-dashboard']], 'risk-copy'],
+  [
+    'signals',
+    [
+      ['signals', 'signal-catalog'],
+      ['signals/[experimentId]/[signalId]', 'signal-detail'],
+    ],
+    'signals-copy',
+  ],
   [
     'strategies',
     [
