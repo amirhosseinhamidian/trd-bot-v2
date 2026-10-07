@@ -167,8 +167,11 @@ export default function ExperimentComparisonPanel({
         ) : null}
 
         {hasError ? (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-            <p className="text-sm text-red-500">{copy.error}</p>
+          <div
+            role="alert"
+            className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4"
+          >
+            <p className="text-sm text-app-danger">{copy.error}</p>
 
             <Button
               className="mt-4"

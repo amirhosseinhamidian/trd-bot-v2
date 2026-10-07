@@ -94,7 +94,7 @@ export function ExperimentReplayPanel({ experimentId, locale }: ExperimentReplay
           {copy.run}
         </Button>
 
-        {hasError ? <p className="text-sm text-red-500">{copy.requestError}</p> : null}
+        {hasError ? <p className="text-sm text-app-danger">{copy.requestError}</p> : null}
 
         {!verification && !hasError ? (
           <p className="text-sm leading-7 text-app-muted">{copy.notRun}</p>
@@ -118,9 +118,9 @@ export function ExperimentReplayPanel({ experimentId, locale }: ExperimentReplay
             </dl>
 
             {verification.mismatch_fields.length > 0 ? (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
-                <p className="text-xs text-red-500">{copy.mismatchFields}</p>
-                <p dir="ltr" className="mt-2 text-left text-sm text-red-500">
+              <div className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4">
+                <p className="text-xs text-app-danger">{copy.mismatchFields}</p>
+                <p dir="ltr" className="mt-2 text-left text-sm text-app-danger">
                   {verification.mismatch_fields.join(', ')}
                 </p>
               </div>

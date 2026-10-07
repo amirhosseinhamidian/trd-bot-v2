@@ -218,8 +218,11 @@ export function ExperimentAcceptancePanel({
         ) : null}
 
         {hasError ? (
-          <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-            <p className="text-sm text-red-500">{copy.error}</p>
+          <div
+            role="alert"
+            className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4"
+          >
+            <p className="text-sm text-app-danger">{copy.error}</p>
 
             <Button
               className="mt-4"
@@ -257,23 +260,23 @@ export function ExperimentAcceptancePanel({
             {hasDownloadError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-500"
+                className="rounded-xl border border-app-danger-border bg-app-danger-soft p-3 text-sm text-app-danger"
               >
                 {copy.downloadError}
               </p>
             ) : null}
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                <p className="text-xs text-emerald-600">{copy.passedChecks}</p>
-                <p className="mt-2 text-xl font-bold text-emerald-600">
+              <div className="rounded-xl border border-app-success-border bg-app-success-soft p-4">
+                <p className="text-xs text-app-success">{copy.passedChecks}</p>
+                <p className="mt-2 text-xl font-bold text-app-success">
                   {formatInteger(report.report.passed_checks, locale)}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                <p className="text-xs text-red-500">{copy.failedChecks}</p>
-                <p className="mt-2 text-xl font-bold text-red-600">
+              <div className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4">
+                <p className="text-xs text-app-danger">{copy.failedChecks}</p>
+                <p className="mt-2 text-xl font-bold text-app-danger">
                   {formatInteger(report.report.failed_checks, locale)}
                 </p>
               </div>

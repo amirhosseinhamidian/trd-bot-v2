@@ -655,8 +655,11 @@ export default function OptimizationRunForm({
             />
           </div>
         ) : hasDatasetError || hasStrategyError ? (
-          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
-            <p className="text-sm text-rose-500">
+          <div
+            role="alert"
+            className="rounded-2xl border border-app-danger-border bg-app-danger-soft p-5"
+          >
+            <p className="text-sm text-app-danger">
               {hasDatasetError
                 ? sharedCopy.states.datasetLoadError
                 : sharedCopy.states.strategyLoadError}
@@ -868,7 +871,7 @@ export default function OptimizationRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-500"
+                className="rounded-xl border border-app-danger-border bg-app-danger-soft px-4 py-3 text-sm text-app-danger"
               >
                 {formError}
               </p>

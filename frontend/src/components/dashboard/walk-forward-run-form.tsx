@@ -763,8 +763,11 @@ export default function WalkForwardRunForm({
             />
           </div>
         ) : hasDatasetError ? (
-          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
-            <p className="text-sm text-rose-500">{copy.states.datasetLoadError}</p>
+          <div
+            role="alert"
+            className="rounded-2xl border border-app-danger-border bg-app-danger-soft p-5"
+          >
+            <p className="text-sm text-app-danger">{copy.states.datasetLoadError}</p>
             <Button
               type="button"
               variant="secondary"
@@ -775,8 +778,11 @@ export default function WalkForwardRunForm({
             </Button>
           </div>
         ) : hasStrategyError ? (
-          <div role="alert" className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5">
-            <p className="text-sm text-rose-500">{copy.states.strategyLoadError}</p>
+          <div
+            role="alert"
+            className="rounded-2xl border border-app-danger-border bg-app-danger-soft p-5"
+          >
+            <p className="text-sm text-app-danger">{copy.states.strategyLoadError}</p>
             <Button
               type="button"
               variant="secondary"
@@ -933,7 +939,7 @@ export default function WalkForwardRunForm({
             {formError ? (
               <p
                 role="alert"
-                className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm break-words text-rose-500"
+                className="rounded-xl border border-app-danger-border bg-app-danger-soft px-4 py-3 text-sm break-words text-app-danger"
               >
                 {formError}
               </p>
@@ -942,14 +948,14 @@ export default function WalkForwardRunForm({
             {createdRunId ? (
               <div
                 role="status"
-                className="flex flex-col items-stretch gap-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col items-stretch gap-4 rounded-xl border border-app-success-border bg-app-success-soft px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <p className="min-w-0 text-sm break-words text-emerald-500">
+                <p className="min-w-0 text-sm break-words text-app-success">
                   {copy.states.success}
                 </p>
                 <Link
                   href={'/' + locale + '/walk-forward/' + encodeURIComponent(createdRunId)}
-                  className="inline-flex w-full items-center justify-center rounded-md text-center text-sm font-semibold text-emerald-500 transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-md text-center text-sm font-semibold text-app-success transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
                 >
                   {copy.actions.viewResult}
                 </Link>

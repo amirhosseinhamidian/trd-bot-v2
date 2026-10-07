@@ -272,20 +272,20 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
       {refreshError ? (
         <p
           role="alert"
-          className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4 text-sm text-rose-500"
+          className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4 text-sm text-app-danger"
         >
           {copy.form.errors.statusUnavailable}
         </p>
       ) : null}
 
       {execution.status === 'failed' ? (
-        <Card className="border-rose-500/20 bg-rose-500/5">
+        <Card className="border-app-danger-border bg-app-danger-soft">
           <CardContent className="pt-6">
-            <p className="font-semibold text-rose-500">
+            <p className="font-semibold text-app-danger">
               {execution.error_code ?? copy.form.errors.executionFailed}
             </p>
             {execution.error_message ? (
-              <p className="mt-2 text-sm text-rose-500">{execution.error_message}</p>
+              <p className="mt-2 text-sm text-app-danger">{execution.error_message}</p>
             ) : null}
           </CardContent>
         </Card>

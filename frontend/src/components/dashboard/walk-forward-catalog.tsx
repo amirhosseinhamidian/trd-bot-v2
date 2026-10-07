@@ -284,7 +284,7 @@ export default function WalkForwardCatalog({
                   <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
                     <div>
                       <dt className="text-xs text-app-muted">{copy.fields.strategyWins}</dt>
-                      <dd className="mt-1 text-emerald-500">
+                      <dd className="mt-1 text-app-success">
                         {formatNumber(run.strategy_wins, locale)}
                       </dd>
                     </div>
