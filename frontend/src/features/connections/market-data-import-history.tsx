@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Badge, Button, EmptyState, ErrorState, Pagination, Spinner } from '@/components/ui';
+import { getMarketDataImportHistory } from '@/features/connections/api/client';
+import type {
+  MarketDataImportRecord,
+  MarketDataImportStatus,
+} from '@/features/connections/api/types';
 import { getImportHistoryCopy } from '@/features/connections/import-history-copy';
-import { getMarketDataImportHistory } from '@/lib/api/client';
-import type { MarketDataImportRecord, MarketDataImportStatus, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 5;

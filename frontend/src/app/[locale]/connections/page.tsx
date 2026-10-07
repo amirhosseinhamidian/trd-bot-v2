@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation';
 
 import MarketDataConnectionsPanel from '@/features/connections/market-data-connections-panel';
-import { getMarketDataConnections, getMarketDataProviders } from '@/lib/api/client';
+import {
+  getMarketDataConnections,
+  getMarketDataProviders,
+} from '@/features/connections/api/client';
 
 type ConnectionsPageProps = {
   params: Promise<{

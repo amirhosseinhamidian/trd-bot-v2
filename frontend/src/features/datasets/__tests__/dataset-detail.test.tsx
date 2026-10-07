@@ -9,7 +9,7 @@ vi.mock('@/features/datasets/api/client', () => ({
   getDatasetCandles: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/connections/api/client', () => ({
   getMarketDataImportVersions: vi.fn(),
   refreshMarketDataImport: vi.fn(),
 }));

@@ -6,19 +6,18 @@ import { useMemo, useState } from 'react';
 import { Badge, Button, Input, Select, SelectOption } from '@/components/ui';
 import { getHistoricalImportCopy } from '@/features/connections/historical-import-copy';
 import {
-  ApiRequestError,
   importHistoricalDataset,
   previewHistoricalDatasetImport,
-} from '@/lib/api/client';
+} from '@/features/connections/api/client';
 import type {
-  DatasetSummary,
-  DatasetTimeframe,
   HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
   MarketDataConnection,
   MarketDataProviderSummary,
-} from '@/lib/api/types';
+} from '@/features/connections/api/types';
+import type { DatasetSummary, DatasetTimeframe } from '@/features/datasets/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type HistoricalDatasetImportFormProps = {

@@ -1,4 +1,4 @@
-import type { MarketDataQualityIssueCode } from '@/lib/api/types';
+import type { MarketDataQualityIssueCode } from '@/features/datasets/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type HistoricalImportCopy = {

@@ -3,14 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DatasetVersionHistory from '@/features/datasets/dataset-version-history';
-import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import type { MarketDataImportRecord } from '@/features/connections/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getMarketDataImportVersions: vi.fn(),
   refreshMarketDataImport: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/connections/api/client', () => ({
   getMarketDataImportVersions: mocks.getMarketDataImportVersions,
   refreshMarketDataImport: mocks.refreshMarketDataImport,
 }));

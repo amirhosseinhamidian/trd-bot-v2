@@ -3,30 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import HistoricalDatasetImportForm from '@/features/connections/historical-dataset-import-form';
-import { ApiRequestError } from '@/lib/api/client';
 import type {
-  DatasetSummary,
   HistoricalDatasetImportPreview,
   MarketDataConnection,
   MarketDataProviderSummary,
-} from '@/lib/api/types';
+} from '@/features/connections/api/types';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 const mocks = vi.hoisted(() => ({
   importHistoricalDataset: vi.fn(),
   previewHistoricalDatasetImport: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
-  ApiRequestError: class ApiRequestError extends Error {
-    readonly status: number;
-    readonly payload: unknown;
-
-    constructor(message: string, status: number, payload: unknown) {
-      super(message);
-      this.status = status;
-      this.payload = payload;
-    }
-  },
+vi.mock('@/features/connections/api/client', () => ({
   importHistoricalDataset: mocks.importHistoricalDataset,
   previewHistoricalDatasetImport: mocks.previewHistoricalDatasetImport,
 }));

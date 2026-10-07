@@ -2,7 +2,7 @@ import type {
   MarketDataConnectionHealth,
   MarketDataConnectionState,
   MarketDataProviderAccessMode,
-} from '@/lib/api/types';
+} from '@/features/connections/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type ConnectionsCopy = {

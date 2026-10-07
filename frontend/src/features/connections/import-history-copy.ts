@@ -1,4 +1,4 @@
-import type { MarketDataImportStatus } from '@/lib/api/types';
+import type { MarketDataImportStatus } from '@/features/connections/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type ImportHistoryCopy = {

@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import MarketDataConnectionsPanel from '@/features/connections/market-data-connections-panel';
-import type { MarketDataConnection, MarketDataProviderSummary, Page } from '@/lib/api/types';
+import type {
+  MarketDataConnection,
+  MarketDataProviderSummary,
+} from '@/features/connections/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   createMarketDataConnection: vi.fn(),
@@ -14,7 +18,7 @@ const mocks = vi.hoisted(() => ({
   testMarketDataConnection: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/connections/api/client', () => ({
   createMarketDataConnection: mocks.createMarketDataConnection,
   disableMarketDataConnection: mocks.disableMarketDataConnection,
   enableMarketDataConnection: mocks.enableMarketDataConnection,

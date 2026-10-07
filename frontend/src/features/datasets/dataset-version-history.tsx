@@ -14,8 +14,12 @@ import {
   Spinner,
 } from '@/components/ui';
 import { getDatasetDetailCopy } from '@/features/datasets/dataset-detail-copy';
-import { getMarketDataImportVersions, refreshMarketDataImport } from '@/lib/api/client';
-import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import {
+  getMarketDataImportVersions,
+  refreshMarketDataImport,
+} from '@/features/connections/api/client';
+import type { MarketDataImportRecord } from '@/features/connections/api/types';
+import type { Page } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const VERSION_PAGE_SIZE = 5;

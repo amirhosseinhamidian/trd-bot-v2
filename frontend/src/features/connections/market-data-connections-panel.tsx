@@ -29,13 +29,13 @@ import {
   enableMarketDataConnection,
   getMarketDataConnections,
   testMarketDataConnection,
-} from '@/lib/api/client';
+} from '@/features/connections/api/client';
 import type {
   MarketDataConnection,
   MarketDataConnectionHealth,
   MarketDataProviderSummary,
-  Page,
-} from '@/lib/api/types';
+} from '@/features/connections/api/types';
+import type { Page } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;
