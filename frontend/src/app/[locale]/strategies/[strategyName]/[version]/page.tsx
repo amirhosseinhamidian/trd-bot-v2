@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 
+import { getResearchStrategyVersion } from '@/features/strategies/api/client';
 import StrategyDetail from '@/features/strategies/strategy-detail';
-import { ApiRequestError, getExperiments, getResearchStrategyVersion } from '@/lib/api/client';
+import { getExperiments } from '@/lib/api/client';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type StrategyDetailPageProps = {
   params: Promise<{

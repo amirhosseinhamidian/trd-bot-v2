@@ -1,4 +1,4 @@
-import type { ResearchStrategyName } from '@/lib/api/types';
+import type { ResearchStrategyName } from '@/features/strategies/api/types';
 import {
   isExecutableResearchStrategyName,
   isExecutableResearchStrategyVersion,

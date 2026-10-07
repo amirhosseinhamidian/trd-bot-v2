@@ -1,4 +1,4 @@
-import type { ResearchStrategyMetadata } from '@/lib/api/types';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import {
   findStrategyParameterMetadata,
   isMovingAverageCrossoverStrategyName,

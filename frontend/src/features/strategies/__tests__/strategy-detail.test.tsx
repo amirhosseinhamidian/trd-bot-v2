@@ -3,7 +3,8 @@ import { type AnchorHTMLAttributes, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import StrategyDetail from '@/features/strategies/strategy-detail';
-import type { ExperimentSummary, Page, ResearchStrategyMetadata } from '@/lib/api/types';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
+import type { ExperimentSummary, Page } from '@/lib/api/types';
 
 vi.mock('next/link', () => ({
   default: ({

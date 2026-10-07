@@ -5,6 +5,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 
 import type { PlatformLocale } from '@/platform/i18n';
 import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
+import { getResearchStrategies } from '@/features/strategies/api/client';
+import type {
+  ResearchStrategyMetadata,
+  ResearchStrategyName,
+} from '@/features/strategies/api/types';
 import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
 import {
   Badge,
@@ -24,7 +29,6 @@ import {
   createOptimizationExecution,
   getDatasets,
   getOptimizationExecution,
-  getResearchStrategies,
 } from '@/lib/api/client';
 import type {
   CreateOptimizationExecutionRequest,
@@ -32,8 +36,6 @@ import type {
   ExperimentComparisonMetric,
   OptimizationExecution,
   OptimizationParameterGrid,
-  ResearchStrategyMetadata,
-  ResearchStrategyName,
   WalkForwardMode,
 } from '@/lib/api/types';
 import {

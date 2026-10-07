@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
-import type { DatasetSummary, Page, ResearchStrategyMetadata } from '@/lib/api/types';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
+import type { DatasetSummary, Page } from '@/lib/api/types';
 import { optimizationSubmission } from '@/test/optimization-fixtures';
 
 const apiMocks = vi.hoisted(() => ({
@@ -27,9 +28,12 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
     createOptimizationExecution: apiMocks.createExecution,
     getDatasets: apiMocks.getDatasets,
     getOptimizationExecution: apiMocks.getExecution,
-    getResearchStrategies: apiMocks.getStrategies,
   };
 });
+
+vi.mock('@/features/strategies/api/client', () => ({
+  getResearchStrategies: apiMocks.getStrategies,
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({

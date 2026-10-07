@@ -1,4 +1,5 @@
 import type { DatasetSummary, DatasetTimeframe, TradingPair } from '@/features/datasets/api/types';
+import type { ResearchStrategyName } from '@/features/strategies/api/types';
 
 export type {
   DatasetColumnMapping,
@@ -43,6 +44,12 @@ export type {
   MarketDataProviderErrorCode,
   MarketDataProviderSummary,
 } from '@/features/connections/api/types';
+export type {
+  ResearchStrategyMetadata,
+  ResearchStrategyName,
+  StrategyParameterKind,
+  StrategyParameterMetadata,
+} from '@/features/strategies/api/types';
 
 export type ResearchStage =
   'empty' | 'data_available' | 'experiments_available' | 'walk_forward_available';
@@ -86,31 +93,6 @@ export type WalkForwardRunSortField = 'created_at' | 'horizon_candles';
 export type WalkForwardRunSortDirection = 'asc' | 'desc';
 
 export type WalkForwardMode = 'rolling' | 'expanding';
-
-export type ResearchStrategyName = 'ema-crossover' | 'rsi-threshold' | 'sma-crossover';
-
-export type StrategyParameterKind = 'integer' | 'decimal';
-
-export interface StrategyParameterMetadata {
-  name: string;
-  kind: StrategyParameterKind;
-  default_value: string;
-  minimum: string | null;
-  maximum: string | null;
-  minimum_exclusive: boolean;
-  maximum_exclusive: boolean;
-}
-
-export interface ResearchStrategyMetadata {
-  name: string;
-  version: string;
-  display_name: string;
-  description: string;
-  parameters: StrategyParameterMetadata[];
-  lifecycle_status?: 'active' | 'deprecated';
-  supersedes_version?: string | null;
-  behavior_fingerprint?: string;
-}
 
 export interface StoredDatasetHistoricalExecutionRequest {
   dataset_id: string;

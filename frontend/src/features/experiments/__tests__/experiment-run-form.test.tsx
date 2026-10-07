@@ -4,13 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ExperimentRunForm from '@/features/experiments/experiment-run-form';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import { ApiRequestError } from '@/lib/api/client';
 import type {
   DatasetSummary,
   ExperimentExecution,
   ExperimentExecutionStatus,
   Page,
-  ResearchStrategyMetadata,
 } from '@/lib/api/types';
 
 const apiMocks = vi.hoisted(() => ({
@@ -31,11 +31,14 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
   return {
     ...actual,
     getDatasets: apiMocks.getDatasets,
-    getResearchStrategies: apiMocks.getStrategies,
     createExperimentExecution: apiMocks.createExecution,
     getExperimentExecution: apiMocks.getExecution,
   };
 });
+
+vi.mock('@/features/strategies/api/client', () => ({
+  getResearchStrategies: apiMocks.getStrategies,
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getResearchStrategies } from '@/features/strategies/api/client';
 import StrategyCatalog from '@/features/strategies/strategy-catalog';
-import { getResearchStrategies } from '@/lib/api/client';
 
 type StrategiesPageProps = {
   params: Promise<{

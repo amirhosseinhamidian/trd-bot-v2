@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getResearchStrategies } from '@/features/strategies/api/client';
+import type {
+  ResearchStrategyMetadata,
+  ResearchStrategyName,
+} from '@/features/strategies/api/types';
 import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
 import {
   Badge,
@@ -23,13 +28,10 @@ import {
   ApiRequestError,
   createWalkForwardExecution,
   getDatasets,
-  getResearchStrategies,
   getWalkForwardExecution,
 } from '@/lib/api/client';
 import type {
   DatasetSummary,
-  ResearchStrategyMetadata,
-  ResearchStrategyName,
   StoredDatasetStrategyWalkForwardExecutionRequest,
   WalkForwardExecution,
   WalkForwardMode,

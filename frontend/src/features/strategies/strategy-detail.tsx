@@ -3,13 +3,12 @@ import Link from 'next/link';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
 import type {
-  ExperimentSummary,
-  Page,
   ResearchStrategyMetadata,
   StrategyParameterMetadata,
-} from '@/lib/api/types';
+} from '@/features/strategies/api/types';
+import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
+import type { ExperimentSummary, Page } from '@/lib/api/types';
 import { getExecutableResearchStrategies } from '@/lib/strategies/catalog';
 import { getStrategyParameterLabel } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';

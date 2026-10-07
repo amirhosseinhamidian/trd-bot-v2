@@ -3,14 +3,10 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import WalkForwardRunForm from '@/features/walk-forward/walk-forward-run-form';
 import { ApiRequestError } from '@/lib/api/client';
-import type {
-  DatasetSummary,
-  Page,
-  ResearchStrategyMetadata,
-  WalkForwardExecution,
-} from '@/lib/api/types';
+import type { DatasetSummary, Page, WalkForwardExecution } from '@/lib/api/types';
 
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
@@ -30,11 +26,14 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
   return {
     ...actual,
     getDatasets: apiMocks.getDatasets,
-    getResearchStrategies: apiMocks.getStrategies,
     createWalkForwardExecution: apiMocks.createExecution,
     getWalkForwardExecution: apiMocks.getExecution,
   };
 });
+
+vi.mock('@/features/strategies/api/client', () => ({
+  getResearchStrategies: apiMocks.getStrategies,
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({

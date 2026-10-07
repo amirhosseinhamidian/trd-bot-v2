@@ -6,6 +6,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 
 import type { PlatformLocale } from '@/platform/i18n';
 import { getExperimentRunCopy } from '@/features/experiments/experiment-run-copy';
+import { getResearchStrategies } from '@/features/strategies/api/client';
+import type {
+  ResearchStrategyMetadata,
+  ResearchStrategyName,
+} from '@/features/strategies/api/types';
 import {
   Badge,
   Button,
@@ -24,14 +29,11 @@ import {
   createExperimentExecution,
   getDatasets,
   getExperimentExecution,
-  getResearchStrategies,
 } from '@/lib/api/client';
 import type {
   CreatedResearchExperiment,
   DatasetSummary,
   ExperimentExecution,
-  ResearchStrategyMetadata,
-  ResearchStrategyName,
   StoredDatasetStrategyExecutionRequest,
 } from '@/lib/api/types';
 

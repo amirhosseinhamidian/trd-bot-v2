@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ResearchStrategyMetadata } from '@/lib/api/types';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import {
   findStrategyMetadata,
   findStrategyParameterMetadata,

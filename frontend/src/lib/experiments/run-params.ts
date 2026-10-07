@@ -1,4 +1,5 @@
-import type { ExperimentSummary, ResearchStrategyName } from '@/lib/api/types';
+import type { ResearchStrategyName } from '@/features/strategies/api/types';
+import type { ExperimentSummary } from '@/lib/api/types';
 import {
   isExecutableResearchStrategyName,
   isExecutableResearchStrategyVersion,

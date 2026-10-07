@@ -12,8 +12,8 @@ import {
   CardTitle,
   EmptyState,
 } from '@/components/ui';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
-import type { ResearchStrategyMetadata } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type StrategyCatalogProps = {

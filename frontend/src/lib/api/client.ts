@@ -26,7 +26,6 @@ import type {
   ResearchActivityItem,
   ResearchActivityType,
   ResearchOverview,
-  ResearchStrategyMetadata,
   RiskDashboardReport,
   SimulatedPortfolio,
   SimulatedPortfolioSummary,
@@ -78,6 +77,11 @@ export {
   type MarketDataImportHistoryFilters,
   type MarketDataImportVersionFilters,
 } from '@/features/connections/api/client';
+export {
+  getResearchStrategies,
+  getResearchStrategyVersion,
+  getResearchStrategyVersions,
+} from '@/features/strategies/api/client';
 
 export interface ExperimentFilters {
   datasetId?: string;
@@ -130,27 +134,6 @@ export interface ExperimentSignalFilters {
 
 export async function getResearchOverview(): Promise<ResearchOverview> {
   return getJson<ResearchOverview>('/api/v1/research/overview');
-}
-
-export async function getResearchStrategies(): Promise<ResearchStrategyMetadata[]> {
-  return getJson<ResearchStrategyMetadata[]>('/api/v1/research/strategies');
-}
-
-export async function getResearchStrategyVersion(
-  strategyName: string,
-  version: string,
-): Promise<ResearchStrategyMetadata> {
-  return getJson<ResearchStrategyMetadata>(
-    `/api/v1/research/strategies/${encodeURIComponent(strategyName)}/versions/${encodeURIComponent(version)}`,
-  );
-}
-
-export async function getResearchStrategyVersions(
-  strategyName: string,
-): Promise<ResearchStrategyMetadata[]> {
-  return getJson<ResearchStrategyMetadata[]>(
-    `/api/v1/research/strategies/${encodeURIComponent(strategyName)}/versions`,
-  );
 }
 
 export async function getBackgroundJob(jobId: string): Promise<BackgroundJobSummary> {
