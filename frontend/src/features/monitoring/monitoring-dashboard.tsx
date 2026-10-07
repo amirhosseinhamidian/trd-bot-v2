@@ -1,5 +1,3 @@
-import { getMonitoringCopy } from '@/components/dashboard/monitoring-copy';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -24,9 +22,11 @@ import type {
   RecommendationSeverity,
   SystemMetricSample,
 } from '@/lib/api/types';
+import { getMonitoringCopy } from '@/features/monitoring/monitoring-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type MonitoringDashboardProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   summary: MonitoringSummary;
 };
 
@@ -64,7 +64,7 @@ const ratioMetricNames = new Set<SystemMetricSample['metric_name']>([
   'analytical_database_resource_share',
 ]);
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -77,7 +77,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatMetricValue(sample: SystemMetricSample, locale: DashboardLocale): string {
+function formatMetricValue(sample: SystemMetricSample, locale: PlatformLocale): string {
   const value = Number(sample.value);
 
   if (!Number.isFinite(value)) {
@@ -113,11 +113,11 @@ function removeDemoPrefix(title: string): string {
   return title.replace(/^\[DEMO\]\s*/u, '');
 }
 
-function formatCount(value: number, locale: DashboardLocale): string {
+function formatCount(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatPercent(value: string | null, locale: DashboardLocale): string {
+function formatPercent(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }
@@ -133,7 +133,7 @@ function formatPercent(value: string | null, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatDuration(value: string | null, locale: DashboardLocale): string {
+function formatDuration(value: string | null, locale: PlatformLocale): string {
   if (value === null) {
     return '—';
   }

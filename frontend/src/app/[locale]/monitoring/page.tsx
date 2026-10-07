@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import MonitoringDashboard from '@/components/dashboard/monitoring-dashboard';
+import MonitoringDashboard from '@/features/monitoring/monitoring-dashboard';
 import { getMonitoringSummary } from '@/lib/api/client';
 
 type MonitoringPageProps = {

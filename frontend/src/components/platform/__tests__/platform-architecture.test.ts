@@ -3,28 +3,28 @@ import { join, relative, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const screenComponentFiles = [
-  'candidate-catalog.tsx',
-  'candidate-detail.tsx',
-  'dataset-catalog.tsx',
-  'dataset-detail.tsx',
-  'experiment-catalog.tsx',
-  'experiment-detail.tsx',
-  'market-data-connections-panel.tsx',
-  'monitoring-dashboard.tsx',
-  'optimization-catalog.tsx',
-  'optimization-detail.tsx',
-  'overview-dashboard.tsx',
-  'portfolio-catalog.tsx',
-  'portfolio-detail.tsx',
-  'position-detail.tsx',
-  'risk-dashboard.tsx',
-  'signal-catalog.tsx',
-  'signal-detail.tsx',
-  'strategy-catalog.tsx',
-  'strategy-detail.tsx',
-  'walk-forward-catalog.tsx',
-  'walk-forward-detail.tsx',
+const screenComponentPaths = [
+  'components/dashboard/candidate-catalog.tsx',
+  'components/dashboard/candidate-detail.tsx',
+  'components/dashboard/dataset-catalog.tsx',
+  'components/dashboard/dataset-detail.tsx',
+  'components/dashboard/experiment-catalog.tsx',
+  'components/dashboard/experiment-detail.tsx',
+  'components/dashboard/market-data-connections-panel.tsx',
+  'features/monitoring/monitoring-dashboard.tsx',
+  'components/dashboard/optimization-catalog.tsx',
+  'components/dashboard/optimization-detail.tsx',
+  'components/dashboard/overview-dashboard.tsx',
+  'components/dashboard/portfolio-catalog.tsx',
+  'components/dashboard/portfolio-detail.tsx',
+  'components/dashboard/position-detail.tsx',
+  'components/dashboard/risk-dashboard.tsx',
+  'components/dashboard/signal-catalog.tsx',
+  'components/dashboard/signal-detail.tsx',
+  'components/dashboard/strategy-catalog.tsx',
+  'components/dashboard/strategy-detail.tsx',
+  'components/dashboard/walk-forward-catalog.tsx',
+  'components/dashboard/walk-forward-detail.tsx',
 ] as const;
 
 const localeRoutes = [
@@ -63,7 +63,7 @@ function collectPageFiles(directory: string): string[] {
   });
 }
 
-describe('Phase 2 platform architecture contract', () => {
+describe('platform architecture contract', () => {
   it('uses PlatformShell without restoring legacy dashboard shell identifiers', () => {
     const layoutPath = resolve(process.cwd(), 'src/app/[locale]/layout.tsx');
     const layoutSource = readFileSync(layoutPath, 'utf8');
@@ -82,11 +82,8 @@ describe('Phase 2 platform architecture contract', () => {
     expect(shellSource).not.toContain('dashboard-navigation');
   });
 
-  it.each(screenComponentFiles)('keeps %s on the shared page layout contract', (fileName) => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'src/components/dashboard', fileName),
-      'utf8',
-    );
+  it.each(screenComponentPaths)('keeps %s on the shared page layout contract', (path) => {
+    const source = readFileSync(resolve(process.cwd(), 'src', path), 'utf8');
 
     expect(source).toContain('@/components/platform/page-frame');
     expect(source).toContain('@/components/platform/page-header');
@@ -94,6 +91,31 @@ describe('Phase 2 platform architecture contract', () => {
     expect(source).toContain('<PageHeader');
     expect(source).not.toContain('<h1');
     expect(source).not.toContain('<main');
+  });
+
+  it('keeps monitoring UI and copy inside its feature boundary', () => {
+    const routeSource = readFileSync(
+      resolve(process.cwd(), 'src/app/[locale]/monitoring/page.tsx'),
+      'utf8',
+    );
+    const dashboardSource = readFileSync(
+      resolve(process.cwd(), 'src/features/monitoring/monitoring-dashboard.tsx'),
+      'utf8',
+    );
+    const copySource = readFileSync(
+      resolve(process.cwd(), 'src/features/monitoring/monitoring-copy.ts'),
+      'utf8',
+    );
+
+    expect(routeSource).toContain('@/features/monitoring/monitoring-dashboard');
+    expect(
+      existsSync(resolve(process.cwd(), 'src/components/dashboard/monitoring-dashboard.tsx')),
+    ).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/components/dashboard/monitoring-copy.ts'))).toBe(
+      false,
+    );
+    expect(dashboardSource).not.toContain('@/components/dashboard');
+    expect(copySource).not.toContain('@/components/dashboard');
   });
 
   it('preserves the frozen 21-route locale inventory', () => {

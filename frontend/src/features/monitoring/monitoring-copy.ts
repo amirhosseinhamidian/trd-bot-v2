@@ -1,4 +1,3 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   ArchitectureCandidate,
   BackgroundJobStatus,
@@ -6,6 +5,7 @@ import type {
   RecommendationSeverity,
   SystemMetricName,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type MonitoringCopy = {
   eyebrow: string;
@@ -62,7 +62,7 @@ export type MonitoringCopy = {
   jobStatuses: Record<BackgroundJobStatus, string>;
 };
 
-const copies: Record<DashboardLocale, MonitoringCopy> = {
+const copies: Record<PlatformLocale, MonitoringCopy> = {
   fa: {
     eyebrow: 'Infrastructure capacity monitoring',
     title: 'پایش معماری سیستم',
@@ -252,6 +252,6 @@ const copies: Record<DashboardLocale, MonitoringCopy> = {
   },
 };
 
-export function getMonitoringCopy(locale: DashboardLocale): MonitoringCopy {
+export function getMonitoringCopy(locale: PlatformLocale): MonitoringCopy {
   return copies[locale];
 }

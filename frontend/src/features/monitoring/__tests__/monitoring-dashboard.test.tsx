@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import MonitoringDashboard from '@/components/dashboard/monitoring-dashboard';
+import MonitoringDashboard from '@/features/monitoring/monitoring-dashboard';
 import type { MonitoringSummary } from '@/lib/api/types';
 
 const summary: MonitoringSummary = {
