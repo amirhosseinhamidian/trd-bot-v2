@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import DatasetDetail from '@/components/dashboard/dataset-detail';
+import DatasetDetail from '@/features/datasets/dataset-detail';
 import { ApiRequestError, getDatasetCandles, getDatasetSummary } from '@/lib/api/client';
 
 type DatasetDetailPageProps = {

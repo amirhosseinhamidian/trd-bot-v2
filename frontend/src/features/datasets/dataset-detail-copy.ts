@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type DatasetDetailCopy = {
   back: string;
@@ -131,7 +131,7 @@ export type DatasetDetailCopy = {
   };
 };
 
-const copies: Record<DashboardLocale, DatasetDetailCopy> = {
+const copies: Record<PlatformLocale, DatasetDetailCopy> = {
   fa: {
     back: 'بازگشت به مجموعه‌داده‌ها',
     eyebrow: 'Historical dataset snapshot',
@@ -399,6 +399,6 @@ const copies: Record<DashboardLocale, DatasetDetailCopy> = {
   },
 };
 
-export function getDatasetDetailCopy(locale: DashboardLocale): DatasetDetailCopy {
+export function getDatasetDetailCopy(locale: PlatformLocale): DatasetDetailCopy {
   return copies[locale];
 }

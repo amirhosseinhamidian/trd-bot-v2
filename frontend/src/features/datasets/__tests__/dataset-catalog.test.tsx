@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import DatasetCatalog from '@/components/dashboard/dataset-catalog';
+import DatasetCatalog from '@/features/datasets/dataset-catalog';
 import type { DatasetSummary, Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +14,7 @@ vi.mock('@/lib/api/client', () => ({
   getDatasets: mocks.getDatasets,
 }));
 
-vi.mock('@/components/dashboard/dataset-import-form', () => ({
+vi.mock('@/features/datasets/dataset-import-form', () => ({
   default: function MockDatasetImportForm({
     onImported,
   }: {
@@ -28,7 +28,7 @@ vi.mock('@/components/dashboard/dataset-import-form', () => ({
   },
 }));
 
-vi.mock('@/components/dashboard/dataset-filter-panel', async () => {
+vi.mock('@/features/datasets/dataset-filter-panel', async () => {
   const { useState } = await import('react');
 
   return {

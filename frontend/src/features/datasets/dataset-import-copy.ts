@@ -1,5 +1,5 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type { DatasetFileField } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type DatasetImportCopy = {
   title: string;
@@ -58,7 +58,7 @@ export type DatasetImportCopy = {
   };
 };
 
-const fields: Record<DashboardLocale, Record<DatasetFileField, string>> = {
+const fields: Record<PlatformLocale, Record<DatasetFileField, string>> = {
   fa: {
     open_time: 'زمان بازشدن',
     close_time: 'زمان بسته‌شدن',
@@ -81,7 +81,7 @@ const fields: Record<DashboardLocale, Record<DatasetFileField, string>> = {
   },
 };
 
-const copies: Record<DashboardLocale, DatasetImportCopy> = {
+const copies: Record<PlatformLocale, DatasetImportCopy> = {
   fa: {
     title: 'Import مجموعه‌داده تاریخی',
     description:
@@ -209,6 +209,6 @@ const copies: Record<DashboardLocale, DatasetImportCopy> = {
   },
 };
 
-export function getDatasetImportCopy(locale: DashboardLocale): DatasetImportCopy {
+export function getDatasetImportCopy(locale: PlatformLocale): DatasetImportCopy {
   return copies[locale];
 }

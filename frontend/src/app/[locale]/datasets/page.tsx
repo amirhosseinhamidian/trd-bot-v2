@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import DatasetCatalog from '@/components/dashboard/dataset-catalog';
+import DatasetCatalog from '@/features/datasets/dataset-catalog';
 import { getDatasets } from '@/lib/api/client';
 
 type DatasetsPageProps = {

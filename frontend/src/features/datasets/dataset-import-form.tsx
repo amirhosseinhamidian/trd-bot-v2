@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { type ChangeEvent, type FormEvent, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import {
   Badge,
   Button,
@@ -16,6 +15,7 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
+import { getDatasetImportCopy } from '@/features/datasets/dataset-import-copy';
 import {
   ApiRequestError,
   importDatasetFile,
@@ -31,7 +31,7 @@ import type {
   DatasetSummary,
   DatasetTimeframe,
 } from '@/lib/api/types';
-import { getDatasetImportCopy } from './dataset-import-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ASSET_PATTERN = /^[A-Z0-9]{2,15}$/u;
@@ -62,7 +62,7 @@ type FormField = 'name' | 'source' | 'baseAsset' | 'quoteAsset' | 'file' | 'mapp
 type FormErrors = Partial<Record<FormField, string>>;
 
 type DatasetImportFormProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onImported?: (dataset: DatasetSummary) => Promise<void> | void;
 };
 
@@ -91,11 +91,11 @@ function suggestedMapping(inspection: DatasetFileInspection): DatasetColumnMappi
   return mapping;
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;

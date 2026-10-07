@@ -2,8 +2,6 @@
 
 import { useRef, useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getDatasetsCopy } from '@/components/dashboard/datasets-copy';
 import {
   Badge,
   Card,
@@ -17,25 +15,27 @@ import {
   Spinner,
   ErrorState,
 } from '@/components/ui';
+import DatasetFilterPanel, {
+  DEFAULT_DATASET_FILTERS,
+  type DatasetFilterValues,
+} from '@/features/datasets/dataset-filter-panel';
+import DatasetImportForm from '@/features/datasets/dataset-import-form';
+import { getDatasetsCopy } from '@/features/datasets/datasets-copy';
 import { getDatasets, type DatasetFilters } from '@/lib/api/client';
 import type { DatasetSummary, Page } from '@/lib/api/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
-import DatasetFilterPanel, {
-  DEFAULT_DATASET_FILTERS,
-  type DatasetFilterValues,
-} from '@/components/dashboard/dataset-filter-panel';
 import Link from 'next/link';
-import DatasetImportForm from './dataset-import-form';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;
 
 type DatasetCatalogProps = {
   initialPage: Page<DatasetSummary>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -48,7 +48,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatShortDate(value: string, locale: DashboardLocale): string {
+function formatShortDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -60,7 +60,7 @@ function formatShortDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 

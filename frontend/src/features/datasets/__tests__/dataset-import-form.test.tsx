@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import DatasetImportForm from '@/components/dashboard/dataset-import-form';
+import DatasetImportForm from '@/features/datasets/dataset-import-form';
 import type {
   DatasetColumnMapping,
   DatasetFileImportPreview,

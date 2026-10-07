@@ -1,8 +1,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getDatasetDetailCopy } from '@/components/dashboard/dataset-detail-copy';
 import {
   Badge,
   Button,
@@ -15,8 +13,10 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { getDatasetDetailCopy } from '@/features/datasets/dataset-detail-copy';
 import { getMarketDataImportVersions, refreshMarketDataImport } from '@/lib/api/client';
 import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const VERSION_PAGE_SIZE = 5;
 
@@ -24,10 +24,10 @@ type DatasetVersionHistoryProps = {
   connectionId: string;
   importId: string;
   currentDatasetId: string;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -40,7 +40,7 @@ function formatDate(value: string, locale: DashboardLocale): string {
   }).format(date);
 }
 
-function formatPercent(value: number, locale: DashboardLocale): string {
+function formatPercent(value: number, locale: PlatformLocale): string {
   const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
     maximumFractionDigits: 2,
   }).format(value);

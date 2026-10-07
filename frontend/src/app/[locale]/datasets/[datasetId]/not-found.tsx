@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getDatasetDetailCopy } from '@/components/dashboard/dataset-detail-copy';
 import { EmptyState } from '@/components/ui';
+import { getDatasetDetailCopy } from '@/features/datasets/dataset-detail-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export default function DatasetNotFound() {
   const params = useParams<{ locale: string }>();
-  const locale: DashboardLocale = params.locale === 'en' ? 'en' : 'fa';
+  const locale: PlatformLocale = params.locale === 'en' ? 'en' : 'fa';
 
   const copy = getDatasetDetailCopy(locale);
 

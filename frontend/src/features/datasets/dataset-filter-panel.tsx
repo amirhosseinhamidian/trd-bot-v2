@@ -2,8 +2,6 @@
 
 import { useState, type FormEvent } from 'react';
 
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getDatasetsCopy } from '@/components/dashboard/datasets-copy';
 import {
   Button,
   Card,
@@ -15,7 +13,9 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
+import { getDatasetsCopy } from '@/features/datasets/datasets-copy';
 import type { DatasetSortDirection, DatasetSortField, DatasetTimeframe } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type DatasetFilterValues = {
   source: string;
@@ -41,7 +41,7 @@ export const DEFAULT_DATASET_FILTERS: DatasetFilterValues = {
 
 type DatasetFilterPanelProps = {
   isLoading: boolean;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onApply: (filters: DatasetFilterValues) => void;
 };
 

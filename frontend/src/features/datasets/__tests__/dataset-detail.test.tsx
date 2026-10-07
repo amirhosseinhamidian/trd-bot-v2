@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import DatasetDetail from '@/components/dashboard/dataset-detail';
+import DatasetDetail from '@/features/datasets/dataset-detail';
 import type { DatasetDetailSummary, Page, OHLCVCandle } from '@/lib/api/types';
 
 vi.mock('@/lib/api/client', () => ({

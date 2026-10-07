@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 const screenComponentPaths = [
   'features/candidates/candidate-catalog.tsx',
   'features/candidates/candidate-detail.tsx',
-  'components/dashboard/dataset-catalog.tsx',
-  'components/dashboard/dataset-detail.tsx',
+  'features/datasets/dataset-catalog.tsx',
+  'features/datasets/dataset-detail.tsx',
   'components/dashboard/experiment-catalog.tsx',
   'components/dashboard/experiment-detail.tsx',
   'features/connections/market-data-connections-panel.tsx',
@@ -61,6 +61,14 @@ const featureBoundaries = [
     'candidate-copy',
   ],
   ['connections', [['connections', 'market-data-connections-panel']], 'connections-copy'],
+  [
+    'datasets',
+    [
+      ['datasets', 'dataset-catalog'],
+      ['datasets/[datasetId]', 'dataset-detail'],
+    ],
+    'datasets-copy',
+  ],
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
   [
     'portfolios',
