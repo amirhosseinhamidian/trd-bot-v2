@@ -154,6 +154,14 @@ describe('platform architecture contract', () => {
     expect(shellSource).not.toContain('dashboard-navigation');
   });
 
+  it('removes the legacy dashboard component and dictionary roots', () => {
+    expect(existsSync(resolve(process.cwd(), 'src/components/dashboard'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionary.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/get-dictionary.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionaries/en.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionaries/fa.ts'))).toBe(false);
+  });
+
   it.each(screenComponentPaths)('keeps %s on the shared page layout contract', (path) => {
     const source = readFileSync(resolve(process.cwd(), 'src', path), 'utf8');
 
