@@ -4,8 +4,8 @@ import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const screenComponentPaths = [
-  'components/dashboard/candidate-catalog.tsx',
-  'components/dashboard/candidate-detail.tsx',
+  'features/candidates/candidate-catalog.tsx',
+  'features/candidates/candidate-detail.tsx',
   'components/dashboard/dataset-catalog.tsx',
   'components/dashboard/dataset-detail.tsx',
   'components/dashboard/experiment-catalog.tsx',
@@ -52,6 +52,14 @@ const localeRoutes = [
 ].sort();
 
 const featureBoundaries = [
+  [
+    'candidates',
+    [
+      ['candidates', 'candidate-catalog'],
+      ['candidates/[candidateId]', 'candidate-detail'],
+    ],
+    'candidate-copy',
+  ],
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
   ['risk', [['risk', 'risk-dashboard']], 'risk-copy'],
   [

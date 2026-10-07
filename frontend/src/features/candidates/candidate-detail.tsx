@@ -3,10 +3,6 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import CandidateDecisionLineageView from '@/components/dashboard/candidate-decision-lineage';
-import { getCandidateDetailCopy } from '@/components/dashboard/candidate-detail-copy';
-import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -20,27 +16,31 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import CandidateDecisionLineageView from '@/features/candidates/candidate-decision-lineage';
+import { getCandidateDetailCopy } from '@/features/candidates/candidate-detail-copy';
+import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
 import { getCandidateLineage } from '@/lib/api/client';
 import type { CandidateJournalOccurrence, CandidateProjectionDetail, Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const LINEAGE_PAGE_SIZE = 10;
 
 type CandidateDetailProps = {
   candidate: CandidateProjectionDetail;
   initialLineage: Page<CandidateJournalOccurrence>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -52,7 +52,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

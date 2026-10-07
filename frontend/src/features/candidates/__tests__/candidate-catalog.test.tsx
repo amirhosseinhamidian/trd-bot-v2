@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import CandidateCatalog from '@/components/dashboard/candidate-catalog';
+import CandidateCatalog from '@/features/candidates/candidate-catalog';
 import type {
   CandidateComparisonResult,
   CandidateDecisionEvidence,

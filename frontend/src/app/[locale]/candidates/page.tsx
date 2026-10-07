@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import CandidateCatalog from '@/components/dashboard/candidate-catalog';
+import CandidateCatalog from '@/features/candidates/candidate-catalog';
 import { getCandidateProjections } from '@/lib/api/client';
 
 type CandidatesPageProps = {

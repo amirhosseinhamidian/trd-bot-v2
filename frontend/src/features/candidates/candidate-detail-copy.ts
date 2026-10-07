@@ -1,4 +1,3 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   CandidateAction,
   CandidateDecisionLineageKind,
@@ -10,6 +9,7 @@ import type {
   CandidateRiskDecision,
   CandidateStatus,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type CandidateLineageReason =
   | 'exit_not_created'
@@ -81,7 +81,7 @@ type CandidateDetailCopy = {
   lineageReasons: Record<CandidateLineageReason, string>;
 };
 
-const copies: Record<DashboardLocale, CandidateDetailCopy> = {
+const copies: Record<PlatformLocale, CandidateDetailCopy> = {
   fa: {
     eyebrow: 'Candidate detail',
     readOnly: 'فقط پژوهشی',
@@ -308,6 +308,6 @@ const copies: Record<DashboardLocale, CandidateDetailCopy> = {
   },
 };
 
-export function getCandidateDetailCopy(locale: DashboardLocale): CandidateDetailCopy {
+export function getCandidateDetailCopy(locale: PlatformLocale): CandidateDetailCopy {
   return copies[locale];
 }

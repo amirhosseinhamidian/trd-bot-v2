@@ -1,4 +1,3 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import type {
   CandidateAction,
   CandidateExitReason,
@@ -10,6 +9,7 @@ import type {
   CandidateRiskDecision,
   CandidateStatus,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 export type CandidateCopy = {
   eyebrow: string;
@@ -67,7 +67,7 @@ export type CandidateCopy = {
   exitReasons: Record<CandidateExitReason, string>;
 };
 
-const copies: Record<DashboardLocale, CandidateCopy> = {
+const copies: Record<PlatformLocale, CandidateCopy> = {
   fa: {
     eyebrow: 'Candidate read model',
     title: 'کاندیدهای پژوهشی',
@@ -270,6 +270,6 @@ const copies: Record<DashboardLocale, CandidateCopy> = {
   },
 };
 
-export function getCandidateCopy(locale: DashboardLocale): CandidateCopy {
+export function getCandidateCopy(locale: PlatformLocale): CandidateCopy {
   return copies[locale];
 }

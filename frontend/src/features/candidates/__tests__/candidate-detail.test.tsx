@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import CandidateDetail from '@/components/dashboard/candidate-detail';
+import CandidateDetail from '@/features/candidates/candidate-detail';
 import type {
   CandidateDecisionLineage,
   CandidateJournalOccurrence,

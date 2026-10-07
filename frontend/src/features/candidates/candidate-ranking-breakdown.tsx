@@ -1,18 +1,18 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getCandidateCopy } from '@/components/dashboard/candidate-copy';
 import { Badge } from '@/components/ui';
+import { getCandidateCopy } from '@/features/candidates/candidate-copy';
 import type { CandidateDecisionEvidence } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateRankingBreakdownProps = {
   evidence: CandidateDecisionEvidence | null;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return value;
@@ -22,7 +22,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return value;
@@ -33,7 +33,7 @@ function formatPercent(value: string, locale: DashboardLocale): string {
   }).format(parsed);
 }
 
-function formatInteger(value: number, locale: DashboardLocale): string {
+function formatInteger(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 

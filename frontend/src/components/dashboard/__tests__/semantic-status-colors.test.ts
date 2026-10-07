@@ -7,7 +7,7 @@ const migratedComponentFiles = [
   'components/charts/category-bar-chart.tsx',
   'components/charts/historical-line-chart.tsx',
   'components/dashboard/activity-feed.tsx',
-  'components/dashboard/candidate-comparison-panel.tsx',
+  'features/candidates/candidate-comparison-panel.tsx',
   'components/dashboard/dataset-detail.tsx',
   'components/dashboard/dataset-import-form.tsx',
   'components/dashboard/dataset-version-history.tsx',

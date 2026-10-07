@@ -3,8 +3,7 @@ import Link from 'next/link';
 import {
   getCandidateDetailCopy,
   type CandidateLineageReason,
-} from '@/components/dashboard/candidate-detail-copy';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+} from '@/features/candidates/candidate-detail-copy';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type {
   CandidateDecisionLineage,
@@ -12,16 +11,17 @@ import type {
   CandidateExitReason,
   CandidateRiskDecision,
 } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateDecisionLineageViewProps = {
   lineage: CandidateDecisionLineage;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
 function nodeHref(
   node: CandidateDecisionLineageNode,
   experimentId: string | undefined,
-  locale: DashboardLocale,
+  locale: PlatformLocale,
 ): string | null {
   if (node.kind === 'risk') {
     return '#risk-decision';

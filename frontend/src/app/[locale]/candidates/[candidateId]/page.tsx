@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import CandidateDetail from '@/components/dashboard/candidate-detail';
+import CandidateDetail from '@/features/candidates/candidate-detail';
 import { getCandidateLineage, getCandidateProjection } from '@/lib/api/client';
 
 type CandidateDetailPageProps = {

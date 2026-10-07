@@ -3,11 +3,6 @@
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
-import { getCandidateComparisonCopy } from '@/components/dashboard/candidate-comparison-copy';
-import CandidateComparisonPanel from '@/components/dashboard/candidate-comparison-panel';
-import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
-import { getCandidateCopy } from '@/components/dashboard/candidate-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -23,26 +18,31 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { getCandidateComparisonCopy } from '@/features/candidates/candidate-comparison-copy';
+import CandidateComparisonPanel from '@/features/candidates/candidate-comparison-panel';
+import { getCandidateCopy } from '@/features/candidates/candidate-copy';
+import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
 import { getCandidateProjections } from '@/lib/api/client';
 import type { CandidateDecisionEvidence, CandidateProjectionSummary, Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;
 
 type CandidateCatalogProps = {
   initialPage: Page<CandidateProjectionSummary>;
-  locale: DashboardLocale;
+  locale: PlatformLocale;
 };
 
-function numberLocale(locale: DashboardLocale): string {
+function numberLocale(locale: PlatformLocale): string {
   return locale === 'fa' ? 'fa-IR' : 'en-US';
 }
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(numberLocale(locale)).format(value);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -54,7 +54,7 @@ function formatDecimal(value: string, locale: DashboardLocale): string {
   }).format(parsedValue);
 }
 
-function formatPercent(value: string, locale: DashboardLocale): string {
+function formatPercent(value: string, locale: PlatformLocale): string {
   const parsedValue = Number(value);
 
   if (!Number.isFinite(parsedValue)) {
@@ -69,14 +69,14 @@ function formatPercent(value: string, locale: DashboardLocale): string {
 
 function formatRiskCompatibility(
   evidence: CandidateDecisionEvidence | null,
-  locale: DashboardLocale,
+  locale: PlatformLocale,
   fallback: string,
 ): string {
   const fraction = evidence?.risk_compatibility.compatibility_fraction;
   return fraction === null || fraction === undefined ? fallback : formatPercent(fraction, locale);
 }
 
-function formatDate(value: string, locale: DashboardLocale): string {
+function formatDate(value: string, locale: PlatformLocale): string {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {

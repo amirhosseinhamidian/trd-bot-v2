@@ -1,4 +1,4 @@
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateComparisonCopy = {
   title: string;
@@ -22,7 +22,7 @@ type CandidateComparisonCopy = {
   historicalOnly: string;
 };
 
-const copies: Record<DashboardLocale, CandidateComparisonCopy> = {
+const copies: Record<PlatformLocale, CandidateComparisonCopy> = {
   fa: {
     title: 'مقایسه Candidateها',
     description: 'Breakdown کاندیدهای یک تصمیم پژوهشی را کنار هم مقایسه کنید.',
@@ -67,6 +67,6 @@ const copies: Record<DashboardLocale, CandidateComparisonCopy> = {
   },
 };
 
-export function getCandidateComparisonCopy(locale: DashboardLocale): CandidateComparisonCopy {
+export function getCandidateComparisonCopy(locale: PlatformLocale): CandidateComparisonCopy {
   return copies[locale];
 }

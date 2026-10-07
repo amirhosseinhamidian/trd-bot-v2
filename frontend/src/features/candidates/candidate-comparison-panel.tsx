@@ -3,10 +3,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { getCandidateComparisonCopy } from '@/components/dashboard/candidate-comparison-copy';
-import { getCandidateCopy } from '@/components/dashboard/candidate-copy';
-import { CandidateRankingBreakdown } from '@/components/dashboard/candidate-ranking-breakdown';
-import type { DashboardLocale } from '@/components/dashboard/dashboard-copy';
 import {
   Badge,
   Button,
@@ -16,20 +12,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui';
+import { getCandidateComparisonCopy } from '@/features/candidates/candidate-comparison-copy';
+import { getCandidateCopy } from '@/features/candidates/candidate-copy';
+import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
 import { compareCandidates } from '@/lib/api/client';
 import type { CandidateComparisonResult, CandidateProjectionSummary } from '@/lib/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateComparisonPanelProps = {
-  locale: DashboardLocale;
+  locale: PlatformLocale;
   onClearSelection: () => void;
   selectedCandidates: CandidateProjectionSummary[];
 };
 
-function formatNumber(value: number, locale: DashboardLocale): string {
+function formatNumber(value: number, locale: PlatformLocale): string {
   return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
 }
 
-function formatDecimal(value: string, locale: DashboardLocale): string {
+function formatDecimal(value: string, locale: PlatformLocale): string {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
     return value;
