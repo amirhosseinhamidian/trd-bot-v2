@@ -19,7 +19,7 @@ import {
   refreshMarketDataImport,
 } from '@/features/connections/api/client';
 import type { MarketDataImportRecord } from '@/features/connections/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const VERSION_PAGE_SIZE = 5;

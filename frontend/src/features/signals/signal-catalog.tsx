@@ -20,7 +20,7 @@ import {
   BadgeVariant,
   ErrorState,
 } from '@/components/ui';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 import { PageFrame } from '@/components/platform/page-frame';

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getResearchActivity, getResearchOverview } from '@/features/overview/api/client';
 import type { ResearchActivityItem, ResearchOverview } from '@/features/overview/api/types';
 import { API_BASE_URL } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const overview: ResearchOverview = {
   dataset_count: 0,

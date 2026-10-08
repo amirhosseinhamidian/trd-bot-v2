@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ExperimentCatalog from '@/features/experiments/experiment-catalog';
 import type { ExperimentSummary } from '@/features/experiments/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getExperiments: vi.fn(),

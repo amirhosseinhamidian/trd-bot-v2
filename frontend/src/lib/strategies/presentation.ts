@@ -1,4 +1,4 @@
-import type { ExperimentParameter } from '@/lib/api/types';
+import type { ExperimentParameter } from '@/features/experiments/api/types';
 
 export type StrategyPresentationLocale = 'fa' | 'en';
 

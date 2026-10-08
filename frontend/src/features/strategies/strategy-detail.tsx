@@ -9,7 +9,7 @@ import type {
   StrategyParameterMetadata,
 } from '@/features/strategies/api/types';
 import { getStrategyWorkspaceCopy } from '@/features/strategies/strategy-workspace-copy';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { getExecutableResearchStrategies } from '@/lib/strategies/catalog';
 import { getStrategyParameterLabel } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';

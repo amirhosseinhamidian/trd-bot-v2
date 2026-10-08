@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import PortfolioCatalog from '@/features/portfolios/portfolio-catalog';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getSimulatedPortfolios: vi.fn(),

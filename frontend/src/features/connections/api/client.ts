@@ -1,7 +1,7 @@
 import type { DatasetSummary } from '@/features/datasets/api/types';
 import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 import { getJson, postJson } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 import type {
   HistoricalDatasetCommitRequest,

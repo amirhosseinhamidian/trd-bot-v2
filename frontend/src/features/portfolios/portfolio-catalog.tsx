@@ -18,7 +18,7 @@ import {
 import { getSimulatedPortfolios } from '@/features/portfolios/api/client';
 import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import { getPortfolioCopy } from '@/features/portfolios/portfolio-copy';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import type { PlatformLocale } from '@/platform/i18n';

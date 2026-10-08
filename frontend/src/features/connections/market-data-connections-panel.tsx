@@ -35,7 +35,7 @@ import type {
   MarketDataConnectionHealth,
   MarketDataProviderSummary,
 } from '@/features/connections/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const PAGE_SIZE = 12;

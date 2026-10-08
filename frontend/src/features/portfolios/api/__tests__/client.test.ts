@@ -15,7 +15,7 @@ import type {
   SimulatedPosition,
 } from '@/features/portfolios/api/types';
 import { API_BASE_URL } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const portfolioId = 'portfolio-1234567890abcdef';
 const positionId = 'position-1234567890abcdef';

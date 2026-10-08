@@ -1,5 +1,5 @@
 import { getJson } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 import type { ExperimentSignalSortDirection, SignalDirection, StrategySignal } from './types';
 

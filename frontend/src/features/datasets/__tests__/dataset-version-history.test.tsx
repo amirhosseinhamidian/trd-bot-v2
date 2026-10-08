@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DatasetVersionHistory from '@/features/datasets/dataset-version-history';
 import type { MarketDataImportRecord } from '@/features/connections/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getMarketDataImportVersions: vi.fn(),

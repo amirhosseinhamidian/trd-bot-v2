@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import WalkForwardCatalog from '@/features/walk-forward/walk-forward-catalog';
 import type { WalkForwardRunSummary } from '@/features/walk-forward/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 vi.mock('@/features/walk-forward/walk-forward-run-form', () => ({
   default: function MockWalkForwardRunForm({

@@ -8,7 +8,7 @@ import type {
   CandidateProjectionDetail,
 } from '@/features/candidates/api/types';
 import CandidateDetail from '@/features/candidates/candidate-detail';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getCandidateLineage: vi.fn(),

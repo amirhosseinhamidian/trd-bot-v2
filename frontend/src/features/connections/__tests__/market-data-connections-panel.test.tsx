@@ -7,7 +7,7 @@ import type {
   MarketDataConnection,
   MarketDataProviderSummary,
 } from '@/features/connections/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   createMarketDataConnection: vi.fn(),

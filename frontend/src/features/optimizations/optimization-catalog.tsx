@@ -24,7 +24,7 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';

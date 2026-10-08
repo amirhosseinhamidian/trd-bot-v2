@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DatasetSummary } from '@/features/datasets/api/types';
 import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
 import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { optimizationSubmission } from '@/test/optimization-fixtures';
 
 const apiMocks = vi.hoisted(() => ({

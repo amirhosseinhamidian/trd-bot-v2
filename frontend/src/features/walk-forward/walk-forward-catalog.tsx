@@ -24,7 +24,7 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
 import { PageFrame } from '@/components/platform/page-frame';

@@ -28,7 +28,7 @@ import type {
 } from '@/features/portfolios/api/types';
 import { PortfolioAnalytics } from '@/features/portfolios/portfolio-analytics';
 import { getPortfolioDetailCopy } from '@/features/portfolios/portfolio-detail-copy';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const RESOURCE_PAGE_SIZE = 10;

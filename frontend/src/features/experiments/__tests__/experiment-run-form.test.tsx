@@ -11,7 +11,7 @@ import type {
 } from '@/features/experiments/api/types';
 import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import { ApiRequestError } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),

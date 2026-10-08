@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ExperimentSummary } from '@/lib/api/types';
+import type { ExperimentSummary } from '@/features/experiments/api/types';
 import {
   buildExperimentRerunHref,
   parseExperimentExecutionId,

@@ -203,16 +203,7 @@ export type {
   BackgroundJobStatus,
   BackgroundJobSummary,
 } from '@/features/jobs/api/types';
-
-export interface Page<T> {
-  items: T[];
-  total: number;
-  limit: number;
-  offset: number;
-  count: number;
-  has_next: boolean;
-  has_previous: boolean;
-}
+export type { Page } from '@/lib/api/core/types';
 
 export type {
   ArchitectureCandidate,

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import DatasetDetail from '@/features/datasets/dataset-detail';
 import type { DatasetDetailSummary, OHLCVCandle } from '@/features/datasets/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 vi.mock('@/features/datasets/api/client', () => ({
   getDatasetCandles: vi.fn(),

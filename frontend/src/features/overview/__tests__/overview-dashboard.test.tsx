@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ResearchActivityItem, ResearchOverview } from '@/features/overview/api/types';
 import OverviewDashboard from '@/features/overview/overview-dashboard';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 vi.mock('@/features/overview/activity-feed', () => ({
   default: function MockActivityFeed() {

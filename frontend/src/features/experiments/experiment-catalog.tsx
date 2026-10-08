@@ -24,7 +24,7 @@ import {
   Checkbox,
   ErrorState,
 } from '@/components/ui';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import ExperimentComparisonPanel from '@/features/experiments/experiment-comparison-panel';
 import { getExperimentComparisonCopy } from '@/features/experiments/experiment-comparison-copy';
 import ExperimentRunForm from '@/features/experiments/experiment-run-form';

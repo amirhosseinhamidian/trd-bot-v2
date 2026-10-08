@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DatasetCatalog from '@/features/datasets/dataset-catalog';
 import type { DatasetSummary } from '@/features/datasets/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),

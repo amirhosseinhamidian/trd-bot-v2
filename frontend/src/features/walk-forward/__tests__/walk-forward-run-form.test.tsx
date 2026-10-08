@@ -8,7 +8,7 @@ import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
 import type { WalkForwardExecution } from '@/features/walk-forward/api/types';
 import WalkForwardRunForm from '@/features/walk-forward/walk-forward-run-form';
 import { ApiRequestError } from '@/lib/api/core/transport';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),

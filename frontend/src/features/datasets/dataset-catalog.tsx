@@ -23,7 +23,7 @@ import DatasetImportForm from '@/features/datasets/dataset-import-form';
 import { getDatasetsCopy } from '@/features/datasets/datasets-copy';
 import { getDatasets, type DatasetFilters } from '@/features/datasets/api/client';
 import type { DatasetSummary } from '@/features/datasets/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import Link from 'next/link';

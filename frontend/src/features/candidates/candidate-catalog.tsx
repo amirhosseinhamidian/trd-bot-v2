@@ -27,7 +27,7 @@ import { getCandidateComparisonCopy } from '@/features/candidates/candidate-comp
 import CandidateComparisonPanel from '@/features/candidates/candidate-comparison-panel';
 import { getCandidateCopy } from '@/features/candidates/candidate-copy';
 import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 

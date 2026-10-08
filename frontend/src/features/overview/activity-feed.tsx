@@ -20,7 +20,7 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 10;

@@ -10,7 +10,7 @@ import type {
   CandidateRiskCheck,
 } from '@/features/candidates/api/types';
 import CandidateCatalog from '@/features/candidates/candidate-catalog';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   compareCandidates: vi.fn(),

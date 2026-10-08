@@ -8,7 +8,7 @@ import type {
   SimulatedPortfolio,
   SimulatedPosition,
 } from '@/features/portfolios/api/types';
-import type { Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 const mocks = vi.hoisted(() => ({
   getSimulatedPortfolioPositions: vi.fn(),

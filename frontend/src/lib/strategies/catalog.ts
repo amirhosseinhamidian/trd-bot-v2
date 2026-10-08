@@ -1,9 +1,9 @@
+import type { StoredDatasetStrategyExecutionRequest } from '@/features/experiments/api/types';
 import type {
   ResearchStrategyMetadata,
   ResearchStrategyName,
   StrategyParameterMetadata,
 } from '@/features/strategies/api/types';
-import type { StoredDatasetStrategyExecutionRequest } from '@/lib/api/types';
 
 export type ExecutableResearchStrategyMetadata = Omit<ResearchStrategyMetadata, 'name'> & {
   name: ResearchStrategyName;
