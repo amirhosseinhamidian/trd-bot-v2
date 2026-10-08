@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { ExperimentAnalytics } from '@/features/experiments/experiment-analytics';
-import type { ExperimentAnalyticsReport } from '@/lib/api/types';
+import type { ExperimentAnalyticsReport } from '@/features/experiments/api/types';
 
 const analytics: ExperimentAnalyticsReport = {
   experiment_id: 'experiment-1234567890abcdef',

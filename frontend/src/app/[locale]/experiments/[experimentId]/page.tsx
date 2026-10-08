@@ -1,13 +1,13 @@
 import { notFound } from 'next/navigation';
 
-import { ExperimentDetail } from '@/features/experiments/experiment-detail';
 import {
-  ApiRequestError,
   getAcceptancePolicyPresets,
   getExperimentAnalytics,
   getExperimentPerformanceSeries,
   getExperimentSummary,
-} from '@/lib/api/client';
+} from '@/features/experiments/api/client';
+import { ExperimentDetail } from '@/features/experiments/experiment-detail';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type ExperimentDetailPageProps = {
   params: Promise<{

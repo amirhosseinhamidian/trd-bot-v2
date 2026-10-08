@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 
+import { getExperiments } from '@/features/experiments/api/client';
 import SignalCatalog from '@/features/signals/signal-catalog';
-import { getExperiments, getExperimentSignals } from '@/lib/api/client';
+import { getExperimentSignals } from '@/lib/api/client';
 import type { Page, StrategySignal } from '@/lib/api/types';
 
 type SignalsPageProps = {

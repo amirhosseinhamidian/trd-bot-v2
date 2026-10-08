@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { ExperimentPerformanceCharts } from '@/features/experiments/experiment-performance-charts';
-import type { ExperimentPerformanceSeries } from '@/lib/api/types';
+import type { ExperimentPerformanceSeries } from '@/features/experiments/api/types';
 
 const performanceSeries: ExperimentPerformanceSeries = {
   experiment_id: 'experiment-1234567890abcdef',

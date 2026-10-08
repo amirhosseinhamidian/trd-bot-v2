@@ -3,13 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ExperimentReplayPanel } from '@/features/experiments/experiment-replay-panel';
-import type { ExperimentReplayVerification } from '@/lib/api/types';
+import type { ExperimentReplayVerification } from '@/features/experiments/api/types';
 
 const mocks = vi.hoisted(() => ({
   verifyExperimentReplay: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/experiments/api/client', () => ({
   verifyExperimentReplay: mocks.verifyExperimentReplay,
 }));
 

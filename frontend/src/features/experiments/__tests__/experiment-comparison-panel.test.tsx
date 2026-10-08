@@ -3,13 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import ExperimentComparisonPanel from '@/features/experiments/experiment-comparison-panel';
-import type { ExperimentComparisonResult, ExperimentSummary } from '@/lib/api/types';
+import type {
+  ExperimentComparisonResult,
+  ExperimentSummary,
+} from '@/features/experiments/api/types';
 
 const mocks = vi.hoisted(() => ({
   compareExperiments: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/experiments/api/client', () => ({
   compareExperiments: mocks.compareExperiments,
 }));
 

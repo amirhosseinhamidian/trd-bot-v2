@@ -3,6 +3,10 @@
 import { useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import type {
+  ExperimentSortDirection,
+  ExperimentSortField,
+} from '@/features/experiments/api/types';
 import { getExperimentsCopy } from '@/features/experiments/experiments-copy';
 import {
   Button,
@@ -15,7 +19,6 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
-import type { ExperimentSortDirection, ExperimentSortField } from '@/lib/api/types';
 
 export type ExperimentFilterValues = {
   datasetId: string;

@@ -1,5 +1,8 @@
 import type { PlatformLocale } from '@/platform/i18n';
-import type { ExperimentReplayCode, ExperimentReplayStatus } from '@/lib/api/types';
+import type {
+  ExperimentReplayCode,
+  ExperimentReplayStatus,
+} from '@/features/experiments/api/types';
 
 export type ExperimentReplayCopy = {
   title: string;

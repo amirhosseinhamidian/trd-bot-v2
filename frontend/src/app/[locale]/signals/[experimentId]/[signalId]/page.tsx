@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 
+import { getExperimentSummary } from '@/features/experiments/api/client';
 import SignalDetail from '@/features/signals/signal-detail';
-import { ApiRequestError, getExperimentSignal, getExperimentSummary } from '@/lib/api/client';
+import { getExperimentSignal } from '@/lib/api/client';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type SignalDetailPageProps = {
   params: Promise<{

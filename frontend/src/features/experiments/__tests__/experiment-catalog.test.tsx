@@ -3,14 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ExperimentCatalog from '@/features/experiments/experiment-catalog';
-import type { ExperimentSummary, Page } from '@/lib/api/types';
+import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getExperiments: vi.fn(),
   filterInstance: 0,
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/experiments/api/client', () => ({
   getExperiments: mocks.getExperiments,
 }));
 

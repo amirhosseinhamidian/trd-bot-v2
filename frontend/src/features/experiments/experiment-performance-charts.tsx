@@ -4,9 +4,12 @@ import {
 } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
+import type {
+  ExperimentPerformanceSeries,
+  HistoricalPerformancePoint,
+} from '@/features/experiments/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import type { ExperimentPerformanceSeries, HistoricalPerformancePoint } from '@/lib/api/types';
 
 type ExperimentPerformanceChartsProps = {
   locale: PlatformLocale;

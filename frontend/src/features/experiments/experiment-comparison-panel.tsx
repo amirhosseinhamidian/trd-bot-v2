@@ -3,6 +3,12 @@
 import { useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { compareExperiments } from '@/features/experiments/api/client';
+import type {
+  ExperimentComparisonMetric,
+  ExperimentComparisonResult,
+  ExperimentSummary,
+} from '@/features/experiments/api/types';
 import { getExperimentComparisonCopy } from '@/features/experiments/experiment-comparison-copy';
 import {
   Badge,
@@ -21,12 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
-import { compareExperiments } from '@/lib/api/client';
-import type {
-  ExperimentComparisonMetric,
-  ExperimentComparisonResult,
-  ExperimentSummary,
-} from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type ExperimentComparisonPanelProps = {

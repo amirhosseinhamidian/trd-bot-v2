@@ -5,6 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getDatasets } from '@/features/datasets/api/client';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import {
+  createExperimentExecution,
+  getExperimentExecution,
+} from '@/features/experiments/api/client';
+import type {
+  CreatedResearchExperiment,
+  ExperimentExecution,
+  StoredDatasetStrategyExecutionRequest,
+} from '@/features/experiments/api/types';
 import { getExperimentRunCopy } from '@/features/experiments/experiment-run-copy';
 import { getResearchStrategies } from '@/features/strategies/api/client';
 import type {
@@ -24,18 +35,7 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
-import {
-  ApiRequestError,
-  createExperimentExecution,
-  getDatasets,
-  getExperimentExecution,
-} from '@/lib/api/client';
-import type {
-  CreatedResearchExperiment,
-  DatasetSummary,
-  ExperimentExecution,
-  StoredDatasetStrategyExecutionRequest,
-} from '@/lib/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 import type { ExperimentRunInitialValues } from '@/lib/experiments/run-params';
 import {

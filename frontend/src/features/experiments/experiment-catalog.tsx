@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getExperiments, type ExperimentFilters } from '@/features/experiments/api/client';
+import type { ExperimentSummary } from '@/features/experiments/api/types';
 import ExperimentFilterPanel, {
   DEFAULT_EXPERIMENT_FILTERS,
   type ExperimentFilterValues,
@@ -22,8 +24,7 @@ import {
   Checkbox,
   ErrorState,
 } from '@/components/ui';
-import { getExperiments, type ExperimentFilters } from '@/lib/api/client';
-import type { ExperimentSummary, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import ExperimentComparisonPanel from '@/features/experiments/experiment-comparison-panel';
 import { getExperimentComparisonCopy } from '@/features/experiments/experiment-comparison-copy';
 import ExperimentRunForm from '@/features/experiments/experiment-run-form';

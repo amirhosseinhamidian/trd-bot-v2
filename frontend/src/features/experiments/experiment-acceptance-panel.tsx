@@ -3,6 +3,16 @@
 import { useMemo, useState } from 'react';
 
 import { getExperimentAcceptanceCopy } from '@/features/experiments/experiment-acceptance-copy';
+import {
+  getExperimentReportByPreset,
+  getExperimentReportCsv,
+} from '@/features/experiments/api/client';
+import type {
+  AcceptancePolicyPreset,
+  ExperimentAcceptanceCheck,
+  ExperimentAcceptanceOutcome,
+  PresetExperimentResearchReport,
+} from '@/features/experiments/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
@@ -15,13 +25,6 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
-import { getExperimentReportByPreset, getExperimentReportCsv } from '@/lib/api/client';
-import type {
-  AcceptancePolicyPreset,
-  ExperimentAcceptanceCheck,
-  ExperimentAcceptanceOutcome,
-  PresetExperimentResearchReport,
-} from '@/lib/api/types';
 
 type ExperimentAcceptancePanelProps = {
   experimentId: string;

@@ -1,15 +1,15 @@
 import Link from 'next/link';
 
 import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
-import type { PlatformLocale } from '@/platform/i18n';
-import { Badge, type BadgeVariant } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type {
   AcceptancePolicyPreset,
   ExperimentAnalyticsReport,
   ExperimentPerformanceSeries,
   ExperimentSummary,
-} from '@/lib/api/types';
+} from '@/features/experiments/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
+import { Badge, type BadgeVariant } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExperimentAcceptancePanel } from '@/features/experiments/experiment-acceptance-panel';
 import { ExperimentAnalytics } from '@/features/experiments/experiment-analytics';
 import { ExperimentPerformanceCharts } from '@/features/experiments/experiment-performance-charts';

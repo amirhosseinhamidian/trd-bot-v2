@@ -1,6 +1,10 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
+import type {
+  ExperimentAnalyticsReport,
+  ResearchMetricKey,
+} from '@/features/experiments/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
@@ -16,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
-import type { ExperimentAnalyticsReport, ResearchMetricKey } from '@/lib/api/types';
 
 type ExperimentAnalyticsProps = {
   analytics: ExperimentAnalyticsReport;

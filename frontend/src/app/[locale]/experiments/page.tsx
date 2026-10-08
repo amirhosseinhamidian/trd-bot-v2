@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getExperiments } from '@/features/experiments/api/client';
 import ExperimentCatalog from '@/features/experiments/experiment-catalog';
-import { getExperiments } from '@/lib/api/client';
 import {
   parseExperimentExecutionId,
   parseExperimentRunSearchParams,

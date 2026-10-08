@@ -3,6 +3,11 @@
 import { useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { verifyExperimentReplay } from '@/features/experiments/api/client';
+import type {
+  ExperimentReplayStatus,
+  ExperimentReplayVerification,
+} from '@/features/experiments/api/types';
 import { getExperimentReplayCopy } from '@/features/experiments/experiment-replay-copy';
 import {
   Badge,
@@ -13,8 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui';
-import { verifyExperimentReplay } from '@/lib/api/client';
-import type { ExperimentReplayStatus, ExperimentReplayVerification } from '@/lib/api/types';
 
 type ExperimentReplayPanelProps = {
   experimentId: string;

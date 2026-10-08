@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 
+import { getExperiments } from '@/features/experiments/api/client';
 import { getResearchStrategyVersion } from '@/features/strategies/api/client';
 import StrategyDetail from '@/features/strategies/strategy-detail';
-import { getExperiments } from '@/lib/api/client';
 import { ApiRequestError } from '@/lib/api/core/transport';
 
 type StrategyDetailPageProps = {

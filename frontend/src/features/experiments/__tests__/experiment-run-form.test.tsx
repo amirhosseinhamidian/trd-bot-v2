@@ -3,15 +3,15 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { DatasetSummary } from '@/features/datasets/api/types';
 import ExperimentRunForm from '@/features/experiments/experiment-run-form';
-import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
-import { ApiRequestError } from '@/lib/api/client';
 import type {
-  DatasetSummary,
   ExperimentExecution,
   ExperimentExecutionStatus,
-  Page,
-} from '@/lib/api/types';
+} from '@/features/experiments/api/types';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/types';
 
 const apiMocks = vi.hoisted(() => ({
   getDatasets: vi.fn(),
@@ -25,16 +25,14 @@ const navigationMocks = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api/client')>();
+vi.mock('@/features/datasets/api/client', () => ({
+  getDatasets: apiMocks.getDatasets,
+}));
 
-  return {
-    ...actual,
-    getDatasets: apiMocks.getDatasets,
-    createExperimentExecution: apiMocks.createExecution,
-    getExperimentExecution: apiMocks.getExecution,
-  };
-});
+vi.mock('@/features/experiments/api/client', () => ({
+  createExperimentExecution: apiMocks.createExecution,
+  getExperimentExecution: apiMocks.getExecution,
+}));
 
 vi.mock('@/features/strategies/api/client', () => ({
   getResearchStrategies: apiMocks.getStrategies,
