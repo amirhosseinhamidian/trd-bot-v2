@@ -455,7 +455,7 @@ export default function PortfolioDetail({
               <div className="space-y-3">
                 {timeline.items.map((event) => (
                   <Card key={event.event_id}>
-                    <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-5">
+                    <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                       <div>
                         <p className="text-xs text-app-muted">{copy.fields.eventNumber}</p>
                         <p className="mt-1 text-sm text-app-foreground">

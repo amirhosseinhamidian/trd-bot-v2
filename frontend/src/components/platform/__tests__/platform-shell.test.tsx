@@ -55,6 +55,55 @@ describe('PlatformShell', () => {
     expect(container.querySelector('main')).toHaveClass('w-full', 'min-w-0', 'px-4');
   });
 
+  it('keeps the five target viewport tiers explicit in the shell contract', () => {
+    render(
+      <PlatformShell locale="en">
+        <div>Content</div>
+      </PlatformShell>,
+    );
+
+    const main = screen.getByRole('main');
+    const sidebar = screen.getByRole('complementary', { name: 'Platform navigation' });
+    const mobileNavigation = screen.getByRole('navigation', { name: 'Mobile navigation' });
+
+    expect(main).toHaveClass(
+      'w-full',
+      'max-w-7xl',
+      'min-w-0',
+      'px-4',
+      'sm:px-6',
+      'md:pb-8',
+      'lg:px-8',
+    );
+    expect(main.parentElement).toHaveClass('min-w-0', 'lg:ps-72');
+    expect(mobileNavigation.parentElement).toHaveClass('md:hidden');
+    expect(sidebar).toHaveClass('w-72', 'md:flex', 'lg:visible', 'lg:translate-x-0');
+  });
+
+  it('puts a localized skip link first and moves focus to the main content', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <PlatformShell locale="en">
+        <button type="button">Page action</button>
+      </PlatformShell>,
+    );
+
+    await user.tab();
+
+    const skipLink = screen.getByRole('link', { name: 'Skip to main content' });
+    const main = screen.getByRole('main');
+
+    expect(skipLink).toHaveFocus();
+    expect(skipLink).toHaveAttribute('href', '#main-content');
+    expect(main).toHaveAttribute('id', 'main-content');
+    expect(main).toHaveAttribute('tabindex', '-1');
+
+    await user.click(skipLink);
+
+    expect(main).toHaveFocus();
+  });
+
   it('renders the frozen navigation groups and destinations in platform order', () => {
     render(
       <PlatformShell locale="en">
@@ -159,12 +208,23 @@ describe('PlatformShell', () => {
     const researchMenu = document.getElementById('mobile-navigation-research');
 
     expect(researchMenu).not.toBeNull();
+    expect(researchMenu).toHaveAttribute('role', 'dialog');
+    expect(researchMenu).toHaveAttribute('aria-modal', 'true');
     expect(within(researchMenu!).getByRole('link', { name: 'Datasets' })).toHaveFocus();
     expect(
       within(researchMenu!)
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual(['Datasets', 'Experiments', 'Walk-forward', 'Optimizations']);
+
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(within(researchMenu!).getByRole('button', { name: 'Close menu' })).toHaveFocus();
+
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(within(researchMenu!).getByRole('link', { name: 'Optimizations' })).toHaveFocus();
+
+    await user.tab();
+    expect(within(researchMenu!).getByRole('button', { name: 'Close menu' })).toHaveFocus();
 
     await user.keyboard('{Escape}');
 
@@ -232,6 +292,12 @@ describe('PlatformShell', () => {
       name: 'Close navigation',
     });
 
+    expect(closeButton).toHaveFocus();
+
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(within(navigation).getByRole('link', { name: 'Monitoring' })).toHaveFocus();
+
+    await user.tab();
     expect(closeButton).toHaveFocus();
 
     await user.keyboard('{Escape}');

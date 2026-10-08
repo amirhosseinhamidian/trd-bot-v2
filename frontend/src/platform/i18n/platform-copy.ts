@@ -26,6 +26,7 @@ export type PlatformCopy = {
     navigation: string;
     openNavigation: string;
     closeNavigation: string;
+    skipToContent: string;
   };
   feedback: {
     notFound: {
@@ -88,6 +89,7 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
       navigation: 'ناوبری پلتفرم',
       openNavigation: 'باز کردن ناوبری',
       closeNavigation: 'بستن ناوبری',
+      skipToContent: 'رفتن به محتوای اصلی',
     },
     feedback: {
       notFound: {
@@ -148,6 +150,7 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
       navigation: 'Platform navigation',
       openNavigation: 'Open navigation',
       closeNavigation: 'Close navigation',
+      skipToContent: 'Skip to main content',
     },
     feedback: {
       notFound: {

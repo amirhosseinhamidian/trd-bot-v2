@@ -789,7 +789,7 @@ export default function OptimizationRunForm({
               {workloadEstimate === null ? (
                 <p className="mt-3 text-sm text-app-muted">{copy.form.unavailable}</p>
               ) : (
-                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                   <div>
                     <dt className="text-app-muted">{copy.form.requested}</dt>
                     <dd className="mt-1 text-app-foreground">

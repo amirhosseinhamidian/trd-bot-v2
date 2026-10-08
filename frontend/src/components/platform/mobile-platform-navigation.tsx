@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+import { trapTabFocus } from '@/lib/utils/focus';
 import {
   getMobilePlatformNavigation,
   isMobilePlatformNavigationEntryActive,
@@ -23,6 +24,7 @@ export default function MobilePlatformNavigation({
   const [openMenu, setOpenMenu] = useState<MobilePlatformNavigationKey | null>(null);
   const triggerRefs = useRef<Partial<Record<MobilePlatformNavigationKey, HTMLButtonElement>>>({});
   const firstMenuItemRef = useRef<HTMLAnchorElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
   const copy = getPlatformCopy(locale);
   const entries = getMobilePlatformNavigation(locale);
   const openEntry = entries.find((entry) => entry.key === openMenu);
@@ -40,7 +42,10 @@ export default function MobilePlatformNavigation({
       if (event.key === 'Escape') {
         setOpenMenu(null);
         triggerRefs.current[menuKey]?.focus();
+        return;
       }
+
+      trapTabFocus(event, menuRef.current);
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -73,6 +78,9 @@ export default function MobilePlatformNavigation({
       <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
         {openEntry ? (
           <section
+            ref={menuRef}
+            role="dialog"
+            aria-modal="true"
             id={`mobile-navigation-${openEntry.key}`}
             aria-labelledby={`mobile-navigation-${openEntry.key}-title`}
             className="mx-3 mb-2 max-h-[min(70vh,32rem)] overflow-y-auto rounded-2xl border border-app-border bg-app-chrome p-3 shadow-2xl backdrop-blur-xl"

@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import MobilePlatformNavigation from '@/components/platform/mobile-platform-navigation';
 import ThemeToggle from '@/components/theme/theme-toggle';
+import { trapTabFocus } from '@/lib/utils/focus';
 import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import { getPlatformNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
 
@@ -21,6 +22,8 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const openNavigationButtonRef = useRef<HTMLButtonElement>(null);
   const closeNavigationButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
   const wasSidebarOpenRef = useRef(false);
   const pathname = usePathname();
   const copy = getPlatformCopy(locale);
@@ -41,7 +44,10 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
     function handleKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
         setIsSidebarOpen(false);
+        return;
       }
+
+      trapTabFocus(event, navigationRef.current);
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -67,6 +73,19 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
 
   return (
     <div className="min-h-screen bg-app-background text-app-foreground">
+      <a
+        href="#main-content"
+        tabIndex={isSidebarOpen ? -1 : undefined}
+        aria-hidden={isSidebarOpen ? true : undefined}
+        className="fixed start-4 top-4 z-[60] -translate-y-24 rounded-xl bg-app-accent px-4 py-3 text-sm font-semibold text-app-background shadow-2xl transition-transform focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-app-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none motion-reduce:transition-none"
+        onClick={(event) => {
+          event.preventDefault();
+          mainContentRef.current?.focus();
+        }}
+      >
+        {copy.header.skipToContent}
+      </a>
+
       {isSidebarOpen ? (
         <button
           type="button"
@@ -78,6 +97,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
       ) : null}
 
       <aside
+        ref={navigationRef}
         id={PLATFORM_NAVIGATION_ID}
         aria-label={copy.header.navigation}
         className={[
@@ -182,7 +202,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
         </div>
       </aside>
 
-      <div className="min-w-0 lg:ps-72">
+      <div inert={isSidebarOpen ? true : undefined} className="min-w-0 lg:ps-72">
         <header className="sticky top-0 z-30 border-b border-app-border bg-app-chrome px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
             <button
@@ -215,7 +235,12 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl min-w-0 px-4 pt-8 pb-28 sm:px-6 md:pb-8 lg:px-8">
+        <main
+          ref={mainContentRef}
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl min-w-0 px-4 pt-8 pb-28 focus-visible:outline-none sm:px-6 md:pb-8 lg:px-8"
+        >
           {children}
         </main>
       </div>

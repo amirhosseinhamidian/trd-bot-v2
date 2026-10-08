@@ -140,7 +140,7 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
           <CardDescription>{copy.accountingDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {accounting.map(([label, value, isPnl]) => (
               <div
                 key={label}
@@ -239,7 +239,7 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
         <CardContent className="space-y-5">
           {evidence ? (
             <>
-              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {[
                   [copy.fields.rank, String(evidence.ranking.rank)],
                   [copy.fields.rankingScore, evidence.ranking.total_score],
@@ -298,7 +298,7 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
           <div className="mt-4 space-y-3">
             {report.events.map((event) => (
               <Card key={event.event_id}>
-                <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-5">
+                <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                   <div>
                     <p className="text-xs text-app-muted">{copy.fields.eventNumber}</p>
                     <p className="mt-1 text-sm text-app-foreground">{event.sequence_number}</p>
