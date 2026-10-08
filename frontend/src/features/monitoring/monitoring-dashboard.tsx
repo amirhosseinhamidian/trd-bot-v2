@@ -272,40 +272,112 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
                 {operations.jobs.recent_jobs.length === 0 ? (
                   <p className="px-5 py-8 text-sm text-app-muted">{copy.noRecentJobs}</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{copy.jobId}</TableHead>
-                        <TableHead>{copy.kind}</TableHead>
-                        <TableHead>{copy.status}</TableHead>
-                        <TableHead>{copy.progress}</TableHead>
-                        <TableHead>{copy.error}</TableHead>
-                        <TableHead>{copy.updatedAt}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    <ul
+                      aria-label={copy.recentJobs}
+                      className="space-y-3 p-4 md:hidden"
+                      data-testid="recent-jobs-mobile-list"
+                    >
                       {operations.jobs.recent_jobs.map((job) => (
-                        <TableRow key={job.job_id}>
-                          <TableCell dir="ltr" className="font-mono text-xs">
-                            {job.job_id}
-                          </TableCell>
-                          <TableCell dir="ltr" className="text-xs">
-                            {job.kind}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={jobStatusVariants[job.status]}>
+                        <li
+                          key={job.job_id}
+                          className="min-w-0 rounded-xl border border-app-border bg-app-surface p-4"
+                        >
+                          <div className="flex min-w-0 items-start justify-between gap-3">
+                            <p
+                              dir="ltr"
+                              className="min-w-0 text-left font-mono text-xs break-all text-app-foreground"
+                            >
+                              <span className="sr-only">{copy.jobId}: </span>
+                              {job.job_id}
+                            </p>
+
+                            <Badge className="shrink-0" variant={jobStatusVariants[job.status]}>
+                              <span className="sr-only">{copy.status}: </span>
                               {copy.jobStatuses[job.status]}
                             </Badge>
-                          </TableCell>
-                          <TableCell dir="ltr">{job.progress_percent}%</TableCell>
-                          <TableCell dir="ltr" className="text-xs">
-                            {job.error_code ?? '—'}
-                          </TableCell>
-                          <TableCell>{formatDate(job.updated_at, locale)}</TableCell>
-                        </TableRow>
+                          </div>
+
+                          <dl className="mt-4 grid gap-3 text-xs sm:grid-cols-2">
+                            <div className="min-w-0">
+                              <dt className="text-app-muted">{copy.kind}</dt>
+                              <dd
+                                dir="ltr"
+                                className="mt-1 text-left break-all text-app-foreground"
+                              >
+                                {job.kind}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-app-muted">{copy.progress}</dt>
+                              <dd
+                                dir="ltr"
+                                className="mt-1 text-left font-semibold text-app-foreground tabular-nums"
+                              >
+                                {job.progress_percent}%
+                              </dd>
+                            </div>
+                            <div className="min-w-0">
+                              <dt className="text-app-muted">{copy.error}</dt>
+                              <dd
+                                dir="ltr"
+                                className="mt-1 text-left break-all text-app-foreground"
+                              >
+                                {job.error_code ?? '—'}
+                              </dd>
+                            </div>
+                            <div>
+                              <dt className="text-app-muted">{copy.updatedAt}</dt>
+                              <dd className="mt-1 text-app-foreground">
+                                {formatDate(job.updated_at, locale)}
+                              </dd>
+                            </div>
+                          </dl>
+                        </li>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </ul>
+
+                    <div className="hidden min-w-0 md:block" data-testid="recent-jobs-table">
+                      <Table
+                        scrollLabel={copy.recentJobs}
+                        className="min-w-[52rem]"
+                        containerClassName="rounded-none border-0"
+                      >
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{copy.jobId}</TableHead>
+                            <TableHead>{copy.kind}</TableHead>
+                            <TableHead>{copy.status}</TableHead>
+                            <TableHead>{copy.progress}</TableHead>
+                            <TableHead>{copy.error}</TableHead>
+                            <TableHead>{copy.updatedAt}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {operations.jobs.recent_jobs.map((job) => (
+                            <TableRow key={job.job_id}>
+                              <TableCell dir="ltr" className="font-mono text-xs">
+                                {job.job_id}
+                              </TableCell>
+                              <TableCell dir="ltr" className="text-xs">
+                                {job.kind}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={jobStatusVariants[job.status]}>
+                                  {copy.jobStatuses[job.status]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell dir="ltr">{job.progress_percent}%</TableCell>
+                              <TableCell dir="ltr" className="text-xs">
+                                {job.error_code ?? '—'}
+                              </TableCell>
+                              <TableCell>{formatDate(job.updated_at, locale)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </div>
 

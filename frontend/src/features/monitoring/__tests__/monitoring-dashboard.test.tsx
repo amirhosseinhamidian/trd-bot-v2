@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { MonitoringSummary } from '@/features/monitoring/api/types';
@@ -75,9 +75,30 @@ describe('MonitoringDashboard', () => {
     expect(screen.getByText('25%')).toBeInTheDocument();
     expect(screen.getByText('provider_unavailable')).toBeInTheDocument();
     expect(screen.getAllByText('job_handler_failed').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText('job-1234567890abcdef1234')).toBeInTheDocument();
+    expect(screen.getAllByText('job-1234567890abcdef1234')).toHaveLength(2);
     expect(screen.getByText(/Overall status: Critical/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /retry|cancel/i })).toBeNull();
+  });
+
+  it('renders recent jobs as mobile cards and a labeled desktop table', () => {
+    render(<MonitoringDashboard locale="en" summary={summary} />);
+
+    const mobileList = screen.getByTestId('recent-jobs-mobile-list');
+    const mobileJob = within(mobileList).getByRole('listitem');
+    const desktopTable = screen.getByTestId('recent-jobs-table');
+    const scrollRegion = within(desktopTable).getByRole('region', { name: 'Recent jobs' });
+
+    expect(mobileList).toHaveClass('md:hidden');
+    expect(mobileJob).toHaveClass('min-w-0');
+    expect(within(mobileJob).getByText('job-1234567890abcdef1234')).toHaveClass(
+      'min-w-0',
+      'break-all',
+    );
+    expect(within(mobileJob).getByText('market_data_import')).toHaveClass('break-all');
+    expect(desktopTable).toHaveClass('hidden', 'min-w-0', 'md:block');
+    expect(scrollRegion).toHaveAttribute('tabindex', '0');
+    expect(scrollRegion).toHaveClass('overflow-x-auto', 'rounded-none', 'border-0');
+    expect(within(desktopTable).getByRole('table')).toHaveClass('min-w-[52rem]');
   });
 
   it('renders legacy capacity summaries without an operations block', () => {
