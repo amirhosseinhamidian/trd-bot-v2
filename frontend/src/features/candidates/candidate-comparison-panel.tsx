@@ -12,11 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui';
+import { compareCandidates } from '@/features/candidates/api/client';
+import type {
+  CandidateComparisonResult,
+  CandidateProjectionSummary,
+} from '@/features/candidates/api/types';
 import { getCandidateComparisonCopy } from '@/features/candidates/candidate-comparison-copy';
 import { getCandidateCopy } from '@/features/candidates/candidate-copy';
 import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
-import { compareCandidates } from '@/lib/api/client';
-import type { CandidateComparisonResult, CandidateProjectionSummary } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateComparisonPanelProps = {

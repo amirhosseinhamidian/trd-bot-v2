@@ -8,7 +8,7 @@ import type {
   CandidateReplayStatus,
   CandidateRiskDecision,
   CandidateStatus,
-} from '@/lib/api/types';
+} from '@/features/candidates/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type CandidateLineageReason =

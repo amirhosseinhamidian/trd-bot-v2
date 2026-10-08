@@ -1,16 +1,16 @@
 import Link from 'next/link';
 
-import {
-  getCandidateDetailCopy,
-  type CandidateLineageReason,
-} from '@/features/candidates/candidate-detail-copy';
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type {
   CandidateDecisionLineage,
   CandidateDecisionLineageNode,
   CandidateExitReason,
   CandidateRiskDecision,
-} from '@/lib/api/types';
+} from '@/features/candidates/api/types';
+import {
+  getCandidateDetailCopy,
+  type CandidateLineageReason,
+} from '@/features/candidates/candidate-detail-copy';
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateDecisionLineageViewProps = {

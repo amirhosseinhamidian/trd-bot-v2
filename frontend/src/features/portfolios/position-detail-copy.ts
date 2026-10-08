@@ -3,6 +3,8 @@ import type {
   CandidateDecisionLineageStatus,
   CandidateExitReason,
   CandidateRiskDecision,
+} from '@/features/candidates/api/types';
+import type {
   PortfolioTimelineEventType,
   PositionLineageStatus,
   SimulatedPositionSide,

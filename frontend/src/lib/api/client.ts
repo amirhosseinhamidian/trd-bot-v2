@@ -1,11 +1,7 @@
 import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
-import { getJson, postJson } from '@/lib/api/core/transport';
+import { getJson } from '@/lib/api/core/transport';
 import type {
   BackgroundJobSummary,
-  CandidateComparisonResult,
-  CandidateJournalOccurrence,
-  CandidateProjectionDetail,
-  CandidateProjectionSummary,
   MonitoringSummary,
   Page,
   PositionDetailReport,
@@ -90,6 +86,13 @@ export {
   getExperimentSignals,
   type ExperimentSignalFilters,
 } from '@/features/signals/api/client';
+export {
+  compareCandidates,
+  getCandidateLineage,
+  getCandidateProjection,
+  getCandidateProjections,
+  type CandidateProjectionFilters,
+} from '@/features/candidates/api/client';
 
 export interface ResearchActivityFilters {
   activityType?: ResearchActivityType;
@@ -240,51 +243,5 @@ export async function getSimulatedPortfolioTimeline(
 
   return getJson<Page<PortfolioTimelineEvent>>(
     `/api/v1/research/portfolios/${encodeURIComponent(portfolioId)}/timeline?${params.toString()}`,
-  );
-}
-
-export interface CandidateProjectionFilters {
-  limit?: number;
-  offset?: number;
-}
-
-export async function getCandidateProjections(
-  filters: CandidateProjectionFilters = {},
-): Promise<Page<CandidateProjectionSummary>> {
-  const params = new URLSearchParams();
-  params.set('limit', String(filters.limit ?? 12));
-  params.set('offset', String(filters.offset ?? 0));
-
-  return getJson<Page<CandidateProjectionSummary>>(
-    `/api/v1/research/candidates?${params.toString()}`,
-  );
-}
-
-export async function compareCandidates(
-  candidateIds: string[],
-): Promise<CandidateComparisonResult> {
-  return postJson<CandidateComparisonResult>('/api/v1/research/candidates/compare', {
-    candidate_ids: candidateIds,
-  });
-}
-
-export async function getCandidateProjection(
-  candidateId: string,
-): Promise<CandidateProjectionDetail> {
-  return getJson<CandidateProjectionDetail>(
-    `/api/v1/research/candidates/${encodeURIComponent(candidateId)}`,
-  );
-}
-
-export async function getCandidateLineage(
-  candidateId: string,
-  filters: CandidateProjectionFilters = {},
-): Promise<Page<CandidateJournalOccurrence>> {
-  const params = new URLSearchParams();
-  params.set('limit', String(filters.limit ?? 10));
-  params.set('offset', String(filters.offset ?? 0));
-
-  return getJson<Page<CandidateJournalOccurrence>>(
-    `/api/v1/research/candidates/${encodeURIComponent(candidateId)}/lineage?${params.toString()}`,
   );
 }

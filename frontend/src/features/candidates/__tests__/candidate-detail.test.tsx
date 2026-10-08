@@ -2,19 +2,19 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import CandidateDetail from '@/features/candidates/candidate-detail';
 import type {
   CandidateDecisionLineage,
   CandidateJournalOccurrence,
   CandidateProjectionDetail,
-  Page,
-} from '@/lib/api/types';
+} from '@/features/candidates/api/types';
+import CandidateDetail from '@/features/candidates/candidate-detail';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getCandidateLineage: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/candidates/api/client', () => ({
   getCandidateLineage: mocks.getCandidateLineage,
 }));
 

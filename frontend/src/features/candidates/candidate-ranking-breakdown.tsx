@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui';
+import type { CandidateDecisionEvidence } from '@/features/candidates/api/types';
 import { getCandidateCopy } from '@/features/candidates/candidate-copy';
-import type { CandidateDecisionEvidence } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type CandidateRankingBreakdownProps = {

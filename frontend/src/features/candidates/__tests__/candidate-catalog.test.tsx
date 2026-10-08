@@ -2,22 +2,22 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import CandidateCatalog from '@/features/candidates/candidate-catalog';
 import type {
   CandidateComparisonResult,
   CandidateDecisionEvidence,
   CandidateJournalOccurrence,
   CandidateProjectionSummary,
   CandidateRiskCheck,
-  Page,
-} from '@/lib/api/types';
+} from '@/features/candidates/api/types';
+import CandidateCatalog from '@/features/candidates/candidate-catalog';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   compareCandidates: vi.fn(),
   getCandidateProjections: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/candidates/api/client', () => ({
   compareCandidates: mocks.compareCandidates,
   getCandidateProjections: mocks.getCandidateProjections,
 }));

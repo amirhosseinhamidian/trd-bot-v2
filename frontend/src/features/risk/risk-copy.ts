@@ -1,4 +1,4 @@
-import type { CandidateRiskCheckName } from '@/lib/api/types';
+import type { CandidateRiskCheckName } from '@/features/candidates/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type RiskCopy = {

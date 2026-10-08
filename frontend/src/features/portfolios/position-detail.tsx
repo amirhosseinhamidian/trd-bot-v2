@@ -3,13 +3,13 @@ import Link from 'next/link';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { getPositionDetailCopy } from '@/features/portfolios/position-detail-copy';
 import type {
   CandidateDecisionLineageNode,
   CandidateExitReason,
   CandidateRiskDecision,
-  PositionDetailReport,
-} from '@/lib/api/types';
+} from '@/features/candidates/api/types';
+import { getPositionDetailCopy } from '@/features/portfolios/position-detail-copy';
+import type { PositionDetailReport } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailProps = {

@@ -18,12 +18,16 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { getCandidateProjections } from '@/features/candidates/api/client';
+import type {
+  CandidateDecisionEvidence,
+  CandidateProjectionSummary,
+} from '@/features/candidates/api/types';
 import { getCandidateComparisonCopy } from '@/features/candidates/candidate-comparison-copy';
 import CandidateComparisonPanel from '@/features/candidates/candidate-comparison-panel';
 import { getCandidateCopy } from '@/features/candidates/candidate-copy';
 import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
-import { getCandidateProjections } from '@/lib/api/client';
-import type { CandidateDecisionEvidence, CandidateProjectionSummary, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 

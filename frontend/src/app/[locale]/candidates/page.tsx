@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getCandidateProjections } from '@/features/candidates/api/client';
 import CandidateCatalog from '@/features/candidates/candidate-catalog';
-import { getCandidateProjections } from '@/lib/api/client';
 
 type CandidatesPageProps = {
   params: Promise<{
