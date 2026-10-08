@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getResearchActivity, getResearchOverview } from '@/features/overview/api/client';
 import OverviewDashboard from '@/features/overview/overview-dashboard';
-import { getResearchActivity, getResearchOverview } from '@/lib/api/client';
 
 type LocalePageProps = {
   params: Promise<{

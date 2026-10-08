@@ -3,6 +3,8 @@
 import { useRef, useState } from 'react';
 
 import { type ActivityPeriod, getActivityCopy } from '@/features/overview/activity-copy';
+import { getResearchActivity } from '@/features/overview/api/client';
+import type { ResearchActivityItem, ResearchActivityType } from '@/features/overview/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 import {
   Badge,
@@ -18,8 +20,7 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
-import { getResearchActivity } from '@/lib/api/client';
-import type { Page, ResearchActivityItem, ResearchActivityType } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 const PAGE_SIZE = 10;

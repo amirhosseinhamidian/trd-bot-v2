@@ -1,8 +1,13 @@
 import ActivityFeed from '@/features/overview/activity-feed';
+import type {
+  ResearchActivityItem,
+  ResearchOverview,
+  ResearchStage,
+} from '@/features/overview/api/types';
 import { getOverviewCopy } from '@/features/overview/overview-copy';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
-import type { Page, ResearchActivityItem, ResearchOverview, ResearchStage } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 
