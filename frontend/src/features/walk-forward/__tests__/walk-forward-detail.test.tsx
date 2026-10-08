@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
@@ -116,5 +116,11 @@ describe('WalkForwardDetail', () => {
     expect(screen.getByText('No trades')).toBeInTheDocument();
     expect(screen.getByText('Benchmark drawdown')).toBeInTheDocument();
     expect(screen.getByText('1 - normalized_dispersion')).toBeInTheDocument();
+
+    const foldsRegion = screen.getByRole('region', {
+      name: 'Walk-forward fold details table; scroll horizontally to view all columns',
+    });
+    expect(foldsRegion).toHaveAttribute('tabindex', '0');
+    expect(within(foldsRegion).getByRole('table')).toHaveClass('min-w-[48rem]');
   });
 });

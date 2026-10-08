@@ -97,7 +97,10 @@ const copies = {
       noRejected: 'No completed trial was rejected by the robustness policy.',
       configuration: 'Execution configuration',
       configurationDescription: 'Reproducible backtest and walk-forward inputs.',
-      tableScroll: 'Scroll the optimization evidence table horizontally',
+      planTableScroll: 'Parameter plan table; scroll horizontally to view all columns',
+      rankingTableScroll:
+        'Out-of-sample robustness ranking table; scroll horizontally to view all columns',
+      rejectedTableScroll: 'Rejected trial evidence table; scroll horizontally to view all columns',
       fields: {
         executionId: 'Execution ID',
         datasetId: 'Dataset ID',
@@ -241,7 +244,11 @@ const copies = {
       noRejected: 'هیچ Trial تکمیل‌شده‌ای توسط سیاست پایداری رد نشده است.',
       configuration: 'پیکربندی اجرا',
       configurationDescription: 'ورودی‌های قابل بازتولید Backtest و Walk-forward.',
-      tableScroll: 'جدول شواهد بهینه‌سازی را افقی پیمایش کنید',
+      planTableScroll: 'جدول برنامه پارامترها؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
+      rankingTableScroll:
+        'جدول رتبه‌بندی پایداری خارج از نمونه؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
+      rejectedTableScroll:
+        'جدول شواهد Trialهای ردشده؛ برای مشاهده همه ستون‌ها به‌صورت افقی پیمایش کنید',
       fields: {
         executionId: 'شناسه اجرا',
         datasetId: 'شناسه دیتاست',

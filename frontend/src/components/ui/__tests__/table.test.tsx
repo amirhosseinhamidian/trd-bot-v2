@@ -28,7 +28,12 @@ describe('Table', () => {
 
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveClass(
+      'min-w-0',
+      'max-w-full',
+      'touch-pan-x',
+      'touch-pan-y',
       'overflow-x-auto',
+      'overflow-y-hidden',
       'overscroll-x-contain',
       '[scrollbar-gutter:stable]',
       'focus-visible:border-app-control-border',

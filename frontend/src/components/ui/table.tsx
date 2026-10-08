@@ -21,7 +21,7 @@ export const Table = forwardRef<HTMLTableElement, TableProps>(
       tabIndex={scrollLabel ? 0 : undefined}
       dir={dir}
       className={cn(
-        'relative w-full [scrollbar-gutter:stable] overflow-x-auto overscroll-x-contain rounded-xl border border-app-border bg-app-surface focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset',
+        'relative w-full max-w-full min-w-0 touch-pan-x touch-pan-y [scrollbar-gutter:stable] overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-xl border border-app-border bg-app-surface focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset',
         containerClassName,
       )}
     >

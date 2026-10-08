@@ -355,7 +355,7 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
             />
           </dl>
 
-          <Table scrollLabel={copy.detail.tableScroll} className="min-w-[38rem]">
+          <Table scrollLabel={copy.detail.planTableScroll} className="min-w-[38rem]">
             <TableHeader>
               <TableRow>
                 <TableHead>{copy.detail.fields.trial}</TableHead>
@@ -410,7 +410,7 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
                 <Metric label={copy.detail.fields.scoreVersion} value={ranking.score_version} />
               </dl>
 
-              <Table scrollLabel={copy.detail.tableScroll} className="min-w-[92rem]">
+              <Table scrollLabel={copy.detail.rankingTableScroll} className="min-w-[92rem]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>#</TableHead>
@@ -498,7 +498,7 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
               {copy.detail.noRejected}
             </p>
           ) : (
-            <Table scrollLabel={copy.detail.tableScroll} className="min-w-[52rem]">
+            <Table scrollLabel={copy.detail.rejectedTableScroll} className="min-w-[52rem]">
               <TableHeader>
                 <TableRow>
                   <TableHead>{copy.detail.fields.trial}</TableHead>

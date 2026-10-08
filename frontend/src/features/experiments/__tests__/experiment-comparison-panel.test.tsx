@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -104,5 +104,11 @@ describe('ExperimentComparisonPanel', () => {
     expect(await screen.findByText('RSI period=14')).toBeInTheDocument();
     expect(screen.getByText('Oversold threshold=30')).toBeInTheDocument();
     expect(screen.getByText('Fast moving-average period=9')).toBeInTheDocument();
+
+    const rankingRegion = screen.getByRole('region', {
+      name: 'Historical experiment ranking table; scroll horizontally to view all columns',
+    });
+    expect(rankingRegion).toHaveAttribute('tabindex', '0');
+    expect(within(rankingRegion).getByRole('table')).toHaveClass('min-w-[44rem]');
   });
 });

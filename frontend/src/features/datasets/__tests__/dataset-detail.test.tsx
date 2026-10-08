@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import DatasetDetail from '@/features/datasets/dataset-detail';
@@ -117,6 +117,12 @@ describe('DatasetDetail', () => {
     expect(
       screen.getByText('No data-quality issues were recorded when this snapshot was created.'),
     ).toBeInTheDocument();
+
+    const candlesRegion = screen.getByRole('region', {
+      name: 'Historical candles table; scroll horizontally to view all columns',
+    });
+    expect(candlesRegion).toHaveAttribute('tabindex', '0');
+    expect(within(candlesRegion).getByRole('table')).toHaveClass('min-w-[58rem]');
   });
 
   it('labels legacy datasets without inventing missing provenance or quality evidence', () => {

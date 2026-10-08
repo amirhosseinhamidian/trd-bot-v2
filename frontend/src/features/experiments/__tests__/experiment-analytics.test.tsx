@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { ExperimentAnalytics } from '@/features/experiments/experiment-analytics';
@@ -104,6 +104,17 @@ describe('ExperimentAnalytics', () => {
     expect(screen.getByText('strategy_net_pnl / starting_balance')).toBeInTheDocument();
     expect(screen.getByText('Worst trade')).toBeInTheDocument();
     expect(screen.getByText('-20')).toBeInTheDocument();
+
+    const returnsRegion = screen.getByRole('region', {
+      name: 'Experiment monthly returns table; scroll horizontally to view all columns',
+    });
+    const drawdownRegion = screen.getByRole('region', {
+      name: 'Drawdown episodes table; scroll horizontally to view all columns',
+    });
+    expect(returnsRegion).toHaveAttribute('tabindex', '0');
+    expect(drawdownRegion).toHaveAttribute('tabindex', '0');
+    expect(within(returnsRegion).getByRole('table')).toHaveClass('min-w-[44rem]');
+    expect(within(drawdownRegion).getByRole('table')).toHaveClass('min-w-[48rem]');
   });
 
   it('renders the explicit no-drawdown state', () => {

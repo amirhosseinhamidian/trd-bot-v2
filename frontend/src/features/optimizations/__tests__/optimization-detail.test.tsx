@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import OptimizationDetail from '@/features/optimizations/optimization-detail';
@@ -33,5 +33,35 @@ describe('OptimizationDetail', () => {
     ).toHaveAttribute('href', '/en/walk-forward/walk-forward-execution-fedcba0987654321');
     expect(screen.getAllByText('Fast moving-average period=9').length).toBeGreaterThan(0);
     expect(screen.getByText('80%')).toBeInTheDocument();
+  });
+
+  it('keeps each heavy research table in a uniquely labeled scroll region', () => {
+    render(<OptimizationDetail locale="en" initialExecution={successfulOptimizationExecution} />);
+
+    const planRegion = screen.getByRole('region', {
+      name: 'Parameter plan table; scroll horizontally to view all columns',
+    });
+    const rankingRegion = screen.getByRole('region', {
+      name: 'Out-of-sample robustness ranking table; scroll horizontally to view all columns',
+    });
+    const rejectedRegion = screen.getByRole('region', {
+      name: 'Rejected trial evidence table; scroll horizontally to view all columns',
+    });
+
+    for (const region of [planRegion, rankingRegion, rejectedRegion]) {
+      expect(region).toHaveAttribute('tabindex', '0');
+      expect(region).toHaveClass(
+        'min-w-0',
+        'max-w-full',
+        'touch-pan-x',
+        'touch-pan-y',
+        'overflow-x-auto',
+        'overflow-y-hidden',
+      );
+    }
+
+    expect(within(planRegion).getByRole('table')).toHaveClass('min-w-[38rem]');
+    expect(within(rankingRegion).getByRole('table')).toHaveClass('min-w-[92rem]');
+    expect(within(rejectedRegion).getByRole('table')).toHaveClass('min-w-[52rem]');
   });
 });
