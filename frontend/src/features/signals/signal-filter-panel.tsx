@@ -13,12 +13,9 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
+import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { ExperimentSignalSortDirection, SignalDirection } from '@/features/signals/api/types';
 import { getSignalsCopy } from '@/features/signals/signals-copy';
-import type {
-  ExperimentSignalSortDirection,
-  ExperimentSummary,
-  SignalDirection,
-} from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 

@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { SignalDirection, StrategySignal } from '@/features/signals/api/types';
 import { getSignalsCopy } from '@/features/signals/signals-copy';
-import type { ExperimentSummary, SignalDirection, StrategySignal } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 

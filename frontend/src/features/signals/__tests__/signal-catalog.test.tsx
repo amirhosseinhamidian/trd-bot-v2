@@ -1,9 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { StrategySignal } from '@/features/signals/api/types';
 import SignalCatalog from '@/features/signals/signal-catalog';
 import SignalDetail from '@/features/signals/signal-detail';
-import type { ExperimentSummary, Page, StrategySignal } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 
 vi.mock('@/features/signals/signal-filter-panel', () => ({
   default: function MockSignalFilterPanel() {

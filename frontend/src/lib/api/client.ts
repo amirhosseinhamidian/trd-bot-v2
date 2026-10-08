@@ -17,9 +17,6 @@ import type {
   SimulatedPortfolio,
   SimulatedPortfolioSummary,
   SimulatedPosition,
-  ExperimentSignalSortDirection,
-  SignalDirection,
-  StrategySignal,
 } from '@/lib/api/types';
 
 export { API_BASE_URL, ApiRequestError } from '@/lib/api/core/transport';
@@ -88,20 +85,16 @@ export {
   getOptimizationExecutions,
   type OptimizationExecutionFilters,
 } from '@/features/optimizations/api/client';
+export {
+  getExperimentSignal,
+  getExperimentSignals,
+  type ExperimentSignalFilters,
+} from '@/features/signals/api/client';
 
 export interface ResearchActivityFilters {
   activityType?: ResearchActivityType;
   fromTime?: string;
   toTime?: string;
-  limit?: number;
-  offset?: number;
-}
-
-export interface ExperimentSignalFilters {
-  direction?: SignalDirection;
-  candleCloseTimeFrom?: string;
-  candleCloseTimeTo?: string;
-  sortDirection?: ExperimentSignalSortDirection;
   limit?: number;
   offset?: number;
 }
@@ -112,46 +105,6 @@ export async function getResearchOverview(): Promise<ResearchOverview> {
 
 export async function getBackgroundJob(jobId: string): Promise<BackgroundJobSummary> {
   return getJson<BackgroundJobSummary>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
-}
-
-export async function getExperimentSignals(
-  experimentId: string,
-  filters: ExperimentSignalFilters = {},
-): Promise<Page<StrategySignal>> {
-  const encodedExperimentId = encodeURIComponent(experimentId);
-  const params = new URLSearchParams();
-
-  params.set('limit', String(filters.limit ?? 20));
-  params.set('offset', String(filters.offset ?? 0));
-  params.set('sort_direction', filters.sortDirection ?? 'desc');
-
-  if (filters.direction) {
-    params.set('direction', filters.direction);
-  }
-
-  if (filters.candleCloseTimeFrom) {
-    params.set('candle_close_time_from', filters.candleCloseTimeFrom);
-  }
-
-  if (filters.candleCloseTimeTo) {
-    params.set('candle_close_time_to', filters.candleCloseTimeTo);
-  }
-
-  return getJson<Page<StrategySignal>>(
-    `/api/v1/research/experiments/${encodedExperimentId}/signals?${params.toString()}`,
-  );
-}
-
-export async function getExperimentSignal(
-  experimentId: string,
-  signalId: string,
-): Promise<StrategySignal> {
-  const encodedExperimentId = encodeURIComponent(experimentId);
-  const encodedSignalId = encodeURIComponent(signalId);
-
-  return getJson<StrategySignal>(
-    `/api/v1/research/experiments/${encodedExperimentId}/signals/${encodedSignalId}`,
-  );
 }
 
 export async function getResearchActivity(

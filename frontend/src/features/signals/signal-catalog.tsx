@@ -2,6 +2,9 @@
 
 import { useRef, useState } from 'react';
 
+import type { ExperimentSummary } from '@/features/experiments/api/types';
+import { getExperimentSignals, type ExperimentSignalFilters } from '@/features/signals/api/client';
+import type { SignalDirection, StrategySignal } from '@/features/signals/api/types';
 import SignalFilterPanel, { type SignalFilterValues } from '@/features/signals/signal-filter-panel';
 import { getSignalsCopy } from '@/features/signals/signals-copy';
 import {
@@ -17,8 +20,7 @@ import {
   BadgeVariant,
   ErrorState,
 } from '@/components/ui';
-import { getExperimentSignals, type ExperimentSignalFilters } from '@/lib/api/client';
-import type { ExperimentSummary, Page, SignalDirection, StrategySignal } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 import { PageFrame } from '@/components/platform/page-frame';

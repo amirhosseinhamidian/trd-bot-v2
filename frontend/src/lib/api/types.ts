@@ -140,6 +140,12 @@ export type {
   OptimizationTrialEvaluation,
   OptimizationTrialRejectionReason,
 } from '@/features/optimizations/api/types';
+export type {
+  ExperimentSignalSortDirection,
+  SignalDirection,
+  StrategyFeature,
+  StrategySignal,
+} from '@/features/signals/api/types';
 
 export type ResearchStage =
   'empty' | 'data_available' | 'experiments_available' | 'walk_forward_available';
@@ -307,31 +313,6 @@ export interface MonitoringSummary {
   active_recommendations: ArchitectureRecommendation[];
   operations: OperationalMonitoringSummary | null;
   interpretation: 'capacity_planning_only';
-}
-
-export type SignalDirection = 'long' | 'short' | 'neutral';
-
-export type ExperimentSignalSortDirection = 'asc' | 'desc';
-
-export interface StrategyFeature {
-  name: string;
-  value: string;
-}
-
-export interface StrategySignal {
-  signal_id: string;
-  strategy_name: string;
-  strategy_version: string;
-  dataset_id: string;
-  pair: TradingPair;
-  timeframe: DatasetTimeframe;
-  candle_open_time: string;
-  candle_close_time: string;
-  generated_at: string;
-  direction: SignalDirection;
-  score: string;
-  reason: string;
-  features: StrategyFeature[];
 }
 
 export type SimulatedPortfolioMode = 'paper' | 'shadow';
