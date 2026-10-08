@@ -134,36 +134,80 @@ export function PortfolioAnalytics({
           {report.trades_by_pair.length === 0 ? (
             <p>{copy.empty}</p>
           ) : (
-            <Table scrollLabel={copy.pairs} aria-label={copy.pairs}>
-              <TableHeader>
-                <TableRow>
-                  {[
-                    copy.pair,
-                    copy.closed_count,
-                    copy.open_count,
-                    copy.closed_net_pnl,
-                    copy.fees_paid,
-                  ].map((label) => (
-                    <TableHead key={label}>{label}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              <ul
+                aria-label={copy.pairs}
+                className="space-y-3 md:hidden"
+                data-testid="trades-by-pair-mobile-list"
+              >
                 {report.trades_by_pair.map((item) => (
-                  <TableRow
+                  <li
                     key={`${item.pair.base_asset}/${item.pair.quote_asset}/${item.pair.market_type}`}
+                    className="min-w-0 rounded-xl border border-app-border bg-app-surface p-4"
                   >
-                    <TableHead className="h-auto" scope="row">
+                    <p
+                      dir="ltr"
+                      className="min-w-0 text-left font-semibold break-all text-app-foreground"
+                    >
+                      <span className="sr-only">{copy.pair}: </span>
                       {item.pair.base_asset}/{item.pair.quote_asset}
-                    </TableHead>
-                    <TableCell>{value(item.closed_count)}</TableCell>
-                    <TableCell>{value(item.open_count)}</TableCell>
-                    <TableCell>{value(item.net_realized_pnl)}</TableCell>
-                    <TableCell>{value(item.fees_paid)}</TableCell>
-                  </TableRow>
+                    </p>
+
+                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      {[
+                        [copy.closed_count, item.closed_count],
+                        [copy.open_count, item.open_count],
+                        [copy.closed_net_pnl, item.net_realized_pnl],
+                        [copy.fees_paid, item.fees_paid],
+                      ].map(([label, raw]) => (
+                        <div key={label} className="min-w-0">
+                          <dt className="text-xs leading-5 text-app-muted">{label}</dt>
+                          <dd
+                            dir="ltr"
+                            className="mt-1 text-left font-semibold break-all text-app-foreground tabular-nums"
+                          >
+                            {value(raw)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
                 ))}
-              </TableBody>
-            </Table>
+              </ul>
+
+              <div className="hidden min-w-0 md:block" data-testid="trades-by-pair-table">
+                <Table scrollLabel={copy.pairs} aria-label={copy.pairs} className="min-w-[40rem]">
+                  <TableHeader>
+                    <TableRow>
+                      {[
+                        copy.pair,
+                        copy.closed_count,
+                        copy.open_count,
+                        copy.closed_net_pnl,
+                        copy.fees_paid,
+                      ].map((label) => (
+                        <TableHead key={label}>{label}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.trades_by_pair.map((item) => (
+                      <TableRow
+                        key={`${item.pair.base_asset}/${item.pair.quote_asset}/${item.pair.market_type}`}
+                      >
+                        <TableHead className="h-auto" scope="row">
+                          {item.pair.base_asset}/{item.pair.quote_asset}
+                        </TableHead>
+                        <TableCell>{value(item.closed_count)}</TableCell>
+                        <TableCell>{value(item.open_count)}</TableCell>
+                        <TableCell>{value(item.net_realized_pnl)}</TableCell>
+                        <TableCell>{value(item.fees_paid)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </section>
         <section>

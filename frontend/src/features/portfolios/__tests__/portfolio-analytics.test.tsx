@@ -88,12 +88,34 @@ describe('PortfolioAnalytics', () => {
     expect(screen.getByText('Portfolio performance')).toBeInTheDocument();
     expect(screen.getByText(/Net PnL = closed net PnL/)).toBeInTheDocument();
     expect(screen.getByText(/no losing closed trades/)).toBeInTheDocument();
-    const pairs = screen.getByRole('table', { name: 'Trades by pair' });
-    expect(screen.getByRole('region', { name: 'Trades by pair' })).toHaveAttribute('tabindex', '0');
+    const pairsTable = screen.getByTestId('trades-by-pair-table');
+    const pairs = within(pairsTable).getByRole('table', { name: 'Trades by pair' });
+    expect(within(pairsTable).getByRole('region', { name: 'Trades by pair' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
     expect(within(pairs).getByText('19.58')).toBeInTheDocument();
     expect(within(pairs).getByText('ETH/USDT')).toBeInTheDocument();
     expect(screen.getByText('Unknown: 1')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /buy|sell|order/i })).toBeNull();
+  });
+
+  it('renders pair analytics as mobile cards and a protected desktop table', () => {
+    render(<PortfolioAnalytics report={report} locale="en" />);
+
+    const mobileList = screen.getByTestId('trades-by-pair-mobile-list');
+    const mobilePairs = within(mobileList).getAllByRole('listitem');
+    const desktopTable = screen.getByTestId('trades-by-pair-table');
+    const scrollRegion = within(desktopTable).getByRole('region', { name: 'Trades by pair' });
+
+    expect(mobileList).toHaveClass('md:hidden');
+    expect(mobilePairs).toHaveLength(report.trades_by_pair.length);
+    expect(mobilePairs[0]).toHaveClass('min-w-0');
+    expect(within(mobilePairs[0]).getByText('BTC/USDT')).toHaveClass('min-w-0', 'break-all');
+    expect(within(mobilePairs[0]).getByText('19.58')).toHaveClass('break-all', 'tabular-nums');
+    expect(desktopTable).toHaveClass('hidden', 'min-w-0', 'md:block');
+    expect(scrollRegion).toHaveAttribute('tabindex', '0');
+    expect(within(desktopTable).getByRole('table')).toHaveClass('min-w-[40rem]');
   });
 
   it('plots the same event values as the evidence table using step-after curves', async () => {
@@ -152,5 +174,8 @@ describe('PortfolioAnalytics', () => {
     expect(screen.getByText('تحلیل عملکرد پرتفوی')).toBeInTheDocument();
     expect(screen.getByText('نامشخص: ۱')).toBeInTheDocument();
     expect(screen.getByText('سود خالص موقعیت باز')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('trades-by-pair-mobile-list')).getByText('۱۹٫۵۸'),
+    ).toBeInTheDocument();
   });
 });
