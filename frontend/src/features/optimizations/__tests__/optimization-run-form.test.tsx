@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { DatasetSummary } from '@/features/datasets/api/types';
 import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
 import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
-import type { DatasetSummary, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { optimizationSubmission } from '@/test/optimization-fixtures';
 
 const apiMocks = vi.hoisted(() => ({
@@ -20,16 +21,14 @@ const navigationMocks = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api/client')>();
+vi.mock('@/features/datasets/api/client', () => ({
+  getDatasets: apiMocks.getDatasets,
+}));
 
-  return {
-    ...actual,
-    createOptimizationExecution: apiMocks.createExecution,
-    getDatasets: apiMocks.getDatasets,
-    getOptimizationExecution: apiMocks.getExecution,
-  };
-});
+vi.mock('@/features/optimizations/api/client', () => ({
+  createOptimizationExecution: apiMocks.createExecution,
+  getOptimizationExecution: apiMocks.getExecution,
+}));
 
 vi.mock('@/features/strategies/api/client', () => ({
   getResearchStrategies: apiMocks.getStrategies,

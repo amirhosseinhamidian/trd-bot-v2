@@ -6,7 +6,7 @@ import {
   getOptimizationExecution,
   getOptimizationExecutions,
 } from '@/lib/api/client';
-import type { CreateOptimizationExecutionRequest } from '@/lib/api/types';
+import type { CreateOptimizationExecutionRequest } from '@/features/optimizations/api/types';
 
 const request: CreateOptimizationExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',

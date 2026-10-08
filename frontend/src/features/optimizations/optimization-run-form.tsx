@@ -4,6 +4,18 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getDatasets } from '@/features/datasets/api/client';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import type { ExperimentComparisonMetric } from '@/features/experiments/api/types';
+import {
+  createOptimizationExecution,
+  getOptimizationExecution,
+} from '@/features/optimizations/api/client';
+import type {
+  CreateOptimizationExecutionRequest,
+  OptimizationExecution,
+  OptimizationParameterGrid,
+} from '@/features/optimizations/api/types';
 import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import { getResearchStrategies } from '@/features/strategies/api/client';
 import type {
@@ -11,6 +23,7 @@ import type {
   ResearchStrategyName,
 } from '@/features/strategies/api/types';
 import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
+import type { WalkForwardMode } from '@/features/walk-forward/api/types';
 import {
   Badge,
   Button,
@@ -24,20 +37,7 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
-import {
-  ApiRequestError,
-  createOptimizationExecution,
-  getDatasets,
-  getOptimizationExecution,
-} from '@/lib/api/client';
-import type {
-  CreateOptimizationExecutionRequest,
-  DatasetSummary,
-  ExperimentComparisonMetric,
-  OptimizationExecution,
-  OptimizationParameterGrid,
-  WalkForwardMode,
-} from '@/lib/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 import {
   estimateOptimizationGrid,
   isOptimizationGridValueValid,

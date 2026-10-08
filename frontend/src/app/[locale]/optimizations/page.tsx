@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getOptimizationExecutions } from '@/features/optimizations/api/client';
 import OptimizationCatalog from '@/features/optimizations/optimization-catalog';
-import { getOptimizationExecutions } from '@/lib/api/client';
 import {
   parseOptimizationExecutionId,
   type OptimizationSearchParams,

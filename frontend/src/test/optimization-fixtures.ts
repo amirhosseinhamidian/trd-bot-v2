@@ -1,10 +1,10 @@
 import type {
-  BackgroundJobSummary,
   OptimizationExecution,
   OptimizationExecutionSubmission,
   OptimizationRobustnessPlan,
   OptimizationTrialEvaluation,
-} from '@/lib/api/types';
+} from '@/features/optimizations/api/types';
+import type { BackgroundJobSummary } from '@/lib/api/types';
 
 const backtestConfig = {
   starting_balance: '10000',

@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { OptimizationExecution } from '@/features/optimizations/api/types';
 import OptimizationCatalog from '@/features/optimizations/optimization-catalog';
-import type { OptimizationExecution, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { queuedOptimizationExecution } from '@/test/optimization-fixtures';
 
 vi.mock('@/features/optimizations/optimization-run-form', () => ({

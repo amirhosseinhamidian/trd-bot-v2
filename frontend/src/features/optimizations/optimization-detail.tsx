@@ -4,6 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import type { ExperimentParameter } from '@/features/experiments/api/types';
+import { getOptimizationExecution } from '@/features/optimizations/api/client';
+import type {
+  OptimizationExecution,
+  OptimizationExecutionStatus,
+  OptimizationTrialEvaluation,
+} from '@/features/optimizations/api/types';
 import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import {
   Badge,
@@ -21,13 +28,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
-import { getOptimizationExecution } from '@/lib/api/client';
-import type {
-  ExperimentParameter,
-  OptimizationExecution,
-  OptimizationExecutionStatus,
-  OptimizationTrialEvaluation,
-} from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';

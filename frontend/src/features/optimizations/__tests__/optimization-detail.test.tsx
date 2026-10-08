@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   getExecution: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/optimizations/api/client', () => ({
   getOptimizationExecution: mocks.getExecution,
 }));
 

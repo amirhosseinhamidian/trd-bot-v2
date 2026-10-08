@@ -7,9 +7,6 @@ import type {
   CandidateProjectionDetail,
   CandidateProjectionSummary,
   MonitoringSummary,
-  OptimizationExecution,
-  OptimizationExecutionSubmission,
-  CreateOptimizationExecutionRequest,
   Page,
   PositionDetailReport,
   PortfolioTimelineEvent,
@@ -85,11 +82,12 @@ export {
   getWalkForwardStabilityReport,
   type WalkForwardRunFilters,
 } from '@/features/walk-forward/api/client';
-
-export interface OptimizationExecutionFilters {
-  limit?: number;
-  offset?: number;
-}
+export {
+  createOptimizationExecution,
+  getOptimizationExecution,
+  getOptimizationExecutions,
+  type OptimizationExecutionFilters,
+} from '@/features/optimizations/api/client';
 
 export interface ResearchActivityFilters {
   activityType?: ResearchActivityType;
@@ -114,35 +112,6 @@ export async function getResearchOverview(): Promise<ResearchOverview> {
 
 export async function getBackgroundJob(jobId: string): Promise<BackgroundJobSummary> {
   return getJson<BackgroundJobSummary>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
-}
-
-export async function createOptimizationExecution(
-  request: CreateOptimizationExecutionRequest,
-): Promise<OptimizationExecutionSubmission> {
-  return postJson<OptimizationExecutionSubmission>(
-    '/api/v1/research/optimization-executions',
-    request,
-  );
-}
-
-export async function getOptimizationExecutions(
-  filters: OptimizationExecutionFilters = {},
-): Promise<Page<OptimizationExecution>> {
-  const params = new URLSearchParams();
-  params.set('limit', String(filters.limit ?? 12));
-  params.set('offset', String(filters.offset ?? 0));
-
-  return getJson<Page<OptimizationExecution>>(
-    `/api/v1/research/optimization-executions?${params.toString()}`,
-  );
-}
-
-export async function getOptimizationExecution(
-  executionId: string,
-): Promise<OptimizationExecution> {
-  return getJson<OptimizationExecution>(
-    `/api/v1/research/optimization-executions/${encodeURIComponent(executionId)}`,
-  );
 }
 
 export async function getExperimentSignals(

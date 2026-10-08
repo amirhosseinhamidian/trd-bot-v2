@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getOptimizationExecutions } from '@/features/optimizations/api/client';
+import type {
+  OptimizationExecution,
+  OptimizationExecutionStatus,
+} from '@/features/optimizations/api/types';
 import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import OptimizationRunForm from '@/features/optimizations/optimization-run-form';
 import {
@@ -19,8 +24,7 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
-import { getOptimizationExecutions } from '@/lib/api/client';
-import type { OptimizationExecution, OptimizationExecutionStatus, Page } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';

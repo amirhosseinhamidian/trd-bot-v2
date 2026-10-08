@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 
+import { getOptimizationExecution } from '@/features/optimizations/api/client';
 import OptimizationDetail from '@/features/optimizations/optimization-detail';
-import { ApiRequestError, getOptimizationExecution } from '@/lib/api/client';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type OptimizationDetailPageProps = {
   params: Promise<{
