@@ -88,7 +88,7 @@ export default function MobilePlatformNavigation({
               <button
                 type="button"
                 aria-label={copy.navigation.mobile.closeMenu}
-                className="rounded-lg border border-app-control-border p-2 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-app-control-border text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                 onClick={() => closeMenu(true)}
               >
                 <span aria-hidden="true">×</span>

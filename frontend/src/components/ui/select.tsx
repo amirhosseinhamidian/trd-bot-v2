@@ -107,7 +107,7 @@ export function Select({
               contentClassName,
             )}
           >
-            <SelectPrimitive.ScrollUpButton className="flex h-7 items-center justify-center text-app-muted">
+            <SelectPrimitive.ScrollUpButton className="flex min-h-11 items-center justify-center text-app-muted">
               <svg
                 aria-hidden="true"
                 viewBox="0 0 20 20"
@@ -124,7 +124,7 @@ export function Select({
 
             <SelectPrimitive.Viewport className="max-h-64">{children}</SelectPrimitive.Viewport>
 
-            <SelectPrimitive.ScrollDownButton className="flex h-7 items-center justify-center text-app-muted">
+            <SelectPrimitive.ScrollDownButton className="flex min-h-11 items-center justify-center text-app-muted">
               <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                 <path
                   fillRule="evenodd"
@@ -159,7 +159,7 @@ export const SelectOption = forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      'relative flex min-h-10 min-w-0 cursor-pointer items-center overflow-hidden rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
+      'relative flex min-h-11 min-w-0 cursor-pointer items-center overflow-hidden rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
       'data-[highlighted]:bg-app-accent-soft data-[highlighted]:text-app-accent',
       'data-[state=checked]:text-app-accent',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',

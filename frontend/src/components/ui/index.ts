@@ -22,6 +22,9 @@ export type { EmptyStateProps } from '@/components/ui/empty-state';
 export { ErrorState } from '@/components/ui/error-state';
 export type { ErrorStateProps } from '@/components/ui/error-state';
 
+export { FormActionBar } from '@/components/ui/form-action-bar';
+export type { FormActionBarProps } from '@/components/ui/form-action-bar';
+
 export { Input } from '@/components/ui/input';
 export type { InputProps } from '@/components/ui/input';
 

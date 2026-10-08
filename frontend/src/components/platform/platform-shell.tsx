@@ -116,7 +116,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
             ref={closeNavigationButtonRef}
             type="button"
             aria-label={copy.header.closeNavigation}
-            className="rounded-lg border border-app-border p-2 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-app-border text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
           >
             <span aria-hidden="true">×</span>
@@ -191,7 +191,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
               aria-label={copy.header.openNavigation}
               aria-controls={PLATFORM_NAVIGATION_ID}
               aria-expanded={isSidebarOpen}
-              className="hidden rounded-xl border border-app-border p-2.5 text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none md:block lg:hidden"
+              className="hidden h-11 w-11 items-center justify-center rounded-xl border border-app-border text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none md:inline-flex lg:hidden"
               onClick={() => setIsSidebarOpen(true)}
             >
               <span aria-hidden="true">☰</span>
@@ -207,7 +207,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
 
               <Link
                 href={alternatePath}
-                className="rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-medium text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                className="inline-flex min-h-11 items-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-medium text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
               >
                 {copy.header.language}
               </Link>

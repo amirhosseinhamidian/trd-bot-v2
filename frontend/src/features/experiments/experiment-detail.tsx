@@ -153,7 +153,7 @@ export function ExperimentDetail({
             {rerunHref ? (
               <Link
                 href={rerunHref}
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
               >
                 {copy.runAgain}
               </Link>

@@ -15,6 +15,7 @@ import {
   CardTitle,
   EmptyState,
   ErrorState,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -289,7 +290,7 @@ export default function RiskDashboard({ initialReport, locale, portfolios }: Ris
                 </SelectOption>
               ))}
             </Select>
-            <div className="flex items-end gap-2">
+            <FormActionBar className="items-end">
               <Button
                 type="submit"
                 fullWidth
@@ -301,7 +302,7 @@ export default function RiskDashboard({ initialReport, locale, portfolios }: Ris
               <Button type="button" variant="secondary" onClick={clearFilters}>
                 {copy.filters.reset}
               </Button>
-            </div>
+            </FormActionBar>
           </form>
         </CardContent>
       </Card>
@@ -583,13 +584,13 @@ export default function RiskDashboard({ initialReport, locale, portfolios }: Ris
                   <div className="mt-5 flex flex-wrap gap-3 border-t border-app-border pt-4">
                     <Link
                       href={`/${locale}/candidates/${encodeURIComponent(event.candidate_id)}#risk-decision`}
-                      className="rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                      className="inline-flex min-h-11 items-center rounded-xl border border-app-accent-border bg-app-accent-soft px-4 py-2.5 text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
                     >
                       {copy.events.viewCandidate}
                     </Link>
                     <Link
                       href={`/${locale}/portfolios/${encodeURIComponent(event.portfolio_id)}`}
-                      className="rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                      className="inline-flex min-h-11 items-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
                     >
                       {copy.events.viewPortfolio}
                     </Link>

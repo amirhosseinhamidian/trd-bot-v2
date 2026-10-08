@@ -11,6 +11,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -557,23 +558,25 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
               </p>
               <Link
                 href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
-                className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-app-success-border px-4 py-2 text-center text-sm font-semibold text-app-success transition hover:bg-app-success-soft focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-app-success-border px-4 py-2 text-center text-sm font-semibold text-app-success transition hover:bg-app-success-soft focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
               >
                 {copy.viewDataset}
               </Link>
             </div>
           ) : null}
 
-          <Button
-            type="submit"
-            size="lg"
-            fullWidth
-            isLoading={activity === 'preview' || activity === 'import'}
-            loadingText={activity === 'preview' ? copy.previewing : copy.importing}
-            disabled={activity === 'inspect' || (preview !== null && !preview.ready_to_import)}
-          >
-            {preview ? copy.importButton : copy.previewButton}
-          </Button>
+          <FormActionBar stickyOnMobile className="sm:[&>button]:w-full">
+            <Button
+              type="submit"
+              size="lg"
+              fullWidth
+              isLoading={activity === 'preview' || activity === 'import'}
+              loadingText={activity === 'preview' ? copy.previewing : copy.importing}
+              disabled={activity === 'inspect' || (preview !== null && !preview.ready_to_import)}
+            >
+              {preview ? copy.importButton : copy.previewButton}
+            </Button>
+          </FormActionBar>
         </form>
       </CardContent>
     </Card>

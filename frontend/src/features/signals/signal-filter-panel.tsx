@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -150,7 +151,7 @@ export default function SignalFilterPanel({
             <SelectOption value="asc">{copy.filters.ascending}</SelectOption>
           </Select>
 
-          <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-4">
+          <FormActionBar className="md:col-span-2 xl:col-span-4">
             <Button
               type="submit"
               disabled={!filters.experimentId}
@@ -168,7 +169,7 @@ export default function SignalFilterPanel({
             >
               {copy.filters.reset}
             </Button>
-          </div>
+          </FormActionBar>
         </form>
       </CardContent>
     </Card>

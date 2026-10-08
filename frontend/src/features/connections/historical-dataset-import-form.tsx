@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { Badge, Button, Input, Select, SelectOption } from '@/components/ui';
+import { Badge, Button, FormActionBar, Input, Select, SelectOption } from '@/components/ui';
 import { getHistoricalImportCopy } from '@/features/connections/historical-import-copy';
 import {
   importHistoricalDataset,
@@ -346,7 +346,7 @@ export default function HistoricalDatasetImportForm({
         />
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
+      <FormActionBar stickyOnMobile className="mt-5">
         <Button
           variant="secondary"
           isLoading={isPreviewing}
@@ -364,7 +364,7 @@ export default function HistoricalDatasetImportForm({
         >
           {copy.importDataset}
         </Button>
-      </div>
+      </FormActionBar>
 
       {hasRequestError ? (
         <p
@@ -537,7 +537,7 @@ export default function HistoricalDatasetImportForm({
           </p>
           <Link
             href={`/${locale}/datasets/${encodeURIComponent(importedDataset.dataset_id)}`}
-            className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
           >
             {copy.viewDataset}
           </Link>

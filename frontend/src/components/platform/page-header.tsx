@@ -26,7 +26,9 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className={cn('min-w-0', className)} {...props}>
-      {backLink ? <div className="mb-5">{backLink}</div> : null}
+      {backLink ? (
+        <div className="mb-5 [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">{backLink}</div>
+      ) : null}
 
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
@@ -58,7 +60,7 @@ export function PageHeader({
         {actions ? (
           <div
             data-slot="page-header-actions"
-            className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:max-w-[45%] sm:shrink-0 sm:justify-end"
+            className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:max-w-[45%] sm:shrink-0 sm:justify-end [&>a]:min-h-11 max-sm:[&>a]:w-full [&>button]:min-h-11 max-sm:[&>button]:w-full"
           >
             {actions}
           </div>

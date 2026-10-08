@@ -113,7 +113,7 @@ describe('PlatformShell', () => {
 
     expect(navigation).toHaveAttribute('id', 'platform-navigation');
     expect(navigation).toHaveClass('hidden', 'md:flex', 'invisible', 'lg:visible');
-    expect(openButton).toHaveClass('hidden', 'md:block', 'lg:hidden');
+    expect(openButton).toHaveClass('hidden', 'h-11', 'w-11', 'md:inline-flex', 'lg:hidden');
     expect(
       within(navigation).getByRole('link', {
         name: 'Datasets',

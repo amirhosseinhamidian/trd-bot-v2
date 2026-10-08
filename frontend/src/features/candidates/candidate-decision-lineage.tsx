@@ -128,7 +128,7 @@ export default function CandidateDecisionLineageView({
                     aria-label={`${copy.viewResource}: ${
                       node.resource_id ?? copy.lineageKinds[node.kind]
                     }`}
-                    className="inline-flex rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                    className="inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                   >
                     {copy.viewResource}
                   </Link>

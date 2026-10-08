@@ -185,7 +185,7 @@ export default function DatasetVersionHistory({
             {refreshResult.dataset_id && refreshResult.content_changed ? (
               <Link
                 href={`/${locale}/datasets/${refreshResult.dataset_id}`}
-                className="mt-3 inline-flex rounded-sm text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
               >
                 {copy.versions.openNewSnapshot}
               </Link>
@@ -323,7 +323,7 @@ export default function DatasetVersionHistory({
                   {record.dataset_id ? (
                     <Link
                       href={`/${locale}/datasets/${record.dataset_id}`}
-                      className="mt-3 inline-flex rounded-sm text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-app-accent transition hover:underline focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                     >
                       {copy.versions.openSnapshot}
                     </Link>

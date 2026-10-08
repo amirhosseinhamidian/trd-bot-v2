@@ -26,6 +26,7 @@ describe('Checkbox', () => {
       'accent-app-accent',
       'focus-visible:ring-app-accent',
     );
+    expect(checkbox.closest('label')).toHaveClass('min-h-11');
 
     await user.click(screen.getByText('Compare candidate'));
 

@@ -15,6 +15,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -174,7 +175,7 @@ export default function ExperimentFilterPanel({
             <SelectOption value="asc">{copy.filters.directions.ascending}</SelectOption>
           </Select>
 
-          <div className="flex flex-wrap gap-3 md:col-span-2 xl:col-span-4">
+          <FormActionBar className="md:col-span-2 xl:col-span-4">
             <Button type="submit" isLoading={isLoading} loadingText={copy.filters.applying}>
               {copy.filters.apply}
             </Button>
@@ -182,7 +183,7 @@ export default function ExperimentFilterPanel({
             <Button type="button" variant="secondary" disabled={isLoading} onClick={resetFilters}>
               {copy.filters.reset}
             </Button>
-          </div>
+          </FormActionBar>
         </form>
       </CardContent>
     </Card>

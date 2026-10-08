@@ -32,6 +32,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -879,15 +880,19 @@ export default function OptimizationRunForm({
               </p>
             ) : null}
 
-            <Button
-              type="submit"
-              isLoading={isSubmitting}
-              loadingText={execution?.status === 'running' ? copy.form.running : copy.form.queuing}
-              disabled={isFormDisabled}
-              className="w-full sm:w-auto"
-            >
-              {copy.form.queue}
-            </Button>
+            <FormActionBar stickyOnMobile>
+              <Button
+                type="submit"
+                isLoading={isSubmitting}
+                loadingText={
+                  execution?.status === 'running' ? copy.form.running : copy.form.queuing
+                }
+                disabled={isFormDisabled}
+                className="w-full sm:w-auto"
+              >
+                {copy.form.queue}
+              </Button>
+            </FormActionBar>
           </form>
         )}
       </CardContent>

@@ -81,7 +81,7 @@ export default function StrategyCatalog({ locale, strategies }: StrategyCatalogP
               <CardFooter>
                 <Link
                   href={`/${locale}/strategies/${encodeURIComponent(strategy.name)}/${encodeURIComponent(strategy.version)}`}
-                  className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                 >
                   {copy.catalog.viewDetails}
                 </Link>

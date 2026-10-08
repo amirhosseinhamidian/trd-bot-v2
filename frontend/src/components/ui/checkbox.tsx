@@ -12,6 +12,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   (
     {
       'aria-describedby': ariaDescribedBy,
+      'aria-labelledby': ariaLabelledBy,
       className,
       containerClassName,
       description,
@@ -24,14 +25,16 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ) => {
     const generatedId = useId();
     const checkboxId = id ?? generatedId;
+    const labelId = `${checkboxId}-label`;
     const descriptionId = `${checkboxId}-description`;
     const describedBy =
       [ariaDescribedBy, description ? descriptionId : null].filter(Boolean).join(' ') || undefined;
 
     return (
-      <div
+      <label
+        htmlFor={checkboxId}
         className={cn(
-          'inline-flex items-start gap-3',
+          'inline-flex min-h-11 cursor-pointer items-start gap-3 py-1.5',
           disabled && 'cursor-not-allowed opacity-60',
           containerClassName,
         )}
@@ -42,6 +45,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           type="checkbox"
           disabled={disabled}
           aria-describedby={describedBy}
+          aria-labelledby={[ariaLabelledBy, labelId].filter(Boolean).join(' ')}
           className={cn(
             'mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border border-app-control-border bg-app-surface accent-app-accent hover:border-app-muted',
             'focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
@@ -52,15 +56,15 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         />
 
         <span>
-          <label
-            htmlFor={checkboxId}
+          <span
+            id={labelId}
             className={cn(
               'block cursor-pointer text-sm font-medium text-app-foreground',
               disabled && 'cursor-not-allowed',
             )}
           >
             {label}
-          </label>
+          </span>
 
           {description ? (
             <span id={descriptionId} className="mt-1 block text-xs leading-5 text-app-muted">
@@ -68,7 +72,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             </span>
           ) : null}
         </span>
-      </div>
+      </label>
     );
   },
 );

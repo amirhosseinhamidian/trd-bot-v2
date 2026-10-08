@@ -101,7 +101,7 @@ export default function ThemeToggle({ locale }: ThemeToggleProps) {
       type="button"
       aria-label={label}
       title={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-app-border bg-app-surface text-lg text-app-muted transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface text-lg text-app-muted transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
       onClick={toggleTheme}
     >
       <span aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>

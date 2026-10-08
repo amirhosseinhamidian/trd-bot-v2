@@ -140,13 +140,13 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
           <div className="flex flex-wrap gap-3">
             <Link
               href={`/${locale}/datasets/${encodeURIComponent(signal.dataset_id)}`}
-              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+              className="inline-flex min-h-11 items-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
             >
               {copy.detail.viewDataset}
             </Link>
             <Link
               href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
-              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+              className="inline-flex min-h-11 items-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
             >
               {copy.detail.viewExperiment}
             </Link>

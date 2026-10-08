@@ -40,6 +40,7 @@ describe('platform page layout', () => {
       'w-full',
       'flex-wrap',
       'sm:w-auto',
+      'max-sm:[&>button]:w-full',
     );
   });
 });

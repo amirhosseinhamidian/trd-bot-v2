@@ -30,6 +30,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  FormActionBar,
   Input,
   Select,
   SelectOption,
@@ -983,24 +984,26 @@ export default function ExperimentRunForm({
 
                 <Link
                   href={`/${locale}/experiments/${encodeURIComponent(createdExperimentId)}`}
-                  className="inline-flex w-full items-center justify-center rounded-md text-center text-sm font-semibold text-app-success transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md px-3 text-center text-sm font-semibold text-app-success transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
                 >
                   {copy.actions.viewResult}
                 </Link>
               </div>
             ) : null}
 
-            <Button
-              type="submit"
-              isLoading={isSubmitting}
-              loadingText={
-                execution?.status === 'queued' ? copy.actions.queued : copy.actions.running
-              }
-              disabled={isFormDisabled}
-              className="w-full sm:w-auto"
-            >
-              {copy.actions.run}
-            </Button>
+            <FormActionBar stickyOnMobile>
+              <Button
+                type="submit"
+                isLoading={isSubmitting}
+                loadingText={
+                  execution?.status === 'queued' ? copy.actions.queued : copy.actions.running
+                }
+                disabled={isFormDisabled}
+                className="w-full sm:w-auto"
+              >
+                {copy.actions.run}
+              </Button>
+            </FormActionBar>
           </form>
         )}
       </CardContent>

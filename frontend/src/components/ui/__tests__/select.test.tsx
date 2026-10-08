@@ -40,6 +40,7 @@ describe('Select', () => {
     });
 
     expect(await screen.findByRole('listbox')).toHaveClass('app-select-content');
+    expect(screen.getByRole('option', { name: 'BTC/USDT' })).toHaveClass('min-h-11');
     expect(document.querySelector('.trd-select-content')).not.toBeInTheDocument();
   });
 

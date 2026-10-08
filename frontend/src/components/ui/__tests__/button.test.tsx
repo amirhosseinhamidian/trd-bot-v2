@@ -49,6 +49,18 @@ describe('Button', () => {
     );
   });
 
+  it('keeps every size at least touch-target height', () => {
+    const { rerender } = render(<Button size="sm">Small action</Button>);
+
+    expect(screen.getByRole('button', { name: 'Small action' })).toHaveClass('min-h-11');
+
+    rerender(<Button size="md">Medium action</Button>);
+    expect(screen.getByRole('button', { name: 'Medium action' })).toHaveClass('min-h-11');
+
+    rerender(<Button size="icon">Icon action</Button>);
+    expect(screen.getByRole('button', { name: 'Icon action' })).toHaveClass('h-11', 'w-11');
+  });
+
   it('is disabled while loading', () => {
     render(
       <Button isLoading loadingText="Loading">

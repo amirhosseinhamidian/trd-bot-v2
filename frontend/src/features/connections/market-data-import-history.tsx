@@ -249,7 +249,7 @@ export default function MarketDataImportHistory({
                         </p>
                         <Link
                           href={`/${locale}/datasets/${encodeURIComponent(record.dataset_id)}`}
-                          className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
                         >
                           {copy.viewDataset}
                         </Link>
