@@ -76,6 +76,19 @@ describe('ExperimentPerformanceCharts', () => {
 
     expect(screen.getByRole('img', { name: 'Realized equity' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Realized drawdown' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: 'Select a chart metric on mobile' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Realized equity' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Realized drawdown' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByTestId('responsive-chart-panel-equity')).toHaveClass('block');
+    expect(screen.getByTestId('responsive-chart-panel-drawdown')).toHaveClass('hidden', 'md:block');
     expect(container.querySelectorAll('circle')).toHaveLength(10);
 
     const equityPaths = screen

@@ -13,6 +13,7 @@ export const experimentDetailCopy = {
     charts: 'روند عملکرد تحقق‌یافته',
     chartsDescription:
       'موجودی و افت سرمایه تحقق‌یافته Strategy و Benchmark روی شروع و پایان زمانی یکسان.',
+    chartMetricSelector: 'انتخاب شاخص نمودار در موبایل',
     equityChart: 'موجودی تحقق‌یافته',
     equityChartDescription:
       'تغییر موجودی شبیه‌سازی‌شده Strategy و Benchmark پس از بسته‌شدن معاملات.',
@@ -139,6 +140,7 @@ export const experimentDetailCopy = {
     charts: 'Realized performance history',
     chartsDescription:
       'Realized strategy and benchmark equity and drawdown on the same start and end times.',
+    chartMetricSelector: 'Select a chart metric on mobile',
     equityChart: 'Realized equity',
     equityChartDescription: 'Simulated Strategy and Benchmark balances after closed trades.',
     drawdownChart: 'Realized drawdown',

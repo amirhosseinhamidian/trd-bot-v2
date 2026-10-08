@@ -3,6 +3,7 @@ import {
   type HistoricalChartSeries,
 } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
+import { ResponsiveChartGroup } from '@/components/charts/responsive-chart-group';
 import { experimentDetailCopy } from '@/features/experiments/experiment-detail-copy';
 import type {
   ExperimentPerformanceSeries,
@@ -102,41 +103,81 @@ export function ExperimentPerformanceCharts({
         <CardDescription>{copy.chartsDescription}</CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-8">
-        <section>
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-app-foreground">{copy.equityChart}</h3>
-
-            <p className="mt-1 text-sm leading-6 text-app-muted">{copy.equityChartDescription}</p>
-          </div>
-
-          <HistoricalLineChart
-            ariaLabel={copy.equityChart}
-            emptyLabel={copy.emptyChart}
-            series={equitySeries}
-            minimumDomainSpan={1}
-            formatDate={(value) => formatDate(value, locale)}
-            formatValue={(value) => formatBalance(value, locale)}
-          />
-        </section>
-
-        <section className="border-t border-app-border pt-8">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-app-foreground">{copy.drawdownChart}</h3>
-
-            <p className="mt-1 text-sm leading-6 text-app-muted">{copy.drawdownChartDescription}</p>
-          </div>
-
-          <HistoricalLineChart
-            ariaLabel={copy.drawdownChart}
-            clampMinimumToZero
-            emptyLabel={copy.emptyChart}
-            series={drawdownSeries}
-            minimumDomainSpan={0.01}
-            formatDate={(value) => formatDate(value, locale)}
-            formatValue={(value) => formatPercent(value, locale)}
-          />
-        </section>
+      <CardContent>
+        <ResponsiveChartGroup
+          selectorLabel={copy.chartMetricSelector}
+          items={[
+            {
+              id: 'equity',
+              label: copy.equityChart,
+              description: copy.equityChartDescription,
+              summary: (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.strategySeries}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {formatBalance(Number(performanceSeries.strategy.ending_balance), locale)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.benchmarkSeries}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {formatBalance(Number(performanceSeries.benchmark.ending_balance), locale)}
+                    </dd>
+                  </div>
+                </dl>
+              ),
+              chart: (
+                <HistoricalLineChart
+                  ariaLabel={copy.equityChart}
+                  emptyLabel={copy.emptyChart}
+                  series={equitySeries}
+                  minimumDomainSpan={1}
+                  formatDate={(value) => formatDate(value, locale)}
+                  formatValue={(value) => formatBalance(value, locale)}
+                />
+              ),
+            },
+            {
+              id: 'drawdown',
+              label: copy.drawdownChart,
+              description: copy.drawdownChartDescription,
+              summary: (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.strategySeries}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {formatPercent(
+                        Number(performanceSeries.strategy.max_drawdown_fraction),
+                        locale,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.benchmarkSeries}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {formatPercent(
+                        Number(performanceSeries.benchmark.max_drawdown_fraction),
+                        locale,
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              ),
+              chart: (
+                <HistoricalLineChart
+                  ariaLabel={copy.drawdownChart}
+                  clampMinimumToZero
+                  emptyLabel={copy.emptyChart}
+                  series={drawdownSeries}
+                  minimumDomainSpan={0.01}
+                  formatDate={(value) => formatDate(value, locale)}
+                  formatValue={(value) => formatPercent(value, locale)}
+                />
+              ),
+            },
+          ]}
+        />
       </CardContent>
     </Card>
   );

@@ -177,6 +177,17 @@ export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsPr
         </CardHeader>
 
         <CardContent className="space-y-8">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <Metric
+              label={copy.totalReturn}
+              value={formatPercent(analytics.strategy_total_return, locale)}
+            />
+            <Metric
+              label={copy.endingBalance}
+              value={formatDecimal(analytics.ending_balance, locale)}
+            />
+          </dl>
+
           <CategoryBarChart
             ariaLabel={copy.periodReturnsChart}
             emptyLabel={copy.emptyPeriodReturns}

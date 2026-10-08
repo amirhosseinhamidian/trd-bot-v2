@@ -88,6 +88,21 @@ describe('PortfolioAnalytics', () => {
     expect(screen.getByText('Portfolio performance')).toBeInTheDocument();
     expect(screen.getByText(/Net PnL = closed net PnL/)).toBeInTheDocument();
     expect(screen.getByText(/no losing closed trades/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: 'Select a portfolio chart metric on mobile' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Recorded equity' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Recorded return' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Recorded drawdown' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     const pairsTable = screen.getByTestId('trades-by-pair-table');
     const pairs = within(pairsTable).getByRole('table', { name: 'Trades by pair' });
     expect(within(pairsTable).getByRole('region', { name: 'Trades by pair' })).toHaveAttribute(

@@ -176,12 +176,17 @@ export function HistoricalLineChart({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-app-border bg-app-surface-muted p-3">
+      <div
+        role="region"
+        aria-label={ariaLabel}
+        tabIndex={0}
+        className="w-full max-w-full min-w-0 touch-pan-x touch-pan-y [scrollbar-gutter:stable] overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl border border-app-border bg-app-surface-muted p-3 focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset"
+      >
         <svg
           role="img"
           aria-label={ariaLabel}
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-auto w-full"
+          className="h-auto w-full min-w-[40rem]"
         >
           {gridLines.map((line) => (
             <g key={line.y}>

@@ -101,7 +101,7 @@ export function CategoryBarChart({
         role="region"
         aria-label={ariaLabel}
         tabIndex={0}
-        className="overflow-x-auto rounded-2xl border border-app-border bg-app-surface-muted p-3 focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset"
+        className="w-full max-w-full min-w-0 touch-pan-x touch-pan-y [scrollbar-gutter:stable] overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl border border-app-border bg-app-surface-muted p-3 focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset"
       >
         <svg
           role="img"

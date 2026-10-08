@@ -69,6 +69,22 @@ describe('HistoricalLineChart', () => {
       }),
     ).toBeInTheDocument();
 
+    const scrollRegion = screen.getByRole('region', {
+      name: 'Historical equity chart',
+    });
+    expect(scrollRegion).toHaveAttribute('tabindex', '0');
+    expect(scrollRegion).toHaveClass(
+      'max-w-full',
+      'min-w-0',
+      'touch-pan-x',
+      'touch-pan-y',
+      'overflow-x-auto',
+      'overflow-y-hidden',
+    );
+    expect(screen.getByRole('img', { name: 'Historical equity chart' })).toHaveClass(
+      'min-w-[40rem]',
+    );
+
     expect(screen.getByText('Strategy')).toBeInTheDocument();
 
     expect(screen.getByText('Benchmark')).toBeInTheDocument();

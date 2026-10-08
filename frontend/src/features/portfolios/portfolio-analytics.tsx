@@ -1,5 +1,6 @@
 import { HistoricalLineChart } from '@/components/charts/historical-line-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
+import { ResponsiveChartGroup } from '@/components/charts/responsive-chart-group';
 import {
   Card,
   CardContent,
@@ -95,16 +96,67 @@ export function PortfolioAnalytics({
           ))}
         </dl>
         <p className="text-sm text-app-muted">{copy.exposureNote}</p>
-        {(['equity', 'return_fraction', 'drawdown_fraction'] as const).map((key) => {
-          const label =
-            key === 'equity'
-              ? copy.equity
-              : key === 'return_fraction'
-                ? copy.returns
-                : copy.drawdown;
-          return (
-            <section key={key} aria-label={label}>
-              <h3 className="mb-3 font-semibold">{label}</h3>
+        <ResponsiveChartGroup
+          selectorLabel={copy.chartMetricSelector}
+          items={(
+            [
+              ['equity', copy.equity],
+              ['return_fraction', copy.returns],
+              ['drawdown_fraction', copy.drawdown],
+            ] as const
+          ).map(([key, label]) => ({
+            id: key,
+            label,
+            summary:
+              key === 'equity' ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.starting_equity}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.starting_equity)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.ending_equity}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.ending_equity)}
+                    </dd>
+                  </div>
+                </dl>
+              ) : key === 'return_fraction' ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.return_fraction}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.return_fraction, true)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.net_pnl}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.net_pnl)}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.max_drawdown_fraction}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.max_drawdown_fraction, true)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">
+                      {copy.current_drawdown_duration_seconds}
+                    </dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.current_drawdown_duration_seconds)}
+                    </dd>
+                  </div>
+                </dl>
+              ),
+            chart: (
               <HistoricalLineChart
                 ariaLabel={label}
                 emptyLabel={copy.empty}
@@ -126,9 +178,9 @@ export function PortfolioAnalytics({
                   },
                 ]}
               />
-            </section>
-          );
-        })}
+            ),
+          }))}
+        />
         <section>
           <h3 className="mb-3 font-semibold">{copy.pairs}</h3>
           {report.trades_by_pair.length === 0 ? (

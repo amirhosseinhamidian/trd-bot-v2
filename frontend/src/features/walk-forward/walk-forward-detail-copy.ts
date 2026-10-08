@@ -16,6 +16,7 @@ export type WalkForwardDetailCopy = {
   foldsTableScrollLabel: string;
   analyticsCharts: string;
   analyticsChartsDescription: string;
+  chartMetricSelector: string;
   foldReturnsChart: string;
   foldDrawdownsChart: string;
   emptyFoldChart: string;
@@ -132,6 +133,7 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
     analyticsCharts: 'مقایسه Foldها',
     analyticsChartsDescription:
       'بازده و افت سرمایه Strategy و Benchmark برای هر پنجره خارج از نمونه از همان داده جدول.',
+    chartMetricSelector: 'انتخاب شاخص نمودار در موبایل',
     foldReturnsChart: 'نمودار بازده هر Fold',
     foldDrawdownsChart: 'نمودار افت سرمایه هر Fold',
     emptyFoldChart: 'داده Fold برای نمایش وجود ندارد.',
@@ -244,6 +246,7 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
     analyticsCharts: 'Fold comparison',
     analyticsChartsDescription:
       'Strategy and benchmark returns and drawdowns for every out-of-sample window, from the same data as the table.',
+    chartMetricSelector: 'Select a chart metric on mobile',
     foldReturnsChart: 'Return by fold chart',
     foldDrawdownsChart: 'Drawdown by fold chart',
     emptyFoldChart: 'No fold data are available.',

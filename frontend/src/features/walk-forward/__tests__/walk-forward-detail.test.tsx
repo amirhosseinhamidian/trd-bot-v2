@@ -116,6 +116,17 @@ describe('WalkForwardDetail', () => {
     expect(screen.getByText('No trades')).toBeInTheDocument();
     expect(screen.getByText('Benchmark drawdown')).toBeInTheDocument();
     expect(screen.getByText('1 - normalized_dispersion')).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: 'Select a chart metric on mobile' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Return by fold chart' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Drawdown by fold chart' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
 
     const foldsRegion = screen.getByRole('region', {
       name: 'Walk-forward fold details table; scroll horizontally to view all columns',
