@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
 
-import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
 import {
-  ApiRequestError,
   getWalkForwardRunSummary,
   getWalkForwardStabilityReport,
-} from '@/lib/api/client';
+} from '@/features/walk-forward/api/client';
+import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type WalkForwardDetailPageProps = {
   params: Promise<{

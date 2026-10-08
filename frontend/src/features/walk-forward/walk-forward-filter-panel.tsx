@@ -3,6 +3,10 @@
 import { useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import type {
+  WalkForwardRunSortDirection,
+  WalkForwardRunSortField,
+} from '@/features/walk-forward/api/types';
 import { getWalkForwardCopy } from '@/features/walk-forward/walk-forward-copy';
 import {
   Button,
@@ -15,7 +19,6 @@ import {
   Select,
   SelectOption,
 } from '@/components/ui';
-import type { WalkForwardRunSortDirection, WalkForwardRunSortField } from '@/lib/api/types';
 
 export type WalkForwardFilterValues = {
   sourceDatasetId: string;

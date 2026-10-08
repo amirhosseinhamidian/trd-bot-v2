@@ -5,12 +5,23 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getDatasets } from '@/features/datasets/api/client';
+import type { DatasetSummary } from '@/features/datasets/api/types';
 import { getResearchStrategies } from '@/features/strategies/api/client';
 import type {
   ResearchStrategyMetadata,
   ResearchStrategyName,
 } from '@/features/strategies/api/types';
 import { getWalkForwardRunCopy } from '@/features/walk-forward/walk-forward-run-copy';
+import {
+  createWalkForwardExecution,
+  getWalkForwardExecution,
+} from '@/features/walk-forward/api/client';
+import type {
+  StoredDatasetStrategyWalkForwardExecutionRequest,
+  WalkForwardExecution,
+  WalkForwardMode,
+} from '@/features/walk-forward/api/types';
 import {
   Badge,
   Button,
@@ -24,18 +35,7 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
-import {
-  ApiRequestError,
-  createWalkForwardExecution,
-  getDatasets,
-  getWalkForwardExecution,
-} from '@/lib/api/client';
-import type {
-  DatasetSummary,
-  StoredDatasetStrategyWalkForwardExecutionRequest,
-  WalkForwardExecution,
-  WalkForwardMode,
-} from '@/lib/api/types';
+import { ApiRequestError } from '@/lib/api/core/transport';
 import {
   findStrategyMetadata,
   getExecutableResearchStrategies,

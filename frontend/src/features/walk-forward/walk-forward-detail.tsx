@@ -1,6 +1,12 @@
 import Link from 'next/link';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import type { ResearchMetricKey } from '@/features/experiments/api/types';
+import type {
+  HistoricalFoldReturnDirection,
+  WalkForwardRunSummary,
+  WalkForwardStabilityReport,
+} from '@/features/walk-forward/api/types';
 import { WalkForwardAnalyticsCharts } from '@/features/walk-forward/walk-forward-analytics-charts';
 import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
 import { PageFrame } from '@/components/platform/page-frame';
@@ -20,12 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
-import type {
-  HistoricalFoldReturnDirection,
-  ResearchMetricKey,
-  WalkForwardRunSummary,
-  WalkForwardStabilityReport,
-} from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 
 type WalkForwardDetailProps = {

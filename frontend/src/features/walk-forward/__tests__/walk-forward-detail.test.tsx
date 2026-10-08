@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { WalkForwardDetail } from '@/features/walk-forward/walk-forward-detail';
-import type { WalkForwardRunSummary, WalkForwardStabilityReport } from '@/lib/api/types';
+import type {
+  WalkForwardRunSummary,
+  WalkForwardStabilityReport,
+} from '@/features/walk-forward/api/types';
 
 const run: WalkForwardRunSummary = {
   execution_id: 'walk-forward-execution-1234567890abcdef',

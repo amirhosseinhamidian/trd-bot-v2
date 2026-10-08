@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import type { PlatformLocale } from '@/platform/i18n';
+import { getWalkForwardRuns, type WalkForwardRunFilters } from '@/features/walk-forward/api/client';
+import type { WalkForwardRunSummary } from '@/features/walk-forward/api/types';
 import WalkForwardFilterPanel, {
   DEFAULT_WALK_FORWARD_FILTERS,
   type WalkForwardFilterValues,
@@ -22,8 +24,7 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
-import { getWalkForwardRuns, type WalkForwardRunFilters } from '@/lib/api/client';
-import type { Page, WalkForwardRunSummary } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { WalkForwardRunInitialValues } from '@/lib/walk-forward/run-params';
 import { PageFrame } from '@/components/platform/page-frame';

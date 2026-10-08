@@ -1,9 +1,9 @@
 import { CategoryBarChart } from '@/components/charts/category-bar-chart';
 import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
 import type { PlatformLocale } from '@/platform/i18n';
+import type { WalkForwardStabilityReport } from '@/features/walk-forward/api/types';
 import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import type { WalkForwardStabilityReport } from '@/lib/api/types';
 
 type WalkForwardAnalyticsChartsProps = {
   locale: PlatformLocale;

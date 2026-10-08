@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getWalkForwardRuns } from '@/features/walk-forward/api/client';
 import WalkForwardCatalog from '@/features/walk-forward/walk-forward-catalog';
-import { getWalkForwardRuns } from '@/lib/api/client';
 import {
   parseWalkForwardExecutionId,
   parseWalkForwardRunSearchParams,
