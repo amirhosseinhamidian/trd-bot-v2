@@ -6,7 +6,8 @@ import {
   getMarketDataImportVersions,
   refreshMarketDataImport,
 } from '@/lib/api/client';
-import type { BackgroundJobSummary, MarketDataImportRecord, Page } from '@/lib/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
+import type { MarketDataImportRecord, Page } from '@/lib/api/types';
 
 const connectionId = 'connection / one';
 const importId = 'import / one';

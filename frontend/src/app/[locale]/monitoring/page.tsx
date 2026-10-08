@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getMonitoringSummary } from '@/features/monitoring/api/client';
 import MonitoringDashboard from '@/features/monitoring/monitoring-dashboard';
-import { getMonitoringSummary } from '@/lib/api/client';
 
 type MonitoringPageProps = {
   params: Promise<{

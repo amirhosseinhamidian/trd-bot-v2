@@ -15,13 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
+import type { BackgroundJobStatus } from '@/features/jobs/api/types';
 import type {
-  BackgroundJobStatus,
   MonitoringOverallStatus,
   MonitoringSummary,
   RecommendationSeverity,
   SystemMetricSample,
-} from '@/lib/api/types';
+} from '@/features/monitoring/api/types';
 import { getMonitoringCopy } from '@/features/monitoring/monitoring-copy';
 import type { PlatformLocale } from '@/platform/i18n';
 

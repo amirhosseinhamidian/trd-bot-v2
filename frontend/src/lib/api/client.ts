@@ -1,6 +1,3 @@
-import { getJson } from '@/lib/api/core/transport';
-import type { BackgroundJobSummary, MonitoringSummary } from '@/lib/api/types';
-
 export { API_BASE_URL, ApiRequestError } from '@/lib/api/core/transport';
 export {
   createDataset,
@@ -96,11 +93,5 @@ export {
   getResearchOverview,
   type ResearchActivityFilters,
 } from '@/features/overview/api/client';
-
-export async function getBackgroundJob(jobId: string): Promise<BackgroundJobSummary> {
-  return getJson<BackgroundJobSummary>(`/api/v1/jobs/${encodeURIComponent(jobId)}`);
-}
-
-export async function getMonitoringSummary(): Promise<MonitoringSummary> {
-  return getJson<MonitoringSummary>('/api/v1/monitoring/summary');
-}
+export { getBackgroundJob } from '@/features/jobs/api/client';
+export { getMonitoringSummary } from '@/features/monitoring/api/client';

@@ -4,7 +4,7 @@ import type {
   OptimizationRobustnessPlan,
   OptimizationTrialEvaluation,
 } from '@/features/optimizations/api/types';
-import type { BackgroundJobSummary } from '@/lib/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 
 const backtestConfig = {
   starting_balance: '10000',

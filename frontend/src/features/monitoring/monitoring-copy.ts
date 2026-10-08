@@ -1,10 +1,10 @@
 import type {
   ArchitectureCandidate,
-  BackgroundJobStatus,
   MonitoringOverallStatus,
   RecommendationSeverity,
   SystemMetricName,
-} from '@/lib/api/types';
+} from '@/features/monitoring/api/types';
+import type { BackgroundJobStatus } from '@/features/jobs/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 export type MonitoringCopy = {

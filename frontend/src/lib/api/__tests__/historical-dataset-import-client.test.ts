@@ -3,12 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   API_BASE_URL,
   enqueueHistoricalDatasetImport,
-  getBackgroundJob,
   importHistoricalDataset,
   previewHistoricalDatasetImport,
 } from '@/lib/api/client';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 import type {
-  BackgroundJobSummary,
   DatasetSummary,
   HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
@@ -154,31 +153,20 @@ describe('historical dataset import client', () => {
     );
   });
 
-  it('enqueues and reads a durable market-data import job', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockImplementationOnce(() => Promise.resolve(jsonResponse(queuedJob, 202)))
-      .mockImplementationOnce(() => Promise.resolve(jsonResponse(queuedJob)));
+  it('enqueues a durable market-data import job', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(queuedJob, 202)));
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(enqueueHistoricalDatasetImport(connectionId, commitRequest)).resolves.toEqual(
       queuedJob,
     );
-    await expect(getBackgroundJob(queuedJob.job_id)).resolves.toEqual(queuedJob);
-
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
+    expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/market-data/connections/${connectionId}/dataset-jobs`,
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(commitRequest),
         cache: 'no-store',
       }),
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      `${API_BASE_URL}/api/v1/jobs/${queuedJob.job_id}`,
-      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
   });
 });

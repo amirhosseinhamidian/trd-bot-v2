@@ -4,9 +4,9 @@ import type {
   ExperimentExecutionStatus,
   ExperimentParameter,
 } from '@/features/experiments/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 import type { ResearchStrategyName } from '@/features/strategies/api/types';
 import type { WalkForwardConfig } from '@/features/walk-forward/api/types';
-import type { BackgroundJobSummary } from '@/lib/api/types';
 
 export type OptimizationExecutionStatus = ExperimentExecutionStatus;
 

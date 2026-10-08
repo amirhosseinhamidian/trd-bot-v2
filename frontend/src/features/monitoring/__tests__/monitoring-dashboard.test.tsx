@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import type { MonitoringSummary } from '@/features/monitoring/api/types';
 import MonitoringDashboard from '@/features/monitoring/monitoring-dashboard';
-import type { MonitoringSummary } from '@/lib/api/types';
 
 const summary: MonitoringSummary = {
   overall_status: 'critical',
