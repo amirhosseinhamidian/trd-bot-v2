@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import type { PositionDetailReport } from '@/features/portfolios/api/types';
 import PositionDetail from '@/features/portfolios/position-detail';
-import type { PositionDetailReport } from '@/lib/api/types';
 
 const report: PositionDetailReport = {
   position_detail_version: 'position-detail-v1',

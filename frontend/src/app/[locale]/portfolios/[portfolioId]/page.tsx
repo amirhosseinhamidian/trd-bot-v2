@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 
-import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 import {
   getPortfolioAnalytics,
   getSimulatedPortfolio,
   getSimulatedPortfolioPositions,
   getSimulatedPortfolioTimeline,
-} from '@/lib/api/client';
+} from '@/features/portfolios/api/client';
+import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 
 type PortfolioDetailPageProps = {
   params: Promise<{

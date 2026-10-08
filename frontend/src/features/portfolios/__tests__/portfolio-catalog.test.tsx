@@ -2,14 +2,15 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import PortfolioCatalog from '@/features/portfolios/portfolio-catalog';
-import type { Page, SimulatedPortfolioSummary } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getSimulatedPortfolios: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/portfolios/api/client', () => ({
   getSimulatedPortfolios: mocks.getSimulatedPortfolios,
 }));
 

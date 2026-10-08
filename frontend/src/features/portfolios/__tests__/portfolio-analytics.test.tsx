@@ -2,8 +2,8 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { PortfolioAnalyticsReport } from '@/features/portfolios/api/types';
 import { PortfolioAnalytics } from '@/features/portfolios/portfolio-analytics';
-import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 
 const chart = vi.hoisted(() => vi.fn());
 vi.mock('@/components/charts/historical-line-chart', () => ({

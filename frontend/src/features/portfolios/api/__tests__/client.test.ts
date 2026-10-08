@@ -1,21 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   getSimulatedPortfolio,
   getSimulatedPortfolioPositions,
   getSimulatedPortfolios,
   getSimulatedPortfolioTimeline,
   getSimulatedPosition,
   getSimulatedPositionDetail,
-} from '@/lib/api/client';
+} from '@/features/portfolios/api/client';
 import type {
-  Page,
   PortfolioTimelineEvent,
   SimulatedPortfolio,
   SimulatedPortfolioSummary,
   SimulatedPosition,
-} from '@/lib/api/types';
+} from '@/features/portfolios/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/types';
 
 const portfolioId = 'portfolio-1234567890abcdef';
 const positionId = 'position-1234567890abcdef';

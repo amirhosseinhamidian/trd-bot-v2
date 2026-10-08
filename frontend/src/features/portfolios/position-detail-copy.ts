@@ -9,7 +9,7 @@ import type {
   PositionLineageStatus,
   SimulatedPositionSide,
   SimulatedPositionStatus,
-} from '@/lib/api/types';
+} from '@/features/portfolios/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailCopy = {

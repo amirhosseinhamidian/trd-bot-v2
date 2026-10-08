@@ -8,8 +8,8 @@ import type {
   CandidateExitReason,
   CandidateRiskDecision,
 } from '@/features/candidates/api/types';
+import type { PositionDetailReport } from '@/features/portfolios/api/types';
 import { getPositionDetailCopy } from '@/features/portfolios/position-detail-copy';
-import type { PositionDetailReport } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailProps = {

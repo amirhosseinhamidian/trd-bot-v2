@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getSimulatedPositionDetail } from '@/features/portfolios/api/client';
 import PositionDetail from '@/features/portfolios/position-detail';
-import { getSimulatedPositionDetail } from '@/lib/api/client';
 
 type PositionDetailPageProps = {
   params: Promise<{

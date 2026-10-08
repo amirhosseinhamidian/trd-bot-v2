@@ -15,9 +15,10 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import { getSimulatedPortfolios } from '@/features/portfolios/api/client';
+import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import { getPortfolioCopy } from '@/features/portfolios/portfolio-copy';
-import { getSimulatedPortfolios } from '@/lib/api/client';
-import type { Page, SimulatedPortfolioSummary } from '@/lib/api/types';
+import type { Page } from '@/lib/api/types';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import type { PlatformLocale } from '@/platform/i18n';

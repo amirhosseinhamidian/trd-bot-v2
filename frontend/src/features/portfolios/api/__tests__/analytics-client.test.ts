@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL, ApiRequestError, getPortfolioAnalytics } from '@/lib/api/client';
+import { getPortfolioAnalytics } from '@/features/portfolios/api/client';
+import { API_BASE_URL, ApiRequestError } from '@/lib/api/core/transport';
 
 afterEach(() => vi.unstubAllGlobals());
 

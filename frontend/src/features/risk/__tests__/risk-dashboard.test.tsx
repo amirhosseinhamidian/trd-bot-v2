@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CandidateRiskCheckName } from '@/features/candidates/api/types';
+import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import type { RiskDashboardReport } from '@/features/risk/api/types';
 import RiskDashboard from '@/features/risk/risk-dashboard';
-import type { SimulatedPortfolioSummary } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getRiskDashboard: vi.fn(),

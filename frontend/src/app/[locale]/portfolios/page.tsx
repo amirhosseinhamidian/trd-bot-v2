@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { getSimulatedPortfolios } from '@/features/portfolios/api/client';
 import PortfolioCatalog from '@/features/portfolios/portfolio-catalog';
-import { getSimulatedPortfolios } from '@/lib/api/client';
 
 type PortfoliosPageProps = {
   params: Promise<{

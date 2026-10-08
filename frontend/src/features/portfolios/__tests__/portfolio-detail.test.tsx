@@ -4,18 +4,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 import type {
-  Page,
   PortfolioTimelineEvent,
   SimulatedPortfolio,
   SimulatedPosition,
-} from '@/lib/api/types';
+} from '@/features/portfolios/api/types';
+import type { Page } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getSimulatedPortfolioPositions: vi.fn(),
   getSimulatedPortfolioTimeline: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/portfolios/api/client', () => ({
   getSimulatedPortfolioPositions: mocks.getSimulatedPortfolioPositions,
   getSimulatedPortfolioTimeline: mocks.getSimulatedPortfolioTimeline,
 }));

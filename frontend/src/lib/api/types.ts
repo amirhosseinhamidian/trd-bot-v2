@@ -1,10 +1,5 @@
-import type { DatasetSummary, TradingPair } from '@/features/datasets/api/types';
+import type { DatasetSummary } from '@/features/datasets/api/types';
 import type { AcceptancePolicyPreset, ExperimentSummary } from '@/features/experiments/api/types';
-import type {
-  CandidateDecisionEvidence,
-  CandidateDecisionLineageNode,
-  ResearchCandidateSnapshot,
-} from '@/features/candidates/api/types';
 import type { WalkForwardRunSummary } from '@/features/walk-forward/api/types';
 
 export type {
@@ -187,6 +182,20 @@ export type {
   RiskDecisionSummary,
   RiskRejectionReasonSummary,
 } from '@/features/risk/api/types';
+export type {
+  PortfolioAnalyticsReport,
+  PortfolioTimelineEvent,
+  PortfolioTimelineEventType,
+  PositionDetailReport,
+  PositionLineageStatus,
+  SimulatedPortfolio,
+  SimulatedPortfolioMode,
+  SimulatedPortfolioStatus,
+  SimulatedPortfolioSummary,
+  SimulatedPosition,
+  SimulatedPositionSide,
+  SimulatedPositionStatus,
+} from '@/features/portfolios/api/types';
 
 export type ResearchStage =
   'empty' | 'data_available' | 'experiments_available' | 'walk_forward_available';
@@ -354,104 +363,4 @@ export interface MonitoringSummary {
   active_recommendations: ArchitectureRecommendation[];
   operations: OperationalMonitoringSummary | null;
   interpretation: 'capacity_planning_only';
-}
-
-export type SimulatedPortfolioMode = 'paper' | 'shadow';
-
-export type SimulatedPortfolioStatus = 'active' | 'completed';
-
-export type SimulatedPositionSide = 'long' | 'short';
-
-export type SimulatedPositionStatus = 'open' | 'closed';
-
-export type PortfolioTimelineEventType =
-  | 'portfolio_created'
-  | 'position_opened'
-  | 'position_marked'
-  | 'position_closed'
-  | 'portfolio_completed';
-
-export interface SimulatedPosition {
-  position_id: string;
-  portfolio_id: string;
-  pair: TradingPair;
-  side: SimulatedPositionSide;
-  status: SimulatedPositionStatus;
-  quantity: string;
-  entry_price: string;
-  opened_at: string;
-  current_price: string;
-  current_at: string;
-  reserved_notional: string;
-  entry_fee: string;
-  unrealized_pnl: string;
-  exit_price: string | null;
-  closed_at: string | null;
-  exit_fee: string;
-  gross_realized_pnl: string;
-  realized_pnl: string;
-}
-
-export type PositionLineageStatus = 'complete' | 'unavailable' | 'conflict';
-
-export interface PositionDetailReport {
-  position_detail_version: 'position-detail-v1';
-  as_of: string;
-  dataset_id: string;
-  position: SimulatedPosition;
-  lineage_status: PositionLineageStatus;
-  journal_id: string | null;
-  candidate: ResearchCandidateSnapshot | null;
-  decision_evidence: CandidateDecisionEvidence | null;
-  nodes: CandidateDecisionLineageNode[];
-  events: PortfolioTimelineEvent[];
-  interpretation: 'historical_research_only';
-}
-
-export interface PortfolioTimelineEvent {
-  event_id: string;
-  portfolio_id: string;
-  sequence_number: number;
-  event_type: PortfolioTimelineEventType;
-  occurred_at: string;
-  equity: string;
-  position_id: string | null;
-  price: string | null;
-  quantity: string | null;
-  realized_pnl: string | null;
-}
-
-export interface SimulatedPortfolioSummary {
-  portfolio_id: string;
-  mode: SimulatedPortfolioMode;
-  status: SimulatedPortfolioStatus;
-  dataset_id: string;
-  created_at: string;
-  updated_at: string;
-  starting_cash: string;
-  cash: string;
-  equity: string;
-  fees_paid: string;
-  realized_pnl: string;
-  unrealized_pnl: string;
-  position_count: number;
-  event_count: number;
-}
-
-export interface SimulatedPortfolio {
-  portfolio_id: string;
-  mode: SimulatedPortfolioMode;
-  status: SimulatedPortfolioStatus;
-  dataset_id: string;
-  created_at: string;
-  updated_at: string;
-  starting_cash: string;
-  cash: string;
-  equity: string;
-  fee_rate: string;
-  fees_paid: string;
-  realized_pnl: string;
-  unrealized_pnl: string;
-  positions: SimulatedPosition[];
-  timeline: PortfolioTimelineEvent[];
 }

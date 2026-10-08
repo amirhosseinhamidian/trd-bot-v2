@@ -13,8 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui';
+import type { PortfolioAnalyticsReport } from '@/features/portfolios/api/types';
 import { portfolioAnalyticsCopy } from '@/features/portfolios/portfolio-analytics-copy';
-import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const metrics = [

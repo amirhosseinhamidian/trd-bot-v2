@@ -16,16 +16,19 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
-import { PortfolioAnalytics } from '@/features/portfolios/portfolio-analytics';
-import { getPortfolioDetailCopy } from '@/features/portfolios/portfolio-detail-copy';
-import { getSimulatedPortfolioPositions, getSimulatedPortfolioTimeline } from '@/lib/api/client';
-import type { PortfolioAnalyticsReport } from '@/lib/api/portfolio-analytics';
+import {
+  getSimulatedPortfolioPositions,
+  getSimulatedPortfolioTimeline,
+} from '@/features/portfolios/api/client';
 import type {
-  Page,
+  PortfolioAnalyticsReport,
   PortfolioTimelineEvent,
   SimulatedPortfolio,
   SimulatedPosition,
-} from '@/lib/api/types';
+} from '@/features/portfolios/api/types';
+import { PortfolioAnalytics } from '@/features/portfolios/portfolio-analytics';
+import { getPortfolioDetailCopy } from '@/features/portfolios/portfolio-detail-copy';
+import type { Page } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const RESOURCE_PAGE_SIZE = 10;
