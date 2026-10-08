@@ -9,7 +9,6 @@ import type {
   ResearchActivityItem,
   ResearchActivityType,
   ResearchOverview,
-  RiskDashboardReport,
   SimulatedPortfolio,
   SimulatedPortfolioSummary,
   SimulatedPosition,
@@ -93,6 +92,7 @@ export {
   getCandidateProjections,
   type CandidateProjectionFilters,
 } from '@/features/candidates/api/client';
+export { getRiskDashboard, type RiskDashboardFilters } from '@/features/risk/api/client';
 
 export interface ResearchActivityFilters {
   activityType?: ResearchActivityType;
@@ -137,33 +137,6 @@ export async function getResearchActivity(
 
 export async function getMonitoringSummary(): Promise<MonitoringSummary> {
   return getJson<MonitoringSummary>('/api/v1/monitoring/summary');
-}
-
-export interface RiskDashboardFilters {
-  fromTime?: string;
-  toTime?: string;
-  portfolioId?: string;
-}
-
-export async function getRiskDashboard(
-  filters: RiskDashboardFilters = {},
-): Promise<RiskDashboardReport> {
-  const params = new URLSearchParams();
-
-  if (filters.fromTime) {
-    params.set('from_time', filters.fromTime);
-  }
-
-  if (filters.toTime) {
-    params.set('to_time', filters.toTime);
-  }
-
-  if (filters.portfolioId) {
-    params.set('portfolio_id', filters.portfolioId);
-  }
-
-  const query = params.toString();
-  return getJson<RiskDashboardReport>(`/api/v1/research/risk${query ? `?${query}` : ''}`);
 }
 
 export interface SimulatedPortfolioFilters {

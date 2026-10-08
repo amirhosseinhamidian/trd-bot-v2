@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL, getRiskDashboard } from '@/lib/api/client';
-import type { RiskDashboardReport } from '@/lib/api/types';
+import { getRiskDashboard } from '@/features/risk/api/client';
+import type { RiskDashboardReport } from '@/features/risk/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const report = {
   dashboard_version: 'risk-dashboard-v1',

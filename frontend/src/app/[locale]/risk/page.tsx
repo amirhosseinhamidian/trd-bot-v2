@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 
+import { getRiskDashboard } from '@/features/risk/api/client';
 import RiskDashboard from '@/features/risk/risk-dashboard';
-import { getRiskDashboard, getSimulatedPortfolios } from '@/lib/api/client';
+import { getSimulatedPortfolios } from '@/lib/api/client';
 
 type RiskPageProps = {
   params: Promise<{

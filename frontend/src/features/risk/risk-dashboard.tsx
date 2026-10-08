@@ -20,9 +20,10 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
+import { getRiskDashboard, type RiskDashboardFilters } from '@/features/risk/api/client';
+import type { RiskDashboardReport } from '@/features/risk/api/types';
 import { getRiskCopy } from '@/features/risk/risk-copy';
-import { getRiskDashboard, type RiskDashboardFilters } from '@/lib/api/client';
-import type { RiskDashboardReport, SimulatedPortfolioSummary } from '@/lib/api/types';
+import type { SimulatedPortfolioSummary } from '@/lib/api/types';
 import type { PlatformLocale } from '@/platform/i18n';
 
 const ALL_PORTFOLIOS = '__all_portfolios__';

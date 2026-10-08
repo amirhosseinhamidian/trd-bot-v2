@@ -2,18 +2,16 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { CandidateRiskCheckName } from '@/features/candidates/api/types';
+import type { RiskDashboardReport } from '@/features/risk/api/types';
 import RiskDashboard from '@/features/risk/risk-dashboard';
-import type {
-  CandidateRiskCheckName,
-  RiskDashboardReport,
-  SimulatedPortfolioSummary,
-} from '@/lib/api/types';
+import type { SimulatedPortfolioSummary } from '@/lib/api/types';
 
 const mocks = vi.hoisted(() => ({
   getRiskDashboard: vi.fn(),
 }));
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/features/risk/api/client', () => ({
   getRiskDashboard: mocks.getRiskDashboard,
 }));
 
