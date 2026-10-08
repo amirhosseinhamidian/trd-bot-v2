@@ -3,6 +3,8 @@ import { join, relative, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { PRESERVED_LOCALE_ROUTE_FILES } from '@/platform/route-contract';
+
 const screenComponentPaths = [
   'features/candidates/candidate-catalog.tsx',
   'features/candidates/candidate-detail.tsx',
@@ -26,30 +28,6 @@ const screenComponentPaths = [
   'features/walk-forward/walk-forward-catalog.tsx',
   'features/walk-forward/walk-forward-detail.tsx',
 ] as const;
-
-const localeRoutes = [
-  'candidates/[candidateId]/page.tsx',
-  'candidates/page.tsx',
-  'connections/page.tsx',
-  'datasets/[datasetId]/page.tsx',
-  'datasets/page.tsx',
-  'experiments/[experimentId]/page.tsx',
-  'experiments/page.tsx',
-  'monitoring/page.tsx',
-  'optimizations/[executionId]/page.tsx',
-  'optimizations/page.tsx',
-  'page.tsx',
-  'portfolios/[portfolioId]/page.tsx',
-  'portfolios/[portfolioId]/positions/[positionId]/page.tsx',
-  'portfolios/page.tsx',
-  'risk/page.tsx',
-  'signals/[experimentId]/[signalId]/page.tsx',
-  'signals/page.tsx',
-  'strategies/[strategyName]/[version]/page.tsx',
-  'strategies/page.tsx',
-  'walk-forward/[executionId]/page.tsx',
-  'walk-forward/page.tsx',
-].sort();
 
 const featureBoundaries = [
   [
@@ -209,6 +187,6 @@ describe('platform architecture contract', () => {
       .map((path) => relative(localeRoot, path).replaceAll('\\', '/'))
       .sort();
 
-    expect(actualRoutes).toEqual(localeRoutes);
+    expect(actualRoutes).toEqual([...PRESERVED_LOCALE_ROUTE_FILES].sort());
   });
 });
