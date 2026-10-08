@@ -27,7 +27,9 @@ export function PageHeader({
   return (
     <header className={cn('min-w-0', className)} {...props}>
       {backLink ? (
-        <div className="mb-5 [&>a]:inline-flex [&>a]:min-h-11 [&>a]:items-center">{backLink}</div>
+        <div className="mb-5 min-w-0 [&>a]:inline-flex [&>a]:min-h-11 [&>a]:max-w-full [&>a]:items-center">
+          {backLink}
+        </div>
       ) : null}
 
       <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -40,7 +42,7 @@ export function PageHeader({
 
           <h1
             className={cn(
-              'text-2xl font-bold tracking-tight text-app-foreground sm:text-3xl lg:text-4xl',
+              'max-w-full text-2xl font-bold tracking-tight break-words text-app-foreground sm:text-3xl lg:text-4xl',
               eyebrow && 'mt-3',
               titleClassName,
             )}
@@ -48,10 +50,10 @@ export function PageHeader({
             {title}
           </h1>
 
-          {metadata ? <div className="mt-2">{metadata}</div> : null}
+          {metadata ? <div className="mt-2 min-w-0 break-words">{metadata}</div> : null}
 
           {description ? (
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-app-muted sm:text-base">
+            <p className="mt-3 max-w-3xl text-sm leading-7 break-words text-app-muted sm:text-base">
               {description}
             </p>
           ) : null}
@@ -60,14 +62,14 @@ export function PageHeader({
         {actions ? (
           <div
             data-slot="page-header-actions"
-            className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:max-w-[45%] sm:shrink-0 sm:justify-end [&>a]:min-h-11 max-sm:[&>a]:w-full [&>button]:min-h-11 max-sm:[&>button]:w-full"
+            className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:max-w-[45%] sm:shrink-0 sm:justify-end [&>a]:min-h-11 [&>a]:max-w-full max-sm:[&>a]:w-full [&>button]:min-h-11 [&>button]:max-w-full max-sm:[&>button]:w-full"
           >
             {actions}
           </div>
         ) : null}
       </div>
 
-      {children ? <div className="mt-5">{children}</div> : null}
+      {children ? <div className="mt-5 min-w-0">{children}</div> : null}
     </header>
   );
 }

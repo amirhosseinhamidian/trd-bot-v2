@@ -276,6 +276,7 @@ export default function MarketDataImportHistory({
               {page.total > 0 ? (
                 <div className="mt-4 rounded-xl border border-app-border bg-app-surface px-4 py-3">
                   <Pagination
+                    locale={locale}
                     total={page.total}
                     limit={page.limit}
                     offset={page.offset}

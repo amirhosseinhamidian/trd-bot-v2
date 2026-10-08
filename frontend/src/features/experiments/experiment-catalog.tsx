@@ -333,7 +333,7 @@ export default function ExperimentCatalog({
 
                         <CardDescription
                           dir="ltr"
-                          className="mt-2 truncate text-left text-xs font-semibold"
+                          className="mt-2 text-left text-xs font-semibold break-all"
                         >
                           {experiment.experiment_id}
                         </CardDescription>
@@ -426,7 +426,7 @@ export default function ExperimentCatalog({
                       <p
                         dir="ltr"
                         title={experiment.dataset_id}
-                        className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
                       >
                         {experiment.dataset_id}
                       </p>
@@ -457,6 +457,7 @@ export default function ExperimentCatalog({
       {!hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

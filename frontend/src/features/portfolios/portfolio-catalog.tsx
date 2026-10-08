@@ -154,7 +154,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
                       <CardDescription
                         dir="ltr"
                         title={portfolio.portfolio_id}
-                        className="mt-2 truncate text-left text-xs font-semibold"
+                        className="mt-2 text-left text-xs font-semibold break-all"
                       >
                         {portfolio.portfolio_id}
                       </CardDescription>
@@ -253,7 +253,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
                       <p
                         dir="ltr"
                         title={portfolio.dataset_id}
-                        className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
                       >
                         {portfolio.dataset_id}
                       </p>
@@ -286,6 +286,7 @@ export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatal
       {!hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

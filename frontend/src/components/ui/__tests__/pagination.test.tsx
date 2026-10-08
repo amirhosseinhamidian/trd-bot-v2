@@ -63,10 +63,10 @@ describe('Pagination', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
-  it('inherits an explicit RTL direction while isolating page numbers', () => {
+  it('localizes Persian digits, applies RTL direction, and isolates page numbers', () => {
     render(
       <Pagination
-        dir="rtl"
+        locale="fa"
         total={50}
         limit={25}
         offset={25}
@@ -78,7 +78,26 @@ describe('Pagination', () => {
     );
 
     expect(screen.getByRole('navigation', { name: 'صفحه' })).toHaveAttribute('dir', 'rtl');
-    expect(screen.getByText('2 / 2')).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByText('۲ / ۲')).toHaveAttribute('dir', 'ltr');
+  });
+
+  it('honors an explicit direction override', () => {
+    render(
+      <Pagination
+        dir="ltr"
+        locale="fa"
+        total={50}
+        limit={25}
+        offset={0}
+        pageLabel="صفحه"
+        previousLabel="قبلی"
+        nextLabel="بعدی"
+        onOffsetChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('navigation', { name: 'صفحه' })).toHaveAttribute('dir', 'ltr');
+    expect(screen.getByText('۱ / ۲')).toBeInTheDocument();
   });
 
   it('keeps empty and invalid paging inputs finite and non-interactive', () => {

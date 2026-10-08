@@ -37,9 +37,9 @@ export function ErrorState({
       }
       action={
         hasDetails || canRetry ? (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex max-w-full min-w-0 flex-col items-center gap-4">
             {hasDetails ? (
-              <div className="max-w-full text-xs leading-5 break-words text-app-subtle">
+              <div className="max-w-full min-w-0 text-xs leading-5 break-words text-app-subtle">
                 {details}
               </div>
             ) : null}

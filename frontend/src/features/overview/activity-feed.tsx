@@ -236,7 +236,7 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
                       <Badge variant="info">{activityLabels[item.activity_type]}</Badge>
 
                       <p
-                        className="truncate text-sm font-medium text-app-foreground"
+                        className="text-sm font-medium break-words text-app-foreground"
                         title={item.strategy_name ?? undefined}
                       >
                         {strategyDisplayName ?? item.label}
@@ -249,7 +249,7 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
 
                     <p
                       dir="ltr"
-                      className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
+                      className="mt-2 text-left text-xs font-semibold break-all text-app-subtle"
                     >
                       {item.resource_id}
                     </p>
@@ -271,6 +271,7 @@ export default function ActivityFeed({ initialPage, locale }: ActivityFeedProps)
         </div>
 
         <Pagination
+          locale={locale}
           total={page.total}
           limit={page.limit}
           offset={page.offset}

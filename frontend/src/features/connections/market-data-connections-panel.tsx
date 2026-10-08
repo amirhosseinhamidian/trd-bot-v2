@@ -472,6 +472,7 @@ export default function MarketDataConnectionsPanel({
       {!hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

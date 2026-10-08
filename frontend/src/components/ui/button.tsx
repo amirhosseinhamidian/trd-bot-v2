@@ -57,7 +57,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         aria-busy={isLoading}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60',
+          'inline-flex max-w-full min-w-0 items-center justify-center gap-2 rounded-xl font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60',
           variants[variant],
           sizes[size],
           fullWidth && 'w-full',
@@ -66,7 +66,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? <Spinner size="sm" /> : null}
-        <span>{isLoading && loadingText ? loadingText : children}</span>
+        <span className="max-w-full min-w-0 text-center break-words">
+          {isLoading && loadingText ? loadingText : children}
+        </span>
       </button>
     );
   },

@@ -434,6 +434,7 @@ export default function CandidateDetail({
             {!hasError && lineage.total > 0 ? (
               <div className="mt-4 rounded-2xl border border-app-border bg-app-surface px-5 py-4">
                 <Pagination
+                  locale={locale}
                   total={lineage.total}
                   limit={lineage.limit}
                   offset={lineage.offset}

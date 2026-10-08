@@ -334,6 +334,7 @@ export default function DatasetVersionHistory({
 
             <div className="mt-5">
               <Pagination
+                locale={locale}
                 total={page.total}
                 limit={page.limit}
                 offset={page.offset}

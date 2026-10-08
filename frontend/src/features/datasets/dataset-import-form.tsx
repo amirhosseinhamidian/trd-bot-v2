@@ -473,7 +473,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
               <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <dt className="text-xs text-app-muted">{copy.previewFile}</dt>
-                  <dd dir="ltr" className="mt-2 truncate text-left text-app-foreground">
+                  <dd dir="ltr" className="mt-2 text-left break-all text-app-foreground">
                     {preview.inspection.file_name}
                   </dd>
                 </div>
@@ -518,7 +518,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
                   <dd
                     dir="ltr"
                     title={preview.preview_checksum}
-                    className="mt-2 truncate text-left text-xs text-app-foreground"
+                    className="mt-2 text-left text-xs break-all text-app-foreground"
                   >
                     {preview.preview_checksum}
                   </dd>

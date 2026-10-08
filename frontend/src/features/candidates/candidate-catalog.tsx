@@ -215,7 +215,7 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
                       <CardDescription
                         dir="ltr"
                         title={candidate.candidate_id}
-                        className="mt-2 truncate text-left text-xs font-semibold"
+                        className="mt-2 text-left text-xs font-semibold break-all"
                       >
                         {candidate.candidate_id}
                       </CardDescription>
@@ -401,6 +401,7 @@ export default function CandidateCatalog({ initialPage, locale }: CandidateCatal
       {!hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

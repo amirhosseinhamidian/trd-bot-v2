@@ -497,7 +497,7 @@ export default function HistoricalDatasetImportForm({
                 <p
                   dir="ltr"
                   title={preview.preview_checksum}
-                  className="mt-1 truncate text-left font-mono text-xs text-app-foreground"
+                  className="mt-1 text-left font-mono text-xs break-all text-app-foreground"
                 >
                   {preview.preview_checksum}
                 </p>

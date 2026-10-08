@@ -219,7 +219,7 @@ export default function SignalCatalog({
 
                       <CardDescription
                         dir="ltr"
-                        className="mt-2 truncate text-left text-xs font-semibold"
+                        className="mt-2 text-left text-xs font-semibold break-all"
                       >
                         {signal.signal_id}
                       </CardDescription>
@@ -308,7 +308,7 @@ export default function SignalCatalog({
                     <p
                       dir="ltr"
                       title={signal.dataset_id}
-                      className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                      className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
                     >
                       {signal.dataset_id}
                     </p>
@@ -323,6 +323,7 @@ export default function SignalCatalog({
       {experiments.length > 0 && !hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

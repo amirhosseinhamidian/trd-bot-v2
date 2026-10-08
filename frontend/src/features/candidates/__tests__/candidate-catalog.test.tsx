@@ -371,4 +371,21 @@ describe('CandidateCatalog', () => {
     );
     expect(screen.queryByRole('button', { name: /buy|sell|open|close/i })).toBeNull();
   });
+
+  it('keeps long technical identifiers readable with Persian pagination in RTL', () => {
+    const longCandidateId = `candidate_${'a'.repeat(128)}_BTC-USDT`;
+
+    render(
+      <CandidateCatalog locale="fa" initialPage={makePage([makeCandidate(longCandidateId)], 0)} />,
+    );
+
+    const identifier = screen.getByText(longCandidateId);
+    const pagination = screen.getByRole('navigation', { name: 'صفحه' });
+
+    expect(identifier).toHaveAttribute('dir', 'ltr');
+    expect(identifier).toHaveClass('break-all');
+    expect(identifier).not.toHaveClass('truncate');
+    expect(pagination).toHaveAttribute('dir', 'rtl');
+    expect(screen.getByText('۱ / ۲')).toHaveAttribute('dir', 'ltr');
+  });
 });

@@ -274,7 +274,7 @@ export default function StrategyDetail({
                   <div className="min-w-0">
                     <p
                       dir="ltr"
-                      className="truncate text-left text-sm font-semibold text-app-foreground"
+                      className="text-left text-sm font-semibold break-all text-app-foreground"
                     >
                       {experiment.experiment_id}
                     </p>

@@ -53,7 +53,7 @@ export default function StrategyCatalog({ locale, strategies }: StrategyCatalogP
                     <CardTitle>{strategy.display_name}</CardTitle>
                     <CardDescription
                       dir="ltr"
-                      className="mt-2 truncate text-left text-xs font-semibold"
+                      className="mt-2 text-left text-xs font-semibold break-all"
                     >
                       {strategy.name}@{strategy.version}
                     </CardDescription>

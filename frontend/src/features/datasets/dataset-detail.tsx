@@ -164,7 +164,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
         }
         eyebrow={copy.eyebrow}
         title={dataset.name}
-        titleClassName="truncate"
+        titleClassName="break-words"
         actions={
           <>
             <Badge variant="info">
@@ -199,8 +199,8 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                       dir={item.ltr ? 'ltr' : undefined}
                       className={
                         item.ltr
-                          ? 'mt-2 truncate text-left text-sm font-semibold text-app-foreground'
-                          : 'mt-2 truncate text-sm font-medium text-app-foreground'
+                          ? 'mt-2 text-left text-sm font-semibold break-all text-app-foreground'
+                          : 'mt-2 text-sm font-medium break-words text-app-foreground'
                       }
                       title={item.value}
                     >
@@ -229,7 +229,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                   <p
                     dir="ltr"
                     title={dataset.checksum}
-                    className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                    className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
                   >
                     {dataset.checksum}
                   </p>
@@ -331,7 +331,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
                     <dd
                       dir="ltr"
                       title={dataset.provenance.original_file_checksum ?? undefined}
-                      className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                      className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
                     >
                       {dataset.provenance.original_file_checksum}
                     </dd>
@@ -626,6 +626,7 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
 
               <div className="mt-5">
                 <Pagination
+                  locale={locale}
                   total={candlesPage.total}
                   limit={candlesPage.limit}
                   offset={candlesPage.offset}

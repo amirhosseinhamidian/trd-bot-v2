@@ -905,7 +905,9 @@ export default function ExperimentRunForm({
 
                   <div className="min-w-0">
                     <dt className="text-app-muted">{copy.selectedDataset.source}</dt>
-                    <dd className="mt-1 truncate text-app-foreground">{selectedDataset.source}</dd>
+                    <dd className="mt-1 min-w-0 break-words text-app-foreground">
+                      {selectedDataset.source}
+                    </dd>
                   </div>
                 </dl>
               </div>

@@ -152,7 +152,7 @@ export default function OptimizationCatalog({
                         </CardTitle>
                         <CardDescription
                           dir="ltr"
-                          className="mt-2 truncate text-left text-xs font-semibold"
+                          className="mt-2 text-left text-xs font-semibold break-all"
                         >
                           {execution.execution_id}
                         </CardDescription>
@@ -217,6 +217,7 @@ export default function OptimizationCatalog({
         {!hasError && page.total > 0 ? (
           <div className="mt-6">
             <Pagination
+              locale={locale}
               isLoading={isLoading}
               limit={page.limit}
               offset={page.offset}

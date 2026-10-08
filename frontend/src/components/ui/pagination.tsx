@@ -6,6 +6,7 @@ export type PaginationProps = {
   dir?: 'ltr' | 'rtl';
   isLoading?: boolean;
   limit: number;
+  locale?: 'en' | 'fa';
   nextLabel: string;
   offset: number;
   onOffsetChange: (offset: number) => void;
@@ -18,6 +19,7 @@ export function Pagination({
   dir,
   isLoading = false,
   limit,
+  locale = 'en',
   nextLabel,
   offset,
   onOffsetChange,
@@ -34,12 +36,14 @@ export function Pagination({
   const hasNext = currentOffset + pageSize < itemCount;
 
   const currentPage = itemCount === 0 ? 0 : Math.floor(currentOffset / pageSize) + 1;
+  const direction = dir ?? (locale === 'fa' ? 'rtl' : 'ltr');
+  const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
 
   return (
     <nav
       aria-label={pageLabel}
       aria-busy={isLoading}
-      dir={dir}
+      dir={direction}
       className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <p
@@ -53,7 +57,7 @@ export function Pagination({
           aria-current="page"
           className="font-medium text-app-foreground tabular-nums"
         >
-          {currentPage} / {totalPages}
+          {numberFormatter.format(currentPage)} / {numberFormatter.format(totalPages)}
         </span>
       </p>
 

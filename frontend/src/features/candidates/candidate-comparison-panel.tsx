@@ -149,7 +149,7 @@ export default function CandidateComparisonPanel({
                         <CardTitle className="truncate text-base">
                           {copy.candidate} {formatNumber(comparison_position, locale)}
                         </CardTitle>
-                        <CardDescription dir="ltr" className="mt-2 truncate text-left text-xs">
+                        <CardDescription dir="ltr" className="mt-2 text-left text-xs break-all">
                           {occurrence.candidate.candidate_id}
                         </CardDescription>
                       </div>

@@ -183,11 +183,11 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
                 <CardHeader className="border-b border-app-border">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <CardTitle className="truncate">{dataset.name}</CardTitle>
+                      <CardTitle>{dataset.name}</CardTitle>
 
                       <CardDescription
                         dir="ltr"
-                        className="mt-2 truncate text-left text-xs font-semibold"
+                        className="mt-2 text-left text-xs font-semibold break-all"
                       >
                         {dataset.dataset_id}
                       </CardDescription>
@@ -220,7 +220,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
 
                     <div className="flex items-center justify-between gap-4">
                       <dt className="text-app-muted">{copy.fields.source}</dt>
-                      <dd className="truncate text-app-foreground">{dataset.source}</dd>
+                      <dd className="min-w-0 break-words text-app-foreground">{dataset.source}</dd>
                     </div>
 
                     <div className="border-t border-app-border pt-4">
@@ -244,7 +244,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
                       <dd
                         dir="ltr"
                         title={dataset.checksum}
-                        className="mt-2 truncate text-left text-xs font-semibold text-app-subtle"
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-subtle"
                       >
                         {dataset.checksum}
                       </dd>
@@ -268,6 +268,7 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
       {!hasError && page.total > 0 ? (
         <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
           <Pagination
+            locale={locale}
             total={page.total}
             limit={page.limit}
             offset={page.offset}

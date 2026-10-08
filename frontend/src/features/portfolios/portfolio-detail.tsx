@@ -416,6 +416,7 @@ export default function PortfolioDetail({
 
         {!positionsError && positions.total > 0 ? (
           <Pagination
+            locale={locale}
             total={positions.total}
             limit={positions.limit}
             offset={positions.offset}
@@ -505,6 +506,7 @@ export default function PortfolioDetail({
 
           {!timelineError && timeline.total > 0 ? (
             <Pagination
+              locale={locale}
               total={timeline.total}
               limit={timeline.limit}
               offset={timeline.offset}
