@@ -105,14 +105,15 @@ describe('PortfolioDetail', () => {
     );
 
     expect(screen.getByText('Historical portfolio detail')).toBeInTheDocument();
-    expect(screen.getAllByText('portfolio-test')).toHaveLength(2);
+    expect(screen.getAllByText('portfolio-test')).toHaveLength(1);
     expect(screen.getByText('position-initial')).toBeInTheDocument();
     expect(document.getElementById('position-initial')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View details and lineage' })).toHaveAttribute(
       'href',
       '/en/portfolios/portfolio-test/positions/position-initial',
     );
-    expect(screen.getByText('Portfolio timeline')).toBeInTheDocument();
+    const timelineTrigger = screen.getByText('Portfolio timeline').closest('summary');
+    expect(timelineTrigger?.parentElement).not.toHaveAttribute('open');
     expect(screen.getByText('Position closed')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /create|buy|sell|open|close/i })).toBeNull();
   });

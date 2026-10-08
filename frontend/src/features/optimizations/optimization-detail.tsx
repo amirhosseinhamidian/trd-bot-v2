@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import type { ExperimentParameter } from '@/features/experiments/api/types';
 import { getOptimizationExecution } from '@/features/optimizations/api/client';
 import type {
@@ -13,6 +13,7 @@ import type {
 } from '@/features/optimizations/api/types';
 import { getOptimizationCopy } from '@/features/optimizations/optimization-copy';
 import {
+  AdvancedDisclosure,
   Badge,
   type BadgeVariant,
   Card,
@@ -154,6 +155,7 @@ function EvidenceLinks({
 
 export default function OptimizationDetail({ initialExecution, locale }: OptimizationDetailProps) {
   const copy = getOptimizationCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const [execution, setExecution] = useState(initialExecution);
   const [refreshError, setRefreshError] = useState(false);
@@ -218,11 +220,6 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
         }
         eyebrow={copy.detail.eyebrow}
         title={getStrategyDisplayName(execution.strategy_name, locale)}
-        metadata={
-          <p dir="ltr" className="text-left text-sm font-semibold break-all text-app-muted">
-            {execution.execution_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
@@ -326,20 +323,11 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
               value={formatNumber(execution.completed_trials, locale)}
             />
           </dl>
-
-          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Metric label={copy.detail.fields.datasetId} value={execution.dataset_id} />
-            <Metric label={copy.detail.fields.executionId} value={execution.execution_id} />
-          </dl>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.detail.plan}</CardTitle>
-          <CardDescription>{copy.detail.planDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AdvancedDisclosure title={copy.detail.plan} description={copy.detail.planDescription}>
+        <div>
           <dl className="mb-6 grid gap-4 sm:grid-cols-3">
             <Metric
               label={copy.detail.fields.requested}
@@ -379,8 +367,8 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
               ))}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
       <Card>
         <CardHeader>
@@ -541,13 +529,25 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.detail.configuration}</CardTitle>
-          <CardDescription>{copy.detail.configurationDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <section aria-labelledby="optimization-configuration-title">
+          <div className="mb-5">
+            <h2
+              id="optimization-configuration-title"
+              className="text-lg font-semibold text-app-foreground"
+            >
+              {copy.detail.configuration}
+            </h2>
+            <p className="mt-1.5 text-sm leading-6 text-app-muted">
+              {copy.detail.configurationDescription}
+            </p>
+          </div>
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label={copy.detail.fields.executionId} value={execution.execution_id} />
+            <Metric label={copy.detail.fields.datasetId} value={execution.dataset_id} />
             <Metric
               label={copy.detail.fields.horizon}
               value={formatNumber(execution.horizon_candles, locale)}
@@ -629,8 +629,8 @@ export default function OptimizationDetail({ initialExecution, locale }: Optimiz
               value={formatPercent(execution.backtest_config.slippage_rate, locale)}
             />
           </dl>
-        </CardContent>
-      </Card>
+        </section>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }

@@ -5,8 +5,9 @@ import type {
   ExperimentAnalyticsReport,
   ResearchMetricKey,
 } from '@/features/experiments/api/types';
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import {
+  AdvancedDisclosure,
   Badge,
   Card,
   CardContent,
@@ -88,6 +89,7 @@ function Metric({ label, value }: MetricProps) {
 
 export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsProps) {
   const copy = experimentDetailCopy[locale];
+  const platformCopy = getPlatformCopy(locale);
   const distribution = analytics.trade_distribution;
   const metricLabel = (key: ResearchMetricKey): string =>
     copy.metricLabels[key as keyof typeof copy.metricLabels] ?? key;
@@ -284,12 +286,11 @@ export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsPr
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.metricDefinitions}</CardTitle>
-          <CardDescription>{copy.metricDefinitionsDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.metricDefinitions}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div>
           <dl className="grid gap-4 lg:grid-cols-2">
             {analytics.metric_definitions.map((definition) => (
               <div
@@ -309,8 +310,8 @@ export function ExperimentAnalytics({ analytics, locale }: ExperimentAnalyticsPr
               </div>
             ))}
           </dl>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
     </>
   );
 }

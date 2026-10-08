@@ -7,8 +7,9 @@ import type {
   ExperimentPerformanceSeries,
   ExperimentSummary,
 } from '@/features/experiments/api/types';
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
+import { AdvancedDisclosure } from '@/components/ui/advanced-disclosure';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExperimentAcceptancePanel } from '@/features/experiments/experiment-acceptance-panel';
 import { ExperimentAnalytics } from '@/features/experiments/experiment-analytics';
@@ -127,6 +128,7 @@ export function ExperimentDetail({
   performanceSeries,
 }: ExperimentDetailProps) {
   const copy = experimentDetailCopy[locale];
+  const platformCopy = getPlatformCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const comparison = comparisonPresentation(experiment.comparison_outcome, locale);
   const rerunHref = buildExperimentRerunHref(experiment, locale);
@@ -145,11 +147,6 @@ export function ExperimentDetail({
         }
         eyebrow={copy.eyebrow}
         title={strategyDisplayName}
-        metadata={
-          <p dir="ltr" className="text-sm font-semibold break-all text-app-muted">
-            {experiment.experiment_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="info">{copy.historicalOnly}</Badge>
@@ -171,14 +168,13 @@ export function ExperimentDetail({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.strategyInformation}</CardTitle>
-          <CardDescription>{copy.strategyDescription}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.strategyInformation}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div>
           <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <Metric label={copy.experimentId} value={experiment.experiment_id} />
             <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
               <dt className="text-sm text-app-muted">{copy.strategy}</dt>
               <dd className="mt-2 text-lg font-semibold text-app-foreground">
@@ -217,8 +213,8 @@ export function ExperimentDetail({
               </dd>
             </div>
           </dl>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
       <ExperimentReplayPanel experimentId={experiment.experiment_id} locale={locale} />
 
@@ -311,13 +307,8 @@ export function ExperimentDetail({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.parameters}</CardTitle>
-          <CardDescription>{copy.parametersDescription}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure title={copy.parameters} description={copy.parametersDescription}>
+        <div>
           {experiment.parameters.length > 0 ? (
             <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {experiment.parameters.map((parameter) => (
@@ -338,8 +329,8 @@ export function ExperimentDetail({
           ) : (
             <p className="text-sm text-app-muted">{copy.unavailable}</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
       <ExperimentAcceptancePanel
         experimentId={experiment.experiment_id}
         locale={locale}

@@ -2,7 +2,15 @@ import Link from 'next/link';
 
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import {
+  AdvancedDisclosure,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 import type {
   CandidateDecisionLineageNode,
   CandidateExitReason,
@@ -10,7 +18,7 @@ import type {
 } from '@/features/candidates/api/types';
 import type { PositionDetailReport } from '@/features/portfolios/api/types';
 import { getPositionDetailCopy } from '@/features/portfolios/position-detail-copy';
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 
 type PositionDetailProps = {
   locale: PlatformLocale;
@@ -78,6 +86,7 @@ function nodeHref(
 
 export default function PositionDetail({ locale, report }: PositionDetailProps) {
   const copy = getPositionDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
   const position = report.position;
   const experimentId = report.nodes.find((node) => node.kind === 'experiment')?.resource_id;
   const evidence = report.decision_evidence;
@@ -109,11 +118,6 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
         eyebrow={copy.eyebrow}
         title={copy.title}
         description={copy.description}
-        metadata={
-          <p dir="ltr" className="text-left text-xs font-semibold break-all text-app-muted">
-            {position.position_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="warning">{copy.readOnly}</Badge>
@@ -167,8 +171,13 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
         </CardContent>
       </Card>
 
-      <section>
-        <h2 className="text-xl font-semibold text-app-foreground">{copy.lineageTitle}</h2>
+      <AdvancedDisclosure
+        title={copy.lineageTitle}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <p dir="ltr" className="text-left text-xs font-semibold break-all text-app-muted">
+          {position.position_id}
+        </p>
         <p className="mt-2 text-sm text-app-muted">{copy.lineageDescription}</p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {report.nodes.map((node) => {
@@ -218,7 +227,7 @@ export default function PositionDetail({ locale, report }: PositionDetailProps) 
             );
           })}
         </div>
-      </section>
+      </AdvancedDisclosure>
 
       <Card>
         <CardHeader>

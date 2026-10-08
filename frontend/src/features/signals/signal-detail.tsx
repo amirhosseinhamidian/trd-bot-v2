@@ -2,7 +2,15 @@ import Link from 'next/link';
 
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import {
+  AdvancedDisclosure,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 import type { ExperimentSummary } from '@/features/experiments/api/types';
 import type { SignalDirection, StrategySignal } from '@/features/signals/api/types';
 import { getSignalsCopy } from '@/features/signals/signals-copy';
@@ -62,11 +70,6 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
         }
         eyebrow={copy.eyebrow}
         title={getStrategyDisplayName(signal.strategy_name, locale)}
-        metadata={
-          <p dir="ltr" className="text-left text-xs font-semibold text-app-muted">
-            {signal.signal_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="warning">{copy.historicalOnly}</Badge>
@@ -114,7 +117,11 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
             <p className="text-xs text-app-muted">{copy.fields.reason}</p>
             <p className="mt-2 text-sm leading-7 text-app-foreground">{signal.reason}</p>
           </div>
+        </CardContent>
+      </Card>
 
+      <AdvancedDisclosure title={copy.detail.sourcesTitle} description={experiment.experiment_id}>
+        <div className="space-y-5">
           <div>
             <p className="text-xs text-app-muted">{copy.fields.features}</p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -125,29 +132,27 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.detail.sourcesTitle}</CardTitle>
-          <CardDescription dir="ltr">{experiment.experiment_id}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Link
-            href={`/${locale}/datasets/${encodeURIComponent(signal.dataset_id)}`}
-            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-          >
-            {copy.detail.viewDataset}
-          </Link>
-          <Link
-            href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
-            className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
-          >
-            {copy.detail.viewExperiment}
-          </Link>
-        </CardContent>
-      </Card>
+          <p dir="ltr" className="text-left text-xs font-semibold break-all text-app-muted">
+            {signal.signal_id}
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/${locale}/datasets/${encodeURIComponent(signal.dataset_id)}`}
+              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+            >
+              {copy.detail.viewDataset}
+            </Link>
+            <Link
+              href={`/${locale}/experiments/${encodeURIComponent(experiment.experiment_id)}`}
+              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-accent transition hover:bg-app-hover focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+            >
+              {copy.detail.viewExperiment}
+            </Link>
+          </div>
+        </div>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }

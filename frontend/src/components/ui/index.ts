@@ -1,6 +1,9 @@
 export { Badge } from '@/components/ui/badge';
 export type { BadgeProps, BadgeVariant } from '@/components/ui/badge';
 
+export { AdvancedDisclosure } from '@/components/ui/advanced-disclosure';
+export type { AdvancedDisclosureProps } from '@/components/ui/advanced-disclosure';
+
 export { Button } from '@/components/ui/button';
 export type { ButtonProps, ButtonSize, ButtonVariant } from '@/components/ui/button';
 

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
+  AdvancedDisclosure,
   Badge,
   Card,
   CardContent,
@@ -177,11 +178,6 @@ export default function PortfolioDetail({
         eyebrow={copy.eyebrow}
         title={copy.title}
         description={copy.description}
-        metadata={
-          <p dir="ltr" className="text-xs font-semibold text-app-muted">
-            {portfolio.portfolio_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="warning">{copy.readOnly}</Badge>
@@ -432,98 +428,95 @@ export default function PortfolioDetail({
         ) : null}
       </section>
 
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-xl font-semibold text-app-foreground">{copy.timelineTitle}</h2>
-          <p className="mt-1 text-sm text-app-muted">{copy.timelineDescription}</p>
-        </div>
+      <AdvancedDisclosure title={copy.timelineTitle} description={copy.timelineDescription}>
+        <div className="space-y-4">
+          <div className="relative min-h-40" aria-busy={timelineLoading}>
+            {timelineLoading ? (
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+                <Spinner label={copy.loading} className="text-app-accent" />
+              </div>
+            ) : null}
 
-        <div className="relative min-h-40" aria-busy={timelineLoading}>
-          {timelineLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
-              <Spinner label={copy.loading} className="text-app-accent" />
-            </div>
-          ) : null}
+            {timelineError ? (
+              <ErrorState
+                title={copy.timelineError}
+                description={copy.timelineError}
+                retryLabel={copy.retry}
+                onRetry={() => void loadTimeline(timeline.offset)}
+              />
+            ) : timeline.items.length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-sm text-app-muted">
+                  {copy.timelineEmpty}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {timeline.items.map((event) => (
+                  <Card key={event.event_id}>
+                    <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-5">
+                      <div>
+                        <p className="text-xs text-app-muted">{copy.fields.eventNumber}</p>
+                        <p className="mt-1 text-sm text-app-foreground">
+                          {formatNumber(event.sequence_number, locale)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-app-muted">
+                          {copy.timelineEvents[event.event_type]}
+                        </p>
+                        <p className="mt-1 text-sm text-app-foreground">
+                          {formatDate(event.occurred_at, locale)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-app-muted">{copy.fields.eventEquity}</p>
+                        <p
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
+                          {formatDecimal(event.equity, locale)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-app-muted">{copy.fields.eventPrice}</p>
+                        <p
+                          dir="ltr"
+                          className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                        >
+                          {formatDecimal(event.price, locale)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-app-muted">{copy.fields.eventRealizedPnl}</p>
+                        <p
+                          dir="ltr"
+                          className={`mt-1 text-left text-sm font-semibold ${pnlClassName(event.realized_pnl)}`}
+                        >
+                          {formatDecimal(event.realized_pnl, locale)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {timelineError ? (
-            <ErrorState
-              title={copy.timelineError}
-              description={copy.timelineError}
-              retryLabel={copy.retry}
-              onRetry={() => void loadTimeline(timeline.offset)}
+          {!timelineError && timeline.total > 0 ? (
+            <Pagination
+              total={timeline.total}
+              limit={timeline.limit}
+              offset={timeline.offset}
+              isLoading={timelineLoading}
+              pageLabel={copy.timelinePage}
+              previousLabel={copy.previous}
+              nextLabel={copy.next}
+              onOffsetChange={(offset) => void loadTimeline(offset)}
             />
-          ) : timeline.items.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-sm text-app-muted">
-                {copy.timelineEmpty}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {timeline.items.map((event) => (
-                <Card key={event.event_id}>
-                  <CardContent className="grid gap-4 py-5 sm:grid-cols-2 lg:grid-cols-5">
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.eventNumber}</p>
-                      <p className="mt-1 text-sm text-app-foreground">
-                        {formatNumber(event.sequence_number, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">
-                        {copy.timelineEvents[event.event_type]}
-                      </p>
-                      <p className="mt-1 text-sm text-app-foreground">
-                        {formatDate(event.occurred_at, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.eventEquity}</p>
-                      <p
-                        dir="ltr"
-                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
-                      >
-                        {formatDecimal(event.equity, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.eventPrice}</p>
-                      <p
-                        dir="ltr"
-                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
-                      >
-                        {formatDecimal(event.price, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.eventRealizedPnl}</p>
-                      <p
-                        dir="ltr"
-                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(event.realized_pnl)}`}
-                      >
-                        {formatDecimal(event.realized_pnl, locale)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
-
-        {!timelineError && timeline.total > 0 ? (
-          <Pagination
-            total={timeline.total}
-            limit={timeline.limit}
-            offset={timeline.offset}
-            isLoading={timelineLoading}
-            pageLabel={copy.timelinePage}
-            previousLabel={copy.previous}
-            nextLabel={copy.next}
-            onOffsetChange={(offset) => void loadTimeline(offset)}
-          />
-        ) : null}
-      </section>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }

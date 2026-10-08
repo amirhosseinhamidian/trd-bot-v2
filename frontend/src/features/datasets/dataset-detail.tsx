@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
+  AdvancedDisclosure,
   Badge,
   Button,
   Card,
@@ -28,7 +29,7 @@ import DatasetVersionHistory from '@/features/datasets/dataset-version-history';
 import { getDatasetCandles } from '@/features/datasets/api/client';
 import type { DatasetDetailSummary, OHLCVCandle } from '@/features/datasets/api/types';
 import type { Page } from '@/lib/api/core/types';
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 
 const CANDLES_PER_PAGE = 25;
 
@@ -64,6 +65,7 @@ function formatPercent(value: number, locale: PlatformLocale): string {
 
 export default function DatasetDetail({ dataset, initialCandlesPage, locale }: DatasetDetailProps) {
   const copy = getDatasetDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
 
   const [candlesPage, setCandlesPage] = useState(initialCandlesPage);
   const [isLoading, setIsLoading] = useState(false);
@@ -173,185 +175,197 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.metadata.title}</CardTitle>
-          <CardDescription>{copy.metadata.description}</CardDescription>
-        </CardHeader>
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{copy.metadata.title}</CardTitle>
+              <CardDescription>{copy.metadata.description}</CardDescription>
+            </CardHeader>
 
-        <CardContent>
-          <dl className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {metadata.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl border border-app-border bg-app-surface-muted p-4"
+            <CardContent>
+              <dl className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                {metadata.map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-app-border bg-app-surface-muted p-4"
+                  >
+                    <dt className="text-xs text-app-muted">{item.label}</dt>
+
+                    <dd
+                      dir={item.ltr ? 'ltr' : undefined}
+                      className={
+                        item.ltr
+                          ? 'mt-2 truncate text-left text-sm font-semibold text-app-foreground'
+                          : 'mt-2 truncate text-sm font-medium text-app-foreground'
+                      }
+                      title={item.value}
+                    >
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <p className="text-xs text-app-muted">{copy.metadata.dataPeriod}</p>
+
+                  <p className="mt-2 text-sm leading-7 text-app-foreground">
+                    {formatDate(dataset.start_time, locale)}
+
+                    <span className="mx-2 text-app-subtle">—</span>
+
+                    {formatDate(dataset.end_time, locale)}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                  <p className="text-xs text-app-muted">{copy.metadata.checksum}</p>
+
+                  <p
+                    dir="ltr"
+                    title={dataset.checksum}
+                    className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                  >
+                    {dataset.checksum}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle>{copy.provenance.title}</CardTitle>
+                <CardDescription>{copy.provenance.description}</CardDescription>
+              </div>
+
+              <Badge
+                variant={dataset.provenance.kind === 'market_data_import' ? 'info' : 'neutral'}
               >
-                <dt className="text-xs text-app-muted">{item.label}</dt>
+                {copy.provenance.kinds[dataset.provenance.kind]}
+              </Badge>
+            </CardHeader>
 
-                <dd
-                  dir={item.ltr ? 'ltr' : undefined}
-                  className={
-                    item.ltr
-                      ? 'mt-2 truncate text-left text-sm font-semibold text-app-foreground'
-                      : 'mt-2 truncate text-sm font-medium text-app-foreground'
-                  }
-                  title={item.value}
-                >
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-              <p className="text-xs text-app-muted">{copy.metadata.dataPeriod}</p>
-
-              <p className="mt-2 text-sm leading-7 text-app-foreground">
-                {formatDate(dataset.start_time, locale)}
-
-                <span className="mx-2 text-app-subtle">—</span>
-
-                {formatDate(dataset.end_time, locale)}
+            <CardContent>
+              <p className="text-sm leading-7 text-app-muted">
+                {copy.provenance.kindDescriptions[dataset.provenance.kind]}
               </p>
-            </div>
 
-            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-              <p className="text-xs text-app-muted">{copy.metadata.checksum}</p>
+              {dataset.provenance.kind === 'market_data_import' ? (
+                <dl className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                    <dt className="text-xs text-app-muted">{copy.provenance.connectionId}</dt>
+                    <dd
+                      dir="ltr"
+                      className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                    >
+                      {dataset.provenance.connection_id}
+                    </dd>
+                  </div>
 
-              <p
-                dir="ltr"
-                title={dataset.checksum}
-                className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
-              >
-                {dataset.checksum}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                    <dt className="text-xs text-app-muted">{copy.provenance.providerId}</dt>
+                    <dd
+                      dir="ltr"
+                      className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                    >
+                      {dataset.provenance.provider_id}
+                    </dd>
+                  </div>
 
-      <Card>
-        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>{copy.provenance.title}</CardTitle>
-            <CardDescription>{copy.provenance.description}</CardDescription>
-          </div>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                    <dt className="text-xs text-app-muted">{copy.provenance.importId}</dt>
+                    <dd
+                      dir="ltr"
+                      className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                    >
+                      {dataset.provenance.import_id}
+                    </dd>
+                  </div>
 
-          <Badge variant={dataset.provenance.kind === 'market_data_import' ? 'info' : 'neutral'}>
-            {copy.provenance.kinds[dataset.provenance.kind]}
-          </Badge>
-        </CardHeader>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                    <dt className="text-xs text-app-muted">{copy.provenance.requestedRange}</dt>
+                    <dd className="mt-2 text-sm leading-7 text-app-foreground">
+                      {dataset.provenance.requested_start_time
+                        ? formatDate(dataset.provenance.requested_start_time, locale)
+                        : '—'}
+                      <span className="mx-2 text-app-subtle">—</span>
+                      {dataset.provenance.requested_end_time
+                        ? formatDate(dataset.provenance.requested_end_time, locale)
+                        : '—'}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
 
-        <CardContent>
-          <p className="text-sm leading-7 text-app-muted">
-            {copy.provenance.kindDescriptions[dataset.provenance.kind]}
-          </p>
+              {dataset.provenance.kind === 'manual_upload' &&
+              dataset.provenance.original_filename ? (
+                <dl className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                    <dt className="text-xs text-app-muted">{copy.provenance.originalFilename}</dt>
+                    <dd
+                      dir="ltr"
+                      className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
+                    >
+                      {dataset.provenance.original_filename}
+                    </dd>
+                  </div>
 
-          {dataset.provenance.kind === 'market_data_import' ? (
-            <dl className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-                <dt className="text-xs text-app-muted">{copy.provenance.connectionId}</dt>
-                <dd
-                  dir="ltr"
-                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
-                >
-                  {dataset.provenance.connection_id}
-                </dd>
-              </div>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+                    <dt className="text-xs text-app-muted">{copy.provenance.originalFileFormat}</dt>
+                    <dd className="mt-2 text-sm font-semibold text-app-foreground uppercase">
+                      {dataset.provenance.original_file_format}
+                    </dd>
+                  </div>
 
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-                <dt className="text-xs text-app-muted">{copy.provenance.providerId}</dt>
-                <dd
-                  dir="ltr"
-                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
-                >
-                  {dataset.provenance.provider_id}
-                </dd>
-              </div>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                    <dt className="text-xs text-app-muted">
+                      {copy.provenance.originalFileChecksum}
+                    </dt>
+                    <dd
+                      dir="ltr"
+                      title={dataset.provenance.original_file_checksum ?? undefined}
+                      className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
+                    >
+                      {dataset.provenance.original_file_checksum}
+                    </dd>
+                  </div>
 
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
-                <dt className="text-xs text-app-muted">{copy.provenance.importId}</dt>
-                <dd
-                  dir="ltr"
-                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
-                >
-                  {dataset.provenance.import_id}
-                </dd>
-              </div>
+                  <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
+                    <dt className="text-xs text-app-muted">{copy.provenance.columnMapping}</dt>
+                    <dd className="mt-3 flex flex-wrap gap-2">
+                      {Object.entries(dataset.provenance.column_mapping ?? {}).map(
+                        ([field, column]) => (
+                          <Badge key={field} variant="neutral">
+                            {field} → {column}
+                          </Badge>
+                        ),
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
+            </CardContent>
+          </Card>
 
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
-                <dt className="text-xs text-app-muted">{copy.provenance.requestedRange}</dt>
-                <dd className="mt-2 text-sm leading-7 text-app-foreground">
-                  {dataset.provenance.requested_start_time
-                    ? formatDate(dataset.provenance.requested_start_time, locale)
-                    : '—'}
-                  <span className="mx-2 text-app-subtle">—</span>
-                  {dataset.provenance.requested_end_time
-                    ? formatDate(dataset.provenance.requested_end_time, locale)
-                    : '—'}
-                </dd>
-              </div>
-            </dl>
+          {dataset.provenance.kind === 'market_data_import' &&
+          dataset.provenance.connection_id &&
+          dataset.provenance.import_id ? (
+            <DatasetVersionHistory
+              connectionId={dataset.provenance.connection_id}
+              importId={dataset.provenance.import_id}
+              currentDatasetId={dataset.dataset_id}
+              locale={locale}
+            />
           ) : null}
-
-          {dataset.provenance.kind === 'manual_upload' && dataset.provenance.original_filename ? (
-            <dl className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-                <dt className="text-xs text-app-muted">{copy.provenance.originalFilename}</dt>
-                <dd
-                  dir="ltr"
-                  className="mt-2 text-left text-sm font-semibold break-all text-app-foreground"
-                >
-                  {dataset.provenance.original_filename}
-                </dd>
-              </div>
-
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-                <dt className="text-xs text-app-muted">{copy.provenance.originalFileFormat}</dt>
-                <dd className="mt-2 text-sm font-semibold text-app-foreground uppercase">
-                  {dataset.provenance.original_file_format}
-                </dd>
-              </div>
-
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
-                <dt className="text-xs text-app-muted">{copy.provenance.originalFileChecksum}</dt>
-                <dd
-                  dir="ltr"
-                  title={dataset.provenance.original_file_checksum ?? undefined}
-                  className="mt-2 truncate text-left text-xs font-semibold text-app-muted"
-                >
-                  {dataset.provenance.original_file_checksum}
-                </dd>
-              </div>
-
-              <div className="rounded-xl border border-app-border bg-app-surface-muted p-4 md:col-span-2">
-                <dt className="text-xs text-app-muted">{copy.provenance.columnMapping}</dt>
-                <dd className="mt-3 flex flex-wrap gap-2">
-                  {Object.entries(dataset.provenance.column_mapping ?? {}).map(
-                    ([field, column]) => (
-                      <Badge key={field} variant="neutral">
-                        {field} → {column}
-                      </Badge>
-                    ),
-                  )}
-                </dd>
-              </div>
-            </dl>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {dataset.provenance.kind === 'market_data_import' &&
-      dataset.provenance.connection_id &&
-      dataset.provenance.import_id ? (
-        <DatasetVersionHistory
-          connectionId={dataset.provenance.connection_id}
-          importId={dataset.provenance.import_id}
-          currentDatasetId={dataset.dataset_id}
-          locale={locale}
-        />
-      ) : null}
+        </div>
+      </AdvancedDisclosure>
 
       <Card>
         <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -527,19 +541,11 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle>{copy.candles.title}</CardTitle>
-            <CardDescription>{copy.candles.description}</CardDescription>
-          </div>
-
-          <Badge variant="neutral">
+      <AdvancedDisclosure title={copy.candles.title} description={copy.candles.description}>
+        <div className="relative min-h-64">
+          <Badge variant="neutral" className="mb-5">
             {copy.candles.total}:​​ {formatNumber(candlesPage.total, locale)}
           </Badge>
-        </CardHeader>
-
-        <CardContent className="relative min-h-64">
           {isLoading ? (
             <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-app-overlay backdrop-blur-sm">
               <Spinner size="lg" label={copy.candles.loading} className="text-app-accent" />
@@ -632,8 +638,8 @@ export default function DatasetDetail({ dataset, initialCandlesPage, locale }: D
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }

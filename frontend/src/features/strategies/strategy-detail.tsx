@@ -2,7 +2,15 @@ import Link from 'next/link';
 
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
-import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import {
+  AdvancedDisclosure,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 import type { ExperimentSummary } from '@/features/experiments/api/types';
 import type {
   ResearchStrategyMetadata,
@@ -117,13 +125,11 @@ export default function StrategyDetail({
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.detail.metadataTitle}</CardTitle>
-          <CardDescription>{copy.detail.metadataDescription}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.detail.metadataTitle}
+        description={copy.detail.metadataDescription}
+      >
+        <div>
           <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {metadata.map((item) => (
               <div
@@ -143,16 +149,14 @@ export default function StrategyDetail({
               </div>
             ))}
           </dl>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.detail.parametersTitle}</CardTitle>
-          <CardDescription>{copy.detail.parametersDescription}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.detail.parametersTitle}
+        description={copy.detail.parametersDescription}
+      >
+        <div>
           {strategy.parameters.length === 0 ? (
             <p className="text-sm leading-7 text-app-muted">{copy.detail.noParameters}</p>
           ) : (
@@ -213,8 +217,8 @@ export default function StrategyDetail({
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
       <Card>
         <CardHeader>
@@ -250,20 +254,14 @@ export default function StrategyDetail({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardTitle>{copy.detail.historyTitle}</CardTitle>
-              <CardDescription>{copy.detail.historyDescription}</CardDescription>
-            </div>
-            <Badge variant="info">
-              {copy.detail.historyTotal}: {formatNumber(experimentHistory?.total ?? 0, locale)}
-            </Badge>
-          </div>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.detail.historyTitle}
+        description={copy.detail.historyDescription}
+      >
+        <div>
+          <Badge variant="info" className="mb-5">
+            {copy.detail.historyTotal}: {formatNumber(experimentHistory?.total ?? 0, locale)}
+          </Badge>
           {!experimentHistory || experimentHistory.items.length === 0 ? (
             <p className="text-sm leading-7 text-app-muted">{copy.detail.historyEmpty}</p>
           ) : (
@@ -296,8 +294,8 @@ export default function StrategyDetail({
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
       <Card>
         <CardHeader>

@@ -218,7 +218,10 @@ describe('CandidateDetail', () => {
       />,
     );
 
-    expect(screen.getByText('Research lineage')).toBeInTheDocument();
+    const lineageTrigger = screen
+      .getByText('Research lineage', { selector: 'span' })
+      .closest('summary');
+    expect(lineageTrigger?.parentElement).not.toHaveAttribute('open');
     expect(screen.getByText('journal-initial')).toBeInTheDocument();
     expect(screen.getByText('Research only')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'RSI Threshold' })).toBeInTheDocument();

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
+  AdvancedDisclosure,
   Badge,
   Card,
   CardContent,
@@ -26,7 +27,7 @@ import { getCandidateDetailCopy } from '@/features/candidates/candidate-detail-c
 import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
 import type { Page } from '@/lib/api/core/types';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 
 const LINEAGE_PAGE_SIZE = 10;
 
@@ -75,6 +76,7 @@ export default function CandidateDetail({
   locale,
 }: CandidateDetailProps) {
   const copy = getCandidateDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
   const [lineage, setLineage] = useState(initialLineage);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -122,11 +124,6 @@ export default function CandidateDetail({
         }
         eyebrow={copy.eyebrow}
         title={`${snapshot.pair.base_asset}/${snapshot.pair.quote_asset}`}
-        metadata={
-          <p dir="ltr" className="text-xs font-semibold text-app-muted">
-            {snapshot.candidate_id}
-          </p>
-        }
         actions={
           <>
             <Badge variant="warning">{copy.readOnly}</Badge>
@@ -172,52 +169,6 @@ export default function CandidateDetail({
             </div>
           </dl>
 
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.datasetId}</dt>
-              <dd
-                dir="ltr"
-                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
-              >
-                {snapshot.dataset_id}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.experimentId}</dt>
-              <dd
-                dir="ltr"
-                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
-              >
-                {snapshot.experiment_id}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.signalId}</dt>
-              <dd
-                dir="ltr"
-                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
-              >
-                {snapshot.signal_id}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.timeframe}</dt>
-              <dd className="mt-1 text-sm text-app-foreground">{snapshot.timeframe}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
-              <dd className="mt-1 text-sm text-app-foreground">
-                {formatDate(snapshot.created_at, locale)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-app-muted">{copy.fields.validUntil}</dt>
-              <dd className="mt-1 text-sm text-app-foreground">
-                {formatDate(snapshot.valid_until, locale)}
-              </dd>
-            </div>
-          </dl>
-
           <div className="grid gap-3 border-t border-app-border pt-5 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <p className="text-xs text-app-muted">{copy.fields.replay}</p>
@@ -233,15 +184,6 @@ export default function CandidateDetail({
                 {latest.risk_decision
                   ? copy.riskDecisions[latest.risk_decision]
                   : copy.notEvaluated}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
-              <p
-                dir="ltr"
-                className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
-              >
-                {latest.position_id ?? '—'}
               </p>
             </div>
             <div>
@@ -262,6 +204,47 @@ export default function CandidateDetail({
         </CardContent>
       </Card>
 
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            [copy.fields.candidateId, snapshot.candidate_id],
+            [copy.fields.datasetId, snapshot.dataset_id],
+            [copy.fields.experimentId, snapshot.experiment_id],
+            [copy.fields.signalId, snapshot.signal_id],
+            [copy.fields.positionId, latest.position_id ?? '—'],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs text-app-muted">{label}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
+                {value}
+              </dd>
+            </div>
+          ))}
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.timeframe}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">{snapshot.timeframe}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">
+              {formatDate(snapshot.created_at, locale)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.validUntil}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">
+              {formatDate(snapshot.valid_until, locale)}
+            </dd>
+          </div>
+        </dl>
+      </AdvancedDisclosure>
+
       <Card id="risk-decision" className="scroll-mt-6">
         <CardHeader>
           <CardTitle>{copy.decisionBreakdownTitle}</CardTitle>
@@ -274,186 +257,197 @@ export default function CandidateDetail({
 
       <CandidateDecisionLineageView lineage={candidate.decision_lineage} locale={locale} />
 
-      <section>
-        <div>
-          <h2 className="text-xl font-semibold text-app-foreground">{copy.rankHistoryTitle}</h2>
-          <p className="mt-2 text-sm text-app-muted">{copy.rankHistoryDescription}</p>
-        </div>
-
-        <ol className="mt-5 grid gap-3 lg:grid-cols-2">
-          {candidate.rank_history.map((entry) => (
-            <li
-              key={entry.journal_id}
-              className="rounded-2xl border border-app-border bg-app-surface p-4"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs text-app-muted">{copy.fields.journal}</p>
-                  <p
-                    dir="ltr"
-                    className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
-                  >
-                    {entry.journal_id}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="info">#{formatNumber(entry.rank, locale)}</Badge>
-                  <Badge variant={entry.selected ? 'success' : 'neutral'}>
-                    {entry.selected ? copy.selected : copy.notSelected}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
-                  <p dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
-                    {formatDecimal(entry.ranking_score, locale)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
-                  <p className="mt-1 text-app-foreground">
-                    {formatDate(entry.recorded_at, locale)}
-                  </p>
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs text-app-muted">
-                {entry.evidence_available ? copy.evidenceAvailable : copy.evidenceUnavailable}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section>
-        <div>
-          <h2 className="text-xl font-semibold text-app-foreground">{copy.lineageTitle}</h2>
-          <p className="mt-2 text-sm text-app-muted">{copy.lineageDescription}</p>
-        </div>
-
-        <div className="relative mt-5 min-h-48" aria-busy={isLoading}>
-          {isLoading ? (
-            <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
-              <Spinner size="lg" label={copy.lineageLoading} className="text-app-accent" />
+      <AdvancedDisclosure
+        title={copy.lineageTitle}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div className="space-y-8">
+          <section>
+            <div>
+              <h2 className="text-xl font-semibold text-app-foreground">{copy.rankHistoryTitle}</h2>
+              <p className="mt-2 text-sm text-app-muted">{copy.rankHistoryDescription}</p>
             </div>
-          ) : null}
 
-          {hasError ? (
-            <ErrorState
-              title={copy.lineageErrorTitle}
-              description={copy.lineageErrorDescription}
-              retryLabel={copy.retry}
-              onRetry={() => void loadLineage(lineage.offset)}
-            />
-          ) : (
-            <div className="space-y-3">
-              {lineage.items.map((occurrence) => (
-                <Card key={occurrence.journal_id}>
-                  <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+            <ol className="mt-5 grid gap-3 lg:grid-cols-2">
+              {candidate.rank_history.map((entry) => (
+                <li
+                  key={entry.journal_id}
+                  className="rounded-2xl border border-app-border bg-app-surface p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs text-app-muted">{copy.fields.journal}</p>
                       <p
                         dir="ltr"
-                        className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+                        className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
                       >
-                        {occurrence.journal_id}
+                        {entry.journal_id}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="info">#{formatNumber(entry.rank, locale)}</Badge>
+                      <Badge variant={entry.selected ? 'success' : 'neutral'}>
+                        {entry.selected ? copy.selected : copy.notSelected}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                      <p dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
+                        {formatDecimal(entry.ranking_score, locale)}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {formatDate(occurrence.recorded_at, locale)}
+                      <p className="mt-1 text-app-foreground">
+                        {formatDate(entry.recorded_at, locale)}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.strategy}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {getStrategyDisplayName(occurrence.candidate.strategy_name, locale)} ·{' '}
-                        {occurrence.candidate.strategy_version}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.rank}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {formatNumber(occurrence.rank, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
-                      <p
-                        dir="ltr"
-                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
-                      >
-                        {formatDecimal(occurrence.ranking_score, locale)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.occurrence}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {copy.occurrenceTypes[occurrence.occurrence_type]}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.replay}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {occurrence.replay_status
-                          ? copy.replayStatuses[occurrence.replay_status]
-                          : copy.notEvaluated}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.risk}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {occurrence.risk_decision
-                          ? copy.riskDecisions[occurrence.risk_decision]
-                          : copy.notEvaluated}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {occurrence.skip_reason ? copy.skipReasons[occurrence.skip_reason] : '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
-                      <p
-                        dir="ltr"
-                        className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
-                      >
-                        {occurrence.position_id ?? '—'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
-                      <p className="mt-2 text-sm text-app-foreground">
-                        {occurrence.exit_reason ? copy.exitReasons[occurrence.exit_reason] : '—'}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+                  </div>
 
-        {!hasError && lineage.total > 0 ? (
-          <div className="mt-4 rounded-2xl border border-app-border bg-app-surface px-5 py-4">
-            <Pagination
-              total={lineage.total}
-              limit={lineage.limit}
-              offset={lineage.offset}
-              isLoading={isLoading}
-              pageLabel={copy.page}
-              previousLabel={copy.previous}
-              nextLabel={copy.next}
-              onOffsetChange={(offset) => void loadLineage(offset)}
-            />
-          </div>
-        ) : null}
-      </section>
+                  <p className="mt-3 text-xs text-app-muted">
+                    {entry.evidence_available ? copy.evidenceAvailable : copy.evidenceUnavailable}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section>
+            <div>
+              <h2 className="text-xl font-semibold text-app-foreground">{copy.lineageTitle}</h2>
+              <p className="mt-2 text-sm text-app-muted">{copy.lineageDescription}</p>
+            </div>
+
+            <div className="relative mt-5 min-h-48" aria-busy={isLoading}>
+              {isLoading ? (
+                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+                  <Spinner size="lg" label={copy.lineageLoading} className="text-app-accent" />
+                </div>
+              ) : null}
+
+              {hasError ? (
+                <ErrorState
+                  title={copy.lineageErrorTitle}
+                  description={copy.lineageErrorDescription}
+                  retryLabel={copy.retry}
+                  onRetry={() => void loadLineage(lineage.offset)}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {lineage.items.map((occurrence) => (
+                    <Card key={occurrence.journal_id}>
+                      <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.journal}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+                          >
+                            {occurrence.journal_id}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {formatDate(occurrence.recorded_at, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.strategy}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {getStrategyDisplayName(occurrence.candidate.strategy_name, locale)} ·{' '}
+                            {occurrence.candidate.strategy_version}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.rank}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {formatNumber(occurrence.rank, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                          >
+                            {formatDecimal(occurrence.ranking_score, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.occurrence}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {copy.occurrenceTypes[occurrence.occurrence_type]}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.replay}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.replay_status
+                              ? copy.replayStatuses[occurrence.replay_status]
+                              : copy.notEvaluated}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.risk}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.risk_decision
+                              ? copy.riskDecisions[occurrence.risk_decision]
+                              : copy.notEvaluated}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.skip_reason
+                              ? copy.skipReasons[occurrence.skip_reason]
+                              : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+                          >
+                            {occurrence.position_id ?? '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.exit_reason
+                              ? copy.exitReasons[occurrence.exit_reason]
+                              : '—'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!hasError && lineage.total > 0 ? (
+              <div className="mt-4 rounded-2xl border border-app-border bg-app-surface px-5 py-4">
+                <Pagination
+                  total={lineage.total}
+                  limit={lineage.limit}
+                  offset={lineage.offset}
+                  isLoading={isLoading}
+                  pageLabel={copy.page}
+                  previousLabel={copy.previous}
+                  nextLabel={copy.next}
+                  onOffsetChange={(offset) => void loadLineage(offset)}
+                />
+              </div>
+            ) : null}
+          </section>
+        </div>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }

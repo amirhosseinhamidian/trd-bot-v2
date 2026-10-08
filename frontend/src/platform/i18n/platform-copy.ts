@@ -39,6 +39,10 @@ export type PlatformCopy = {
       retry: string;
     };
   };
+  disclosure: {
+    advanced: string;
+    advancedDescription: string;
+  };
 };
 
 const platformCopies: Record<PlatformLocale, PlatformCopy> = {
@@ -97,6 +101,10 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
         retry: 'تلاش مجدد',
       },
     },
+    disclosure: {
+      advanced: 'جزئیات پیشرفته',
+      advancedDescription: 'شناسه‌ها، ورودی‌های بازتولید و داده‌های فنی خام',
+    },
   },
   en: {
     brand: {
@@ -152,6 +160,10 @@ const platformCopies: Record<PlatformLocale, PlatformCopy> = {
         description: 'Check the backend connection and NEXT_PUBLIC_API_BASE_URL, then try again.',
         retry: 'Try again',
       },
+    },
+    disclosure: {
+      advanced: 'Advanced details',
+      advancedDescription: 'Identifiers, reproducibility inputs, and raw technical data',
     },
   },
 };

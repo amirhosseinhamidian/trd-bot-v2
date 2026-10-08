@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import type { PlatformLocale } from '@/platform/i18n';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 import type { ResearchMetricKey } from '@/features/experiments/api/types';
 import type {
   HistoricalFoldReturnDirection,
@@ -12,6 +12,7 @@ import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-d
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
+  AdvancedDisclosure,
   Badge,
   type BadgeVariant,
   Card,
@@ -86,6 +87,7 @@ function Metric({ label, value }: MetricProps) {
 
 export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailProps) {
   const copy = getWalkForwardDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
   const strategyDisplayName = getStrategyDisplayName(run.strategy_name, locale);
   const metricLabel = (key: ResearchMetricKey): string =>
@@ -106,11 +108,6 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
         }
         eyebrow={copy.eyebrow}
         title={strategyDisplayName}
-        metadata={
-          <p dir="ltr" className="text-sm font-semibold break-all text-app-muted">
-            {run.execution_id}
-          </p>
-        }
         actions={<Badge variant="warning">{copy.historicalOnly}</Badge>}
       />
 
@@ -155,22 +152,6 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
 
             <Metric label={copy.fields.mode} value={copy.modes[run.walk_forward_config.mode]} />
           </dl>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-              <p className="text-xs text-app-muted">{copy.fields.datasetId}</p>
-              <p dir="ltr" className="mt-2 text-xs font-semibold break-all text-app-foreground">
-                {run.source_dataset_id}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
-              <p className="text-xs text-app-muted">{copy.fields.planId}</p>
-              <p dir="ltr" className="mt-2 text-xs font-semibold break-all text-app-foreground">
-                {run.plan_id}
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -350,13 +331,11 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.metricDefinitions}</CardTitle>
-          <CardDescription>{copy.metricDefinitionsDescription}</CardDescription>
-        </CardHeader>
-
-        <CardContent>
+      <AdvancedDisclosure
+        title={copy.metricDefinitions}
+        description={copy.metricDefinitionsDescription}
+      >
+        <div>
           <dl className="grid gap-4 lg:grid-cols-2">
             {stability.metric_definitions.map((definition) => (
               <div
@@ -376,16 +355,27 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
               </div>
             ))}
           </dl>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{copy.configuration}</CardTitle>
-          <CardDescription>{copy.configurationDescription}</CardDescription>
-        </CardHeader>
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold text-app-foreground">{copy.configuration}</h2>
+            <p className="mt-1.5 text-sm leading-6 text-app-muted">
+              {copy.configurationDescription}
+            </p>
+          </div>
 
-        <CardContent className="space-y-5">
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <Metric label={copy.fields.executionId} value={run.execution_id} />
+            <Metric label={copy.fields.datasetId} value={run.source_dataset_id} />
+            <Metric label={copy.fields.planId} value={run.plan_id} />
+          </dl>
+
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Metric
               label={copy.fields.trainCandles}
@@ -419,8 +409,8 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </AdvancedDisclosure>
     </PageFrame>
   );
 }
