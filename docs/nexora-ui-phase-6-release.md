@@ -11,7 +11,7 @@
 | **P6-01** | قرارداد مرکزی ۲۱ route، regression پایداری ۴۲ مسیر fa/en و baseline چک‌لیست انتشار | ✅ انجام شد |
 | **P6-02** | smoke مسیرهای بحرانی کاربر در فارسی و انگلیسی                                      | ✅ انجام شد |
 | **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ✅ انجام شد |
-| **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ⏳          |
+| **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ✅ انجام شد |
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ⏳          |
 | **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ⏳          |
 | **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ⏳          |
@@ -87,6 +87,22 @@ toolchain آن در پروژه اضافه شود.
   به‌روزرسانی می‌کند.
 - bootstrap تم با `beforeInteractive` و تنها suppression مجاز روی document root تحت regression
   test قرار گرفت.
+
+## شاهد پذیرش P6-04
+
+- ماتریس release برای عرض‌های دقیق `360`، `390`، `768`، `1024` و `1440` به یک قرارداد مرکزی تبدیل
+  شد.
+- حالت‌های mobile، tablet، desktop و wide و مرز دقیق breakpointهای `768`، `1024` و `1440` تحت
+  regression test هستند.
+- Shell در هر پنج viewport با قرارداد bottom navigation، tablet drawer یا fixed sidebar smoke
+  می‌شود؛ gutter، فضای پایین موبایل و حداکثر عرض محتوا نیز کنترل می‌شوند.
+- قراردادهای fluid layout برای Overview، Dataset، Experiment، Walk-forward، Candidate، Risk،
+  Portfolio، Connections و Monitoring بررسی می‌شوند و استفاده از `100vw`، `w-screen` یا مخفی‌کردن
+  overflow در سطح صفحه ممنوع است.
+- مسیرهای نموداری Experiment، Walk-forward و Portfolio در موبایل stacked selector و summary متنی را
+  حفظ می‌کنند.
+- Playwright یا مرورگر headless در toolchain پروژه وجود ندارد؛ بنابراین مطابق پروپوزال screenshot
+  baseline در این مرحله ایجاد نشده و هیچ ادعای visual-diff پیکسلی ثبت نمی‌شود.
 
 ## گیت خروج P6
 
