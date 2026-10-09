@@ -12,7 +12,7 @@
 | **P6-02** | smoke مسیرهای بحرانی کاربر در فارسی و انگلیسی                                      | ✅ انجام شد |
 | **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ✅ انجام شد |
 | **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ✅ انجام شد |
-| **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ⏳          |
+| **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ✅ انجام شد |
 | **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ⏳          |
 | **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ⏳          |
 | **P6-08** | release notes، migration notes، گیت نهایی و Freeze رابط Nexora                     | ⏳          |
@@ -103,6 +103,19 @@ toolchain آن در پروژه اضافه شود.
   حفظ می‌کنند.
 - Playwright یا مرورگر headless در toolchain پروژه وجود ندارد؛ بنابراین مطابق پروپوزال screenshot
   baseline در این مرحله ایجاد نشده و هیچ ادعای visual-diff پیکسلی ثبت نمی‌شود.
+
+## شاهد پذیرش P6-05
+
+- walkthrough کیبورد Shell در هر دو زبان فارسی و انگلیسی اجرا می‌شود.
+- ترتیب skip link → main content → اکشن اصلی → لینک شواهد تحت تست است و landmarkهای banner، main،
+  sidebar و mobile navigation نام قابل‌دسترسی دارند.
+- focus trap مربوط به tablet drawer و mobile menu در هر دو زبان، شامل wrap، خروج با Escape و بازگشت
+  focus به trigger آزموده می‌شود.
+- عناصر hidden، inert، disabled، `aria-disabled` و input مخفی از چرخه focus trap حذف می‌شوند و
+  container خالی fallback امن دریافت می‌کند.
+- positive `tabIndex` و `autoFocus` سفارشی در featureها ممنوع شده‌اند.
+- تمام scroll regionهای جدول‌های feature دارای نام و قابلیت focus هستند و همه progressbarها نام،
+  کمینه، بیشینه و مقدار جاری قابل‌دسترسی دارند.
 
 ## گیت خروج P6
 
