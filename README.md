@@ -149,6 +149,10 @@ The local v0.2.0 candidate runbook and evidence template are documented in
 The frozen Nexora UI contract, release notes, and upgrade guidance are documented in
 [`docs/nexora-ui-release-and-migration.md`](docs/nexora-ui-release-and-migration.md).
 
+Development of v0.3 starts from the frozen product scope and Crypto Spot market target in
+[`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). The runtime
+and release manifests remain at v0.2.0 until the v0.3 release gates are complete.
+
 ## Project structure
 
 ```text
