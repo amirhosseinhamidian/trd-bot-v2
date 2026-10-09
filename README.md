@@ -152,6 +152,8 @@ The frozen Nexora UI contract, release notes, and upgrade guidance are documente
 Development of v0.3 starts from the frozen product scope and Crypto Spot market target in
 [`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). The runtime
 and release manifests remain at v0.2.0 until the v0.3 release gates are complete.
+The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
+tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 
 ## Project structure
 
