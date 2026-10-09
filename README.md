@@ -154,6 +154,8 @@ Development of v0.3 starts from the frozen product scope and Crypto Spot market 
 and release manifests remain at v0.2.0 until the v0.3 release gates are complete.
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
+The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in
+[`docs/v0.3/02-event-contract-and-window-semantics.md`](docs/v0.3/02-event-contract-and-window-semantics.md).
 
 ## Project structure
 
