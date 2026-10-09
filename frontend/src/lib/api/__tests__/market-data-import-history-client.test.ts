@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL, getMarketDataImport, getMarketDataImportHistory } from '@/lib/api/client';
-import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import { getMarketDataImport, getMarketDataImportHistory } from '@/features/connections/api/client';
+import type { MarketDataImportRecord } from '@/features/connections/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/core/types';
 
 const connectionId = 'market-data-connection-1';
 const importRecord: MarketDataImportRecord = {

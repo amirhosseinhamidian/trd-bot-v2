@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   createWalkForwardExecution,
   getWalkForwardExecution,
-} from '@/lib/api/client';
+} from '@/features/walk-forward/api/client';
 import type {
   StoredDatasetEMACrossoverWalkForwardExecutionRequest,
   StoredDatasetRSIThresholdWalkForwardExecutionRequest,
   WalkForwardExecution,
-} from '@/lib/api/types';
+} from '@/features/walk-forward/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const request: StoredDatasetEMACrossoverWalkForwardExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',

@@ -30,7 +30,6 @@ const migratedComponentFiles = [
   'features/risk/risk-dashboard.tsx',
   'features/walk-forward/walk-forward-catalog.tsx',
   'features/walk-forward/walk-forward-run-form.tsx',
-  'components/language-switcher.tsx',
   'components/platform/mobile-platform-navigation.tsx',
   'components/platform/page-frame.tsx',
   'components/platform/page-header.tsx',

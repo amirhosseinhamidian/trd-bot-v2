@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   enqueueMarketDataImportRefresh,
   getMarketDataImportVersions,
   refreshMarketDataImport,
-} from '@/lib/api/client';
+} from '@/features/connections/api/client';
+import type { MarketDataImportRecord } from '@/features/connections/api/types';
 import type { BackgroundJobSummary } from '@/features/jobs/api/types';
-import type { MarketDataImportRecord, Page } from '@/lib/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/core/types';
 
 const connectionId = 'connection / one';
 const importId = 'import / one';

@@ -1,15 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   createMarketDataConnection,
   disableMarketDataConnection,
   enableMarketDataConnection,
   getMarketDataConnections,
   getMarketDataProviders,
   testMarketDataConnection,
-} from '@/lib/api/client';
-import type { MarketDataConnection, MarketDataProviderSummary, Page } from '@/lib/api/types';
+} from '@/features/connections/api/client';
+import type {
+  MarketDataConnection,
+  MarketDataProviderSummary,
+} from '@/features/connections/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/core/types';
 
 const provider: MarketDataProviderSummary = {
   provider_id: 'binance-public',

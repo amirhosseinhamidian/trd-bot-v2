@@ -1,22 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createDataset } from '@/features/datasets/api/client';
+import type { DatasetImportRequest, DatasetSummary } from '@/features/datasets/api/types';
 import {
-  createDataset,
   getExperimentPerformanceSeries,
-  getExperimentSignals,
+  verifyExperimentReplay,
+} from '@/features/experiments/api/client';
+import type { ExperimentPerformanceSeries } from '@/features/experiments/api/types';
+import { getExperimentSignals } from '@/features/signals/api/client';
+import type { StrategySignal } from '@/features/signals/api/types';
+import {
+  getResearchStrategies,
   getResearchStrategyVersion,
   getResearchStrategyVersions,
-  getResearchStrategies,
-  verifyExperimentReplay,
-} from '@/lib/api/client';
-import type {
-  DatasetImportRequest,
-  DatasetSummary,
-  ExperimentPerformanceSeries,
-  Page,
-  ResearchStrategyMetadata,
-  StrategySignal,
-} from '@/lib/api/types';
+} from '@/features/strategies/api/client';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 function jsonResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL, getExperimentAnalytics } from '@/lib/api/client';
-import type { ExperimentAnalyticsReport } from '@/lib/api/types';
+import { getExperimentAnalytics } from '@/features/experiments/api/client';
+import type { ExperimentAnalyticsReport } from '@/features/experiments/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const analytics: ExperimentAnalyticsReport = {
   experiment_id: 'experiment-1234567890abcdef',

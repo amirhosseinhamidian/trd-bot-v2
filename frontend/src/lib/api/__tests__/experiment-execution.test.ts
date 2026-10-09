@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { API_BASE_URL, createExperimentExecution } from '@/lib/api/client';
+import { createExperimentExecution } from '@/features/experiments/api/client';
 import type {
   ExperimentExecution,
   StoredDatasetEMACrossoverExecutionRequest,
   StoredDatasetRSIThresholdExecutionRequest,
-} from '@/lib/api/types';
+} from '@/features/experiments/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const emaRequest: StoredDatasetEMACrossoverExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',

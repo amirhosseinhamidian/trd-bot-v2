@@ -1,40 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  API_BASE_URL as clientApiBaseUrl,
-  ApiRequestError as ClientApiRequestError,
-} from '@/lib/api/client';
-import {
-  API_BASE_URL,
-  ApiRequestError,
-  getBlob,
-  getJson,
-  postFormData,
-  postJson,
-} from '@/lib/api/core/transport';
+import { API_BASE_URL, getBlob, getJson, postFormData, postJson } from '@/lib/api/core/transport';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('API transport boundary', () => {
-  it('preserves the public client exports while keeping transport domain-agnostic', () => {
-    const clientSource = readFileSync(resolve(process.cwd(), 'src/lib/api/client.ts'), 'utf8');
-    const transportSource = readFileSync(
-      resolve(process.cwd(), 'src/lib/api/core/transport.ts'),
-      'utf8',
-    );
-
-    expect(clientApiBaseUrl).toBe(API_BASE_URL);
-    expect(ClientApiRequestError).toBe(ApiRequestError);
-    expect(clientSource).toContain("from '@/lib/api/core/transport'");
-    expect(clientSource).not.toContain('fetch(');
-    expect(transportSource).not.toContain('@/lib/api/types');
-  });
-
   it('performs no-store JSON GET requests', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ status: 'ok' }), {

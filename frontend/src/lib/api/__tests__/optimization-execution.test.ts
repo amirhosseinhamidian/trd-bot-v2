@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   createOptimizationExecution,
   getOptimizationExecution,
   getOptimizationExecutions,
-} from '@/lib/api/client';
+} from '@/features/optimizations/api/client';
 import type { CreateOptimizationExecutionRequest } from '@/features/optimizations/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const request: CreateOptimizationExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',

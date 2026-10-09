@@ -14,7 +14,7 @@
 | **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ✅ انجام شد |
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ✅ انجام شد |
 | **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ✅ انجام شد |
-| **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ⏳          |
+| **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ✅ انجام شد |
 | **P6-08** | release notes، migration notes، گیت نهایی و Freeze رابط Nexora                     | ⏳          |
 
 ## قرارداد پایداری routeها
@@ -119,7 +119,7 @@ toolchain آن در پروژه اضافه شود.
 
 ## شاهد پذیرش P6-06
 
-- مجموعه ۶۴ عملیات مصرف‌شده توسط frontend مستقیماً با OpenAPI برنامه تطبیق داده می‌شود؛ حذف route یا
+- مجموعه ۶۳ عملیات مصرف‌شده توسط frontend مستقیماً با OpenAPI برنامه تطبیق داده می‌شود؛ حذف route یا
   تغییر verb اکنون regression تست را شکست می‌دهد.
 - شکاف واقعی قرارداد Experiment برطرف شد: endpoint نسخه‌دار و فقط‌خواندنی
   `GET /api/v1/research/experiments/{experiment_id}/analytics` داده‌های توزیع معامله، بازده ماهانه،
@@ -129,6 +129,21 @@ toolchain آن در پروژه اضافه شود.
 - خطاهای JSON و متنی transport با status و payload اصلی حفظ می‌شوند.
 - preflight برای هر دو origin توسعه، متدهای `GET`/`POST` و header محتوای JSON آزموده می‌شود؛ origin
   ناشناس رد می‌شود و credential در CORS مجاز نیست.
+
+## شاهد پذیرش P6-07
+
+- سه facade قدیمی `lib/api/{client,types,portfolio-analytics}` حذف و تست‌های رفتاری مستقیماً به
+  client و typeهای feature-owned متصل شدند.
+- `LanguageSwitcher` قدیمی که با کنترل locale داخل Platform Shell جایگزین شده بود، همراه تست منسوخ
+  آن حذف شد.
+- client بدون‌مصرف جزئیات Job و عملیات متناظر آن از inventory مصرف frontend کنار گذاشته شد؛ typeهای
+  Job که در Monitoring، Connection و Optimization مصرف واقعی دارند حفظ شدند.
+- ۱۳ تست تکراری mapping facade حذف و با guard مرکزی معماری جایگزین شدند؛ در مجموع ۲۰ فایل legacy یا
+  تکراری از درخت frontend پاک شد.
+- graph وابستگی production اکنون از entry pointهای Next بررسی می‌شود و اضافه‌شدن module یتیم تست را
+  شکست می‌دهد. فقط قراردادهای test-only مربوط به route و responsive به‌صورت صریح مستثنا هستند.
+- تمام copyهای feature موجود از مسیر production قابل‌دسترسی‌اند. متن‌های `legacy` مربوط به نمایش
+  رکوردهای قدیمی عمداً حفظ شدند، چون قرارداد سازگاری داده‌اند و dead copy نیستند.
 
 ## گیت خروج P6
 

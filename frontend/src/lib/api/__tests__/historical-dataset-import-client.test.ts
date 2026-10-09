@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
   enqueueHistoricalDatasetImport,
   importHistoricalDataset,
   previewHistoricalDatasetImport,
-} from '@/lib/api/client';
-import type { BackgroundJobSummary } from '@/features/jobs/api/types';
+} from '@/features/connections/api/client';
 import type {
-  DatasetSummary,
   HistoricalDatasetCommitRequest,
   HistoricalDatasetImportPreview,
   HistoricalDatasetImportRequest,
-} from '@/lib/api/types';
+} from '@/features/connections/api/types';
+import type { DatasetSummary } from '@/features/datasets/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
 const connectionId = 'market-data-connection-1';
 const request: HistoricalDatasetImportRequest = {
