@@ -156,6 +156,8 @@ The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-obs
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in
 [`docs/v0.3/02-event-contract-and-window-semantics.md`](docs/v0.3/02-event-contract-and-window-semantics.md).
+The initial service-level, retention, provider-request, and capacity evidence policy is documented in
+[`docs/v0.3/03-service-level-retention-capacity-budget.md`](docs/v0.3/03-service-level-retention-capacity-budget.md).
 
 ## Project structure
 

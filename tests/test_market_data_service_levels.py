@@ -1,0 +1,172 @@
+from datetime import UTC, datetime
+from decimal import Decimal
+
+import pytest
+from pydantic import ValidationError
+
+from trd_bot.domain.market_data import Timeframe
+from trd_bot.market_data import (
+    CapacityBenchmarkReport,
+    CapacityEvidence,
+    CapacityEvidenceMethod,
+    CapacityEvidenceScope,
+    MarketDataRetentionPolicy,
+    TimeframeServiceLevel,
+    default_market_data_service_level_policy,
+)
+
+
+def measured_evidence(scope: CapacityEvidenceScope) -> CapacityEvidence:
+    return CapacityEvidence(
+        scope=scope,
+        method=CapacityEvidenceMethod.SYNTHETIC_BENCHMARK,
+        complete=True,
+        observed_count=100,
+        metrics={"latency_p95_ms": Decimal("1.25")},
+    )
+
+
+def test_default_policy_covers_all_supported_timeframes_and_providers() -> None:
+    policy = default_market_data_service_level_policy()
+
+    assert {item.timeframe for item in policy.timeframes} == set(Timeframe)
+    assert {item.provider_id for item in policy.providers} == {
+        "binance-public",
+        "kraken-public",
+        "nobitex-public",
+    }
+    assert policy.for_timeframe(Timeframe.HOUR_1).allowed_lateness_seconds == 300
+    assert policy.for_provider("nobitex-public").sustained_requests_per_minute == 10
+    assert policy.capacity.worker_concurrency == 1
+    assert policy.retention.finalized_window_days is None
+
+
+def test_timeframe_policy_rejects_invalid_polling_and_finalization_budgets() -> None:
+    with pytest.raises(ValidationError, match="polling interval"):
+        TimeframeServiceLevel(
+            timeframe=Timeframe.MINUTES_15,
+            polling_interval_seconds=900,
+            allowed_lateness_seconds=180,
+            maximum_future_clock_skew_seconds=30,
+            provisional_freshness_p95_seconds=900,
+            finalized_freshness_p95_seconds=1_080,
+            minimum_eligible_window_success_fraction=Decimal("0.99"),
+        )
+
+    with pytest.raises(ValidationError, match="polling and lateness"):
+        TimeframeServiceLevel(
+            timeframe=Timeframe.HOUR_1,
+            polling_interval_seconds=120,
+            allowed_lateness_seconds=300,
+            maximum_future_clock_skew_seconds=30,
+            provisional_freshness_p95_seconds=300,
+            finalized_freshness_p95_seconds=419,
+            minimum_eligible_window_success_fraction=Decimal("0.99"),
+        )
+
+
+def test_retention_policy_preserves_dedupe_and_revision_evidence() -> None:
+    with pytest.raises(ValidationError, match="deduplication must outlive"):
+        MarketDataRetentionPolicy(
+            raw_observation_days=30,
+            normalized_event_days=90,
+            inbox_deduplication_days=60,
+            delivered_outbox_days=7,
+            failed_outbox_days=30,
+            provisional_window_days_after_finalization=30,
+            finalized_window_days=None,
+            revision_evidence_days=365,
+            benchmark_evidence_days=365,
+        )
+
+    with pytest.raises(ValidationError, match="revision evidence must outlive"):
+        MarketDataRetentionPolicy(
+            raw_observation_days=30,
+            normalized_event_days=90,
+            inbox_deduplication_days=180,
+            delivered_outbox_days=7,
+            failed_outbox_days=30,
+            provisional_window_days_after_finalization=30,
+            finalized_window_days=None,
+            revision_evidence_days=90,
+            benchmark_evidence_days=365,
+        )
+
+
+def test_unavailable_evidence_is_explicit_and_contains_no_metrics() -> None:
+    evidence = CapacityEvidence(
+        scope=CapacityEvidenceScope.DATABASE,
+        method=CapacityEvidenceMethod.UNAVAILABLE,
+        complete=False,
+        observed_count=0,
+        limitation="PostgreSQL was not available in this environment.",
+    )
+
+    assert evidence.metrics == {}
+
+    with pytest.raises(ValidationError, match="requires only a limitation"):
+        CapacityEvidence(
+            scope=CapacityEvidenceScope.DATABASE,
+            method=CapacityEvidenceMethod.UNAVAILABLE,
+            complete=False,
+            observed_count=1,
+            metrics={"query_latency_p95_ms": Decimal("10")},
+            limitation="PostgreSQL was not available in this environment.",
+        )
+
+
+def test_capacity_report_lists_missing_scopes_and_fails_closed() -> None:
+    report = CapacityBenchmarkReport(
+        environment_label="developer-mac",
+        commit_sha="a" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="macOS-arm64",
+        evidence=(
+            measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),
+            CapacityEvidence(
+                scope=CapacityEvidenceScope.DATABASE,
+                method=CapacityEvidenceMethod.UNAVAILABLE,
+                complete=False,
+                observed_count=0,
+                limitation="Reference PostgreSQL benchmark has not run.",
+            ),
+        ),
+    )
+
+    assert report.ready_to_freeze is False
+    assert set(report.missing_scopes) == {
+        CapacityEvidenceScope.PROVIDER,
+        CapacityEvidenceScope.DATABASE,
+        CapacityEvidenceScope.BACKGROUND_JOBS,
+        CapacityEvidenceScope.STORAGE,
+    }
+
+
+def test_capacity_report_is_ready_only_with_every_measured_scope() -> None:
+    report = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="b" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=tuple(measured_evidence(scope) for scope in CapacityEvidenceScope),
+    )
+
+    assert report.missing_scopes == ()
+    assert report.ready_to_freeze is True
+
+
+def test_capacity_report_rejects_duplicate_scopes() -> None:
+    with pytest.raises(ValidationError, match="duplicate evidence scopes"):
+        CapacityBenchmarkReport(
+            environment_label="reference",
+            commit_sha="c" * 40,
+            generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+            python_version="3.12.10",
+            platform="linux-x86_64",
+            evidence=(
+                measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),
+                measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),
+            ),
+        )
