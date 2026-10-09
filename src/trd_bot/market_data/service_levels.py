@@ -1,3 +1,5 @@
+import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -162,6 +164,16 @@ class CapacityEvidence(BaseModel):
             raise ValueError("measured evidence requires observations and metrics")
         elif not self.complete and self.limitation is None:
             raise ValueError("incomplete measured evidence requires a limitation")
+        if (
+            self.scope is CapacityEvidenceScope.PROVIDER
+            and self.complete
+            and self.method
+            not in {
+                CapacityEvidenceMethod.LIVE_PROBE,
+                CapacityEvidenceMethod.PRODUCTION_TELEMETRY,
+            }
+        ):
+            raise ValueError("complete provider evidence must come from live observations")
         if any(value < 0 for value in self.metrics.values()):
             raise ValueError("capacity evidence metrics cannot be negative")
         return self
@@ -174,6 +186,9 @@ class CapacityBenchmarkReport(BaseModel):
 
     schema_version: Literal["market-data-capacity-benchmark-v1"] = (
         "market-data-capacity-benchmark-v1"
+    )
+    policy_schema_version: Literal["market-data-service-level-policy-v1"] = (
+        "market-data-service-level-policy-v1"
     )
     environment_label: str = Field(min_length=1, max_length=64)
     commit_sha: str = Field(pattern=r"^[a-f0-9]{40}$")
@@ -321,4 +336,111 @@ def default_market_data_service_level_policy() -> MarketDataServiceLevelPolicy:
             worker_concurrency=1,
             maximum_storage_growth_bytes_per_30_days=5 * 1024 * 1024 * 1024,
         ),
+    )
+
+
+def capacity_benchmark_report_to_dict(
+    report: CapacityBenchmarkReport,
+) -> dict[str, object]:
+    """Serialize a report with its derived freeze decision."""
+
+    payload = report.model_dump(mode="json")
+    payload["ready_to_freeze"] = report.ready_to_freeze
+    payload["missing_scopes"] = [scope.value for scope in report.missing_scopes]
+    return payload
+
+
+def serialize_capacity_benchmark_report(report: CapacityBenchmarkReport) -> str:
+    """Return stable, human-readable JSON for one sanitized capacity report."""
+
+    return json.dumps(
+        capacity_benchmark_report_to_dict(report),
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    )
+
+
+def parse_capacity_benchmark_report(value: str | bytes) -> CapacityBenchmarkReport:
+    """Parse a report and verify any persisted derived decision fields."""
+
+    try:
+        raw = json.loads(value)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("capacity benchmark report is not valid JSON") from exc
+    if not isinstance(raw, dict):
+        raise ValueError("capacity benchmark report must be a JSON object")
+
+    payload = dict(raw)
+    persisted_ready = payload.pop("ready_to_freeze", None)
+    persisted_missing = payload.pop("missing_scopes", None)
+    report = CapacityBenchmarkReport.model_validate(payload)
+
+    if persisted_ready is not None and persisted_ready is not report.ready_to_freeze:
+        raise ValueError("capacity benchmark freeze decision is inconsistent")
+    expected_missing = [scope.value for scope in report.missing_scopes]
+    if persisted_missing is not None and persisted_missing != expected_missing:
+        raise ValueError("capacity benchmark missing scopes are inconsistent")
+    return report
+
+
+def merge_capacity_benchmark_reports(
+    reports: Sequence[CapacityBenchmarkReport],
+    *,
+    generated_at: datetime | None = None,
+) -> CapacityBenchmarkReport:
+    """Merge independent scope reports without hiding conflicts or limitations."""
+
+    if not reports:
+        raise ValueError("at least one capacity benchmark report is required")
+    reference = reports[0]
+    identity = (
+        reference.environment_label,
+        reference.commit_sha,
+        reference.python_version,
+        reference.platform,
+    )
+    for report in reports[1:]:
+        candidate_identity = (
+            report.environment_label,
+            report.commit_sha,
+            report.python_version,
+            report.platform,
+        )
+        if candidate_identity != identity:
+            raise ValueError("capacity reports must describe the same reference environment")
+
+    merged: list[CapacityEvidence] = []
+    for scope in CapacityEvidenceScope:
+        candidates = [
+            item
+            for report in reports
+            for item in report.evidence
+            if item.scope is scope
+        ]
+        complete = [item for item in candidates if item.complete]
+        if len(complete) > 1:
+            raise ValueError(f"capacity reports contain conflicting complete scope: {scope.value}")
+        if complete:
+            merged.append(complete[0])
+            continue
+
+        measured = [
+            item
+            for item in candidates
+            if item.method is not CapacityEvidenceMethod.UNAVAILABLE
+        ]
+        if measured:
+            merged.append(max(measured, key=lambda item: item.observed_count))
+            continue
+        if candidates:
+            merged.append(candidates[0])
+
+    return CapacityBenchmarkReport(
+        environment_label=reference.environment_label,
+        commit_sha=reference.commit_sha,
+        generated_at=generated_at or max(report.generated_at for report in reports),
+        python_version=reference.python_version,
+        platform=reference.platform,
+        evidence=tuple(merged),
     )

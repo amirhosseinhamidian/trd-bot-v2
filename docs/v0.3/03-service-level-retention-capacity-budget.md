@@ -153,47 +153,86 @@ PYTHONPATH=src python scripts/benchmark_market_data_capacity.py \
   --iterations 20000 \
   --warmup-iterations 1000 \
   --pair-count 1 \
-  --environment-label macbook-pro-local \
+  --environment-label macbook-pro-reference \
   --output artifacts/p0-04/event-capacity.json
 ```
 
 خروجی این harness عمداً exit code `2` دارد تا زمانی که Provider، PostgreSQL، Job و storage واقعی
 به گزارش مرجع متصل شوند. این exit code شکست microbenchmark نیست؛ gate ناقص P0-04 است.
 
-Smoke run محیط Codex با 200 observation قرارداد را اجرا کرد و report معتبر ساخت، اما به دلیل تفاوت
+Smoke run محیط Codex با 1000 observation قرارداد را اجرا کرد و report معتبر ساخت، اما به دلیل تفاوت
 سخت‌افزار و نبود PostgreSQL/شبکهٔ deployment، عدد آن baseline محصول نیست و commit نمی‌شود.
 
-## 8. اجرای Provider Probe مرجع
+## 8. اجرای Provider Benchmark مرجع
 
-Probe عمومی موجود response body را نگه نمی‌دارد:
+Runner تکرارشونده از Probe عمومی sanitized استفاده می‌کند و response body را نگه نمی‌دارد. نمونهٔ
+زیر دو provider کاندید را هرکدام 30 بار با فاصلهٔ 10 ثانیه می‌سنجد:
 
 ```bash
-PYTHONPATH=src python scripts/probe_market_data_providers.py \
+PYTHONPATH=src python scripts/benchmark_market_data_providers.py \
   --provider nobitex-public \
-  --environment-label macbook-pro-direct \
-  --output artifacts/p0-04/provider-nobitex-01.json
+  --provider kraken-public \
+  --samples-per-provider 30 \
+  --interval-seconds 10 \
+  --environment-label macbook-pro-reference \
+  --output artifacts/p0-04/provider-capacity.json
 ```
 
 برای eligibility حداقل 30 نمونه در چند window زمانی لازم است. اجرای پشت‌سرهم بدون فاصله برای نتیجهٔ
-latency معتبر نیست. گزارش‌ها باید p50/p95، failure fraction، rate-limit و geo-block را به تفکیک
-provider و environment جمع‌بندی کنند. Primary/fallback order فقط بعد از این evidence فریز می‌شود.
+latency معتبر نیست. خروجی p50/p95، success/failure fraction، rate-limit، timeout، invalid response
+و geo-block را به تفکیک provider ثبت می‌کند. Primary/fallback order فقط بعد از این evidence فریز
+می‌شود.
 
 ## 9. PostgreSQL و Worker benchmark مرجع
 
-اجرای مرجع باید PostgreSQL 17 واقعی و worker مستقل را استفاده کند و حداقل این موارد را ثبت کند:
+Runner فقط PostgreSQL را می‌پذیرد و نام database باید شامل `test` یا `bench` باشد. یک schema یکتای
+`p0_04_bench_*` می‌سازد، اندازه‌گیری را انجام می‌دهد و همان schema را در `finally` پاک می‌کند؛ هیچ
+جدول محصولی truncate یا overwrite نمی‌شود.
 
-- enqueue، claim، heartbeat و terminal write latency؛
+```bash
+export TRD_BOT_TEST_DATABASE_URL='postgresql+psycopg://.../trd_bot_benchmark'
+
+PYTHONPATH=src python scripts/benchmark_postgresql_capacity.py \
+  --event-count 100000 \
+  --job-count 250 \
+  --query-samples 200 \
+  --environment-label macbook-pro-reference \
+  --output artifacts/p0-04/postgresql-capacity.json
+```
+
+این runner موارد زیر را ثبت می‌کند:
+
+- enqueue، claim و terminal write latency؛
 - queue wait p50/p95 و throughput با concurrency برابر 1؛
-- runtime p50/p95 هر پنج job kind با fixture ثابت؛
-- pool checked-out/max، timeout و saturation؛
+- lifecycle p95 هر پنج job kind با bounded no-op fixture؛
+- pool checked-out/max utilization؛
 - query latency p50/p95 برای inbox، current window و time-range read؛
 - row، index، TOAST و WAL bytes برای حداقل 100,000 Event؛
-- backlogهای 25 و 100 و رفتار recovery پس از توقف worker.
+
+Database و Storage با workload کامل می‌توانند `complete=true` شوند. scope مربوط به Job عمداً
+`complete=false` می‌ماند، چون no-op lifecycle جای runtime واقعی Import، Experiment، Walk-Forward و
+Optimization را نمی‌گیرد.
 
 استفاده از production dataset یا secret در benchmark ممنوع است. fixture باید synthetic، قابل حذف و
 روی database جدا باشد.
 
-## 10. تصمیم معماری تا زمان evidence
+## 10. ادغام evidence
+
+سه گزارش باید commit SHA، label محیط، Python version و platform یکسان داشته باشند. merge در صورت
+اختلاف fail می‌شود و دو evidence کامل متعارض را حدس نمی‌زند:
+
+```bash
+PYTHONPATH=src python scripts/merge_market_data_capacity_reports.py \
+  artifacts/p0-04/event-capacity.json \
+  artifacts/p0-04/provider-capacity.json \
+  artifacts/p0-04/postgresql-capacity.json \
+  --output artifacts/p0-04/reference-capacity.json
+```
+
+تا وقتی runtime واقعی پنج job kind اضافه نشده باشد، خروجی merged باید exit code `2` و
+`ready_to_freeze=false` داشته باشد.
+
+## 11. تصمیم معماری تا زمان evidence
 
 - PostgreSQL datastore و durable queue فعلی باقی می‌ماند؛
 - Redis، TimescaleDB، ClickHouse، Kafka و microservice اضافه نمی‌شوند؛
@@ -203,7 +242,7 @@ provider و environment جمع‌بندی کنند. Primary/fallback order فق�
 - عبور target به‌تنهایی migration معماری ایجاد نمی‌کند؛ حداقل سه window متوالی و root-cause لازم
   است.
 
-## 11. گیت خروج P0-04
+## 12. گیت خروج P0-04
 
 - [x] Freshness، lateness و clock-skew target نسخه‌دار شدند.
 - [x] Provider request budget و minimum sample ثبت شد.
@@ -211,6 +250,9 @@ provider و environment جمع‌بندی کنند. Primary/fallback order فق�
 - [x] Queue، DB، worker و storage guardrail عددی شدند.
 - [x] Benchmark/report contract به شکل fail-closed پیاده شد.
 - [x] Event microbenchmark تکرارپذیر و sanitized ساخته شد.
+- [x] Provider benchmark با sample floor و metricهای تجمیعی ساخته شد.
+- [x] PostgreSQL/Queue/Storage runner ایزوله و دارای cleanup ساخته شد.
+- [x] Merge gate سازگاری محیط و تعارض evidence ساخته شد.
 - [ ] Provider evidence محیط deployment برای adapterهای eligible ثبت شود.
 - [ ] PostgreSQL و pool evidence محیط مرجع ثبت شود.
 - [ ] Queue/runtime evidence پنج job kind ثبت شود.

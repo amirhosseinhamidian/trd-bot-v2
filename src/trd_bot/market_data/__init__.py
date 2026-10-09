@@ -76,7 +76,11 @@ from trd_bot.market_data.service_levels import (
     MarketDataServiceLevelPolicy,
     ProviderRequestBudget,
     TimeframeServiceLevel,
+    capacity_benchmark_report_to_dict,
     default_market_data_service_level_policy,
+    merge_capacity_benchmark_reports,
+    parse_capacity_benchmark_report,
+    serialize_capacity_benchmark_report,
 )
 
 __all__ = [
@@ -138,14 +142,18 @@ __all__ = [
     "build_market_data_event_idempotency_key",
     "build_market_data_window_id",
     "calculate_candle_payload_checksum",
+    "capacity_benchmark_report_to_dict",
     "classify_market_data_probe_http_status",
     "decide_market_data_event",
     "default_market_data_service_level_policy",
     "get_market_data_probe_spec",
+    "merge_capacity_benchmark_reports",
+    "parse_capacity_benchmark_report",
     "parse_market_data_probe_report",
     "probe_market_data_provider",
     "probe_market_data_providers",
     "redact_sensitive_text",
+    "serialize_capacity_benchmark_report",
     "serialize_market_data_probe_report",
     "validate_market_data_probe_payload",
 ]

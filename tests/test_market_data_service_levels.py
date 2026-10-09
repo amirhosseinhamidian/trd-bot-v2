@@ -13,13 +13,20 @@ from trd_bot.market_data import (
     MarketDataRetentionPolicy,
     TimeframeServiceLevel,
     default_market_data_service_level_policy,
+    merge_capacity_benchmark_reports,
+    parse_capacity_benchmark_report,
+    serialize_capacity_benchmark_report,
 )
 
 
 def measured_evidence(scope: CapacityEvidenceScope) -> CapacityEvidence:
     return CapacityEvidence(
         scope=scope,
-        method=CapacityEvidenceMethod.SYNTHETIC_BENCHMARK,
+        method=(
+            CapacityEvidenceMethod.LIVE_PROBE
+            if scope is CapacityEvidenceScope.PROVIDER
+            else CapacityEvidenceMethod.SYNTHETIC_BENCHMARK
+        ),
         complete=True,
         observed_count=100,
         metrics={"latency_p95_ms": Decimal("1.25")},
@@ -170,3 +177,53 @@ def test_capacity_report_rejects_duplicate_scopes() -> None:
                 measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),
             ),
         )
+
+
+def test_capacity_report_round_trip_verifies_derived_gate_fields() -> None:
+    report = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="d" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),),
+    )
+
+    serialized = serialize_capacity_benchmark_report(report)
+
+    assert parse_capacity_benchmark_report(serialized) == report
+
+    inconsistent = serialized.replace('"ready_to_freeze": false', '"ready_to_freeze": true')
+    with pytest.raises(ValueError, match="freeze decision is inconsistent"):
+        parse_capacity_benchmark_report(inconsistent)
+
+
+def test_capacity_reports_merge_only_for_the_same_environment() -> None:
+    event_report = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="e" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(measured_evidence(CapacityEvidenceScope.EVENT_PROCESSING),),
+    )
+    provider_report = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="e" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(measured_evidence(CapacityEvidenceScope.PROVIDER),),
+    )
+
+    merged = merge_capacity_benchmark_reports((event_report, provider_report))
+
+    assert {item.scope for item in merged.evidence} == {
+        CapacityEvidenceScope.PROVIDER,
+        CapacityEvidenceScope.EVENT_PROCESSING,
+    }
+    assert merged.ready_to_freeze is False
+
+    incompatible = provider_report.model_copy(update={"platform": "macOS-arm64"})
+    with pytest.raises(ValueError, match="same reference environment"):
+        merge_capacity_benchmark_reports((event_report, incompatible))

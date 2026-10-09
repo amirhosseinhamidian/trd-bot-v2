@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import math
 import platform
 import subprocess
@@ -20,7 +19,7 @@ from trd_bot.market_data import (
     MarketDataWatermark,
     MarketDataWindowSnapshot,
     decide_market_data_event,
-    default_market_data_service_level_policy,
+    serialize_capacity_benchmark_report,
 )
 
 
@@ -234,16 +233,6 @@ def run_benchmark(
     )
 
 
-def _serialize_report(report: CapacityBenchmarkReport) -> str:
-    payload = report.model_dump(mode="json")
-    payload["ready_to_freeze"] = report.ready_to_freeze
-    payload["missing_scopes"] = [scope.value for scope in report.missing_scopes]
-    payload["policy_schema_version"] = (
-        default_market_data_service_level_policy().schema_version
-    )
-    return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-
-
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -263,7 +252,7 @@ def main() -> int:
         )
     except (OSError, subprocess.CalledProcessError, ValueError) as exc:
         parser.error(str(exc))
-    serialized = _serialize_report(report)
+    serialized = serialize_capacity_benchmark_report(report) + "\n"
 
     if args.output is None:
         print(serialized, end="")
