@@ -9,7 +9,7 @@
 | مرحله     | محدوده                                                                             | وضعیت       |
 | --------- | ---------------------------------------------------------------------------------- | ----------- |
 | **P6-01** | قرارداد مرکزی ۲۱ route، regression پایداری ۴۲ مسیر fa/en و baseline چک‌لیست انتشار | ✅ انجام شد |
-| **P6-02** | smoke مسیرهای بحرانی کاربر در فارسی و انگلیسی                                      | ⏳          |
+| **P6-02** | smoke مسیرهای بحرانی کاربر در فارسی و انگلیسی                                      | ✅ انجام شد |
 | **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ⏳          |
 | **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ⏳          |
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ⏳          |
@@ -63,6 +63,18 @@ toolchain آن در پروژه اضافه شود.
 - ۹ مسیر dynamic با نام دقیق پارامترهای عمومی regression-protect شده‌اند.
 - guard مربوط به locale نامعتبر روی تمام ۲۱ page بررسی می‌شود.
 - رفتار redirect مسیر بدون locale به `defaultLocale` تحت تست قرارداد قرار گرفت.
+
+## شاهد پذیرش P6-02
+
+- شش سفر بحرانی کاربر به‌صورت route-level در هر دو locale فارسی و انگلیسی اجرا می‌شوند.
+- ۱۵ صفحه حیاتی و در مجموع ۳۰ نقطه ورود localeدار تحت smoke خودکار قرار دارند.
+- Overview و activity، کاتالوگ و جزئیات Dataset، و کاتالوگ/جزئیات/analytics مربوط به Experiment و
+  Walk-forward پوشش داده می‌شوند.
+- Candidate catalog/detail، شواهد lineage و Risk status با داده پرتفوی بررسی می‌شوند.
+- Historical Portfolio از catalog تا detail و Position evidence اجرا می‌شود.
+- Connections و Monitoring ضمن کنترل wiring داده، locale صحیح را تا screen نهایی حفظ می‌کنند.
+- تست‌ها علاوه بر render contract، آرگومان‌های شناسه و pagination مهم را در مرز route و API کنترل
+  می‌کنند.
 
 ## گیت خروج P6
 
