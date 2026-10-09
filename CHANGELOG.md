@@ -9,6 +9,11 @@ release publication are deferred.
 
 ### Added
 
+- The frozen Nexora / TRD BOT interface foundation, including bilingual RTL/LTR navigation,
+  light/dark themes, responsive feature screens, accessible interaction contracts, and a stable
+  21-route public inventory.
+- Release regression coverage for 42 localized route patterns, critical user journeys, theme and
+  locale hydration, responsive layouts, keyboard/focus behavior, and the frontend/OpenAPI boundary.
 - Real public market-data adapters for Nobitex and Kraken, provider capability
   metadata, access probes, and provider selection in the import UI.
 - Reproducible dataset preview/import, atomic version history, quality scoring,
@@ -21,6 +26,14 @@ release publication are deferred.
   performance, and position detail timelines.
 - Release gates for PostgreSQL migration rollback/rebuild, queue races and
   recovery, end-to-end research lifecycle, and the no-live-trading boundary.
+
+### Changed
+
+- Frontend ownership now follows feature boundaries. Shared HTTP transport remains in
+  `frontend/src/lib/api/core`, while domain clients, types, copy, and screens live under their
+  owning feature.
+- The legacy dashboard shell, global API facades, and superseded language control were removed
+  after their final consumers migrated.
 
 ### Operating boundary
 

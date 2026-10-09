@@ -15,7 +15,7 @@
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ✅ انجام شد |
 | **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ✅ انجام شد |
 | **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ✅ انجام شد |
-| **P6-08** | release notes، migration notes، گیت نهایی و Freeze رابط Nexora                     | ⏳          |
+| **P6-08** | release notes، migration notes، گیت نهایی و Freeze رابط Nexora                     | ✅ انجام شد |
 
 ## قرارداد پایداری routeها
 
@@ -43,6 +43,7 @@
 | ----------------- | ------------------------------------------------------------ | ------------------ |
 | Format            | `npm run format:check`                                       | الزامی در هر مرحله |
 | Lint              | `npm run lint`                                               | الزامی در هر مرحله |
+| TypeScript        | `npm run typecheck`                                          | الزامی در هر مرحله |
 | Unit/Component    | `npm test`                                                   | الزامی در هر مرحله |
 | Production build  | `npm run build`                                              | الزامی در هر مرحله |
 | Route parity      | ۲۱ فایل / ۴۲ الگوی fa/en                                     | پوشش P6-01         |
@@ -145,8 +146,24 @@ toolchain آن در پروژه اضافه شود.
 - تمام copyهای feature موجود از مسیر production قابل‌دسترسی‌اند. متن‌های `legacy` مربوط به نمایش
   رکوردهای قدیمی عمداً حفظ شدند، چون قرارداد سازگاری داده‌اند و dead copy نیستند.
 
+## شاهد پذیرش P6-08
+
+- Release Notes، قرارداد سازگاری، Migration Notes، upgrade checklist و مرزهای شناخته‌شده در
+  `docs/nexora-ui-release-and-migration.md` منتشر شدند.
+- README پیش‌فرض Next.js با راهنمای واقعی اجرای frontend، معماری feature-owned و پنج گیت کیفیت
+  جایگزین شد؛ README ریشه و changelog نیز به وضعیت نهایی Nexora متصل شدند.
+- فرمان مستقل `npm run typecheck` با کنترل unused locals/parameters به package و CI افزوده شد.
+- اجرای CI برای push شاخه‌های `refactor/**` فعال شد تا شاخهٔ واقعی این بازطراحی خارج از گیت نماند.
+- تست freeze، هم‌ترازی نسخهٔ frontend/backend، حضور گیت TypeScript، trigger شاخهٔ refactor و انتشار
+  مستند migration را regression-protect می‌کند.
+- در پذیرش محلی نهایی در تاریخ ۲۰۲۶-۱۰-۰۹، Prettier، ESLint، TypeScript و production build سبز
+  شدند؛ ۹۱ فایل تست frontend با ۴۲۹ تست و ۹۴۳ تست backend غیر integration موفق بودند.
+- Playwright در toolchain وجود ندارد و هیچ ادعای pixel-diff ثبت نشده است. اجرای سه job مربوط به
+  GitHub Actions روی SHA نهایی، شرط merge باقی می‌ماند.
+
 ## گیت خروج P6
 
-P6 فقط زمانی بسته می‌شود که feature parity نسخه v0.2.0، پایداری routeها، ماتریس responsive و تمام
-گیت‌های frontend CI هم‌زمان سبز باشند. پس از آن UI Foundation فریز و ورودی پروپوزال TRD BOT
-v0.3.0 خواهد شد.
+پذیرش source-level فاز P6 با feature parity نسخه v0.2.0، پایداری routeها، ماتریس responsive و تمام
+گیت‌های محلی frontend و backend بسته شد. UI Foundation از این نقطه فریز است و تغییر قراردادهای
+فریز‌شده فقط همراه تست و release note صریح پذیرفته می‌شود. merge، tag، deploy یا GitHub Release
+جزء این مرحله نیست و موفقیت سه job مربوط به GitHub Actions روی SHA نهایی شرط merge باقی می‌ماند.

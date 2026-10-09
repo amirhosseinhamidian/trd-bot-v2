@@ -131,13 +131,14 @@ Frontend:
 cd frontend
 npm run format:check
 npm run lint
+npm run typecheck
 npm run test
 npm run build
 ```
 
 The GitHub Actions workflow runs the same backend, PostgreSQL, and frontend
-quality gates for pushes to `main`, `feature/**`, `fix/**`, and `bugfix/**`, as
-well as pull requests targeting `main`.
+quality gates for pushes to `main`, `feature/**`, `fix/**`, `bugfix/**`, and
+`refactor/**`, as well as pull requests targeting `main`.
 
 ## MVP release verification
 
@@ -145,6 +146,8 @@ The final fresh-start and release checklist is documented in
 [`docs/mvp-release-checklist.md`](docs/mvp-release-checklist.md).
 The local v0.2.0 candidate runbook and evidence template are documented in
 [`docs/v0.2/26-local-release-candidate.md`](docs/v0.2/26-local-release-candidate.md).
+The frozen Nexora UI contract, release notes, and upgrade guidance are documented in
+[`docs/nexora-ui-release-and-migration.md`](docs/nexora-ui-release-and-migration.md).
 
 ## Project structure
 

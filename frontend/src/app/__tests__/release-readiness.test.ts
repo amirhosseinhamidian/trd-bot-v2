@@ -59,3 +59,42 @@ describe('P6 release route contract', () => {
     expect(proxySource).toContain('redirectUrl.pathname = `/${defaultLocale}${pathname}`');
   });
 });
+
+describe('P6 final freeze gate', () => {
+  it('keeps the frontend version aligned with the repository release version', () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+    ) as { version: string };
+    const pyproject = readFileSync(resolve(process.cwd(), '../pyproject.toml'), 'utf8');
+    const backendVersion = pyproject.match(/^version = "([^"]+)"$/m)?.[1];
+
+    expect(packageJson.version).toBe('0.2.0');
+    expect(backendVersion).toBe(packageJson.version);
+  });
+
+  it('runs the explicit TypeScript gate on refactor branch pushes', () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
+    ) as { scripts: Record<string, string> };
+    const workflow = readFileSync(resolve(process.cwd(), '../.github/workflows/ci.yml'), 'utf8');
+
+    expect(packageJson.scripts.typecheck).toBe(
+      'tsc --noEmit --noUnusedLocals --noUnusedParameters',
+    );
+    expect(workflow).toContain("- 'refactor/**'");
+    expect(workflow).toContain('run: npm run typecheck');
+  });
+
+  it('publishes the frozen compatibility and migration boundary', () => {
+    const releaseNotes = readFileSync(
+      resolve(process.cwd(), '../docs/nexora-ui-release-and-migration.md'),
+      'utf8',
+    );
+
+    expect(releaseNotes).toContain('Status: **Frozen after P6 acceptance**');
+    expect(releaseNotes).toContain('## Compatibility contract');
+    expect(releaseNotes).toContain('## Migration notes');
+    expect(releaseNotes).toContain('## Known boundaries');
+    expect(releaseNotes).toContain('## Freeze gate');
+  });
+});

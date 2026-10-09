@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nexora / TRD BOT frontend
 
-## Getting Started
+The frontend is a Next.js 16 application for the local TRD BOT v0.2.0 research platform. It
+supports Persian (`fa`, RTL) and English (`en`, LTR), dark and light themes, and 21 frozen public
+route patterns.
 
-First, run the development server:
+## Local development
+
+From the repository root, start the backend API first. Then:
 
 ```bash
+cd frontend
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://127.0.0.1:3000`. Requests without a locale prefix redirect to Persian. The frontend
+uses `http://127.0.0.1:8000` by default; set `NEXT_PUBLIC_API_BASE_URL` when the API is elsewhere.
+Trailing slashes are normalized, and an empty value falls back to the local default.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quality gates
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-## Learn More
+Run all five gates before merging a UI change. The root GitHub Actions workflow runs the same
+frontend checks for pull requests to `main` and supported branch pushes.
 
-To learn more about Next.js, take a look at the following resources:
+## Architecture contract
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `src/app/[locale]` owns route entry points; public route names and dynamic parameter names are
+  frozen in `src/platform/route-contract.ts`.
+- `src/components/ui` contains domain-free primitives.
+- `src/components/platform` owns the shell and navigation without domain behavior.
+- `src/features/<feature>` owns its screen, copy, API client, and domain types.
+- `src/lib/api/core` owns transport, base-URL normalization, shared pagination, and error parsing.
+- `src/platform/i18n` owns platform and shell terminology.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Do not restore imports from the retired `@/lib/api/client`, `@/lib/api/types`, or
+`@/lib/api/portfolio-analytics` facades. The complete upgrade map and release boundary are in
+[`../docs/nexora-ui-release-and-migration.md`](../docs/nexora-ui-release-and-migration.md).
