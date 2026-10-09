@@ -9,6 +9,7 @@ import MobilePlatformNavigation from '@/components/platform/mobile-platform-navi
 import ThemeToggle from '@/components/theme/theme-toggle';
 import { trapTabFocus } from '@/lib/utils/focus';
 import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+import { getAlternateLocalePathname } from '@/platform/locale-routing';
 import { getPlatformNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
 
 const PLATFORM_NAVIGATION_ID = 'platform-navigation';
@@ -57,17 +58,7 @@ export default function PlatformShell({ children, locale }: PlatformShellProps) 
     };
   }, [isSidebarOpen]);
 
-  const alternateLocale: PlatformLocale = locale === 'fa' ? 'en' : 'fa';
-
-  const alternatePath = (() => {
-    const segments = pathname.split('/');
-
-    if (segments.length > 1) {
-      segments[1] = alternateLocale;
-    }
-
-    return segments.join('/') || `/${alternateLocale}`;
-  })();
+  const alternatePath = getAlternateLocalePathname(pathname, locale);
 
   const navigation = getPlatformNavigation(locale);
 

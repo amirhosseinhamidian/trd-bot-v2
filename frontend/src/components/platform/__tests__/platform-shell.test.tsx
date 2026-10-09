@@ -363,4 +363,32 @@ describe('PlatformShell', () => {
     expect(within(mobileNavigation).getByRole('button', { name: 'بیشتر' })).toBeInTheDocument();
     expect(screen.getByText('پلتفرم پژوهش بازار')).toBeInTheDocument();
   });
+
+  it.each([
+    {
+      locale: 'en' as const,
+      pathname: '/en/portfolios/portfolio-01/positions/position-01',
+      label: 'فارسی',
+      expectedHref: '/fa/portfolios/portfolio-01/positions/position-01',
+    },
+    {
+      locale: 'fa' as const,
+      pathname: '/fa/experiments/experiment%2F01',
+      label: 'English',
+      expectedHref: '/en/experiments/experiment%2F01',
+    },
+  ])(
+    'preserves the current nested route when switching from $locale',
+    ({ locale, pathname, label, expectedHref }) => {
+      navigationState.pathname = pathname;
+
+      render(
+        <PlatformShell locale={locale}>
+          <div>Content</div>
+        </PlatformShell>,
+      );
+
+      expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', expectedHref);
+    },
+  );
 });

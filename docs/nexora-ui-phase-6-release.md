@@ -10,7 +10,7 @@
 | --------- | ---------------------------------------------------------------------------------- | ----------- |
 | **P6-01** | قرارداد مرکزی ۲۱ route، regression پایداری ۴۲ مسیر fa/en و baseline چک‌لیست انتشار | ✅ انجام شد |
 | **P6-02** | smoke مسیرهای بحرانی کاربر در فارسی و انگلیسی                                      | ✅ انجام شد |
-| **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ⏳          |
+| **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ✅ انجام شد |
 | **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ⏳          |
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ⏳          |
 | **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ⏳          |
@@ -75,6 +75,18 @@ toolchain آن در پروژه اضافه شود.
 - Connections و Monitoring ضمن کنترل wiring داده، locale صحیح را تا screen نهایی حفظ می‌کنند.
 - تست‌ها علاوه بر render contract، آرگومان‌های شناسه و pagination مهم را در مرز route و API کنترل
   می‌کنند.
+
+## شاهد پذیرش P6-03
+
+- تمام ۲۱ route در هر دو جهت `fa → en` و `en → fa` جابه‌جا و سپس به مسیر مبدأ بازگردانده می‌شوند.
+- مسیرهای تو‌در‌تو و شناسه‌های URL-encoded هنگام تغییر locale بدون تغییر باقی می‌مانند.
+- منطق تغییر locale از Shell جدا و به یک قرارداد pure و قابل‌آزمون منتقل شد.
+- ThemeToggle با ترجیح `light` که پیش از hydration اعمال شده، در هر دو زبان واقعاً hydrate می‌شود و
+  هیچ هشدار mismatch تولید نمی‌کند.
+- تغییر `light → dark` پس از hydration، هم‌زمان DOM، `color-scheme`، متن دسترس‌پذیر و storage را
+  به‌روزرسانی می‌کند.
+- bootstrap تم با `beforeInteractive` و تنها suppression مجاز روی document root تحت regression
+  test قرار گرفت.
 
 ## گیت خروج P6
 
