@@ -11,6 +11,10 @@ from trd_bot.research.activity import (
     ResearchActivityItem,
     ResearchActivityType,
 )
+from trd_bot.research.analytics import (
+    ExperimentAnalyticsBuilder,
+    ExperimentAnalyticsReport,
+)
 from trd_bot.research.candidate_comparisons import (
     CandidateComparator,
     CandidateComparisonEntry,
@@ -400,6 +404,8 @@ __all__ = [
     "ExperimentAcceptanceOutcome",
     "ExperimentAcceptancePolicy",
     "ExperimentAcceptanceResult",
+    "ExperimentAnalyticsBuilder",
+    "ExperimentAnalyticsReport",
     "ExperimentBuilder",
     "ExperimentCatalogQuery",
     "ExperimentComparator",

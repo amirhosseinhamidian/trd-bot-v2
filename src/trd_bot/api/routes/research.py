@@ -39,6 +39,8 @@ from trd_bot.research import (
     ExperimentAcceptanceEvaluator,
     ExperimentAcceptancePolicy,
     ExperimentAcceptanceResult,
+    ExperimentAnalyticsBuilder,
+    ExperimentAnalyticsReport,
     ExperimentBuilder,
     ExperimentCatalogQuery,
     ExperimentComparator,
@@ -1340,6 +1342,27 @@ def get_experiment_performance_series(
         )
 
     return ExperimentPerformanceSeriesBuilder().build(experiment)
+
+
+@router.get(
+    "/experiments/{experiment_id}/analytics",
+    response_model=ExperimentAnalyticsReport,
+)
+def get_experiment_analytics(
+    experiment_id: str,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentAnalyticsReport:
+    """Return versioned read-only analytics for a stored experiment."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    return ExperimentAnalyticsBuilder().build(experiment)
 
 
 @router.get(

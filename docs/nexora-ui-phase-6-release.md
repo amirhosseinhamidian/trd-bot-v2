@@ -13,7 +13,7 @@
 | **P6-03** | smoke تم روشن/تیره، تغییر دوطرفه locale و کنترل hydration                          | ✅ انجام شد |
 | **P6-04** | smoke responsive/visual در عرض‌های `360`، `390`، `768`، `1024` و `1440`            | ✅ انجام شد |
 | **P6-05** | accessibility smoke، پیمایش کامل keyboard و focus order                            | ✅ انجام شد |
-| **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ⏳          |
+| **P6-06** | regression قرارداد Backend API، CORS و رفتار base URL                              | ✅ انجام شد |
 | **P6-07** | حذف dead code، copy و componentهای legacy/بدون‌مصرف                                | ⏳          |
 | **P6-08** | release notes، migration notes، گیت نهایی و Freeze رابط Nexora                     | ⏳          |
 
@@ -116,6 +116,19 @@ toolchain آن در پروژه اضافه شود.
 - positive `tabIndex` و `autoFocus` سفارشی در featureها ممنوع شده‌اند.
 - تمام scroll regionهای جدول‌های feature دارای نام و قابلیت focus هستند و همه progressbarها نام،
   کمینه، بیشینه و مقدار جاری قابل‌دسترسی دارند.
+
+## شاهد پذیرش P6-06
+
+- مجموعه ۶۴ عملیات مصرف‌شده توسط frontend مستقیماً با OpenAPI برنامه تطبیق داده می‌شود؛ حذف route یا
+  تغییر verb اکنون regression تست را شکست می‌دهد.
+- شکاف واقعی قرارداد Experiment برطرف شد: endpoint نسخه‌دار و فقط‌خواندنی
+  `GET /api/v1/research/experiments/{experiment_id}/analytics` داده‌های توزیع معامله، بازده ماهانه،
+  دوره‌های drawdown و تعریف metricها را از نتیجه immutable آزمایش تولید می‌کند.
+- fallback محلی، مقدار خالی/فاصله‌دار، حذف slash انتهایی، prefix نسبی و same-origin root برای
+  `NEXT_PUBLIC_API_BASE_URL` تحت تست قرار گرفتند.
+- خطاهای JSON و متنی transport با status و payload اصلی حفظ می‌شوند.
+- preflight برای هر دو origin توسعه، متدهای `GET`/`POST` و header محتوای JSON آزموده می‌شود؛ origin
+  ناشناس رد می‌شود و credential در CORS مجاز نیست.
 
 ## گیت خروج P6
 

@@ -1221,3 +1221,68 @@ def test_api_returns_404_for_unknown_experiment_performance_series(
 
     assert response.status_code == 404
     assert response.json()["detail"] == "experiment not found"
+
+
+def test_api_returns_frontend_experiment_analytics_contract(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    create_response = client.post(
+        "/api/v1/research/experiments/ema-crossover",
+        json=create_request_payload(),
+    )
+
+    assert create_response.status_code == 200
+    experiment_id = create_response.json()["experiment_id"]
+
+    response = client.get(f"/api/v1/research/experiments/{experiment_id}/analytics")
+
+    assert response.status_code == 200
+    data = response.json()
+    experiment = registry.get(experiment_id)
+    assert experiment is not None
+    strategy = experiment.result.performance_report
+    benchmark = experiment.result.benchmark_result.performance_report
+
+    assert data["experiment_id"] == experiment_id
+    assert data["dataset_id"] == experiment.dataset_id
+    assert data["analytics_version"] == "research-analytics-v1"
+    assert data["period_granularity"] == "utc_calendar_month"
+    assert Decimal(data["starting_balance"]) == strategy.starting_balance
+    assert Decimal(data["ending_balance"]) == strategy.ending_balance
+    assert Decimal(data["strategy_total_return"]) == strategy.total_return
+    assert Decimal(data["benchmark_total_return"]) == benchmark.total_return
+    assert data["trade_distribution"]["total_trades"] == strategy.total_trades
+    assert (
+        data["trade_distribution"]["long_trades"] + data["trade_distribution"]["short_trades"]
+        == strategy.total_trades
+    )
+    assert sum(period["total_trades"] for period in data["returns_by_period"]) == (
+        strategy.total_trades
+    )
+    assert (
+        sum(
+            (Decimal(period["net_pnl"]) for period in data["returns_by_period"]),
+            start=Decimal("0"),
+        )
+        == strategy.net_pnl
+    )
+    assert Decimal(data["returns_by_period"][0]["opening_balance"]) == (strategy.starting_balance)
+    assert Decimal(data["returns_by_period"][-1]["ending_balance"]) == strategy.ending_balance
+    assert {definition["key"] for definition in data["metric_definitions"]} == {
+        "total_return",
+        "excess_return",
+        "max_drawdown_fraction",
+        "win_rate",
+        "profit_factor",
+        "period_return_contribution",
+    }
+    assert data["interpretation"] == "historical_research_only"
+
+
+def test_api_returns_404_for_unknown_experiment_analytics(
+    registry: InMemoryExperimentRegistry,
+) -> None:
+    response = client.get("/api/v1/research/experiments/experiment-0000000000000000/analytics")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "experiment not found"

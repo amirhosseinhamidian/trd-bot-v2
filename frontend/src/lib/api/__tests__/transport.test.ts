@@ -107,4 +107,26 @@ describe('API transport boundary', () => {
       payload: 'report unavailable',
     });
   });
+
+  it('preserves structured API error payloads for JSON requests', async () => {
+    const payload = {
+      detail: {
+        code: 'dataset_not_found',
+        message: 'Dataset was not found',
+      },
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getJson('/api/v1/research/datasets/missing')).rejects.toMatchObject({
+      name: 'ApiRequestError',
+      status: 404,
+      payload,
+    });
+  });
 });

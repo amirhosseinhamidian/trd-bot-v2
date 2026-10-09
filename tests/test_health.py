@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from trd_bot.core.config import get_settings
@@ -21,20 +22,57 @@ def test_health_check_returns_ok() -> None:
     assert "timestamp" in data
 
 
-def test_cors_allows_configured_frontend_origin() -> None:
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+)
+def test_cors_allows_configured_frontend_origins(origin: str) -> None:
     response = client.options(
         "/api/v1/health",
         headers={
-            "Origin": "http://localhost:3000",
+            "Origin": origin,
             "Access-Control-Request-Method": "GET",
         },
     )
 
     assert response.status_code == 200
 
-    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+    assert response.headers["access-control-allow-origin"] == origin
 
     assert "GET" in response.headers["access-control-allow-methods"]
+
+
+def test_cors_allows_frontend_post_content_type_without_credentials() -> None:
+    response = client.options(
+        "/api/v1/research/datasets",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+    assert "POST" in response.headers["access-control-allow-methods"]
+    assert "content-type" in response.headers["access-control-allow-headers"].lower()
+    assert "access-control-allow-credentials" not in response.headers
+
+
+def test_cors_rejects_unknown_origin_preflight() -> None:
+    response = client.options(
+        "/api/v1/health",
+        headers={
+            "Origin": "https://unknown.example.test",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
 
 
 def test_cors_does_not_allow_unknown_origin() -> None:
