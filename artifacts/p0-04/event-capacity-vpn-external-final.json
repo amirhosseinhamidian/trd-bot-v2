@@ -1,0 +1,74 @@
+{
+  "commit_sha": "ee8d4863017162ed67e4f77769d037ea978b8524",
+  "environment_label": "macbook-pro-vpn-external-reference",
+  "evidence": [
+    {
+      "complete": false,
+      "evidence_reference": null,
+      "limitation": "Run repeated public provider probes from the deployment network; this local benchmark performs no external requests.",
+      "method": "unavailable",
+      "metrics": {},
+      "observed_count": 0,
+      "scope": "provider"
+    },
+    {
+      "complete": true,
+      "evidence_reference": null,
+      "limitation": "Measures deterministic event validation and decision policy only; it excludes network and persistence latency.",
+      "method": "synthetic_benchmark",
+      "metrics": {
+        "average_serialized_event_bytes": "870",
+        "contract_latency_p50_ms": "0.468661",
+        "contract_latency_p95_ms": "0.774581",
+        "contract_latency_p99_ms": "1.120366",
+        "contract_throughput_per_second": "1885.590313"
+      },
+      "observed_count": 20000,
+      "scope": "event_processing"
+    },
+    {
+      "complete": false,
+      "evidence_reference": null,
+      "limitation": "Run the PostgreSQL benchmark against the reference database; no substitute SQLite number is accepted.",
+      "method": "unavailable",
+      "metrics": {},
+      "observed_count": 0,
+      "scope": "database"
+    },
+    {
+      "complete": false,
+      "evidence_reference": null,
+      "limitation": "Measure queue wait and runtime with the standalone worker and reference PostgreSQL queue.",
+      "method": "unavailable",
+      "metrics": {},
+      "observed_count": 0,
+      "scope": "background_jobs"
+    },
+    {
+      "complete": false,
+      "evidence_reference": null,
+      "limitation": "Projection covers serialized normalized events only; PostgreSQL index, row, WAL, raw response, and revision overhead require DB evidence.",
+      "method": "synthetic_benchmark",
+      "metrics": {
+        "pair_count": "1",
+        "projected_events_per_30_days": "3810",
+        "projected_normalized_event_bytes_per_30_days": "3314700",
+        "windows_per_pair_per_day": "127"
+      },
+      "observed_count": 20000,
+      "scope": "storage"
+    }
+  ],
+  "generated_at": "2026-10-10T10:06:59.396243Z",
+  "missing_scopes": [
+    "provider",
+    "database",
+    "background_jobs",
+    "storage"
+  ],
+  "platform": "macOS-26.6.2-x86_64-i386-64bit",
+  "policy_schema_version": "market-data-service-level-policy-v1",
+  "python_version": "3.12.14",
+  "ready_to_freeze": false,
+  "schema_version": "market-data-capacity-benchmark-v1"
+}

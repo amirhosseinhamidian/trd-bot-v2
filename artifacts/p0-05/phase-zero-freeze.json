@@ -1,0 +1,112 @@
+{
+  "capacity_report_checksum": "252f510d1fea87728384f59f17c091891978b66cef6f59577619a225dd82bd9a",
+  "checks": [
+    {
+      "evidence_references": [
+        "docs/v0.3/00-scope-and-market-target.md"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A01"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/00-scope-and-market-target.md",
+        "tests/test_release_security_boundary.py"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A02"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/01-baseline-debt-capacity-inventory.md"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A03"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/02-event-contract-and-window-semantics.md",
+        "tests/test_market_data_events.py"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A04"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/03-service-level-retention-capacity-budget.md",
+        "tests/test_market_data_service_levels.py"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A05"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/03-service-level-retention-capacity-budget.md"
+      ],
+      "failure_reasons": [],
+      "observations": {
+        "binance-public.failure_fraction": "0",
+        "binance-public.http_latency_p95_ms": "2722",
+        "binance-public.samples": "30",
+        "kraken-public.failure_fraction": "0",
+        "kraken-public.http_latency_p95_ms": "1217",
+        "kraken-public.samples": "30"
+      },
+      "passed": true,
+      "requirement_id": "P0-A06"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/03-service-level-retention-capacity-budget.md"
+      ],
+      "failure_reasons": [],
+      "observations": {
+        "contract_latency_p95_ms": "0.774581",
+        "contract_throughput_per_second": "1885.590313",
+        "current_window_latency_p95_ms": "0.694666",
+        "dataset_file_import.runtime_p95_seconds": "0.114322",
+        "experiment_execution.runtime_p95_seconds": "0.004912",
+        "inbox_lookup_latency_p95_ms": "0.680028",
+        "market_data_import.runtime_p95_seconds": "0.047692",
+        "optimization_execution.runtime_p95_seconds": "0.024326",
+        "pool_utilization_p95_fraction": "0.2",
+        "projected_actual_storage_bytes_per_30_days": "4847461.17120",
+        "queue_wait_p95_ms": "1154.633",
+        "time_range_latency_p95_ms": "0.756732",
+        "walk_forward_execution.runtime_p95_seconds": "2.904448"
+      },
+      "passed": true,
+      "requirement_id": "P0-A07"
+    },
+    {
+      "evidence_references": [
+        "docs/v0.3/01-baseline-debt-capacity-inventory.md"
+      ],
+      "failure_reasons": [],
+      "observations": {},
+      "passed": true,
+      "requirement_id": "P0-A08"
+    }
+  ],
+  "commit_sha": "ee8d4863017162ed67e4f77769d037ea978b8524",
+  "environment_label": "macbook-pro-vpn-external-reference",
+  "fallback_providers": [
+    "binance-public"
+  ],
+  "generated_at": "2026-10-10T10:10:31.671374Z",
+  "matrix_schema_version": "phase-zero-acceptance-matrix-v1",
+  "missing_requirements": [],
+  "primary_provider": "kraken-public",
+  "ready_to_freeze": true,
+  "schema_version": "phase-zero-freeze-record-v1"
+}
