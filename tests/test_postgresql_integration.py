@@ -84,6 +84,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "background_jobs",
             "candidate_journals",
             "candidate_projections",
+            "dataset_file_stages",
             "dataset_snapshots",
             "experiment_executions",
             "market_data_connections",

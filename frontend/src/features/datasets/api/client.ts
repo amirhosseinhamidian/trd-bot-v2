@@ -15,6 +15,7 @@ import type {
   DatasetTimeframe,
   OHLCVCandle,
 } from '@/features/datasets/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 
 export interface DatasetFilters {
   source?: string;
@@ -103,8 +104,8 @@ export async function previewDatasetFile(
 export async function importDatasetFile(
   file: File,
   request: DatasetFileCommitRequest,
-): Promise<DatasetSummary> {
-  return postFormData<DatasetSummary>(
+): Promise<BackgroundJobSummary> {
+  return postFormData<BackgroundJobSummary>(
     '/api/v1/research/datasets/files',
     datasetFileForm(file, request),
   );

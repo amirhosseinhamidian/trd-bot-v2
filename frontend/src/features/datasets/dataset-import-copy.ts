@@ -39,7 +39,7 @@ export type DatasetImportCopy = {
   checksum: string;
   successTitle: string;
   successDescription: string;
-  viewDataset: string;
+  viewJob: string;
   timeframes: Record<'15m' | '1h' | '4h' | '1d', string>;
   errors: {
     required: string;
@@ -85,7 +85,7 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
   fa: {
     title: 'Import مجموعه‌داده تاریخی',
     description:
-      'فایل CSV، JSON یا Parquet را روی Backend بررسی کنید، ستون‌ها را نگاشت دهید و فقط Preview تأییدشده را ذخیره کنید.',
+      'فایل CSV، JSON یا Parquet را بررسی و نگاشت کنید؛ Preview تأییدشده به‌صورت امن staging و در worker پردازش می‌شود.',
     historicalOnly: 'فقط داده تاریخی',
     name: 'نام مجموعه‌داده',
     namePlaceholder: 'مثلاً BTC/USDT Historical 1H',
@@ -106,8 +106,8 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
     fields: fields.fa,
     previewButton: 'ساخت Preview',
     previewing: 'در حال ساخت Preview',
-    importButton: 'ثبت Dataset تأییدشده',
-    importing: 'در حال ثبت Dataset',
+    importButton: 'ارسال Dataset برای پردازش',
+    importing: 'در حال staging و ثبت کار',
     previewTitle: 'Preview سمت سرور',
     previewFile: 'نام فایل',
     previewFormat: 'فرمت',
@@ -119,9 +119,10 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
     qualityPassed: 'آماده ثبت',
     qualityRejected: 'ردشده توسط سیاست کیفیت',
     checksum: 'Preview checksum',
-    successTitle: 'مجموعه‌داده ذخیره شد',
-    successDescription: 'Snapshot تاریخی با provenance فایل و گزارش کیفیت ذخیره شد.',
-    viewDataset: 'مشاهده مجموعه‌داده',
+    successTitle: 'پردازش مجموعه‌داده در صف قرار گرفت',
+    successDescription:
+      'فایل موقت با checksum ثبت شد؛ worker آن را دوباره اعتبارسنجی و سپس Snapshot را ذخیره می‌کند.',
+    viewJob: 'پیگیری در مانیتورینگ',
     timeframes: {
       '15m': '۱۵ دقیقه',
       '1h': '۱ ساعت',
@@ -141,13 +142,13 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
       previewFailed: 'ساخت Preview ناموفق بود؛ mapping و محتوای فایل را بررسی کنید.',
       qualityRejected: 'کیفیت Dataset تأیید نشد؛ مسائل Preview را برطرف کنید.',
       previewExpired: 'فایل یا mapping پس از Preview تغییر کرده است؛ دوباره Preview بگیرید.',
-      submitFailed: 'ذخیره مجموعه‌داده ناموفق بود. اتصال Backend را بررسی کنید.',
+      submitFailed: 'قرار دادن مجموعه‌داده در صف ناموفق بود. اتصال Backend را بررسی کنید.',
     },
   },
   en: {
     title: 'Import historical dataset',
     description:
-      'Inspect a CSV, JSON, or Parquet file on the backend, map its columns, and store only an approved preview.',
+      'Inspect and map a CSV, JSON, or Parquet file; approved previews are securely staged and processed by the worker.',
     historicalOnly: 'Historical data only',
     name: 'Dataset name',
     namePlaceholder: 'For example, BTC/USDT Historical 1H',
@@ -168,8 +169,8 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
     fields: fields.en,
     previewButton: 'Build preview',
     previewing: 'Building preview',
-    importButton: 'Import approved dataset',
-    importing: 'Importing dataset',
+    importButton: 'Queue approved dataset',
+    importing: 'Staging and queuing dataset',
     previewTitle: 'Server preview',
     previewFile: 'File name',
     previewFormat: 'Format',
@@ -181,10 +182,10 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
     qualityPassed: 'Ready to import',
     qualityRejected: 'Rejected by quality policy',
     checksum: 'Preview checksum',
-    successTitle: 'Dataset stored',
+    successTitle: 'Dataset import queued',
     successDescription:
-      'The historical snapshot was stored with file provenance and quality evidence.',
-    viewDataset: 'View dataset',
+      'The checksum-bound temporary upload is queued for worker revalidation and snapshot storage.',
+    viewJob: 'Track in monitoring',
     timeframes: {
       '15m': '15 minutes',
       '1h': '1 hour',
@@ -204,7 +205,7 @@ const copies: Record<PlatformLocale, DatasetImportCopy> = {
       previewFailed: 'Preview failed. Check the mapping and file contents.',
       qualityRejected: 'Dataset quality was rejected. Resolve the preview issues first.',
       previewExpired: 'The file or mapping changed after preview. Build a new preview.',
-      submitFailed: 'The dataset could not be stored. Check the backend connection.',
+      submitFailed: 'The dataset could not be queued. Check the backend connection.',
     },
   },
 };

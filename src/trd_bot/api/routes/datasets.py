@@ -13,31 +13,40 @@ from pydantic import (
     model_validator,
 )
 
-from trd_bot.api.dependencies import get_dataset_repository
+from trd_bot.api.dependencies import (
+    get_dataset_file_import_enqueuer,
+    get_dataset_repository,
+)
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.domain.market_data import (
     OHLCVCandle,
     Timeframe,
     TradingPair,
 )
+from trd_bot.jobs import BackgroundJobBuilder, BackgroundJobKind, BackgroundJobSummary
 from trd_bot.research import (
     MAX_DATASET_FILE_BYTES,
     DatasetBuilder,
     DatasetCatalogQuery,
     DatasetDetailSummary,
     DatasetFileCommitRequest,
+    DatasetFileImportEnqueueError,
+    DatasetFileImportEnqueuer,
     DatasetFileImportError,
     DatasetFileImportErrorCode,
+    DatasetFileImportJobPayload,
     DatasetFileImportPreview,
     DatasetFileImportService,
     DatasetFileInspection,
     DatasetFilePreviewRequest,
+    DatasetFileStageBuilder,
     DatasetProvenance,
     DatasetProvenanceKind,
     DatasetRepository,
     DatasetSnapshot,
     DatasetSummary,
     InvalidDatasetError,
+    build_dataset_file_import_idempotency_key,
 )
 
 router = APIRouter(
@@ -48,6 +57,11 @@ router = APIRouter(
 DatasetRepositoryDependency = Annotated[
     DatasetRepository,
     Depends(get_dataset_repository),
+]
+
+DatasetFileImportEnqueuerDependency = Annotated[
+    DatasetFileImportEnqueuer,
+    Depends(get_dataset_file_import_enqueuer),
 ]
 
 PaginationQuery = Annotated[
@@ -315,20 +329,20 @@ async def preview_dataset_file(
 
 @router.post(
     "/files",
-    response_model=DatasetSummary,
-    status_code=status.HTTP_201_CREATED,
+    response_model=BackgroundJobSummary,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def import_dataset_file(
     file: DatasetFileUpload,
     request: DatasetFileRequestJson,
-    repository: DatasetRepositoryDependency,
-) -> DatasetSummary:
-    """Revalidate and persist one file whose canonical preview checksum is approved."""
+    enqueuer: DatasetFileImportEnqueuerDependency,
+) -> BackgroundJobSummary:
+    """Stage an approved upload and atomically enqueue its durable import."""
 
     parsed_request = _parse_file_request(request, DatasetFileCommitRequest)
     file_name, content = await _read_dataset_upload(file)
     try:
-        dataset = DatasetFileImportService().build_dataset(
+        staged = DatasetFileStageBuilder().build(
             file_name=file_name,
             content=content,
             request=parsed_request,
@@ -336,8 +350,27 @@ async def import_dataset_file(
     except DatasetFileImportError as error:
         _raise_file_import_http_error(error)
 
-    stored_dataset = repository.save(dataset)
-    return DatasetSummary.from_dataset(stored_dataset)
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.DATASET_FILE_IMPORT,
+        payload=DatasetFileImportJobPayload(
+            stage_id=staged.stage_id,
+            file_checksum=staged.file_checksum,
+        ).model_dump(mode="json"),
+        idempotency_key=build_dataset_file_import_idempotency_key(staged),
+        max_attempts=3,
+        now=staged.created_at,
+    )
+    try:
+        result = enqueuer.enqueue(stage=staged, job=job)
+    except (DatasetFileImportEnqueueError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "dataset_file_import_conflict",
+                "message": "dataset file import could not be enqueued",
+            },
+        ) from error
+    return BackgroundJobSummary.from_job(result.job)
 
 
 @router.get(

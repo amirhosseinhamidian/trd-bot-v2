@@ -12,6 +12,10 @@ from trd_bot.db.candidate_projection_rebuild import (
 from trd_bot.db.candidate_projection_repositories import (
     SqlAlchemyCandidateProjectionRepository,
 )
+from trd_bot.db.dataset_file_stage_repositories import (
+    SqlAlchemyDatasetFileImportEnqueuer,
+    SqlAlchemyDatasetFileStageRepository,
+)
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
@@ -23,6 +27,7 @@ from trd_bot.db.models import (
     BackgroundJobRow,
     CandidateJournalRow,
     CandidateProjectionRow,
+    DatasetFileStageRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
     MonitoringRuntimeStateRow,
@@ -74,6 +79,7 @@ __all__ = [
     "CandidateJournalRow",
     "CandidateProjectionRow",
     "DatabaseBase",
+    "DatasetFileStageRow",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
     "MonitoringRuntimeStateRow",
@@ -87,6 +93,8 @@ __all__ = [
     "SqlAlchemyCandidateJournalRepository",
     "SqlAlchemyCandidateProjectionRebuilder",
     "SqlAlchemyCandidateProjectionRepository",
+    "SqlAlchemyDatasetFileImportEnqueuer",
+    "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",

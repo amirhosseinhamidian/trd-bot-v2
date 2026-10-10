@@ -200,6 +200,17 @@ class DatasetFileInspection(BaseModel):
     can_preview: bool
 
 
+class DatasetFileUploadDescriptor(BaseModel):
+    """Bounded metadata safe to compute before durable staging."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    file_name: str
+    file_format: DatasetFileFormat
+    file_size_bytes: int = Field(ge=1, le=MAX_DATASET_FILE_BYTES)
+    file_checksum: str = Field(min_length=64, max_length=64, pattern=r"^[a-f0-9]{64}$")
+
+
 class DatasetFilePreviewRequest(BaseModel):
     """Dataset identity and explicit interpretation selected by the operator."""
 
@@ -643,6 +654,19 @@ class DatasetFileImportService:
 
     def inspect(self, *, file_name: str, content: bytes) -> DatasetFileInspection:
         return _parse_file(file_name, content).inspection
+
+    def describe_upload(self, *, file_name: str, content: bytes) -> DatasetFileUploadDescriptor:
+        """Validate upload bounds without parsing rows inside the commit request."""
+
+        safe_name = _safe_file_name(file_name)
+        file_format = _detect_format(safe_name)
+        _validate_content(content)
+        return DatasetFileUploadDescriptor(
+            file_name=safe_name,
+            file_format=file_format,
+            file_size_bytes=len(content),
+            file_checksum=hashlib.sha256(content).hexdigest(),
+        )
 
     def _check_quality(
         self,

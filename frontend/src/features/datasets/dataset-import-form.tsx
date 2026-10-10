@@ -28,9 +28,9 @@ import type {
   DatasetFileImportPreview,
   DatasetFileInspection,
   DatasetFilePreviewRequest,
-  DatasetSummary,
   DatasetTimeframe,
 } from '@/features/datasets/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 import { ApiRequestError } from '@/lib/api/core/transport';
 import type { PlatformLocale } from '@/platform/i18n';
 
@@ -64,7 +64,7 @@ type FormErrors = Partial<Record<FormField, string>>;
 
 type DatasetImportFormProps = {
   locale: PlatformLocale;
-  onImported?: (dataset: DatasetSummary) => Promise<void> | void;
+  onQueued?: (job: BackgroundJobSummary) => Promise<void> | void;
 };
 
 function emptyMapping(): DatasetColumnMapping {
@@ -118,7 +118,7 @@ function apiErrorCode(error: ApiRequestError): string | null {
   return typeof detail.code === 'string' ? detail.code : null;
 }
 
-export default function DatasetImportForm({ locale, onImported }: DatasetImportFormProps) {
+export default function DatasetImportForm({ locale, onQueued }: DatasetImportFormProps) {
   const copy = getDatasetImportCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
 
@@ -133,7 +133,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
   const [preview, setPreview] = useState<DatasetFileImportPreview | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdDataset, setCreatedDataset] = useState<DatasetSummary | null>(null);
+  const [queuedJob, setQueuedJob] = useState<BackgroundJobSummary | null>(null);
   const [activity, setActivity] = useState<'inspect' | 'preview' | 'import' | null>(null);
 
   const isBusy = activity !== null;
@@ -148,7 +148,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
 
   function invalidatePreview(): void {
     setPreview(null);
-    setCreatedDataset(null);
+    setQueuedJob(null);
     setSubmitError(null);
   }
 
@@ -257,7 +257,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
 
     setErrors(nextErrors);
     setSubmitError(null);
-    setCreatedDataset(null);
+    setQueuedJob(null);
     if (Object.keys(nextErrors).length > 0 || !file) return;
 
     if (!preview) {
@@ -281,12 +281,12 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
 
     setActivity('import');
     try {
-      const dataset = await importDatasetFile(file, {
+      const job = await importDatasetFile(file, {
         ...buildPreviewRequest(),
         preview_checksum: preview.preview_checksum,
       });
-      setCreatedDataset(dataset);
-      if (onImported) await onImported(dataset);
+      setQueuedJob(job);
+      if (onQueued) await onQueued(job);
     } catch (error) {
       if (error instanceof ApiRequestError && apiErrorCode(error) === 'preview_mismatch') {
         setPreview(null);
@@ -543,7 +543,7 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
             </p>
           ) : null}
 
-          {createdDataset ? (
+          {queuedJob ? (
             <div
               role="status"
               className="rounded-xl border border-app-success-border bg-app-success-soft p-5"
@@ -554,13 +554,13 @@ export default function DatasetImportForm({ locale, onImported }: DatasetImportF
                 dir="ltr"
                 className="mt-3 text-left text-xs font-semibold break-all text-app-muted"
               >
-                {createdDataset.dataset_id}
+                {queuedJob.job_id}
               </p>
               <Link
-                href={`/${locale}/datasets/${encodeURIComponent(createdDataset.dataset_id)}`}
+                href={`/${locale}/monitoring`}
                 className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-app-success-border px-4 py-2 text-center text-sm font-semibold text-app-success transition hover:bg-app-success-soft focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none sm:w-auto"
               >
-                {copy.viewDataset}
+                {copy.viewJob}
               </Link>
             </div>
           ) : null}

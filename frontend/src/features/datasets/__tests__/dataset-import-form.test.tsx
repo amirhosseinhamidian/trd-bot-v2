@@ -7,8 +7,8 @@ import type {
   DatasetColumnMapping,
   DatasetFileImportPreview,
   DatasetFileInspection,
-  DatasetSummary,
 } from '@/features/datasets/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 
 const mocks = vi.hoisted(() => ({
   importDatasetFile: vi.fn(),
@@ -68,22 +68,23 @@ const preview: DatasetFileImportPreview = {
   ready_to_import: true,
 };
 
-const createdDataset: DatasetSummary = {
-  dataset_id: 'dataset-1234567890abcdef',
-  schema_version: 3,
-  name: 'BTC historical',
-  source: 'manual-import',
-  pair: {
-    base_asset: 'BTC',
-    quote_asset: 'USDT',
-    market_type: 'spot',
-  },
-  timeframe: '1h',
-  start_time: preview.first_open_time,
-  end_time: preview.last_close_time,
+const queuedJob: BackgroundJobSummary = {
+  job_id: 'job-1234567890abcdef1234',
+  kind: 'dataset_file_import',
+  status: 'queued',
+  progress_percent: 0,
+  attempt_count: 0,
+  max_attempts: 3,
+  run_after: '2026-10-10T08:00:00.000Z',
+  lease_expires_at: null,
+  cancel_requested: false,
+  result_reference: null,
+  error_code: null,
+  error_message: null,
   created_at: '2026-08-25T10:00:00.000Z',
-  candle_count: 2,
-  checksum: preview.preview_checksum,
+  updated_at: '2026-08-25T10:00:00.000Z',
+  started_at: null,
+  finished_at: null,
 };
 
 async function fillAndInspect(user: ReturnType<typeof userEvent.setup>): Promise<File> {
@@ -115,12 +116,12 @@ describe('DatasetImportForm', () => {
 
   it('inspects, previews, and commits the exact uploaded file', async () => {
     const user = userEvent.setup();
-    const onImported = vi.fn();
+    const onQueued = vi.fn();
     mocks.inspectDatasetFile.mockResolvedValue(inspection);
     mocks.previewDatasetFile.mockResolvedValue(preview);
-    mocks.importDatasetFile.mockResolvedValue(createdDataset);
+    mocks.importDatasetFile.mockResolvedValue(queuedJob);
 
-    render(<DatasetImportForm locale="en" onImported={onImported} />);
+    render(<DatasetImportForm locale="en" onQueued={onQueued} />);
     const file = await fillAndInspect(user);
 
     expect(await screen.findByText('Column mapping')).toBeInTheDocument();
@@ -142,7 +143,7 @@ describe('DatasetImportForm', () => {
     });
 
     expect(await screen.findByText('Ready to import')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Import approved dataset' }));
+    await user.click(screen.getByRole('button', { name: 'Queue approved dataset' }));
 
     await waitFor(() => {
       expect(mocks.importDatasetFile).toHaveBeenCalledWith(file, {
@@ -150,11 +151,11 @@ describe('DatasetImportForm', () => {
         preview_checksum: preview.preview_checksum,
       });
     });
-    expect(onImported).toHaveBeenCalledWith(createdDataset);
-    expect(screen.getByText('Dataset stored')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'View dataset' })).toHaveAttribute(
+    expect(onQueued).toHaveBeenCalledWith(queuedJob);
+    expect(screen.getByText('Dataset import queued')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Track in monitoring' })).toHaveAttribute(
       'href',
-      '/en/datasets/dataset-1234567890abcdef',
+      '/en/monitoring',
     );
   });
 
@@ -186,7 +187,7 @@ describe('DatasetImportForm', () => {
     await user.click(screen.getByRole('button', { name: 'Build preview' }));
 
     const importButton = await screen.findByRole('button', {
-      name: 'Import approved dataset',
+      name: 'Queue approved dataset',
     });
     expect(importButton).toBeDisabled();
     expect(

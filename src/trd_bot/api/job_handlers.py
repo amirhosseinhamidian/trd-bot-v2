@@ -7,6 +7,7 @@ from trd_bot.api.background_jobs import (
     run_walk_forward_execution_job,
 )
 from trd_bot.db import (
+    SqlAlchemyDatasetFileStageRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
@@ -27,6 +28,11 @@ from trd_bot.jobs import (
     BackgroundJobKind,
 )
 from trd_bot.market_data import MarketDataProviderCatalog
+from trd_bot.research.dataset_file_jobs import (
+    DatasetFileImportJobError,
+    DatasetFileImportJobPayload,
+    DatasetFileImportJobRunner,
+)
 from trd_bot.research.historical_dataset_jobs import (
     HistoricalDatasetJobPayload,
     HistoricalDatasetJobRunner,
@@ -36,6 +42,7 @@ from trd_bot.research.optimization_jobs import OptimizationExecutionJobPayload
 from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
 
 _MARKET_DATA_IMPORT_LEASE = timedelta(minutes=5)
+_DATASET_FILE_IMPORT_LEASE = timedelta(minutes=5)
 _OPTIMIZATION_EXECUTION_LEASE = timedelta(minutes=5)
 
 
@@ -103,6 +110,35 @@ def run_market_data_import_job(
     return None if record is None else record.import_id
 
 
+def run_dataset_file_import_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str | None:
+    request = DatasetFileImportJobPayload.model_validate(payload)
+    context.heartbeat(10, lease_duration=_DATASET_FILE_IMPORT_LEASE)
+
+    with get_session_factory()() as session:
+        runner = DatasetFileImportJobRunner(
+            stages=SqlAlchemyDatasetFileStageRepository(session),
+            datasets=SqlAlchemyDatasetRepository(session),
+        )
+        try:
+            dataset_id = runner.run(
+                request,
+                cancellation_requested=context.cancellation_requested(),
+            )
+        except DatasetFileImportJobError as error:
+            raise BackgroundJobHandlerError(
+                error_code=error.code,
+                error_message=error.message,
+                retryable=False,
+            ) from error
+
+    if dataset_id is not None:
+        context.heartbeat(90, lease_duration=_DATASET_FILE_IMPORT_LEASE)
+    return dataset_id
+
+
 def run_optimization_execution_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
@@ -159,6 +195,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.EXPERIMENT_EXECUTION: run_experiment_job,
             BackgroundJobKind.WALK_FORWARD_EXECUTION: run_walk_forward_job,
             BackgroundJobKind.MARKET_DATA_IMPORT: run_market_data_import_job,
+            BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }
     )

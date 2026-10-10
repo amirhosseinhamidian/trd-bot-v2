@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DatasetCatalog from '@/features/datasets/dataset-catalog';
@@ -16,16 +15,8 @@ vi.mock('@/features/datasets/api/client', () => ({
 }));
 
 vi.mock('@/features/datasets/dataset-import-form', () => ({
-  default: function MockDatasetImportForm({
-    onImported,
-  }: {
-    onImported: () => Promise<void> | void;
-  }) {
-    return (
-      <button type="button" onClick={() => void onImported()}>
-        Complete dataset import
-      </button>
-    );
+  default: function MockDatasetImportForm() {
+    return <div>Dataset import form</div>;
   },
 }));
 
@@ -54,24 +45,6 @@ vi.mock('@/features/datasets/dataset-filter-panel', async () => {
   };
 });
 
-const importedDataset: DatasetSummary = {
-  dataset_id: 'dataset-imported-btc',
-  schema_version: 1,
-  name: 'Imported BTC dataset',
-  source: 'csv',
-  pair: {
-    base_asset: 'BTC',
-    quote_asset: 'USDT',
-    market_type: 'spot',
-  },
-  timeframe: '1h',
-  start_time: '2026-08-01T00:00:00Z',
-  end_time: '2026-08-01T01:00:00Z',
-  created_at: '2026-08-25T12:00:00Z',
-  candle_count: 2,
-  checksum: 'a'.repeat(64),
-};
-
 const initialPage: Page<DatasetSummary> = {
   items: [],
   total: 0,
@@ -82,60 +55,17 @@ const initialPage: Page<DatasetSummary> = {
   has_previous: false,
 };
 
-const refreshedPage: Page<DatasetSummary> = {
-  items: [importedDataset],
-  total: 1,
-  limit: 12,
-  offset: 0,
-  count: 1,
-  has_next: false,
-  has_previous: false,
-};
-
 describe('DatasetCatalog', () => {
   beforeEach(() => {
     mocks.getDatasets.mockReset();
     mocks.filterInstance = 0;
   });
 
-  it('reloads the first page and resets filters after an import', async () => {
-    const user = userEvent.setup();
-
-    mocks.getDatasets.mockResolvedValue(refreshedPage);
-
+  it('keeps the catalog stable while a durable file import runs', () => {
     render(<DatasetCatalog locale="en" initialPage={initialPage} />);
 
+    expect(screen.getByText('Dataset import form')).toBeInTheDocument();
     expect(screen.getByTestId('filter-instance')).toHaveTextContent('1');
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Complete dataset import',
-      }),
-    );
-
-    await waitFor(() => {
-      expect(mocks.getDatasets).toHaveBeenCalledTimes(1);
-    });
-
-    expect(mocks.getDatasets).toHaveBeenCalledWith(
-      expect.objectContaining({
-        limit: 12,
-        offset: 0,
-        sortBy: 'created_at',
-        sortDirection: 'desc',
-      }),
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('filter-instance')).toHaveTextContent('2');
-    });
-
-    expect(await screen.findByText('Imported BTC dataset')).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('link', {
-        name: /view/i,
-      }),
-    ).toHaveAttribute('href', '/en/datasets/dataset-imported-btc');
+    expect(mocks.getDatasets).not.toHaveBeenCalled();
   });
 });

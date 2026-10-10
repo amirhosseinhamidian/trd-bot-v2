@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -183,6 +184,36 @@ class DatasetSnapshotRow(DatabaseBase):
     candle_count: Mapped[int] = mapped_column(Integer)
     checksum: Mapped[str] = mapped_column(String(64), unique=True)
     payload_json: Mapped[str] = mapped_column(Text)
+
+
+class DatasetFileStageRow(DatabaseBase):
+    """Temporary bounded upload bytes consumed by a durable import job."""
+
+    __tablename__ = "dataset_file_stages"
+
+    __table_args__ = (
+        CheckConstraint(
+            "file_size_bytes > 0 AND file_size_bytes <= 10485760",
+            name="file_size_bounded",
+        ),
+        CheckConstraint(
+            "length(file_checksum) = 64",
+            name="checksum_length",
+        ),
+        CheckConstraint(
+            "expires_at > created_at",
+            name="expiry_after_created",
+        ),
+    )
+
+    stage_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    file_name: Mapped[str] = mapped_column(String(255))
+    file_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    file_size_bytes: Mapped[int] = mapped_column(Integer)
+    content_bytes: Mapped[bytes] = mapped_column(LargeBinary)
+    request_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class BackgroundJobRow(DatabaseBase):

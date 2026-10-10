@@ -5,9 +5,16 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from trd_bot.api.dependencies import get_dataset_repository
+from trd_bot.api.dependencies import (
+    get_dataset_file_import_enqueuer,
+    get_dataset_repository,
+)
 from trd_bot.main import app
-from trd_bot.research import MAX_DATASET_FILE_BYTES, InMemoryDatasetRepository
+from trd_bot.research import (
+    MAX_DATASET_FILE_BYTES,
+    InMemoryDatasetFileImportEnqueuer,
+    InMemoryDatasetRepository,
+)
 
 client = TestClient(app)
 
@@ -54,6 +61,20 @@ def repository() -> Iterator[InMemoryDatasetRepository]:
         app.dependency_overrides.pop(get_dataset_repository, None)
 
 
+@pytest.fixture
+def file_enqueuer() -> Iterator[InMemoryDatasetFileImportEnqueuer]:
+    enqueuer = InMemoryDatasetFileImportEnqueuer()
+
+    def override_enqueuer() -> InMemoryDatasetFileImportEnqueuer:
+        return enqueuer
+
+    app.dependency_overrides[get_dataset_file_import_enqueuer] = override_enqueuer
+    try:
+        yield enqueuer
+    finally:
+        app.dependency_overrides.pop(get_dataset_file_import_enqueuer, None)
+
+
 def upload(path: str, *, request: dict[str, object] | None = None) -> Any:
     data = {} if request is None else {"request": json.dumps(request)}
     return client.post(
@@ -77,8 +98,9 @@ def test_api_inspects_dataset_file_without_persisting(
     assert repository.count() == 0
 
 
-def test_api_previews_then_commits_the_exact_canonical_file(
+def test_api_previews_then_stages_the_exact_file_for_a_durable_job(
     repository: InMemoryDatasetRepository,
+    file_enqueuer: InMemoryDatasetFileImportEnqueuer,
 ) -> None:
     preview_response = upload(
         "/api/v1/research/datasets/files/preview",
@@ -95,25 +117,53 @@ def test_api_previews_then_commits_the_exact_canonical_file(
         request={**file_request(), "preview_checksum": preview["preview_checksum"]},
     )
 
-    assert commit_response.status_code == 201
+    assert commit_response.status_code == 202
     summary = commit_response.json()
-    stored = repository.get(summary["dataset_id"])
-    assert stored is not None
-    assert stored.checksum == preview["preview_checksum"]
-    assert stored.provenance.original_filename == "candles.csv"
-    assert stored.provenance.original_file_format == "csv"
+    assert summary["kind"] == "dataset_file_import"
+    assert summary["status"] == "queued"
+    assert repository.count() == 0
+    assert len(file_enqueuer.stages) == 1
+    staged = next(iter(file_enqueuer.stages.values()))
+    assert staged.file_name == "candles.csv"
+    assert staged.request.preview_checksum == preview["preview_checksum"]
+    assert staged.content == CSV.encode()
 
 
-def test_api_rejects_commit_with_stale_preview_checksum(
+def test_api_stages_a_stale_preview_for_fail_closed_worker_revalidation(
     repository: InMemoryDatasetRepository,
+    file_enqueuer: InMemoryDatasetFileImportEnqueuer,
 ) -> None:
     response = upload(
         "/api/v1/research/datasets/files",
         request={**file_request(), "preview_checksum": "0" * 64},
     )
 
-    assert response.status_code == 409
-    assert response.json()["detail"]["code"] == "preview_mismatch"
+    assert response.status_code == 202
+    assert repository.count() == 0
+    assert len(file_enqueuer.stages) == 1
+
+
+def test_api_reuses_the_same_job_for_duplicate_import_intent(
+    repository: InMemoryDatasetRepository,
+    file_enqueuer: InMemoryDatasetFileImportEnqueuer,
+) -> None:
+    preview_response = upload(
+        "/api/v1/research/datasets/files/preview",
+        request=file_request(),
+    )
+    request = {
+        **file_request(),
+        "preview_checksum": preview_response.json()["preview_checksum"],
+    }
+
+    first = upload("/api/v1/research/datasets/files", request=request)
+    second = upload("/api/v1/research/datasets/files", request=request)
+
+    assert first.status_code == 202
+    assert second.status_code == 202
+    assert second.json()["job_id"] == first.json()["job_id"]
+    assert len(file_enqueuer.stages) == 1
+    assert len(file_enqueuer.jobs_by_key) == 1
     assert repository.count() == 0
 
 

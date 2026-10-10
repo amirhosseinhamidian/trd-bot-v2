@@ -94,7 +94,6 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
   const [hasError, setHasError] = useState(false);
   const [appliedFilters, setAppliedFilters] =
     useState<DatasetFilterValues>(DEFAULT_DATASET_FILTERS);
-  const [filterResetVersion, setFilterResetVersion] = useState(0);
 
   const requestSequence = useRef(0);
 
@@ -133,13 +132,6 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
     void loadDatasets(0, filters);
   }
 
-  async function handleDatasetImported(): Promise<void> {
-    setAppliedFilters(DEFAULT_DATASET_FILTERS);
-    setFilterResetVersion((currentVersion) => currentVersion + 1);
-
-    await loadDatasets(0, DEFAULT_DATASET_FILTERS);
-  }
-
   return (
     <PageFrame>
       <PageHeader
@@ -152,13 +144,8 @@ export default function DatasetCatalog({ initialPage, locale }: DatasetCatalogPr
           </Badge>
         }
       />
-      <DatasetImportForm locale={locale} onImported={handleDatasetImported} />
-      <DatasetFilterPanel
-        key={filterResetVersion}
-        locale={locale}
-        isLoading={isLoading}
-        onApply={applyFilters}
-      />
+      <DatasetImportForm locale={locale} />
+      <DatasetFilterPanel locale={locale} isLoading={isLoading} onApply={applyFilters} />
 
       <section className="relative min-h-64" aria-busy={isLoading}>
         {isLoading ? (

@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyBackgroundJobRepository,
     SqlAlchemyCandidateJournalRepository,
     SqlAlchemyCandidateProjectionRepository,
+    SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
@@ -45,6 +46,7 @@ from trd_bot.monitoring import (
     SystemMetricRepository,
 )
 from trd_bot.paper import SimulatedPortfolioRepository
+from trd_bot.research.dataset_file_jobs import DatasetFileImportEnqueuer
 from trd_bot.research.datasets import DatasetRepository
 from trd_bot.research.experiment_executions import ExperimentExecutionRepository
 from trd_bot.research.experiments import ExperimentRegistry
@@ -97,6 +99,14 @@ def get_dataset_repository(
     """Return the request-scoped dataset repository."""
 
     return SqlAlchemyDatasetRepository(session)
+
+
+def get_dataset_file_import_enqueuer(
+    session: DatabaseSessionDependency,
+) -> DatasetFileImportEnqueuer:
+    """Return the atomic staged-upload and durable-job enqueuer."""
+
+    return SqlAlchemyDatasetFileImportEnqueuer(session)
 
 
 def get_historical_dataset_committer(

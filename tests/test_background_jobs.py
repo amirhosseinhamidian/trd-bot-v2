@@ -286,3 +286,9 @@ def test_production_registry_allowlists_optimization_jobs() -> None:
     handler = build_background_job_handler_registry().get(BackgroundJobKind.OPTIMIZATION_EXECUTION)
 
     assert callable(handler)
+
+
+def test_production_registry_allowlists_dataset_file_import_jobs() -> None:
+    handler = build_background_job_handler_registry().get(BackgroundJobKind.DATASET_FILE_IMPORT)
+
+    assert callable(handler)

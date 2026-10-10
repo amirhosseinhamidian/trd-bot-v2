@@ -69,6 +69,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "background_jobs",
         "candidate_journals",
         "candidate_projections",
+        "dataset_file_stages",
         "dataset_snapshots",
         "experiment_executions",
         "market_data_connections",
