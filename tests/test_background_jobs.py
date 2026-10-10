@@ -1,9 +1,11 @@
 from collections.abc import Iterator, Mapping
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy.orm import Session
 
+import trd_bot.api.job_handlers as job_handlers
 from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.db import (
     BackgroundJobConflictError,
@@ -22,6 +24,7 @@ from trd_bot.jobs import (
     BackgroundJobStatus,
     BackgroundJobWorker,
 )
+from trd_bot.research import ExperimentExecutionStatus
 
 NOW = datetime(2026, 9, 26, 6, 30, tzinfo=UTC)
 
@@ -292,3 +295,91 @@ def test_production_registry_allowlists_dataset_file_import_jobs() -> None:
     handler = build_background_job_handler_registry().get(BackgroundJobKind.DATASET_FILE_IMPORT)
 
     assert callable(handler)
+
+
+def test_experiment_handler_rejects_a_malformed_payload_without_retry(
+    session: Session,
+) -> None:
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(
+        BackgroundJobBuilder().build(
+            kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+            payload={"execution_id": "not-an-execution-id"},
+            max_attempts=3,
+            now=NOW,
+        )
+    )
+
+    failed = BackgroundJobWorker(
+        repository=repository,
+        handlers=build_background_job_handler_registry(),
+        worker_id="experiment-payload-worker",
+    ).run_once(now=NOW)
+
+    assert failed is not None
+    assert failed.job_id == queued.job_id
+    assert failed.status is BackgroundJobStatus.FAILED
+    assert failed.attempt_count == 1
+    assert failed.error_code == "invalid_experiment_job_payload"
+
+
+def test_experiment_handler_preserves_monotonic_progress_after_lease_recovery(
+    session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed_at = datetime.now(UTC)
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(
+        BackgroundJobBuilder().build(
+            kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+            payload={"execution_id": "execution-1234567890abcdef"},
+            max_attempts=3,
+            now=observed_at - timedelta(seconds=30),
+        )
+    )
+    repository.claim_next(
+        worker_id="stale-experiment-worker",
+        lease_duration=timedelta(seconds=5),
+        now=observed_at - timedelta(seconds=20),
+    )
+    repository.heartbeat(
+        job_id=queued.job_id,
+        worker_id="stale-experiment-worker",
+        progress_percent=90,
+        lease_duration=timedelta(seconds=5),
+        now=observed_at - timedelta(seconds=19),
+    )
+
+    def resume_execution(
+        execution_id: str,
+        _session_factory: object,
+        *,
+        report_progress: object,
+        cancellation_requested: object,
+    ) -> object:
+        assert execution_id == "execution-1234567890abcdef"
+        assert callable(report_progress)
+        assert callable(cancellation_requested)
+        report_progress(20)
+        return SimpleNamespace(
+            execution_id=execution_id,
+            status=ExperimentExecutionStatus.SUCCEEDED,
+        )
+
+    monkeypatch.setattr(job_handlers, "get_session_factory", lambda: object())
+    monkeypatch.setattr(
+        job_handlers,
+        "run_experiment_execution_with_session_factory",
+        resume_execution,
+    )
+
+    completed = BackgroundJobWorker(
+        repository=repository,
+        handlers=build_background_job_handler_registry(),
+        worker_id="recovery-experiment-worker",
+        lease_duration=timedelta(seconds=30),
+    ).run_once()
+
+    assert completed is not None
+    assert completed.status is BackgroundJobStatus.SUCCEEDED
+    assert completed.attempt_count == 2

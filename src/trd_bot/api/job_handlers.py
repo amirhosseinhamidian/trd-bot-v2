@@ -2,8 +2,11 @@ import asyncio
 from collections.abc import Mapping
 from datetime import timedelta
 
+from pydantic import ValidationError
+
 from trd_bot.api.background_jobs import (
-    run_experiment_execution_job,
+    fail_experiment_execution_with_session_factory,
+    run_experiment_execution_with_session_factory,
     run_walk_forward_execution_job,
 )
 from trd_bot.db import (
@@ -33,6 +36,8 @@ from trd_bot.research.dataset_file_jobs import (
     DatasetFileImportJobPayload,
     DatasetFileImportJobRunner,
 )
+from trd_bot.research.experiment_execution_jobs import ExperimentExecutionJobPayload
+from trd_bot.research.experiment_executions import ExperimentExecutionStatus
 from trd_bot.research.historical_dataset_jobs import (
     HistoricalDatasetJobPayload,
     HistoricalDatasetJobRunner,
@@ -43,6 +48,7 @@ from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
 
 _MARKET_DATA_IMPORT_LEASE = timedelta(minutes=5)
 _DATASET_FILE_IMPORT_LEASE = timedelta(minutes=5)
+_EXPERIMENT_EXECUTION_LEASE = timedelta(minutes=5)
 _OPTIMIZATION_EXECUTION_LEASE = timedelta(minutes=5)
 
 
@@ -57,11 +63,58 @@ def run_experiment_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str:
-    execution_id = _required_string(payload, "execution_id")
-    if context.cancellation_requested():
-        return execution_id
-    run_experiment_execution_job(execution_id)
-    return execution_id
+    try:
+        request = ExperimentExecutionJobPayload.model_validate(payload)
+    except ValidationError as error:
+        raise BackgroundJobHandlerError(
+            error_code="invalid_experiment_job_payload",
+            error_message="Experiment execution job payload is invalid.",
+            retryable=False,
+        ) from error
+
+    def report_progress(progress: int) -> None:
+        context.heartbeat(
+            max(progress, context.job.progress_percent),
+            lease_duration=_EXPERIMENT_EXECUTION_LEASE,
+        )
+
+    report_progress(5)
+    session_factory = get_session_factory()
+    try:
+        execution = run_experiment_execution_with_session_factory(
+            request.execution_id,
+            session_factory,
+            report_progress=report_progress,
+            cancellation_requested=context.cancellation_requested,
+        )
+    except Exception as error:
+        if context.job.attempt_count < context.job.max_attempts:
+            raise
+        terminal = fail_experiment_execution_with_session_factory(
+            request.execution_id,
+            session_factory,
+            error_code="experiment_attempts_exhausted",
+            error_message="Experiment execution stopped after exhausting its retry budget.",
+        )
+        error_code = "experiment_attempts_exhausted"
+        error_message = "Experiment execution stopped after exhausting its retry budget."
+        if terminal.status is ExperimentExecutionStatus.SUCCEEDED:
+            error_code = "experiment_handoff_attempts_exhausted"
+            error_message = "Experiment candidate handoff exhausted its retry budget."
+        raise BackgroundJobHandlerError(
+            error_code=error_code,
+            error_message=error_message,
+            retryable=False,
+        ) from error
+
+    if execution.status is ExperimentExecutionStatus.FAILED:
+        raise BackgroundJobHandlerError(
+            error_code=execution.error_code or "experiment_execution_failed",
+            error_message=execution.error_message or "Experiment execution failed.",
+            retryable=False,
+        )
+    report_progress(98)
+    return execution.execution_id
 
 
 def run_walk_forward_job(

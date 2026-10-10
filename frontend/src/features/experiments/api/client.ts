@@ -8,6 +8,7 @@ import type {
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
   ExperimentExecution,
+  ExperimentExecutionSubmission,
   ExperimentPerformanceSeries,
   ExperimentReplayVerification,
   ExperimentSortDirection,
@@ -33,8 +34,8 @@ export interface ExperimentFilters {
 
 export async function createExperimentExecution(
   request: StoredDatasetStrategyExecutionRequest,
-): Promise<ExperimentExecution> {
-  return postJson<ExperimentExecution>('/api/v1/research/experiment-executions', request);
+): Promise<ExperimentExecutionSubmission> {
+  return postJson<ExperimentExecutionSubmission>('/api/v1/research/experiment-executions', request);
 }
 
 export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {

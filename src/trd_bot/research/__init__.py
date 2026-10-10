@@ -143,6 +143,15 @@ from trd_bot.research.evaluation import (
     SignalEvaluator,
     SignalOutcome,
 )
+from trd_bot.research.experiment_execution_jobs import (
+    ExperimentExecutionEnqueueError,
+    ExperimentExecutionEnqueuer,
+    ExperimentExecutionEnqueueResult,
+    ExperimentExecutionJobPayload,
+    InMemoryExperimentExecutionEnqueuer,
+    build_experiment_execution_idempotency_key,
+    validate_experiment_execution_enqueue,
+)
 from trd_bot.research.experiment_execution_runner import (
     ExperimentExecutionRunner,
 )
@@ -442,6 +451,10 @@ __all__ = [
     "ExperimentComparisonResult",
     "ExperimentExecution",
     "ExperimentExecutionBuilder",
+    "ExperimentExecutionEnqueueError",
+    "ExperimentExecutionEnqueueResult",
+    "ExperimentExecutionEnqueuer",
+    "ExperimentExecutionJobPayload",
     "ExperimentExecutionRepository",
     "ExperimentExecutionRunner",
     "ExperimentExecutionStateMachine",
@@ -477,6 +490,7 @@ __all__ = [
     "HistoricalPerformanceSeries",
     "InMemoryDatasetFileImportEnqueuer",
     "InMemoryDatasetRepository",
+    "InMemoryExperimentExecutionEnqueuer",
     "InMemoryExperimentExecutionRepository",
     "InMemoryExperimentRegistry",
     "InMemoryHistoricalDatasetCommitter",
@@ -559,6 +573,7 @@ __all__ = [
     "WalkForwardStabilityReport",
     "build_candidate_id",
     "build_dataset_file_import_idempotency_key",
+    "build_experiment_execution_idempotency_key",
     "build_experiment_id",
     "build_optimization_execution_idempotency_key",
     "build_research_backtest_run_id",
@@ -570,4 +585,5 @@ __all__ = [
     "default_acceptance_policy_presets",
     "normalize_candidate_timestamp",
     "validate_dataset_file_import_enqueue",
+    "validate_experiment_execution_enqueue",
 ]

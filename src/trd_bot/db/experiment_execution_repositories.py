@@ -16,11 +16,29 @@ class SqlAlchemyExperimentExecutionRepository:
         self,
         execution: ExperimentExecution,
     ) -> ExperimentExecution:
+        stored, _ = self.stage(execution)
+
+        try:
+            self._session.commit()
+        except IntegrityError as error:
+            self._session.rollback()
+
+            raise ValueError("experiment execution could not be persisted") from error
+
+        return stored
+
+    def stage(
+        self,
+        execution: ExperimentExecution,
+    ) -> tuple[ExperimentExecution, bool]:
+        """Stage an execution insert or update without committing the transaction."""
+
         row = self._session.get(
             ExperimentExecutionRow,
             execution.execution_id,
         )
 
+        created = row is None
         if row is None:
             row = ExperimentExecutionRow(
                 execution_id=execution.execution_id,
@@ -45,14 +63,7 @@ class SqlAlchemyExperimentExecutionRepository:
                 execution=execution,
             )
 
-        try:
-            self._session.commit()
-        except IntegrityError as error:
-            self._session.rollback()
-
-            raise ValueError("experiment execution could not be persisted") from error
-
-        return execution
+        return execution, created
 
     def get(
         self,

@@ -1,4 +1,5 @@
 import type { ResearchStrategyName } from '@/features/strategies/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 
 export type ExperimentSortField = 'created_at' | 'horizon_candles';
 
@@ -95,6 +96,11 @@ export interface ExperimentExecution {
   experiment_id: string | null;
   error_code: string | null;
   error_message: string | null;
+}
+
+export interface ExperimentExecutionSubmission extends ExperimentExecution {
+  job: BackgroundJobSummary;
+  created: boolean;
 }
 
 export interface CreatedResearchExperiment {

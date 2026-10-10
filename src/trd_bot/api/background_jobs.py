@@ -20,19 +20,24 @@ from trd_bot.research.candidate_application import (
 from trd_bot.research.experiment_candidate_handoff import (
     ExperimentCandidateHandoff,
 )
-from trd_bot.research.experiment_executions import ExperimentExecutionStatus
+from trd_bot.research.experiment_executions import (
+    ExperimentExecution,
+    ExperimentExecutionStatus,
+)
 from trd_bot.research.walk_forward_execution_runner import (
     WalkForwardExecutionRunner,
 )
 
-ExperimentExecutionTask = Callable[[str], None]
 WalkForwardExecutionTask = Callable[[str], None]
 
 
 def run_experiment_execution_with_session_factory(
     execution_id: str,
     session_factory: sessionmaker[Session],
-) -> None:
+    *,
+    report_progress: Callable[[int], None] | None = None,
+    cancellation_requested: Callable[[], bool] | None = None,
+) -> ExperimentExecution:
     """Run one historical experiment using an explicit session factory."""
 
     with session_factory() as session:
@@ -46,10 +51,17 @@ def run_experiment_execution_with_session_factory(
             experiments=experiment_registry,
         )
 
-        completed_execution = runner.run(execution_id)
+        if report_progress is None and cancellation_requested is None:
+            completed_execution = runner.run(execution_id)
+        else:
+            completed_execution = runner.run(
+                execution_id,
+                report_progress=report_progress,
+                cancellation_requested=cancellation_requested,
+            )
 
         if completed_execution.status is not ExperimentExecutionStatus.SUCCEEDED:
-            return
+            return completed_execution
 
         candidate_application = CandidateApplicationOrchestrator(
             recorder=SqlAlchemyCandidateLifecycleRecorder(session),
@@ -61,17 +73,29 @@ def run_experiment_execution_with_session_factory(
         )
 
         candidate_handoff.run(completed_execution)
+        return completed_execution
 
 
-def run_experiment_execution_job(
+def fail_experiment_execution_with_session_factory(
     execution_id: str,
-) -> None:
-    """Run one historical experiment using the configured database."""
+    session_factory: sessionmaker[Session],
+    *,
+    error_code: str,
+    error_message: str,
+) -> ExperimentExecution:
+    """Fail a non-terminal execution after its durable retry budget is exhausted."""
 
-    run_experiment_execution_with_session_factory(
-        execution_id,
-        get_session_factory(),
-    )
+    with session_factory() as session:
+        runner = ExperimentExecutionRunner(
+            executions=SqlAlchemyExperimentExecutionRepository(session),
+            datasets=SqlAlchemyDatasetRepository(session),
+            experiments=SqlAlchemyExperimentRegistry(session),
+        )
+        return runner.fail_active(
+            execution_id,
+            error_code=error_code,
+            error_message=error_message,
+        )
 
 
 def run_walk_forward_execution_with_session_factory(

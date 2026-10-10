@@ -16,6 +16,9 @@ from trd_bot.db.dataset_file_stage_repositories import (
     SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetFileStageRepository,
 )
+from trd_bot.db.experiment_execution_enqueues import (
+    SqlAlchemyExperimentExecutionEnqueuer,
+)
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
@@ -96,6 +99,7 @@ __all__ = [
     "SqlAlchemyDatasetFileImportEnqueuer",
     "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",
+    "SqlAlchemyExperimentExecutionEnqueuer",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",

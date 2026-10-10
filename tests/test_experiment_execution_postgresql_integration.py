@@ -8,12 +8,16 @@ from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 
+import trd_bot.api.job_handlers as job_handlers
 from trd_bot.api.background_jobs import (
     run_experiment_execution_with_session_factory,
 )
+from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.core.config import Settings
 from trd_bot.db import (
+    SqlAlchemyBackgroundJobRepository,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyExperimentExecutionEnqueuer,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
     create_database_engine,
@@ -29,11 +33,19 @@ from trd_bot.db.simulated_portfolio_repositories import (
     SqlAlchemySimulatedPortfolioRepository,
 )
 from trd_bot.domain.market_data import OHLCVCandle
+from trd_bot.jobs import (
+    BackgroundJobBuilder,
+    BackgroundJobKind,
+    BackgroundJobStatus,
+    BackgroundJobWorker,
+)
 from trd_bot.research import (
     DatasetBuilder,
     EMACrossoverExecutionParameters,
     ExperimentExecutionBuilder,
+    ExperimentExecutionJobPayload,
     ExperimentExecutionStatus,
+    build_experiment_execution_idempotency_key,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -123,6 +135,7 @@ def clean_execution_tables(database_url: str) -> None:
                     "portfolio_timeline_events, "
                     "simulated_positions, "
                     "simulated_portfolios, "
+                    "background_jobs, "
                     "experiment_executions, "
                     "research_experiments, "
                     "dataset_snapshots "
@@ -134,7 +147,9 @@ def clean_execution_tables(database_url: str) -> None:
 
 
 @pytest.mark.integration
-def test_background_execution_lifecycle_with_postgresql() -> None:
+def test_background_execution_lifecycle_with_postgresql(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     database_url = get_test_database_url()
 
     command.upgrade(
@@ -168,13 +183,32 @@ def test_background_execution_lifecycle_with_postgresql() -> None:
 
         with session_factory() as session:
             SqlAlchemyDatasetRepository(session).save(dataset)
+            job = BackgroundJobBuilder().build(
+                kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+                payload=ExperimentExecutionJobPayload(
+                    execution_id=queued.execution_id,
+                ).model_dump(mode="json"),
+                idempotency_key=build_experiment_execution_idempotency_key(queued),
+                now=queued.created_at,
+            )
+            submission = SqlAlchemyExperimentExecutionEnqueuer(session).enqueue(
+                execution=queued,
+                job=job,
+            )
 
-            SqlAlchemyExperimentExecutionRepository(session).save(queued)
+        monkeypatch.setattr(job_handlers, "get_session_factory", lambda: session_factory)
+        with session_factory() as session:
+            completed_job = BackgroundJobWorker(
+                repository=SqlAlchemyBackgroundJobRepository(session),
+                handlers=build_background_job_handler_registry(),
+                worker_id="postgresql-experiment-worker",
+                lease_duration=timedelta(minutes=5),
+            ).run_once()
 
-        run_experiment_execution_with_session_factory(
-            queued.execution_id,
-            session_factory,
-        )
+        assert completed_job is not None
+        assert completed_job.job_id == submission.job.job_id
+        assert completed_job.status is BackgroundJobStatus.SUCCEEDED
+        assert completed_job.result_reference == queued.execution_id
 
         with session_factory() as session:
             execution_repository = SqlAlchemyExperimentExecutionRepository(session)

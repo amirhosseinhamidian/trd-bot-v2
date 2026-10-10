@@ -4,9 +4,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from trd_bot.api.background_jobs import (
-    ExperimentExecutionTask,
     WalkForwardExecutionTask,
-    run_experiment_execution_job,
     run_walk_forward_execution_job,
 )
 from trd_bot.db import (
@@ -16,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyCandidateProjectionRepository,
     SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyExperimentExecutionEnqueuer,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
@@ -48,6 +47,7 @@ from trd_bot.monitoring import (
 from trd_bot.paper import SimulatedPortfolioRepository
 from trd_bot.research.dataset_file_jobs import DatasetFileImportEnqueuer
 from trd_bot.research.datasets import DatasetRepository
+from trd_bot.research.experiment_execution_jobs import ExperimentExecutionEnqueuer
 from trd_bot.research.experiment_executions import ExperimentExecutionRepository
 from trd_bot.research.experiments import ExperimentRegistry
 from trd_bot.research.historical_dataset_commits import HistoricalDatasetCommitter
@@ -133,6 +133,14 @@ def get_experiment_execution_repository(
     return SqlAlchemyExperimentExecutionRepository(session)
 
 
+def get_experiment_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> ExperimentExecutionEnqueuer:
+    """Return the atomic experiment-execution and durable-job enqueuer."""
+
+    return SqlAlchemyExperimentExecutionEnqueuer(session)
+
+
 def get_walk_forward_execution_repository(
     session: DatabaseSessionDependency,
 ) -> WalkForwardExecutionRepository:
@@ -201,12 +209,6 @@ def get_monitoring_runtime_state_repository(
     """Return the request-scoped monitoring runtime state repository."""
 
     return SqlAlchemyMonitoringRuntimeStateRepository(session)
-
-
-def get_experiment_execution_task() -> ExperimentExecutionTask:
-    """Return the production experiment background task."""
-
-    return run_experiment_execution_job
 
 
 def get_walk_forward_execution_task() -> WalkForwardExecutionTask:

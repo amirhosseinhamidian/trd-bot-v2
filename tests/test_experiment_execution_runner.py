@@ -14,6 +14,7 @@ from trd_bot.research.experiment_execution_runner import (
 from trd_bot.research.experiment_executions import (
     EMACrossoverExecutionParameters,
     ExperimentExecutionBuilder,
+    ExperimentExecutionStateMachine,
     ExperimentExecutionStatus,
     InMemoryExperimentExecutionRepository,
     RSIThresholdExecutionParameters,
@@ -210,6 +211,43 @@ def test_marks_execution_failed_for_unregistered_strategy_identity() -> None:
     assert completed.error_code == "execution_failed"
 
 
+def test_unexpected_runtime_failure_remains_recoverable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    datasets = InMemoryDatasetRepository()
+    executions = InMemoryExperimentExecutionRepository()
+    dataset = DatasetBuilder().build(
+        name="Retryable runner dataset",
+        candles=build_dataset_candles(),
+    )
+    datasets.save(dataset)
+    queued = ExperimentExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=build_parameters(),
+    )
+    executions.save(queued)
+
+    def fail_runtime(*_args: object, **_kwargs: object) -> object:
+        raise RuntimeError("temporary runtime failure")
+
+    monkeypatch.setattr(
+        "trd_bot.research.experiment_execution_runner.ResearchPipeline.run",
+        fail_runtime,
+    )
+
+    with pytest.raises(RuntimeError, match="temporary runtime failure"):
+        ExperimentExecutionRunner(
+            executions=executions,
+            datasets=datasets,
+            experiments=InMemoryExperimentRegistry(),
+        ).run(queued.execution_id)
+
+    recoverable = executions.get(queued.execution_id)
+    assert recoverable is not None
+    assert recoverable.status is ExperimentExecutionStatus.RUNNING
+    assert recoverable.progress_percent == 20
+
+
 def test_marks_execution_failed_when_dataset_is_missing() -> None:
     execution_repository = InMemoryExperimentExecutionRepository()
 
@@ -270,6 +308,88 @@ def test_returns_existing_completed_execution_without_rerunning() -> None:
     assert first_result.status is ExperimentExecutionStatus.SUCCEEDED
     assert second_result == first_result
     assert experiment_registry.count() == 1
+
+
+def test_resumes_a_running_execution_after_worker_lease_recovery() -> None:
+    datasets = InMemoryDatasetRepository()
+    executions = InMemoryExperimentExecutionRepository()
+    experiments = InMemoryExperimentRegistry()
+    dataset = DatasetBuilder().build(
+        name="Recovered runner dataset",
+        candles=build_dataset_candles(),
+    )
+    datasets.save(dataset)
+    queued = ExperimentExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=build_parameters(),
+    )
+    state_machine = ExperimentExecutionStateMachine()
+    running = state_machine.update_progress(
+        state_machine.start(queued),
+        progress_percent=90,
+    )
+    executions.save(running)
+    observed_progress: list[int] = []
+
+    completed = ExperimentExecutionRunner(
+        executions=executions,
+        datasets=datasets,
+        experiments=experiments,
+    ).run(
+        queued.execution_id,
+        report_progress=observed_progress.append,
+        cancellation_requested=lambda: False,
+    )
+
+    assert completed.status is ExperimentExecutionStatus.SUCCEEDED
+    assert observed_progress == sorted(observed_progress)
+    assert observed_progress[0] == 90
+    assert observed_progress[-1] == 95
+    assert experiments.count() == 1
+
+
+def test_cancellation_fails_the_domain_execution_with_a_stable_code() -> None:
+    executions = InMemoryExperimentExecutionRepository()
+    queued = ExperimentExecutionBuilder().build(
+        dataset_id="dataset-1234567890abcdef",
+        parameters=build_parameters(),
+    )
+    executions.save(queued)
+
+    cancelled = ExperimentExecutionRunner(
+        executions=executions,
+        datasets=InMemoryDatasetRepository(),
+        experiments=InMemoryExperimentRegistry(),
+    ).run(
+        queued.execution_id,
+        cancellation_requested=lambda: True,
+    )
+
+    assert cancelled.status is ExperimentExecutionStatus.FAILED
+    assert cancelled.error_code == "experiment_cancelled"
+
+
+def test_fail_active_transitions_a_queued_execution_after_retry_exhaustion() -> None:
+    executions = InMemoryExperimentExecutionRepository()
+    queued = ExperimentExecutionBuilder().build(
+        dataset_id="dataset-1234567890abcdef",
+        parameters=build_parameters(),
+    )
+    executions.save(queued)
+    runner = ExperimentExecutionRunner(
+        executions=executions,
+        datasets=InMemoryDatasetRepository(),
+        experiments=InMemoryExperimentRegistry(),
+    )
+
+    failed = runner.fail_active(
+        queued.execution_id,
+        error_code="experiment_attempts_exhausted",
+        error_message="Experiment execution stopped after exhausting its retry budget.",
+    )
+
+    assert failed.status is ExperimentExecutionStatus.FAILED
+    assert failed.error_code == "experiment_attempts_exhausted"
 
 
 def test_rejects_unknown_execution() -> None:

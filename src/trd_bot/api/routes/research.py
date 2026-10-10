@@ -13,14 +13,13 @@ from fastapi import (
 from pydantic import BaseModel, ConfigDict, Field
 
 from trd_bot.api.background_jobs import (
-    ExperimentExecutionTask,
     WalkForwardExecutionTask,
 )
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
     get_dataset_repository,
+    get_experiment_execution_enqueuer,
     get_experiment_execution_repository,
-    get_experiment_execution_task,
     get_experiment_registry,
     get_walk_forward_execution_repository,
     get_walk_forward_execution_task,
@@ -29,6 +28,7 @@ from trd_bot.api.dependencies import (
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
+from trd_bot.jobs import BackgroundJobBuilder, BackgroundJobKind, BackgroundJobSummary
 from trd_bot.research import (
     AcceptancePolicyPreset,
     AcceptancePolicyPresetCatalog,
@@ -48,6 +48,9 @@ from trd_bot.research import (
     ExperimentComparisonResult,
     ExperimentExecution,
     ExperimentExecutionBuilder,
+    ExperimentExecutionEnqueueError,
+    ExperimentExecutionEnqueuer,
+    ExperimentExecutionJobPayload,
     ExperimentExecutionRepository,
     ExperimentParameter,
     ExperimentPerformanceSeries,
@@ -81,6 +84,7 @@ from trd_bot.research import (
     WalkForwardRunSummary,
     WalkForwardStabilityAnalyzer,
     WalkForwardStabilityReport,
+    build_experiment_execution_idempotency_key,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.research.walk_forward_executions import (
@@ -125,9 +129,9 @@ ExperimentExecutionRepositoryDependency = Annotated[
     Depends(get_experiment_execution_repository),
 ]
 
-ExperimentExecutionTaskDependency = Annotated[
-    ExperimentExecutionTask,
-    Depends(get_experiment_execution_task),
+ExperimentExecutionEnqueuerDependency = Annotated[
+    ExperimentExecutionEnqueuer,
+    Depends(get_experiment_execution_enqueuer),
 ]
 
 WalkForwardExecutionRepositoryDependency = Annotated[
@@ -455,6 +459,13 @@ class ExperimentExecutionCatalogParams(BaseModel):
         default=0,
         ge=0,
     )
+
+
+class ExperimentExecutionSubmission(ExperimentExecution):
+    """Backward-compatible execution state with its durable job identity."""
+
+    job: BackgroundJobSummary
+    created: bool
 
 
 ExperimentExecutionCatalogParamsQuery = Annotated[
@@ -1073,17 +1084,15 @@ def get_walk_forward_run(
 
 @router.post(
     "/experiment-executions",
-    response_model=ExperimentExecution,
+    response_model=ExperimentExecutionSubmission,
     status_code=202,
 )
 def create_experiment_execution(
     request: StoredDatasetStrategyExecutionRequest,
-    background_tasks: BackgroundTasks,
-    executions: ExperimentExecutionRepositoryDependency,
     datasets: DatasetRepositoryDependency,
-    execution_task: ExperimentExecutionTaskDependency,
-) -> ExperimentExecution:
-    """Queue a versioned historical strategy experiment execution."""
+    enqueuer: ExperimentExecutionEnqueuerDependency,
+) -> ExperimentExecutionSubmission:
+    """Atomically persist an experiment execution and its durable worker job."""
 
     dataset = datasets.get(request.dataset_id)
 
@@ -1097,21 +1106,33 @@ def create_experiment_execution(
         dataset_id=dataset.dataset_id,
         parameters=_build_strategy_execution_parameters(request),
     )
-
-    try:
-        stored_execution = executions.save(execution)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=409,
-            detail="experiment execution could not be stored",
-        ) from error
-
-    background_tasks.add_task(
-        execution_task,
-        stored_execution.execution_id,
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+        payload=ExperimentExecutionJobPayload(
+            execution_id=execution.execution_id,
+        ).model_dump(mode="json"),
+        idempotency_key=build_experiment_execution_idempotency_key(execution),
+        max_attempts=3,
+        now=execution.created_at,
     )
 
-    return stored_execution
+    try:
+        result = enqueuer.enqueue(execution=execution, job=job)
+    except (ExperimentExecutionEnqueueError, ValueError) as error:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "experiment_execution_conflict",
+                "message": "experiment execution could not be enqueued",
+            },
+        ) from error
+    return ExperimentExecutionSubmission.model_validate(
+        {
+            **result.execution.model_dump(),
+            "job": BackgroundJobSummary.from_job(result.job),
+            "created": result.created,
+        }
+    )
 
 
 @router.get(

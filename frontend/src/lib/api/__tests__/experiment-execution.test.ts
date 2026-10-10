@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createExperimentExecution } from '@/features/experiments/api/client';
 import type {
   ExperimentExecution,
+  ExperimentExecutionSubmission,
   StoredDatasetEMACrossoverExecutionRequest,
   StoredDatasetRSIThresholdExecutionRequest,
 } from '@/features/experiments/api/types';
@@ -74,15 +75,42 @@ function buildExecution(strategyName: 'ema-crossover' | 'rsi-threshold'): Experi
   };
 }
 
+function buildSubmission(
+  strategyName: 'ema-crossover' | 'rsi-threshold',
+): ExperimentExecutionSubmission {
+  return {
+    ...buildExecution(strategyName),
+    created: true,
+    job: {
+      job_id: 'job-1234567890abcdef1234',
+      kind: 'experiment_execution',
+      status: 'queued',
+      progress_percent: 0,
+      attempt_count: 0,
+      max_attempts: 3,
+      run_after: '2026-08-30T07:00:00Z',
+      lease_expires_at: null,
+      cancel_requested: false,
+      result_reference: null,
+      error_code: null,
+      error_message: null,
+      created_at: '2026-08-30T07:00:00Z',
+      updated_at: '2026-08-30T07:00:00Z',
+      started_at: null,
+      finished_at: null,
+    },
+  };
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('experiment execution client', () => {
   it('queues an EMA crossover experiment execution', async () => {
-    const execution = buildExecution('ema-crossover');
+    const submission = buildSubmission('ema-crossover');
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(execution), {
+      new Response(JSON.stringify(submission), {
         status: 202,
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +120,7 @@ describe('experiment execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createExperimentExecution(emaRequest)).resolves.toEqual(execution);
+    await expect(createExperimentExecution(emaRequest)).resolves.toEqual(submission);
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/research/experiment-executions`,
@@ -105,9 +133,9 @@ describe('experiment execution client', () => {
   });
 
   it('queues an RSI threshold experiment execution', async () => {
-    const execution = buildExecution('rsi-threshold');
+    const submission = buildSubmission('rsi-threshold');
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(execution), {
+      new Response(JSON.stringify(submission), {
         status: 202,
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +145,7 @@ describe('experiment execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createExperimentExecution(rsiRequest)).resolves.toEqual(execution);
+    await expect(createExperimentExecution(rsiRequest)).resolves.toEqual(submission);
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/research/experiment-executions`,
