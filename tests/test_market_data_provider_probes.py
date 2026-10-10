@@ -15,11 +15,32 @@ from trd_bot.market_data.provider_probes import (
     serialize_market_data_probe_report,
     validate_market_data_probe_payload,
 )
+from trd_bot.market_data.service_levels import default_market_data_service_level_policy
 
 
 @pytest.mark.parametrize(
     ("provider_id", "payload", "expected_count"),
     [
+        (
+            "binance-public",
+            [
+                [
+                    1725148800000,
+                    "59000",
+                    "59200",
+                    "58900",
+                    "59100",
+                    "12.5",
+                    1725152399999,
+                    "738875",
+                    42,
+                    "6.0",
+                    "354600",
+                    "0",
+                ]
+            ],
+            1,
+        ),
         (
             "bitstamp-public",
             {
@@ -100,6 +121,7 @@ def test_provider_probe_payload_parsers_accept_documented_shapes(
 @pytest.mark.parametrize(
     ("provider_id", "payload"),
     [
+        ("binance-public", [[1725148800000, "59000"]]),
         ("bitstamp-public", {"data": {"ohlc": []}}),
         ("coinbase-exchange-public", [[1725148800, 58900]]),
         ("coinpaprika-free", [{"time_open": "2026-09-19T00:00:00Z"}]),
@@ -139,6 +161,7 @@ def test_probe_registry_uses_fixed_https_endpoints_without_credentials() -> None
     }
 
     assert available_market_data_probe_provider_ids() == (
+        "binance-public",
         "bitstamp-public",
         "coinbase-exchange-public",
         "coinpaprika-free",
@@ -152,6 +175,14 @@ def test_probe_registry_uses_fixed_https_endpoints_without_credentials() -> None
         assert parsed.username is None
         assert parsed.password is None
         assert forbidden_query_names.isdisjoint(parse_qs(parsed.query))
+
+
+def test_probe_registry_covers_every_provider_in_the_frozen_service_level_policy() -> None:
+    policy_provider_ids = {
+        provider.provider_id for provider in default_market_data_service_level_policy().providers
+    }
+
+    assert policy_provider_ids <= set(available_market_data_probe_provider_ids())
 
 
 def test_nobitex_probe_uses_the_documented_public_api_host() -> None:

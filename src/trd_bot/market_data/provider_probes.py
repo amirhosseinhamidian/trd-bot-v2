@@ -173,6 +173,20 @@ def _number_like(value: object, *, context: str) -> None:
         raise MarketDataProbePayloadError(f"{context} cannot be empty")
 
 
+def _parse_binance_payload(payload: object) -> int:
+    candles = _list(payload, context="Binance payload")
+    if not candles:
+        raise MarketDataProbePayloadError("Binance payload contains no candles")
+
+    for index, raw_candle in enumerate(candles):
+        candle = _list(raw_candle, context=f"Binance candle {index}")
+        if len(candle) < 7:
+            raise MarketDataProbePayloadError("Binance candle has fewer than seven values")
+        for value_index in range(7):
+            _number_like(candle[value_index], context=f"Binance candle {index}[{value_index}]")
+    return len(candles)
+
+
 def _parse_bitstamp_payload(payload: object) -> int:
     root = _mapping(payload, context="Bitstamp payload")
     data = _mapping(_field(root, "data", context="Bitstamp payload"), context="Bitstamp data")
@@ -265,6 +279,16 @@ def _parse_nobitex_payload(payload: object) -> int:
 
 
 _PROBE_SPECS: dict[str, MarketDataProbeSpec] = {
+    "binance-public": MarketDataProbeSpec(
+        provider_id="binance-public",
+        display_name="Binance Public Market Data",
+        market="BTC/USDT",
+        timeframe="1h",
+        url_factory=_fixed_url(
+            "https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=2"
+        ),
+        payload_parser=_parse_binance_payload,
+    ),
     "bitstamp-public": MarketDataProbeSpec(
         provider_id="bitstamp-public",
         display_name="Bitstamp Public",
