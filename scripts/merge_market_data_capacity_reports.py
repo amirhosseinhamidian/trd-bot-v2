@@ -12,9 +12,7 @@ from trd_bot.market_data import (
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=(
-            "Merge independent P0-04 capacity scope reports and evaluate the freeze gate."
-        )
+        description=("Merge independent P0-04 capacity scope reports and evaluate the freeze gate.")
     )
     parser.add_argument("inputs", nargs="+", type=Path)
     parser.add_argument("--output", type=Path, required=True)
@@ -31,9 +29,7 @@ def main() -> int:
         parser.error("every input report must be an existing file")
 
     try:
-        reports = tuple(
-            parse_capacity_benchmark_report(path.read_bytes()) for path in args.inputs
-        )
+        reports = tuple(parse_capacity_benchmark_report(path.read_bytes()) for path in args.inputs)
         merged = merge_capacity_benchmark_reports(
             reports,
             generated_at=datetime.now(UTC),

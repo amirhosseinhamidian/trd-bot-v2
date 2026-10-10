@@ -87,9 +87,7 @@ class MarketDataEvent(BaseModel):
 
     schema_version: Literal["market-data-event-v1"] = "market-data-event-v1"
     event_id: str = Field(pattern=r"^market-event-[a-f0-9]{16}$")
-    kind: Literal[MarketDataEventKind.CANDLE_OBSERVED] = (
-        MarketDataEventKind.CANDLE_OBSERVED
-    )
+    kind: Literal[MarketDataEventKind.CANDLE_OBSERVED] = MarketDataEventKind.CANDLE_OBSERVED
 
     source: str = Field(min_length=1, max_length=50)
     pair: TradingPair
@@ -205,9 +203,7 @@ class MarketDataWatermark(BaseModel):
 
     @model_validator(mode="after")
     def validate_watermark(self) -> Self:
-        expected = self.high_water_event_time - timedelta(
-            seconds=self.allowed_lateness_seconds
-        )
+        expected = self.high_water_event_time - timedelta(seconds=self.allowed_lateness_seconds)
         if self.watermark_time != expected:
             raise ValueError("watermark time is inconsistent")
         return self
@@ -230,8 +226,7 @@ class MarketDataWatermark(BaseModel):
             timeframe=timeframe,
             high_water_event_time=normalized_high_water,
             allowed_lateness_seconds=allowed_lateness_seconds,
-            watermark_time=normalized_high_water
-            - timedelta(seconds=allowed_lateness_seconds),
+            watermark_time=normalized_high_water - timedelta(seconds=allowed_lateness_seconds),
             calculated_at=calculated_at,
         )
 
@@ -427,9 +422,7 @@ class MarketDataEventDecision(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["market-data-event-decision-v1"] = (
-        "market-data-event-decision-v1"
-    )
+    schema_version: Literal["market-data-event-decision-v1"] = "market-data-event-decision-v1"
     event_id: str = Field(pattern=r"^market-event-[a-f0-9]{16}$")
     window_id: str = Field(pattern=r"^market-window-[a-f0-9]{16}$")
     arrival: MarketDataArrivalClass

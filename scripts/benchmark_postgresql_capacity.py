@@ -131,9 +131,7 @@ def _create_schema(engine: Engine, schema: str) -> None:
         connection.execute(
             text(f"CREATE INDEX market_events_window_idx ON {events} (window_id, event_time)")
         )
-        connection.execute(
-            text(f"CREATE INDEX market_events_time_idx ON {events} (event_time)")
-        )
+        connection.execute(text(f"CREATE INDEX market_events_time_idx ON {events} (event_time)"))
         connection.execute(
             text(
                 f"""
@@ -152,8 +150,7 @@ def _create_schema(engine: Engine, schema: str) -> None:
         )
         connection.execute(
             text(
-                f"CREATE INDEX background_jobs_claim_idx "
-                f"ON {jobs} (status, run_after, created_at)"
+                f"CREATE INDEX background_jobs_claim_idx ON {jobs} (status, run_after, created_at)"
             )
         )
 
@@ -380,9 +377,7 @@ def _measure_queue(
         "terminal_write_latency_p95_ms": _percentile(finish_latencies, 0.95),
         "queue_wait_p50_ms": _percentile(queue_wait_milliseconds, 0.50),
         "queue_wait_p95_ms": _percentile(queue_wait_milliseconds, 0.95),
-        "synthetic_job_throughput_per_second": Decimal(
-            str(round(job_count / elapsed_seconds, 6))
-        ),
+        "synthetic_job_throughput_per_second": Decimal(str(round(job_count / elapsed_seconds, 6))),
     }
     for kind, values in lifecycle_by_kind.items():
         metrics[f"{kind.value}.bounded_noop_lifecycle_p95_ms"] = _percentile(values, 0.95)
@@ -459,8 +454,7 @@ def run_postgresql_benchmark(
         storage_metrics = _storage_metrics(engine, schema, wal_bytes)
         pool_samples = insert_pool + query_pool + queue_pool
         database_complete = (
-            event_count >= _MIN_REFERENCE_EVENTS
-            and query_samples >= _MIN_REFERENCE_QUERY_SAMPLES
+            event_count >= _MIN_REFERENCE_EVENTS and query_samples >= _MIN_REFERENCE_QUERY_SAMPLES
         )
         database_metrics = {
             **query_metrics,

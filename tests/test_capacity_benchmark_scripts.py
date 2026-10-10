@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
-
 from scripts.benchmark_market_data_providers import build_provider_evidence
 from scripts.benchmark_postgresql_capacity import validate_benchmark_database_url
+
 from trd_bot.market_data import (
     CapacityEvidenceMethod,
     MarketDataProbeOutcome,

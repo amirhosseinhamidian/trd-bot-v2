@@ -99,19 +99,13 @@ def build_provider_evidence(
             item for item in provider_results if item.outcome is MarketDataProbeOutcome.SUCCESS
         ]
         http_latencies = [
-            item.http_latency_ms
-            for item in successful
-            if item.http_latency_ms is not None
+            item.http_latency_ms for item in successful if item.http_latency_ms is not None
         ]
         dns_latencies = [
-            item.dns_latency_ms
-            for item in provider_results
-            if item.dns_latency_ms is not None
+            item.dns_latency_ms for item in provider_results if item.dns_latency_ms is not None
         ]
         tls_latencies = [
-            item.tls_latency_ms
-            for item in provider_results
-            if item.tls_latency_ms is not None
+            item.tls_latency_ms for item in provider_results if item.tls_latency_ms is not None
         ]
         prefix = f"{provider_id}."
         metrics[f"{prefix}samples"] = Decimal(sample_count)
@@ -135,9 +129,7 @@ def build_provider_evidence(
 
     limitation = None
     if incomplete:
-        limitation = (
-            "Insufficient samples for provider(s): " + ", ".join(sorted(incomplete))
-        )
+        limitation = "Insufficient samples for provider(s): " + ", ".join(sorted(incomplete))
     return CapacityEvidence(
         scope=CapacityEvidenceScope.PROVIDER,
         method=CapacityEvidenceMethod.LIVE_PROBE,

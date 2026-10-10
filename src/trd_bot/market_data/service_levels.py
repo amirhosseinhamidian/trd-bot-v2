@@ -49,9 +49,7 @@ class TimeframeServiceLevel(BaseModel):
             raise ValueError("polling interval must be shorter than its candle timeframe")
         if self.provisional_freshness_p95_seconds < self.polling_interval_seconds:
             raise ValueError("provisional freshness cannot be tighter than polling cadence")
-        minimum_finalization = (
-            self.polling_interval_seconds + self.allowed_lateness_seconds
-        )
+        minimum_finalization = self.polling_interval_seconds + self.allowed_lateness_seconds
         if self.finalized_freshness_p95_seconds < minimum_finalization:
             raise ValueError("finalized freshness must include polling and lateness budgets")
         return self
@@ -153,12 +151,7 @@ class CapacityEvidence(BaseModel):
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:
         if self.method is CapacityEvidenceMethod.UNAVAILABLE:
-            if (
-                self.complete
-                or self.observed_count != 0
-                or self.metrics
-                or self.limitation is None
-            ):
+            if self.complete or self.observed_count != 0 or self.metrics or self.limitation is None:
                 raise ValueError("unavailable evidence requires only a limitation")
         elif self.observed_count < 1 or not self.metrics:
             raise ValueError("measured evidence requires observations and metrics")
@@ -412,12 +405,7 @@ def merge_capacity_benchmark_reports(
 
     merged: list[CapacityEvidence] = []
     for scope in CapacityEvidenceScope:
-        candidates = [
-            item
-            for report in reports
-            for item in report.evidence
-            if item.scope is scope
-        ]
+        candidates = [item for report in reports for item in report.evidence if item.scope is scope]
         complete = [item for item in candidates if item.complete]
         if len(complete) > 1:
             raise ValueError(f"capacity reports contain conflicting complete scope: {scope.value}")
@@ -426,9 +414,7 @@ def merge_capacity_benchmark_reports(
             continue
 
         measured = [
-            item
-            for item in candidates
-            if item.method is not CapacityEvidenceMethod.UNAVAILABLE
+            item for item in candidates if item.method is not CapacityEvidenceMethod.UNAVAILABLE
         ]
         if measured:
             merged.append(max(measured, key=lambda item: item.observed_count))

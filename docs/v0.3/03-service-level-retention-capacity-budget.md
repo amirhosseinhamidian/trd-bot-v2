@@ -183,7 +183,7 @@ latency معتبر نیست. خروجی p50/p95، success/failure fraction، rat
 و geo-block را به تفکیک provider ثبت می‌کند. Primary/fallback order فقط بعد از این evidence فریز
 می‌شود.
 
-## 9. PostgreSQL و Worker benchmark مرجع
+## 9. PostgreSQL و Queue benchmark مرجع
 
 Runner فقط PostgreSQL را می‌پذیرد و نام database باید شامل `test` یا `bench` باشد. یک schema یکتای
 `p0_04_bench_*` می‌سازد، اندازه‌گیری را انجام می‌دهد و همان schema را در `finally` پاک می‌کند؛ هیچ
@@ -216,9 +216,43 @@ Optimization را نمی‌گیرد.
 استفاده از production dataset یا secret در benchmark ممنوع است. fixture باید synthetic، قابل حذف و
 روی database جدا باشد.
 
-## 10. ادغام evidence
+## 10. بنچمارک workload واقعی Jobها
 
-سه گزارش باید commit SHA، label محیط، Python version و platform یکسان داشته باشند. merge در صورت
+fixture نسخه‌دار `background-job-workloads-v1` هر پنج مقدار `BackgroundJobKind` را پوشش می‌دهد و
+دادهٔ کاربر، credential یا درخواست شبکه مصرف نمی‌کند:
+
+| Job kind | مسیر واقعی | اندازهٔ ثابت fixture |
+| --- | --- | ---: |
+| `dataset_file_import` | preview و commit استاندارد CSV | 1000 candle |
+| `market_data_import` | `HistoricalDatasetJobRunner` و commit استاندارد | 1000 candle |
+| `experiment_execution` | `ExperimentExecutionRunner` | 720 candle |
+| `walk_forward_execution` | `WalkForwardExecutionRunner` | 720 candle، 10 fold |
+| `optimization_execution` | `OptimizationExecutionJobRunner` | 720 candle، 4 trial |
+
+`dataset_file_import` در نسخهٔ فعلی handler durable ثبت‌شده ندارد؛ fixture آن مسیر canonical و
+همگام `DatasetFileImportService` را اندازه می‌گیرد. چهار kind دیگر runner واقعی production را با
+repositoryهای in-memory اجرا می‌کنند. در نتیجه این benchmark runtime منطق محصول را می‌سنجد، ولی
+latency persistence صف را جعل نمی‌کند؛ آن بخش فقط از گزارش PostgreSQL مرحلهٔ قبل گرفته می‌شود.
+
+برای تخمین p95 حداقل 20 اجرای موفق برای هر kind و حداقل 250 lifecycle صف لازم است. گزارش صف باید
+روی همان commit، Python و platform ساخته شده باشد؛ در غیر این صورت runner پیش از اندازه‌گیری متوقف
+می‌شود:
+
+```bash
+PYTHONPATH=src python scripts/benchmark_background_job_workloads.py \
+  --queue-report artifacts/p0-04/postgresql-capacity.json \
+  --samples-per-kind 20 \
+  --warmup-iterations 2 \
+  --output artifacts/p0-04/background-jobs-capacity.json
+```
+
+خروجی queue p50/p95 را با runtime p50/p95، success fraction، اندازهٔ fixture و نتیجهٔ مقایسه با
+target هر kind ترکیب می‌کند. هر failure یا sample کمتر از floor باعث `complete=false` و exit code
+`2` می‌شود. عبور نکردن از target در metric ثبت می‌شود، اما evidence مشاهده‌شده حذف نمی‌شود.
+
+## 11. ادغام evidence
+
+چهار گزارش باید commit SHA، label محیط، Python version و platform یکسان داشته باشند. merge در صورت
 اختلاف fail می‌شود و دو evidence کامل متعارض را حدس نمی‌زند:
 
 ```bash
@@ -226,13 +260,14 @@ PYTHONPATH=src python scripts/merge_market_data_capacity_reports.py \
   artifacts/p0-04/event-capacity.json \
   artifacts/p0-04/provider-capacity.json \
   artifacts/p0-04/postgresql-capacity.json \
+  artifacts/p0-04/background-jobs-capacity.json \
   --output artifacts/p0-04/reference-capacity.json
 ```
 
-تا وقتی runtime واقعی پنج job kind اضافه نشده باشد، خروجی merged باید exit code `2` و
-`ready_to_freeze=false` داشته باشد.
+تنها پس از کامل بودن پنج scope، خروجی merged با `ready_to_freeze=true` و exit code `0` ساخته
+می‌شود. وجود runtime report بدون queue report معتبر یا برعکس برای بستن scope مربوط به Job کافی نیست.
 
-## 11. تصمیم معماری تا زمان evidence
+## 12. تصمیم معماری تا زمان evidence
 
 - PostgreSQL datastore و durable queue فعلی باقی می‌ماند؛
 - Redis، TimescaleDB، ClickHouse، Kafka و microservice اضافه نمی‌شوند؛
@@ -242,7 +277,7 @@ PYTHONPATH=src python scripts/merge_market_data_capacity_reports.py \
 - عبور target به‌تنهایی migration معماری ایجاد نمی‌کند؛ حداقل سه window متوالی و root-cause لازم
   است.
 
-## 12. گیت خروج P0-04
+## 13. گیت خروج P0-04
 
 - [x] Freshness، lateness و clock-skew target نسخه‌دار شدند.
 - [x] Provider request budget و minimum sample ثبت شد.
@@ -252,6 +287,8 @@ PYTHONPATH=src python scripts/merge_market_data_capacity_reports.py \
 - [x] Event microbenchmark تکرارپذیر و sanitized ساخته شد.
 - [x] Provider benchmark با sample floor و metricهای تجمیعی ساخته شد.
 - [x] PostgreSQL/Queue/Storage runner ایزوله و دارای cleanup ساخته شد.
+- [x] fixture واقعی، محدود و نسخه‌دار برای هر پنج job kind ساخته شد.
+- [x] runtime runner با sample floor و اتصال اجباری به queue evidence ساخته شد.
 - [x] Merge gate سازگاری محیط و تعارض evidence ساخته شد.
 - [ ] Provider evidence محیط deployment برای adapterهای eligible ثبت شود.
 - [ ] PostgreSQL و pool evidence محیط مرجع ثبت شود.
