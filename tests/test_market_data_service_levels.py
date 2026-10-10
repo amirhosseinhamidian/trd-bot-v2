@@ -227,3 +227,75 @@ def test_capacity_reports_merge_only_for_the_same_environment() -> None:
     incompatible = provider_report.model_copy(update={"platform": "macOS-arm64"})
     with pytest.raises(ValueError, match="same reference environment"):
         merge_capacity_benchmark_reports((event_report, incompatible))
+
+
+def test_capacity_report_merge_preserves_complementary_scope_metrics() -> None:
+    complete = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="f" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(
+            CapacityEvidence(
+                scope=CapacityEvidenceScope.STORAGE,
+                method=CapacityEvidenceMethod.SYNTHETIC_BENCHMARK,
+                complete=True,
+                observed_count=100_000,
+                metrics={"events_total_bytes": Decimal(100_000_000)},
+            ),
+        ),
+    )
+    projection = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="f" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(
+            CapacityEvidence(
+                scope=CapacityEvidenceScope.STORAGE,
+                method=CapacityEvidenceMethod.SYNTHETIC_BENCHMARK,
+                complete=False,
+                observed_count=20_000,
+                metrics={"projected_events_per_30_days": Decimal(3_810)},
+                limitation="Projection is incomplete without PostgreSQL row evidence.",
+            ),
+        ),
+    )
+
+    merged = merge_capacity_benchmark_reports((complete, projection))
+
+    assert merged.evidence[0].complete is True
+    assert merged.evidence[0].metrics == {
+        "events_total_bytes": Decimal(100_000_000),
+        "projected_events_per_30_days": Decimal(3_810),
+    }
+
+
+def test_capacity_report_merge_rejects_conflicting_scope_metrics() -> None:
+    first = CapacityBenchmarkReport(
+        environment_label="reference",
+        commit_sha="1" * 40,
+        generated_at=datetime(2026, 10, 9, 20, tzinfo=UTC),
+        python_version="3.12.10",
+        platform="linux-x86_64",
+        evidence=(measured_evidence(CapacityEvidenceScope.DATABASE),),
+    )
+    conflicting = first.model_copy(
+        update={
+            "evidence": (
+                CapacityEvidence(
+                    scope=CapacityEvidenceScope.DATABASE,
+                    method=CapacityEvidenceMethod.SYNTHETIC_BENCHMARK,
+                    complete=False,
+                    observed_count=10,
+                    metrics={"latency_p95_ms": Decimal("2.50")},
+                    limitation="Partial benchmark disagrees with the complete report.",
+                ),
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="conflicting metric"):
+        merge_capacity_benchmark_reports((first, conflicting))

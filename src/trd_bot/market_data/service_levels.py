@@ -410,7 +410,20 @@ def merge_capacity_benchmark_reports(
         if len(complete) > 1:
             raise ValueError(f"capacity reports contain conflicting complete scope: {scope.value}")
         if complete:
-            merged.append(complete[0])
+            selected = complete[0]
+            combined_metrics = dict(selected.metrics)
+            for candidate in candidates:
+                if candidate.method is CapacityEvidenceMethod.UNAVAILABLE:
+                    continue
+                for name, value in candidate.metrics.items():
+                    existing = combined_metrics.get(name)
+                    if existing is not None and existing != value:
+                        raise ValueError(
+                            "capacity reports contain conflicting metric "
+                            f'for {scope.value}: "{name}"'
+                        )
+                    combined_metrics[name] = value
+            merged.append(selected.model_copy(update={"metrics": combined_metrics}))
             continue
 
         measured = [
