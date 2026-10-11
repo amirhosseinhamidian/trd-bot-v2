@@ -897,6 +897,8 @@ def test_api_exports_versioned_experiment_report_as_csv(
     assert response.headers["content-disposition"] == (
         f'attachment; filename="{experiment_id}-baseline-v1.csv"'
     )
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
 
     rows = list(csv.reader(StringIO(response.text)))
 
@@ -904,6 +906,12 @@ def test_api_exports_versioned_experiment_report_as_csv(
         "section",
         "metric",
         "value",
+    ]
+
+    assert rows[1] == [
+        "metadata",
+        "export_schema_version",
+        "experiment-report-csv-v1",
     ]
 
     assert [

@@ -191,7 +191,11 @@ from trd_bot.research.experiments import (
     ResearchExperiment,
     build_experiment_id,
 )
-from trd_bot.research.exports import ExperimentReportCsvExporter
+from trd_bot.research.exports import (
+    EXPERIMENT_REPORT_CSV_COLUMNS,
+    EXPERIMENT_REPORT_CSV_SCHEMA_VERSION,
+    ExperimentReportCsvExporter,
+)
 from trd_bot.research.historical_dataset_commits import (
     HistoricalDatasetCommitError,
     HistoricalDatasetCommitResult,
@@ -346,6 +350,8 @@ from trd_bot.research.walk_forward_runs import (
 __all__ = [
     "DATASET_FILE_STAGE_TTL",
     "DEFAULT_RESEARCH_BACKTEST_CONFIG",
+    "EXPERIMENT_REPORT_CSV_COLUMNS",
+    "EXPERIMENT_REPORT_CSV_SCHEMA_VERSION",
     "MAX_DATASET_FILE_BYTES",
     "MAX_DATASET_FILE_CELLS",
     "MAX_DATASET_FILE_COLUMNS",

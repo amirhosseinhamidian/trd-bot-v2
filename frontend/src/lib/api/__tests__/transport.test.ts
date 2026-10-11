@@ -80,6 +80,27 @@ describe('API transport boundary', () => {
     });
   });
 
+  it('rejects a successful blob response with an unexpected content type', async () => {
+    const payload = {
+      detail: {
+        code: 'export_contract_mismatch',
+      },
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getBlob('/reports/latest', 'text/csv')).rejects.toMatchObject({
+      name: 'ApiRequestError',
+      status: 200,
+      payload,
+    });
+  });
+
   it('preserves structured API error payloads for JSON requests', async () => {
     const payload = {
       detail: {

@@ -66,6 +66,18 @@ export async function getBlob(path: string, accept: string): Promise<Blob> {
     );
   }
 
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (!contentType.toLowerCase().includes(accept.toLowerCase())) {
+    const payload = await parseErrorPayload(response);
+
+    throw new ApiRequestError(
+      `API response has unexpected content type ${contentType || 'unknown'}`,
+      response.status,
+      payload,
+    );
+  }
+
   return response.blob();
 }
 

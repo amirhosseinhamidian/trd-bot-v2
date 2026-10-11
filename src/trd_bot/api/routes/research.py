@@ -1634,6 +1634,16 @@ def build_experiment_report_from_preset(
 @router.get(
     "/experiments/{experiment_id}/report/presets/{preset_id}/export.csv",
     response_class=Response,
+    responses={
+        200: {
+            "description": "Deterministic v1 experiment research report CSV.",
+            "content": {
+                "text/csv": {
+                    "schema": {"type": "string"},
+                }
+            },
+        }
+    },
 )
 def export_experiment_report_csv(
     experiment_id: str,
@@ -1677,7 +1687,9 @@ def export_experiment_report_csv(
         content=csv_content,
         media_type="text/csv; charset=utf-8",
         headers={
+            "Cache-Control": "no-store",
             "Content-Disposition": (f'attachment; filename="{filename}"'),
+            "X-Content-Type-Options": "nosniff",
         },
     )
 
