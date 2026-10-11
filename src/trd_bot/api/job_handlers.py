@@ -1,8 +1,7 @@
 import asyncio
 from collections.abc import Mapping
-from datetime import timedelta
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from trd_bot.api.background_jobs import (
     fail_experiment_execution_with_session_factory,
@@ -26,6 +25,7 @@ from trd_bot.db.market_data_import_repositories import (
     SqlAlchemyMarketDataImportRepository,
 )
 from trd_bot.jobs import (
+    PRODUCTION_BACKGROUND_JOB_KINDS,
     BackgroundJobContext,
     BackgroundJobHandlerError,
     BackgroundJobHandlerRegistry,
@@ -49,31 +49,37 @@ from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
 from trd_bot.research.walk_forward_execution_jobs import WalkForwardExecutionJobPayload
 from trd_bot.research.walk_forward_executions import WalkForwardExecutionStatus
 
-_MARKET_DATA_IMPORT_LEASE = timedelta(minutes=5)
-_DATASET_FILE_IMPORT_LEASE = timedelta(minutes=5)
-_EXPERIMENT_EXECUTION_LEASE = timedelta(minutes=5)
-_WALK_FORWARD_EXECUTION_LEASE = timedelta(minutes=5)
-_OPTIMIZATION_EXECUTION_LEASE = timedelta(minutes=5)
+
+def _validate_job_payload[JobPayload: BaseModel](
+    model: type[JobPayload],
+    payload: Mapping[str, object],
+    *,
+    error_code: str,
+    error_message: str,
+) -> JobPayload:
+    try:
+        return model.model_validate(payload)
+    except ValidationError as error:
+        raise BackgroundJobHandlerError(
+            error_code=error_code,
+            error_message=error_message,
+            retryable=False,
+        ) from error
 
 
 def run_experiment_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str:
-    try:
-        request = ExperimentExecutionJobPayload.model_validate(payload)
-    except ValidationError as error:
-        raise BackgroundJobHandlerError(
-            error_code="invalid_experiment_job_payload",
-            error_message="Experiment execution job payload is invalid.",
-            retryable=False,
-        ) from error
+    request = _validate_job_payload(
+        ExperimentExecutionJobPayload,
+        payload,
+        error_code="invalid_experiment_job_payload",
+        error_message="Experiment execution job payload is invalid.",
+    )
 
     def report_progress(progress: int) -> None:
-        context.heartbeat(
-            max(progress, context.job.progress_percent),
-            lease_duration=_EXPERIMENT_EXECUTION_LEASE,
-        )
+        context.heartbeat(max(progress, context.job.progress_percent))
 
     report_progress(5)
     session_factory = get_session_factory()
@@ -118,20 +124,15 @@ def run_walk_forward_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str:
-    try:
-        request = WalkForwardExecutionJobPayload.model_validate(payload)
-    except ValidationError as error:
-        raise BackgroundJobHandlerError(
-            error_code="invalid_walk_forward_job_payload",
-            error_message="Walk-forward execution job payload is invalid.",
-            retryable=False,
-        ) from error
+    request = _validate_job_payload(
+        WalkForwardExecutionJobPayload,
+        payload,
+        error_code="invalid_walk_forward_job_payload",
+        error_message="Walk-forward execution job payload is invalid.",
+    )
 
     def report_progress(progress: int) -> None:
-        context.heartbeat(
-            max(progress, context.job.progress_percent),
-            lease_duration=_WALK_FORWARD_EXECUTION_LEASE,
-        )
+        context.heartbeat(max(progress, context.job.progress_percent))
 
     report_progress(1)
     session_factory = get_session_factory()
@@ -171,16 +172,18 @@ def run_market_data_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str | None:
-    request = HistoricalDatasetJobPayload.model_validate(payload)
+    request = _validate_job_payload(
+        HistoricalDatasetJobPayload,
+        payload,
+        error_code="invalid_market_data_import_job_payload",
+        error_message="Market data import job payload is invalid.",
+    )
     import_id = (
         f"market-data-import-{context.job.job_id.removeprefix('job-')}-{context.job.attempt_count}"
     )
 
     def report_progress(progress: int) -> None:
-        context.heartbeat(
-            progress,
-            lease_duration=_MARKET_DATA_IMPORT_LEASE,
-        )
+        context.heartbeat(progress)
 
     with get_session_factory()() as session:
         runner = HistoricalDatasetJobRunner(
@@ -206,8 +209,13 @@ def run_dataset_file_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str | None:
-    request = DatasetFileImportJobPayload.model_validate(payload)
-    context.heartbeat(10, lease_duration=_DATASET_FILE_IMPORT_LEASE)
+    request = _validate_job_payload(
+        DatasetFileImportJobPayload,
+        payload,
+        error_code="invalid_dataset_file_import_job_payload",
+        error_message="Dataset file import job payload is invalid.",
+    )
+    context.heartbeat(10)
 
     with get_session_factory()() as session:
         runner = DatasetFileImportJobRunner(
@@ -227,7 +235,7 @@ def run_dataset_file_import_job(
             ) from error
 
     if dataset_id is not None:
-        context.heartbeat(90, lease_duration=_DATASET_FILE_IMPORT_LEASE)
+        context.heartbeat(90)
     return dataset_id
 
 
@@ -235,13 +243,15 @@ def run_optimization_execution_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str:
-    request = OptimizationExecutionJobPayload.model_validate(payload)
+    request = _validate_job_payload(
+        OptimizationExecutionJobPayload,
+        payload,
+        error_code="invalid_optimization_job_payload",
+        error_message="Optimization execution job payload is invalid.",
+    )
 
     def report_progress(progress: int) -> None:
-        context.heartbeat(
-            progress,
-            lease_duration=_OPTIMIZATION_EXECUTION_LEASE,
-        )
+        context.heartbeat(progress)
 
     with get_session_factory()() as session:
         runner = OptimizationExecutionJobRunner(
@@ -282,7 +292,7 @@ def run_optimization_execution_job(
 def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
     """Build the production allowlist of durable job handlers."""
 
-    return BackgroundJobHandlerRegistry(
+    registry = BackgroundJobHandlerRegistry(
         {
             BackgroundJobKind.EXPERIMENT_EXECUTION: run_experiment_job,
             BackgroundJobKind.WALK_FORWARD_EXECUTION: run_walk_forward_job,
@@ -291,3 +301,5 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }
     )
+    registry.require_exact_allowlist(PRODUCTION_BACKGROUND_JOB_KINDS)
+    return registry

@@ -357,7 +357,6 @@ async def import_dataset_file(
             file_checksum=staged.file_checksum,
         ).model_dump(mode="json"),
         idempotency_key=build_dataset_file_import_idempotency_key(staged),
-        max_attempts=3,
         now=staged.created_at,
     )
     try:

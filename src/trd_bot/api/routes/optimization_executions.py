@@ -161,7 +161,6 @@ def create_optimization_execution(
         kind=BackgroundJobKind.OPTIMIZATION_EXECUTION,
         payload=payload.model_dump(mode="json"),
         idempotency_key=build_optimization_execution_idempotency_key(execution),
-        max_attempts=3,
         now=execution.created_at,
     )
 

@@ -210,7 +210,7 @@ def test_worker_dispatches_only_registered_job_kinds(session: Session) -> None:
         payload: Mapping[str, object],
     ) -> str:
         calls.append(str(payload["execution_id"]))
-        context.heartbeat(75, lease_duration=timedelta(seconds=30), now=NOW)
+        context.heartbeat(75, now=NOW)
         return "experiment-result-1"
 
     worker = BackgroundJobWorker(

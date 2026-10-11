@@ -1,6 +1,8 @@
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from types import MappingProxyType
 from typing import Protocol, Self
 from uuid import uuid4
 
@@ -15,6 +17,95 @@ class BackgroundJobKind(StrEnum):
     MARKET_DATA_IMPORT = "market_data_import"
     DATASET_FILE_IMPORT = "dataset_file_import"
     OPTIMIZATION_EXECUTION = "optimization_execution"
+
+
+class BackgroundJobCancellationMode(StrEnum):
+    """Cancellation behavior promised by one allowlisted workload."""
+
+    COOPERATIVE = "cooperative"
+
+
+MAX_BACKGROUND_JOB_ATTEMPTS = 10
+DEFAULT_BACKGROUND_JOB_LEASE_DURATION = timedelta(minutes=5)
+
+
+@dataclass(frozen=True)
+class BackgroundJobPolicy:
+    """Central execution policy for one production background workload."""
+
+    kind: BackgroundJobKind
+    max_attempts: int
+    retry_delays: tuple[timedelta, ...]
+    lease_duration: timedelta = DEFAULT_BACKGROUND_JOB_LEASE_DURATION
+    cancellation_mode: BackgroundJobCancellationMode = BackgroundJobCancellationMode.COOPERATIVE
+    supported_payload_versions: frozenset[int] = frozenset({1})
+
+    def __post_init__(self) -> None:
+        if not 1 <= self.max_attempts <= MAX_BACKGROUND_JOB_ATTEMPTS:
+            raise ValueError("background job policy attempt budget is invalid")
+        if self.lease_duration <= timedelta(0):
+            raise ValueError("background job policy lease duration must be positive")
+        if len(self.retry_delays) != self.max_attempts - 1:
+            raise ValueError("background job policy requires one delay per automatic retry")
+        if any(delay < timedelta(0) for delay in self.retry_delays):
+            raise ValueError("background job policy retry delays cannot be negative")
+        if not self.supported_payload_versions or any(
+            version < 1 for version in self.supported_payload_versions
+        ):
+            raise ValueError("background job policy payload versions are invalid")
+
+    def retry_delay_after(self, attempt_count: int) -> timedelta:
+        """Return the delay before the next automatic attempt."""
+
+        if attempt_count < 1:
+            raise ValueError("background job retry requires a completed attempt")
+        if attempt_count >= self.max_attempts:
+            return timedelta(0)
+        return self.retry_delays[attempt_count - 1]
+
+
+_STANDARD_RETRY_DELAYS = (timedelta(seconds=5), timedelta(seconds=30))
+BACKGROUND_JOB_POLICIES: Mapping[BackgroundJobKind, BackgroundJobPolicy] = MappingProxyType(
+    {
+        BackgroundJobKind.EXPERIMENT_EXECUTION: BackgroundJobPolicy(
+            kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.WALK_FORWARD_EXECUTION: BackgroundJobPolicy(
+            kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.MARKET_DATA_IMPORT: BackgroundJobPolicy(
+            kind=BackgroundJobKind.MARKET_DATA_IMPORT,
+            max_attempts=1,
+            retry_delays=(),
+        ),
+        BackgroundJobKind.DATASET_FILE_IMPORT: BackgroundJobPolicy(
+            kind=BackgroundJobKind.DATASET_FILE_IMPORT,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.OPTIMIZATION_EXECUTION: BackgroundJobPolicy(
+            kind=BackgroundJobKind.OPTIMIZATION_EXECUTION,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+    }
+)
+PRODUCTION_BACKGROUND_JOB_KINDS = frozenset(BACKGROUND_JOB_POLICIES)
+if frozenset(BackgroundJobKind) != PRODUCTION_BACKGROUND_JOB_KINDS:
+    raise RuntimeError("background job policy catalog must cover every allowlisted kind")
+
+
+def get_background_job_policy(kind: BackgroundJobKind) -> BackgroundJobPolicy:
+    """Return the frozen production policy for an allowlisted kind."""
+
+    try:
+        return BACKGROUND_JOB_POLICIES[kind]
+    except KeyError as error:
+        raise LookupError(f'background job kind "{kind.value}" has no execution policy') from error
 
 
 class BackgroundJobStatus(StrEnum):
@@ -70,7 +161,7 @@ class BackgroundJob(BaseModel):
     status: BackgroundJobStatus
     progress_percent: int = Field(ge=0, le=100)
     attempt_count: int = Field(ge=0)
-    max_attempts: int = Field(ge=1, le=10)
+    max_attempts: int = Field(ge=1, le=MAX_BACKGROUND_JOB_ATTEMPTS)
     run_after: datetime
 
     lease_owner: str | None = Field(default=None, min_length=1, max_length=100)
@@ -204,11 +295,14 @@ class BackgroundJobBuilder:
         kind: BackgroundJobKind,
         payload: Mapping[str, object],
         idempotency_key: str | None = None,
-        max_attempts: int = 3,
+        max_attempts: int | None = None,
         run_after: datetime | None = None,
         now: datetime | None = None,
     ) -> BackgroundJob:
         created_at = now or datetime.now(UTC)
+        attempt_budget = (
+            get_background_job_policy(kind).max_attempts if max_attempts is None else max_attempts
+        )
         return BackgroundJob(
             job_id=f"job-{uuid4().hex[:20]}",
             kind=kind,
@@ -217,7 +311,7 @@ class BackgroundJobBuilder:
             status=BackgroundJobStatus.QUEUED,
             progress_percent=0,
             attempt_count=0,
-            max_attempts=max_attempts,
+            max_attempts=attempt_budget,
             run_after=run_after or created_at,
             created_at=created_at,
             updated_at=created_at,
@@ -277,23 +371,29 @@ class BackgroundJobRepository(Protocol):
 class BackgroundJobContext:
     """Lease-scoped controls exposed to allowlisted job handlers."""
 
-    def __init__(self, repository: BackgroundJobRepository, job: BackgroundJob, worker_id: str):
+    def __init__(
+        self,
+        repository: BackgroundJobRepository,
+        job: BackgroundJob,
+        worker_id: str,
+        lease_duration: timedelta,
+    ):
         self._repository = repository
         self.job = job
         self.worker_id = worker_id
+        self.lease_duration = lease_duration
 
     def heartbeat(
         self,
         progress_percent: int,
         *,
-        lease_duration: timedelta,
         now: datetime | None = None,
     ) -> BackgroundJob:
         self.job = self._repository.heartbeat(
             job_id=self.job.job_id,
             worker_id=self.worker_id,
             progress_percent=progress_percent,
-            lease_duration=lease_duration,
+            lease_duration=self.lease_duration,
             now=now,
         )
         return self.job
@@ -321,6 +421,19 @@ class BackgroundJobHandlerRegistry:
         except KeyError as error:
             raise LookupError(f'background job handler "{kind.value}" is not registered') from error
 
+    @property
+    def kinds(self) -> frozenset[BackgroundJobKind]:
+        return frozenset(self._handlers)
+
+    def require_exact_allowlist(self, allowed_kinds: frozenset[BackgroundJobKind]) -> None:
+        if self.kinds != allowed_kinds:
+            missing = sorted(kind.value for kind in allowed_kinds - self.kinds)
+            unexpected = sorted(kind.value for kind in self.kinds - allowed_kinds)
+            raise ValueError(
+                "background job handler allowlist does not match policy catalog: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+
 
 class BackgroundJobWorker:
     """Claim and execute at most one durable job."""
@@ -331,7 +444,7 @@ class BackgroundJobWorker:
         repository: BackgroundJobRepository,
         handlers: BackgroundJobHandlerRegistry,
         worker_id: str,
-        lease_duration: timedelta = timedelta(seconds=60),
+        lease_duration: timedelta = DEFAULT_BACKGROUND_JOB_LEASE_DURATION,
     ) -> None:
         if lease_duration <= timedelta(0):
             raise ValueError("background job lease duration must be positive")
@@ -351,8 +464,23 @@ class BackgroundJobWorker:
         if job.cancel_requested:
             return self._repository.request_cancel(job.job_id, now=now)
 
-        context = BackgroundJobContext(self._repository, job, self._worker_id)
+        context = BackgroundJobContext(
+            self._repository,
+            job,
+            self._worker_id,
+            self._lease_duration,
+        )
         try:
+            policy = get_background_job_policy(job.kind)
+            if job.payload_version not in policy.supported_payload_versions:
+                return self._repository.fail(
+                    job_id=job.job_id,
+                    worker_id=self._worker_id,
+                    error_code="unsupported_job_payload_version",
+                    error_message="background job payload version is not supported",
+                    retryable=False,
+                    now=now,
+                )
             try:
                 handler = self._handlers.get(job.kind)
             except LookupError:
@@ -375,6 +503,9 @@ class BackgroundJobWorker:
                     error_code=error.error_code,
                     error_message=error.error_message,
                     retryable=error.retryable,
+                    retry_delay=(
+                        policy.retry_delay_after(job.attempt_count) if error.retryable else None
+                    ),
                     now=now,
                 )
             except Exception:
@@ -384,6 +515,7 @@ class BackgroundJobWorker:
                     error_code="job_handler_failed",
                     error_message="background job handler failed",
                     retryable=True,
+                    retry_delay=policy.retry_delay_after(job.attempt_count),
                     now=now,
                 )
             return self._repository.succeed(

@@ -143,7 +143,6 @@ def _enqueue_import_job(
         kind=BackgroundJobKind.MARKET_DATA_IMPORT,
         payload=payload.model_dump(mode="json"),
         idempotency_key=digest,
-        max_attempts=1,
     )
     stored, _ = jobs.enqueue(job)
     return BackgroundJobSummary.from_job(stored)

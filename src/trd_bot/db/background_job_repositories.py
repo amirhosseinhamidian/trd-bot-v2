@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from trd_bot.db.models import BackgroundJobRow
 from trd_bot.jobs import (
+    MAX_BACKGROUND_JOB_ATTEMPTS,
     BackgroundJob,
     BackgroundJobKind,
     BackgroundJobStatus,
@@ -296,7 +297,7 @@ class SqlAlchemyBackgroundJobRepository:
         current = self._from_row(row)
         if current.status is not BackgroundJobStatus.FAILED:
             raise ValueError("only failed background jobs can be retried")
-        if current.attempt_count >= 10:
+        if current.attempt_count >= MAX_BACKGROUND_JOB_ATTEMPTS:
             raise ValueError("background job reached the hard attempt limit")
         retried = current.model_copy(
             update={

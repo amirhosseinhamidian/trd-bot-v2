@@ -1142,7 +1142,6 @@ def create_experiment_execution(
             execution_id=execution.execution_id,
         ).model_dump(mode="json"),
         idempotency_key=build_experiment_execution_idempotency_key(execution),
-        max_attempts=3,
         now=execution.created_at,
     )
 
@@ -1258,7 +1257,6 @@ def create_walk_forward_execution(
             execution_id=execution.execution_id,
         ).model_dump(mode="json"),
         idempotency_key=build_walk_forward_execution_idempotency_key(execution),
-        max_attempts=3,
         now=execution.created_at,
     )
 

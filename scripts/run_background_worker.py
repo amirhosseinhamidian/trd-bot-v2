@@ -7,14 +7,18 @@ from uuid import uuid4
 
 from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.db import SqlAlchemyBackgroundJobRepository, get_session_factory
-from trd_bot.jobs import BackgroundJobWorker
+from trd_bot.jobs import DEFAULT_BACKGROUND_JOB_LEASE_DURATION, BackgroundJobWorker
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the durable TRD background worker.")
     parser.add_argument("--once", action="store_true", help="Claim at most one job and exit.")
     parser.add_argument("--poll-seconds", type=float, default=2.0)
-    parser.add_argument("--lease-seconds", type=int, default=60)
+    parser.add_argument(
+        "--lease-seconds",
+        type=int,
+        default=int(DEFAULT_BACKGROUND_JOB_LEASE_DURATION.total_seconds()),
+    )
     parser.add_argument("--worker-id", default=f"{gethostname()}-{uuid4().hex[:8]}")
     return parser.parse_args()
 
