@@ -4,7 +4,6 @@ from typing import Annotated, Literal
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
@@ -12,17 +11,14 @@ from fastapi import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from trd_bot.api.background_jobs import (
-    WalkForwardExecutionTask,
-)
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
     get_dataset_repository,
     get_experiment_execution_enqueuer,
     get_experiment_execution_repository,
     get_experiment_registry,
+    get_walk_forward_execution_enqueuer,
     get_walk_forward_execution_repository,
-    get_walk_forward_execution_task,
     get_walk_forward_run_registry,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
@@ -73,6 +69,9 @@ from trd_bot.research import (
     StrategyExecutionParameters,
     WalkForwardConfig,
     WalkForwardDatasetMaterializer,
+    WalkForwardExecutionEnqueueError,
+    WalkForwardExecutionEnqueuer,
+    WalkForwardExecutionJobPayload,
     WalkForwardExecutionResult,
     WalkForwardExecutor,
     WalkForwardMode,
@@ -85,6 +84,7 @@ from trd_bot.research import (
     WalkForwardStabilityAnalyzer,
     WalkForwardStabilityReport,
     build_experiment_execution_idempotency_key,
+    build_walk_forward_execution_idempotency_key,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.research.walk_forward_executions import (
@@ -139,9 +139,9 @@ WalkForwardExecutionRepositoryDependency = Annotated[
     Depends(get_walk_forward_execution_repository),
 ]
 
-WalkForwardExecutionTaskDependency = Annotated[
-    WalkForwardExecutionTask,
-    Depends(get_walk_forward_execution_task),
+WalkForwardExecutionEnqueuerDependency = Annotated[
+    WalkForwardExecutionEnqueuer,
+    Depends(get_walk_forward_execution_enqueuer),
 ]
 
 
@@ -495,6 +495,13 @@ WalkForwardExecutionCatalogParamsQuery = Annotated[
     WalkForwardExecutionCatalogParams,
     Query(),
 ]
+
+
+class WalkForwardExecutionSubmission(WalkForwardExecution):
+    """Backward-compatible execution state with its durable job identity."""
+
+    job: BackgroundJobSummary
+    created: bool
 
 
 class ExperimentSignalCatalogParams(ExperimentSignalCatalogQuery):
@@ -1185,17 +1192,15 @@ def get_experiment_execution(
 
 @router.post(
     "/walk-forward-executions",
-    response_model=WalkForwardExecution,
+    response_model=WalkForwardExecutionSubmission,
     status_code=202,
 )
 def create_walk_forward_execution(
     request: StoredDatasetStrategyWalkForwardExecutionRequest,
-    background_tasks: BackgroundTasks,
-    executions: WalkForwardExecutionRepositoryDependency,
     datasets: DatasetRepositoryDependency,
-    execution_task: WalkForwardExecutionTaskDependency,
-) -> WalkForwardExecution:
-    """Queue versioned walk-forward analysis for a stored historical dataset."""
+    enqueuer: WalkForwardExecutionEnqueuerDependency,
+) -> WalkForwardExecutionSubmission:
+    """Atomically persist a walk-forward execution and its durable worker job."""
 
     dataset = datasets.get(request.dataset_id)
 
@@ -1224,21 +1229,33 @@ def create_walk_forward_execution(
         walk_forward_config=walk_forward_config,
         total_folds=len(plan.folds),
     )
-
-    try:
-        stored_execution = executions.save(execution)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=409,
-            detail="walk-forward execution could not be stored",
-        ) from error
-
-    background_tasks.add_task(
-        execution_task,
-        stored_execution.execution_id,
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+        payload=WalkForwardExecutionJobPayload(
+            execution_id=execution.execution_id,
+        ).model_dump(mode="json"),
+        idempotency_key=build_walk_forward_execution_idempotency_key(execution),
+        max_attempts=3,
+        now=execution.created_at,
     )
 
-    return stored_execution
+    try:
+        result = enqueuer.enqueue(execution=execution, job=job)
+    except (WalkForwardExecutionEnqueueError, ValueError) as error:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "walk_forward_execution_conflict",
+                "message": "walk-forward execution could not be enqueued",
+            },
+        ) from error
+    return WalkForwardExecutionSubmission.model_validate(
+        {
+            **result.execution.model_dump(),
+            "job": BackgroundJobSummary.from_job(result.job),
+            "created": result.created,
+        }
+    )
 
 
 @router.get(

@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -47,13 +48,17 @@ class RecordingExecutionRepository(InMemoryWalkForwardExecutionRepository):
 
 
 class FailingWalkForwardExecutor(WalkForwardExecutor):
-    def execute(self, **kwargs: object) -> WalkForwardExecutionResult:
-        callback = kwargs["on_fold_completed"]
+    def execute(self, **kwargs: Any) -> WalkForwardExecutionResult:
+        callback = kwargs["on_fold_result_completed"]
 
         assert callable(callback)
-        callback(1, 3)
 
-        raise RuntimeError("simulated fold failure")
+        def fail_after_checkpoint(*args: object) -> None:
+            callback(*args)
+            raise RuntimeError("simulated transient fold failure")
+
+        kwargs["on_fold_result_completed"] = fail_after_checkpoint
+        return super().execute(**kwargs)
 
 
 def build_parameters() -> EMACrossoverExecutionParameters:
@@ -293,7 +298,7 @@ def test_marks_walk_forward_execution_failed_when_dataset_is_missing() -> None:
     )
 
 
-def test_preserves_completed_fold_progress_when_execution_fails() -> None:
+def test_resumes_after_a_transient_failure_from_the_first_incomplete_fold() -> None:
     dataset_repository = InMemoryDatasetRepository()
     execution_repository = InMemoryWalkForwardExecutionRepository()
     dataset = build_dataset()
@@ -310,13 +315,26 @@ def test_preserves_completed_fold_progress_when_execution_fails() -> None:
         executor=FailingWalkForwardExecutor(),
     )
 
-    completed = runner.run(queued.execution_id)
+    with pytest.raises(RuntimeError, match="simulated transient fold failure"):
+        runner.run(queued.execution_id)
 
-    assert completed.status is WalkForwardExecutionStatus.FAILED
-    assert completed.completed_folds == 1
-    assert completed.progress_percent == 33
-    assert completed.error_code == "execution_failed"
-    assert completed.error_message == "The walk-forward execution could not be completed."
+    checkpointed = execution_repository.get(queued.execution_id)
+    assert checkpointed is not None
+    assert checkpointed.status is WalkForwardExecutionStatus.RUNNING
+    assert checkpointed.completed_folds == 1
+    assert checkpointed.progress_percent == 33
+    assert len(checkpointed.fold_checkpoints) == 1
+
+    completed = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=InMemoryWalkForwardRunRegistry(),
+    ).run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
+    assert completed.completed_folds == 3
+    assert len(completed.fold_checkpoints) == 3
+    assert [checkpoint.fold_number for checkpoint in completed.fold_checkpoints] == [1, 2, 3]
 
 
 def test_returns_existing_completed_execution_without_rerunning() -> None:

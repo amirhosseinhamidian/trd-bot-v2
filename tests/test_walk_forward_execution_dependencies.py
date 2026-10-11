@@ -4,10 +4,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from trd_bot.api.dependencies import (
+    get_walk_forward_execution_enqueuer,
     get_walk_forward_execution_repository,
 )
 from trd_bot.db.base import DatabaseBase
 from trd_bot.db.session import get_database_session
+from trd_bot.db.walk_forward_execution_enqueues import (
+    SqlAlchemyWalkForwardExecutionEnqueuer,
+)
 from trd_bot.db.walk_forward_execution_repositories import (
     SqlAlchemyWalkForwardExecutionRepository,
 )
@@ -43,6 +47,10 @@ def test_returns_sqlalchemy_walk_forward_execution_repository() -> None:
         assert isinstance(
             repository,
             SqlAlchemyWalkForwardExecutionRepository,
+        )
+        assert isinstance(
+            get_walk_forward_execution_enqueuer(session),
+            SqlAlchemyWalkForwardExecutionEnqueuer,
         )
 
         session_iterator.close()

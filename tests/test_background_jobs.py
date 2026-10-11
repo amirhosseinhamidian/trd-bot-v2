@@ -24,7 +24,7 @@ from trd_bot.jobs import (
     BackgroundJobStatus,
     BackgroundJobWorker,
 )
-from trd_bot.research import ExperimentExecutionStatus
+from trd_bot.research import ExperimentExecutionStatus, WalkForwardExecutionStatus
 
 NOW = datetime(2026, 9, 26, 6, 30, tzinfo=UTC)
 
@@ -323,6 +323,32 @@ def test_experiment_handler_rejects_a_malformed_payload_without_retry(
     assert failed.error_code == "invalid_experiment_job_payload"
 
 
+def test_walk_forward_handler_rejects_a_malformed_payload_without_retry(
+    session: Session,
+) -> None:
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(
+        BackgroundJobBuilder().build(
+            kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+            payload={"execution_id": "not-a-walk-forward-execution-id"},
+            max_attempts=3,
+            now=NOW,
+        )
+    )
+
+    failed = BackgroundJobWorker(
+        repository=repository,
+        handlers=build_background_job_handler_registry(),
+        worker_id="walk-forward-payload-worker",
+    ).run_once(now=NOW)
+
+    assert failed is not None
+    assert failed.job_id == queued.job_id
+    assert failed.status is BackgroundJobStatus.FAILED
+    assert failed.attempt_count == 1
+    assert failed.error_code == "invalid_walk_forward_job_payload"
+
+
 def test_experiment_handler_preserves_monotonic_progress_after_lease_recovery(
     session: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -377,6 +403,68 @@ def test_experiment_handler_preserves_monotonic_progress_after_lease_recovery(
         repository=repository,
         handlers=build_background_job_handler_registry(),
         worker_id="recovery-experiment-worker",
+        lease_duration=timedelta(seconds=30),
+    ).run_once()
+
+    assert completed is not None
+    assert completed.status is BackgroundJobStatus.SUCCEEDED
+    assert completed.attempt_count == 2
+
+
+def test_walk_forward_handler_preserves_monotonic_progress_after_lease_recovery(
+    session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed_at = datetime.now(UTC)
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(
+        BackgroundJobBuilder().build(
+            kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+            payload={"execution_id": "walk-forward-job-1234567890abcdef"},
+            max_attempts=3,
+            now=observed_at - timedelta(seconds=30),
+        )
+    )
+    repository.claim_next(
+        worker_id="stale-walk-forward-worker",
+        lease_duration=timedelta(seconds=5),
+        now=observed_at - timedelta(seconds=20),
+    )
+    repository.heartbeat(
+        job_id=queued.job_id,
+        worker_id="stale-walk-forward-worker",
+        progress_percent=90,
+        lease_duration=timedelta(seconds=5),
+        now=observed_at - timedelta(seconds=19),
+    )
+
+    def resume_execution(
+        execution_id: str,
+        _session_factory: object,
+        *,
+        report_progress: object,
+        cancellation_requested: object,
+    ) -> object:
+        assert execution_id == "walk-forward-job-1234567890abcdef"
+        assert callable(report_progress)
+        assert callable(cancellation_requested)
+        report_progress(33)
+        return SimpleNamespace(
+            execution_id=execution_id,
+            status=WalkForwardExecutionStatus.SUCCEEDED,
+        )
+
+    monkeypatch.setattr(job_handlers, "get_session_factory", lambda: object())
+    monkeypatch.setattr(
+        job_handlers,
+        "run_walk_forward_execution_with_session_factory",
+        resume_execution,
+    )
+
+    completed = BackgroundJobWorker(
+        repository=repository,
+        handlers=build_background_job_handler_registry(),
+        worker_id="recovery-walk-forward-worker",
         lease_duration=timedelta(seconds=30),
     ).run_once()
 

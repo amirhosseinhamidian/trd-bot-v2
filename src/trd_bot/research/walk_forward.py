@@ -29,6 +29,7 @@ class WalkForwardMode(StrEnum):
 
 
 FoldCompletedCallback = Callable[[int, int], None]
+FoldResultCompletedCallback = Callable[["WalkForwardFoldExecution", int, int], None]
 
 
 class WalkForwardConfig(BaseModel):
@@ -538,6 +539,8 @@ class WalkForwardExecutor:
         horizon_candles: int = 1,
         backtest_config: BacktestConfig | None = None,
         on_fold_completed: FoldCompletedCallback | None = None,
+        on_fold_result_completed: FoldResultCompletedCallback | None = None,
+        completed_fold_results: Sequence[WalkForwardFoldExecution] = (),
     ) -> WalkForwardExecutionResult:
         if materialization.source_dataset_id != dataset.dataset_id:
             raise ValueError("walk-forward materialization does not belong to dataset")
@@ -551,9 +554,13 @@ class WalkForwardExecutor:
                 key=lambda parameter: (parameter.name, parameter.value),
             )
         )
-        fold_results: list[WalkForwardFoldExecution] = []
+        fold_results = list(completed_fold_results)
+        self._validate_completed_fold_results(
+            fold_results=fold_results,
+            materialization=materialization,
+        )
 
-        for split in materialization.splits:
+        for split in materialization.splits[len(fold_results) :]:
             signals = self._generate_test_signals(
                 dataset=dataset,
                 split=split,
@@ -567,17 +574,22 @@ class WalkForwardExecutor:
                 horizon_candles=horizon_candles,
                 backtest_config=effective_config,
             )
-            fold_results.append(
-                WalkForwardFoldExecution(
-                    split_id=split.split_id,
-                    fold_number=split.fold.fold_number,
-                    test_dataset_id=split.test_dataset.dataset_id,
-                    result=result,
-                )
+            fold_result = WalkForwardFoldExecution(
+                split_id=split.split_id,
+                fold_number=split.fold.fold_number,
+                test_dataset_id=split.test_dataset.dataset_id,
+                result=result,
             )
+            fold_results.append(fold_result)
 
             if on_fold_completed is not None:
                 on_fold_completed(
+                    len(fold_results),
+                    len(materialization.splits),
+                )
+            if on_fold_result_completed is not None:
+                on_fold_result_completed(
+                    fold_result,
                     len(fold_results),
                     len(materialization.splits),
                 )
@@ -605,6 +617,27 @@ class WalkForwardExecutor:
             fold_results=completed_folds,
             summary=self._summarize(completed_folds),
         )
+
+    @staticmethod
+    def _validate_completed_fold_results(
+        *,
+        fold_results: Sequence[WalkForwardFoldExecution],
+        materialization: WalkForwardMaterialization,
+    ) -> None:
+        if len(fold_results) > len(materialization.splits):
+            raise ValueError("completed fold results exceed the walk-forward plan")
+
+        for fold_result, split in zip(
+            fold_results,
+            materialization.splits,
+            strict=False,
+        ):
+            if (
+                fold_result.fold_number != split.fold.fold_number
+                or fold_result.split_id != split.split_id
+                or fold_result.test_dataset_id != split.test_dataset.dataset_id
+            ):
+                raise ValueError("completed fold result does not match the walk-forward plan")
 
     def _generate_test_signals(
         self,

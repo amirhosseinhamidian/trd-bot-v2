@@ -9,6 +9,7 @@ import type {
   StoredDatasetSMACrossoverRequest,
 } from '@/features/experiments/api/types';
 import type { ResearchStrategyName } from '@/features/strategies/api/types';
+import type { BackgroundJobSummary } from '@/features/jobs/api/types';
 
 export type WalkForwardRunSortField = 'created_at' | 'horizon_candles';
 
@@ -81,6 +82,11 @@ export interface WalkForwardExecution {
   walk_forward_run_id: string | null;
   error_code: string | null;
   error_message: string | null;
+}
+
+export interface WalkForwardExecutionSubmission extends WalkForwardExecution {
+  job: BackgroundJobSummary;
+  created: boolean;
 }
 
 export interface WalkForwardRunSummary {

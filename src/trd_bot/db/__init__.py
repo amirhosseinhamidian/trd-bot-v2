@@ -71,6 +71,9 @@ from trd_bot.db.session import (
 from trd_bot.db.simulated_portfolio_repositories import (
     SqlAlchemySimulatedPortfolioRepository,
 )
+from trd_bot.db.walk_forward_execution_enqueues import (
+    SqlAlchemyWalkForwardExecutionEnqueuer,
+)
 from trd_bot.db.walk_forward_execution_repositories import (
     SqlAlchemyWalkForwardExecutionRepository,
 )
@@ -108,6 +111,7 @@ __all__ = [
     "SqlAlchemyOptimizationExecutionRepository",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
+    "SqlAlchemyWalkForwardExecutionEnqueuer",
     "SqlAlchemyWalkForwardExecutionRepository",
     "SqlAlchemyWalkForwardRunRegistry",
     "SystemMetricSampleRow",

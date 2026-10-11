@@ -20,6 +20,9 @@ from trd_bot.db import (
     SqlAlchemyExperimentExecutionEnqueuer,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemyWalkForwardExecutionEnqueuer,
+    SqlAlchemyWalkForwardExecutionRepository,
+    SqlAlchemyWalkForwardRunRegistry,
     create_database_engine,
     create_session_factory,
 )
@@ -45,7 +48,13 @@ from trd_bot.research import (
     ExperimentExecutionBuilder,
     ExperimentExecutionJobPayload,
     ExperimentExecutionStatus,
+    WalkForwardConfig,
+    WalkForwardExecutionBuilder,
+    WalkForwardExecutionJobPayload,
+    WalkForwardExecutionStatus,
+    WalkForwardPlanner,
     build_experiment_execution_idempotency_key,
+    build_walk_forward_execution_idempotency_key,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -136,6 +145,8 @@ def clean_execution_tables(database_url: str) -> None:
                     "simulated_positions, "
                     "simulated_portfolios, "
                     "background_jobs, "
+                    "walk_forward_executions, "
+                    "walk_forward_runs, "
                     "experiment_executions, "
                     "research_experiments, "
                     "dataset_snapshots "
@@ -143,6 +154,87 @@ def clean_execution_tables(database_url: str) -> None:
                 )
             )
     finally:
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_walk_forward_background_lifecycle_with_postgresql(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    clean_execution_tables(database_url)
+    engine = create_database_engine(database_url)
+    session_factory = create_session_factory(engine)
+
+    try:
+        dataset = DatasetBuilder().build(
+            name="PostgreSQL walk-forward dataset",
+            candles=build_dataset_candles(),
+        )
+        config = WalkForwardConfig(
+            train_candles=30,
+            test_candles=10,
+            step_candles=10,
+        )
+        plan = WalkForwardPlanner().plan(dataset=dataset, config=config)
+        queued = WalkForwardExecutionBuilder().build(
+            dataset_id=dataset.dataset_id,
+            parameters=EMACrossoverExecutionParameters(
+                fast_period=9,
+                slow_period=21,
+                horizon_candles=1,
+                starting_balance=Decimal("10000"),
+                allocation_fraction=Decimal("0.10"),
+                fee_rate=Decimal("0.001"),
+                slippage_rate=Decimal("0.0005"),
+            ),
+            walk_forward_config=config,
+            total_folds=len(plan.folds),
+        )
+
+        with session_factory() as session:
+            SqlAlchemyDatasetRepository(session).save(dataset)
+            job = BackgroundJobBuilder().build(
+                kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+                payload=WalkForwardExecutionJobPayload(
+                    execution_id=queued.execution_id,
+                ).model_dump(mode="json"),
+                idempotency_key=build_walk_forward_execution_idempotency_key(queued),
+                now=queued.created_at,
+            )
+            submission = SqlAlchemyWalkForwardExecutionEnqueuer(session).enqueue(
+                execution=queued,
+                job=job,
+            )
+
+        monkeypatch.setattr(job_handlers, "get_session_factory", lambda: session_factory)
+        with session_factory() as session:
+            completed_job = BackgroundJobWorker(
+                repository=SqlAlchemyBackgroundJobRepository(session),
+                handlers=build_background_job_handler_registry(),
+                worker_id="postgresql-walk-forward-worker",
+                lease_duration=timedelta(minutes=5),
+            ).run_once()
+
+        assert completed_job is not None
+        assert completed_job.job_id == submission.job.job_id
+        assert completed_job.status is BackgroundJobStatus.SUCCEEDED
+        assert completed_job.result_reference == queued.execution_id
+
+        with session_factory() as session:
+            completed = SqlAlchemyWalkForwardExecutionRepository(session).get(queued.execution_id)
+            assert completed is not None
+            assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
+            assert completed.completed_folds == len(plan.folds)
+            assert len(completed.fold_checkpoints) == len(plan.folds)
+            assert completed.walk_forward_run_id is not None
+            assert (
+                SqlAlchemyWalkForwardRunRegistry(session).get(completed.walk_forward_run_id)
+                is not None
+            )
+    finally:
+        clean_execution_tables(database_url)
         engine.dispose()
 
 

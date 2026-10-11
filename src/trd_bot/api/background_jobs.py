@@ -8,7 +8,6 @@ from trd_bot.db import (
     SqlAlchemyExperimentRegistry,
     SqlAlchemyWalkForwardExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
-    get_session_factory,
 )
 from trd_bot.db.candidate_lifecycle_persistence import (
     SqlAlchemyCandidateLifecycleRecorder,
@@ -24,11 +23,8 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecution,
     ExperimentExecutionStatus,
 )
-from trd_bot.research.walk_forward_execution_runner import (
-    WalkForwardExecutionRunner,
-)
-
-WalkForwardExecutionTask = Callable[[str], None]
+from trd_bot.research.walk_forward_execution_runner import WalkForwardExecutionRunner
+from trd_bot.research.walk_forward_executions import WalkForwardExecution
 
 
 def run_experiment_execution_with_session_factory(
@@ -101,7 +97,10 @@ def fail_experiment_execution_with_session_factory(
 def run_walk_forward_execution_with_session_factory(
     execution_id: str,
     session_factory: sessionmaker[Session],
-) -> None:
+    *,
+    report_progress: Callable[[int], None] | None = None,
+    cancellation_requested: Callable[[], bool] | None = None,
+) -> WalkForwardExecution:
     """Run one walk-forward execution using an explicit session factory."""
 
     with session_factory() as session:
@@ -111,15 +110,30 @@ def run_walk_forward_execution_with_session_factory(
             runs=SqlAlchemyWalkForwardRunRegistry(session),
         )
 
-        runner.run(execution_id)
+        return runner.run(
+            execution_id,
+            report_progress=report_progress,
+            cancellation_requested=cancellation_requested,
+        )
 
 
-def run_walk_forward_execution_job(
+def fail_walk_forward_execution_with_session_factory(
     execution_id: str,
-) -> None:
-    """Run one walk-forward execution using the configured database."""
+    session_factory: sessionmaker[Session],
+    *,
+    error_code: str,
+    error_message: str,
+) -> WalkForwardExecution:
+    """Fail a non-terminal walk-forward execution after retries are exhausted."""
 
-    run_walk_forward_execution_with_session_factory(
-        execution_id,
-        get_session_factory(),
-    )
+    with session_factory() as session:
+        runner = WalkForwardExecutionRunner(
+            executions=SqlAlchemyWalkForwardExecutionRepository(session),
+            datasets=SqlAlchemyDatasetRepository(session),
+            runs=SqlAlchemyWalkForwardRunRegistry(session),
+        )
+        return runner.fail_active(
+            execution_id,
+            error_code=error_code,
+            error_message=error_message,
+        )

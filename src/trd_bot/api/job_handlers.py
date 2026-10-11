@@ -6,8 +6,9 @@ from pydantic import ValidationError
 
 from trd_bot.api.background_jobs import (
     fail_experiment_execution_with_session_factory,
+    fail_walk_forward_execution_with_session_factory,
     run_experiment_execution_with_session_factory,
-    run_walk_forward_execution_job,
+    run_walk_forward_execution_with_session_factory,
 )
 from trd_bot.db import (
     SqlAlchemyDatasetFileStageRepository,
@@ -45,18 +46,14 @@ from trd_bot.research.historical_dataset_jobs import (
 from trd_bot.research.optimization_executions import OptimizationExecutionState
 from trd_bot.research.optimization_jobs import OptimizationExecutionJobPayload
 from trd_bot.research.optimization_worker import OptimizationExecutionJobRunner
+from trd_bot.research.walk_forward_execution_jobs import WalkForwardExecutionJobPayload
+from trd_bot.research.walk_forward_executions import WalkForwardExecutionStatus
 
 _MARKET_DATA_IMPORT_LEASE = timedelta(minutes=5)
 _DATASET_FILE_IMPORT_LEASE = timedelta(minutes=5)
 _EXPERIMENT_EXECUTION_LEASE = timedelta(minutes=5)
+_WALK_FORWARD_EXECUTION_LEASE = timedelta(minutes=5)
 _OPTIMIZATION_EXECUTION_LEASE = timedelta(minutes=5)
-
-
-def _required_string(payload: Mapping[str, object], field: str) -> str:
-    value = payload.get(field)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f'background job payload requires string field "{field}"')
-    return value.strip()
 
 
 def run_experiment_job(
@@ -121,11 +118,53 @@ def run_walk_forward_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
 ) -> str:
-    execution_id = _required_string(payload, "execution_id")
-    if context.cancellation_requested():
-        return execution_id
-    run_walk_forward_execution_job(execution_id)
-    return execution_id
+    try:
+        request = WalkForwardExecutionJobPayload.model_validate(payload)
+    except ValidationError as error:
+        raise BackgroundJobHandlerError(
+            error_code="invalid_walk_forward_job_payload",
+            error_message="Walk-forward execution job payload is invalid.",
+            retryable=False,
+        ) from error
+
+    def report_progress(progress: int) -> None:
+        context.heartbeat(
+            max(progress, context.job.progress_percent),
+            lease_duration=_WALK_FORWARD_EXECUTION_LEASE,
+        )
+
+    report_progress(1)
+    session_factory = get_session_factory()
+    try:
+        execution = run_walk_forward_execution_with_session_factory(
+            request.execution_id,
+            session_factory,
+            report_progress=report_progress,
+            cancellation_requested=context.cancellation_requested,
+        )
+    except Exception as error:
+        if context.job.attempt_count < context.job.max_attempts:
+            raise
+        fail_walk_forward_execution_with_session_factory(
+            request.execution_id,
+            session_factory,
+            error_code="walk_forward_attempts_exhausted",
+            error_message="Walk-forward execution stopped after exhausting its retry budget.",
+        )
+        raise BackgroundJobHandlerError(
+            error_code="walk_forward_attempts_exhausted",
+            error_message="Walk-forward execution stopped after exhausting its retry budget.",
+            retryable=False,
+        ) from error
+
+    if execution.status is WalkForwardExecutionStatus.FAILED:
+        raise BackgroundJobHandlerError(
+            error_code=execution.error_code or "walk_forward_execution_failed",
+            error_message=execution.error_message or "Walk-forward execution failed.",
+            retryable=False,
+        )
+    report_progress(99)
+    return execution.execution_id
 
 
 def run_market_data_import_job(

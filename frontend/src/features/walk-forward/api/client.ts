@@ -4,6 +4,7 @@ import type { Page } from '@/lib/api/core/types';
 import type {
   StoredDatasetStrategyWalkForwardExecutionRequest,
   WalkForwardExecution,
+  WalkForwardExecutionSubmission,
   WalkForwardRunSortDirection,
   WalkForwardRunSortField,
   WalkForwardRunSummary,
@@ -26,8 +27,11 @@ export interface WalkForwardRunFilters {
 
 export async function createWalkForwardExecution(
   request: StoredDatasetStrategyWalkForwardExecutionRequest,
-): Promise<WalkForwardExecution> {
-  return postJson<WalkForwardExecution>('/api/v1/research/walk-forward-executions', request);
+): Promise<WalkForwardExecutionSubmission> {
+  return postJson<WalkForwardExecutionSubmission>(
+    '/api/v1/research/walk-forward-executions',
+    request,
+  );
 }
 
 export async function getWalkForwardExecution(executionId: string): Promise<WalkForwardExecution> {

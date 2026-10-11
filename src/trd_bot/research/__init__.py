@@ -311,6 +311,15 @@ from trd_bot.research.walk_forward import (
     build_walk_forward_plan_id,
     build_walk_forward_split_id,
 )
+from trd_bot.research.walk_forward_execution_jobs import (
+    InMemoryWalkForwardExecutionEnqueuer,
+    WalkForwardExecutionEnqueueError,
+    WalkForwardExecutionEnqueuer,
+    WalkForwardExecutionEnqueueResult,
+    WalkForwardExecutionJobPayload,
+    build_walk_forward_execution_idempotency_key,
+    validate_walk_forward_execution_enqueue,
+)
 from trd_bot.research.walk_forward_executions import (
     WalkForwardExecution,
     WalkForwardExecutionBuilder,
@@ -495,6 +504,7 @@ __all__ = [
     "InMemoryExperimentRegistry",
     "InMemoryHistoricalDatasetCommitter",
     "InMemoryOptimizationExecutionEnqueuer",
+    "InMemoryWalkForwardExecutionEnqueuer",
     "InMemoryWalkForwardRunRegistry",
     "InvalidDatasetError",
     "OptimizationExecution",
@@ -550,6 +560,10 @@ __all__ = [
     "WalkForwardDatasetSplit",
     "WalkForwardExecution",
     "WalkForwardExecutionBuilder",
+    "WalkForwardExecutionEnqueueError",
+    "WalkForwardExecutionEnqueueResult",
+    "WalkForwardExecutionEnqueuer",
+    "WalkForwardExecutionJobPayload",
     "WalkForwardExecutionResult",
     "WalkForwardExecutionStateMachine",
     "WalkForwardExecutionStatus",
@@ -578,6 +592,7 @@ __all__ = [
     "build_optimization_execution_idempotency_key",
     "build_research_backtest_run_id",
     "build_walk_forward_execution_id",
+    "build_walk_forward_execution_idempotency_key",
     "build_walk_forward_plan_id",
     "build_walk_forward_split_id",
     "calculate_dataset_checksum",
@@ -586,4 +601,5 @@ __all__ = [
     "normalize_candidate_timestamp",
     "validate_dataset_file_import_enqueue",
     "validate_experiment_execution_enqueue",
+    "validate_walk_forward_execution_enqueue",
 ]

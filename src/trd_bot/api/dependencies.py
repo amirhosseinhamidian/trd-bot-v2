@@ -3,10 +3,6 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from trd_bot.api.background_jobs import (
-    WalkForwardExecutionTask,
-    run_walk_forward_execution_job,
-)
 from trd_bot.db import (
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyBackgroundJobRepository,
@@ -23,6 +19,7 @@ from trd_bot.db import (
     SqlAlchemyOptimizationExecutionRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
+    SqlAlchemyWalkForwardExecutionEnqueuer,
     SqlAlchemyWalkForwardExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
     get_database_session,
@@ -55,6 +52,7 @@ from trd_bot.research.optimization_executions import OptimizationExecutionReposi
 from trd_bot.research.optimization_jobs import OptimizationExecutionEnqueuer
 from trd_bot.research.optimization_runner import OptimizationRunner
 from trd_bot.research.policy_presets import AcceptancePolicyPresetCatalog
+from trd_bot.research.walk_forward_execution_jobs import WalkForwardExecutionEnqueuer
 from trd_bot.research.walk_forward_executions import WalkForwardExecutionRepository
 from trd_bot.research.walk_forward_runs import WalkForwardRunRegistry
 
@@ -149,6 +147,14 @@ def get_walk_forward_execution_repository(
     return SqlAlchemyWalkForwardExecutionRepository(session)
 
 
+def get_walk_forward_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> WalkForwardExecutionEnqueuer:
+    """Return the atomic walk-forward execution and durable-job enqueuer."""
+
+    return SqlAlchemyWalkForwardExecutionEnqueuer(session)
+
+
 def get_walk_forward_run_registry(
     session: DatabaseSessionDependency,
 ) -> WalkForwardRunRegistry:
@@ -209,12 +215,6 @@ def get_monitoring_runtime_state_repository(
     """Return the request-scoped monitoring runtime state repository."""
 
     return SqlAlchemyMonitoringRuntimeStateRepository(session)
-
-
-def get_walk_forward_execution_task() -> WalkForwardExecutionTask:
-    """Return the production walk-forward background task."""
-
-    return run_walk_forward_execution_job
 
 
 def get_optimization_execution_repository(

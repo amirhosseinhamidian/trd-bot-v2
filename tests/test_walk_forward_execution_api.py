@@ -6,11 +6,14 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_dataset_repository,
+    get_walk_forward_execution_enqueuer,
     get_walk_forward_execution_repository,
-    get_walk_forward_execution_task,
 )
 from trd_bot.main import app
 from trd_bot.research.datasets import InMemoryDatasetRepository
+from trd_bot.research.walk_forward_execution_jobs import (
+    InMemoryWalkForwardExecutionEnqueuer,
+)
 from trd_bot.research.walk_forward_executions import (
     InMemoryWalkForwardExecutionRepository,
 )
@@ -23,26 +26,18 @@ def execution_repository() -> InMemoryWalkForwardExecutionRepository:
     return InMemoryWalkForwardExecutionRepository()
 
 
-@pytest.fixture
-def execution_task_calls() -> list[str]:
-    return []
-
-
 @pytest.fixture(autouse=True)
 def override_repositories(
     execution_repository: InMemoryWalkForwardExecutionRepository,
-    execution_task_calls: list[str],
 ) -> Iterator[None]:
     dataset_repository = InMemoryDatasetRepository()
-
-    def record_execution_task(execution_id: str) -> None:
-        execution_task_calls.append(execution_id)
+    enqueuer = InMemoryWalkForwardExecutionEnqueuer(execution_repository)
 
     previous_overrides = app.dependency_overrides.copy()
 
     app.dependency_overrides[get_dataset_repository] = lambda: dataset_repository
     app.dependency_overrides[get_walk_forward_execution_repository] = lambda: execution_repository
-    app.dependency_overrides[get_walk_forward_execution_task] = lambda: record_execution_task
+    app.dependency_overrides[get_walk_forward_execution_enqueuer] = lambda: enqueuer
 
     yield
 
@@ -142,7 +137,6 @@ def build_rsi_execution_payload(
 
 def test_creates_queued_walk_forward_execution(
     execution_repository: InMemoryWalkForwardExecutionRepository,
-    execution_task_calls: list[str],
 ) -> None:
     dataset_id = create_dataset()
 
@@ -164,17 +158,18 @@ def test_creates_queued_walk_forward_execution(
     assert body["walk_forward_run_id"] is None
     assert body["error_code"] is None
     assert body["error_message"] is None
+    assert body["created"] is True
+    assert body["job"]["kind"] == "walk_forward_execution"
+    assert body["job"]["status"] == "queued"
 
     stored = execution_repository.get(body["execution_id"])
 
     assert stored is not None
     assert stored.status.value == "queued"
-    assert execution_task_calls == [body["execution_id"]]
 
 
 def test_creates_queued_rsi_walk_forward_execution(
     execution_repository: InMemoryWalkForwardExecutionRepository,
-    execution_task_calls: list[str],
 ) -> None:
     dataset_id = create_dataset()
 
@@ -196,7 +191,24 @@ def test_creates_queued_rsi_walk_forward_execution(
 
     assert stored is not None
     assert stored.strategy_name == "rsi-threshold"
-    assert execution_task_calls == [body["execution_id"]]
+
+
+def test_duplicate_walk_forward_intent_reuses_execution_and_job(
+    execution_repository: InMemoryWalkForwardExecutionRepository,
+) -> None:
+    dataset_id = create_dataset()
+    payload = build_execution_payload(dataset_id)
+
+    first = client.post("/api/v1/research/walk-forward-executions", json=payload)
+    duplicate = client.post("/api/v1/research/walk-forward-executions", json=payload)
+
+    assert first.status_code == 202
+    assert duplicate.status_code == 202
+    assert first.json()["created"] is True
+    assert duplicate.json()["created"] is False
+    assert duplicate.json()["execution_id"] == first.json()["execution_id"]
+    assert duplicate.json()["job"]["job_id"] == first.json()["job"]["job_id"]
+    assert execution_repository.count() == 1
 
 
 @pytest.mark.parametrize(
@@ -239,9 +251,7 @@ def test_rejects_foreign_strategy_parameters(
     assert response.status_code == 422
 
 
-def test_rejects_unknown_strategy_identity(
-    execution_task_calls: list[str],
-) -> None:
+def test_rejects_unknown_strategy_identity() -> None:
     dataset_id = create_dataset()
     payload = build_execution_payload(dataset_id)
     payload["strategy_name"] = "future-strategy"
@@ -252,12 +262,9 @@ def test_rejects_unknown_strategy_identity(
     )
 
     assert response.status_code == 422
-    assert execution_task_calls == []
 
 
-def test_rejects_unknown_strategy_version(
-    execution_task_calls: list[str],
-) -> None:
+def test_rejects_unknown_strategy_version() -> None:
     dataset_id = create_dataset()
     payload = build_execution_payload(dataset_id)
     payload["strategy_version"] = "2.0.0"
@@ -268,7 +275,6 @@ def test_rejects_unknown_strategy_version(
     )
 
     assert response.status_code == 422
-    assert execution_task_calls == []
 
 
 def test_returns_walk_forward_execution() -> None:
@@ -324,9 +330,7 @@ def test_returns_not_found_for_unknown_walk_forward_execution() -> None:
     assert response.json() == {"detail": "walk-forward execution not found"}
 
 
-def test_rejects_unknown_dataset(
-    execution_task_calls: list[str],
-) -> None:
+def test_rejects_unknown_dataset() -> None:
     response = client.post(
         "/api/v1/research/walk-forward-executions",
         json=build_execution_payload("dataset-0000000000000000"),
@@ -334,12 +338,9 @@ def test_rejects_unknown_dataset(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "dataset not found"}
-    assert execution_task_calls == []
 
 
-def test_rejects_windows_larger_than_dataset(
-    execution_task_calls: list[str],
-) -> None:
+def test_rejects_windows_larger_than_dataset() -> None:
     dataset_id = create_dataset()
     payload = build_execution_payload(dataset_id)
     payload["train_candles"] = 9
@@ -351,12 +352,9 @@ def test_rejects_windows_larger_than_dataset(
     )
 
     assert response.status_code == 422
-    assert execution_task_calls == []
 
 
-def test_rejects_overlapping_test_windows(
-    execution_task_calls: list[str],
-) -> None:
+def test_rejects_overlapping_test_windows() -> None:
     dataset_id = create_dataset()
     payload = build_execution_payload(dataset_id)
     payload["test_candles"] = 3
@@ -368,4 +366,3 @@ def test_rejects_overlapping_test_windows(
     )
 
     assert response.status_code == 422
-    assert execution_task_calls == []

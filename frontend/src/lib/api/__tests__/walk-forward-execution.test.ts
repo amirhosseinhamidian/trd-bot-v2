@@ -8,6 +8,7 @@ import type {
   StoredDatasetEMACrossoverWalkForwardExecutionRequest,
   StoredDatasetRSIThresholdWalkForwardExecutionRequest,
   WalkForwardExecution,
+  WalkForwardExecutionSubmission,
 } from '@/features/walk-forward/api/types';
 import { API_BASE_URL } from '@/lib/api/core/transport';
 
@@ -63,6 +64,29 @@ const execution: WalkForwardExecution = {
   error_message: null,
 };
 
+const submission: WalkForwardExecutionSubmission = {
+  ...execution,
+  created: true,
+  job: {
+    job_id: 'job-1234567890abcdefghij',
+    kind: 'walk_forward_execution',
+    status: 'queued',
+    progress_percent: 0,
+    attempt_count: 0,
+    max_attempts: 3,
+    run_after: execution.created_at,
+    lease_expires_at: null,
+    cancel_requested: false,
+    result_reference: null,
+    error_code: null,
+    error_message: null,
+    created_at: execution.created_at,
+    updated_at: execution.created_at,
+    started_at: null,
+    finished_at: null,
+  },
+};
+
 const rsiRequest: StoredDatasetRSIThresholdWalkForwardExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
   strategy_name: 'rsi-threshold',
@@ -97,6 +121,11 @@ const rsiExecution: WalkForwardExecution = {
   },
 };
 
+const rsiSubmission: WalkForwardExecutionSubmission = {
+  ...submission,
+  ...rsiExecution,
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -104,8 +133,8 @@ afterEach(() => {
 describe('walk-forward execution client', () => {
   it('queues an EMA crossover walk-forward execution', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(execution), {
-        status: 201,
+      new Response(JSON.stringify(submission), {
+        status: 202,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -114,7 +143,7 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createWalkForwardExecution(request)).resolves.toEqual(execution);
+    await expect(createWalkForwardExecution(request)).resolves.toEqual(submission);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
@@ -140,7 +169,7 @@ describe('walk-forward execution client', () => {
 
   it('queues an RSI threshold walk-forward execution', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(rsiExecution), {
+      new Response(JSON.stringify(rsiSubmission), {
         status: 202,
         headers: {
           'Content-Type': 'application/json',
@@ -150,7 +179,7 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiExecution);
+    await expect(createWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiSubmission);
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/research/walk-forward-executions`,

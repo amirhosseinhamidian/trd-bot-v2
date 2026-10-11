@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Protocol, Self
@@ -16,7 +17,7 @@ from trd_bot.research.experiment_executions import (
     StrategyExecutionParameters,
     _parse_strategy_execution_parameters,
 )
-from trd_bot.research.walk_forward import WalkForwardConfig
+from trd_bot.research.walk_forward import WalkForwardConfig, WalkForwardFoldExecution
 
 
 class WalkForwardExecutionStatus(StrEnum):
@@ -92,6 +93,10 @@ class WalkForwardExecution(BaseModel):
 
     total_folds: int = Field(ge=1)
     completed_folds: int = Field(ge=0)
+    fold_checkpoints: tuple[WalkForwardFoldExecution, ...] = Field(
+        default=(),
+        exclude=True,
+    )
 
     walk_forward_run_id: str | None = Field(
         default=None,
@@ -150,6 +155,16 @@ class WalkForwardExecution(BaseModel):
         if self.completed_folds > self.total_folds:
             raise ValueError("completed folds cannot exceed total folds")
 
+        if len(self.fold_checkpoints) > self.completed_folds:
+            raise ValueError("fold checkpoints cannot exceed completed folds")
+
+        for expected_fold_number, checkpoint in enumerate(
+            self.fold_checkpoints,
+            start=1,
+        ):
+            if checkpoint.fold_number != expected_fold_number:
+                raise ValueError("fold checkpoints must be contiguous and ordered")
+
         expected_progress = _fold_progress_percent(
             status=self.status,
             completed_folds=self.completed_folds,
@@ -173,9 +188,26 @@ class WalkForwardExecution(BaseModel):
 
         return self
 
+    def persistence_json(self) -> str:
+        """Serialize API-hidden fold checkpoints for durable recovery."""
+
+        payload = self.model_dump(mode="json")
+        payload["fold_checkpoints"] = [
+            checkpoint.model_dump(mode="json") for checkpoint in self.fold_checkpoints
+        ]
+        return json.dumps(
+            payload,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
     def _validate_queued_state(self) -> None:
         if self.completed_folds != 0:
             raise ValueError("queued execution cannot have completed folds")
+
+        if self.fold_checkpoints:
+            raise ValueError("queued execution cannot contain fold checkpoints")
 
         if self.started_at is not None or self.finished_at is not None:
             raise ValueError("queued execution cannot have execution timestamps")
@@ -307,6 +339,39 @@ class WalkForwardExecutionStateMachine:
             updated_at=updated_at,
         )
 
+    def record_fold_checkpoint(
+        self,
+        execution: WalkForwardExecution,
+        *,
+        checkpoint: WalkForwardFoldExecution,
+        now: datetime | None = None,
+    ) -> WalkForwardExecution:
+        """Persist one contiguous fold result before the next fold starts."""
+
+        self._require_status(
+            execution,
+            WalkForwardExecutionStatus.RUNNING,
+        )
+        expected_fold_number = len(execution.fold_checkpoints) + 1
+        if checkpoint.fold_number != expected_fold_number:
+            raise ValueError("fold checkpoint must be the next contiguous fold")
+        if expected_fold_number > execution.total_folds:
+            raise ValueError("fold checkpoints cannot exceed total folds")
+
+        completed_folds = max(execution.completed_folds, expected_fold_number)
+        updated_at = now or datetime.now(UTC)
+        return self._validated_copy(
+            execution,
+            completed_folds=completed_folds,
+            fold_checkpoints=(*execution.fold_checkpoints, checkpoint),
+            progress_percent=_fold_progress_percent(
+                status=WalkForwardExecutionStatus.RUNNING,
+                completed_folds=completed_folds,
+                total_folds=execution.total_folds,
+            ),
+            updated_at=updated_at,
+        )
+
     def succeed(
         self,
         execution: WalkForwardExecution,
@@ -363,6 +428,7 @@ class WalkForwardExecutionStateMachine:
         **updates: object,
     ) -> WalkForwardExecution:
         payload = execution.model_dump()
+        payload["fold_checkpoints"] = execution.fold_checkpoints
         payload.update(updates)
 
         return WalkForwardExecution.model_validate(payload)
