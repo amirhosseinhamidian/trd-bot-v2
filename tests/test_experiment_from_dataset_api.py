@@ -8,6 +8,7 @@ from trd_bot.api.dependencies import (
     get_dataset_repository,
     get_experiment_registry,
 )
+from trd_bot.api.legacy_research import enforce_legacy_research_route_retirement
 from trd_bot.main import app
 from trd_bot.research import (
     InMemoryDatasetRepository,
@@ -26,6 +27,7 @@ def override_repositories() -> Iterator[None]:
 
     app.dependency_overrides[get_dataset_repository] = lambda: dataset_repository
     app.dependency_overrides[get_experiment_registry] = lambda: experiment_registry
+    app.dependency_overrides[enforce_legacy_research_route_retirement] = lambda: None
 
     yield
 

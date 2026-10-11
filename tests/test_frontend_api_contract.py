@@ -31,7 +31,6 @@ FRONTEND_API_OPERATIONS = {
     ("GET", "/api/v1/research/strategies/{strategy_name}/versions/{version}"),
     ("POST", "/api/v1/research/experiment-executions"),
     ("GET", "/api/v1/research/experiment-executions/{execution_id}"),
-    ("POST", "/api/v1/research/experiments/ema-crossover/from-dataset"),
     ("GET", "/api/v1/research/experiments"),
     ("POST", "/api/v1/research/experiments/compare"),
     ("GET", "/api/v1/research/experiments/{experiment_id}/summary"),

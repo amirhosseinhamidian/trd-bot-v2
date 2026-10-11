@@ -3,7 +3,6 @@ import type { Page } from '@/lib/api/core/types';
 
 import type {
   AcceptancePolicyPreset,
-  CreatedResearchExperiment,
   ExperimentAnalyticsReport,
   ExperimentComparisonMetric,
   ExperimentComparisonResult,
@@ -15,7 +14,6 @@ import type {
   ExperimentSortField,
   ExperimentSummary,
   PresetExperimentResearchReport,
-  StoredDatasetEMACrossoverRequest,
   StoredDatasetStrategyExecutionRequest,
 } from './types';
 
@@ -41,15 +39,6 @@ export async function createExperimentExecution(
 export async function getExperimentExecution(executionId: string): Promise<ExperimentExecution> {
   return getJson<ExperimentExecution>(
     `/api/v1/research/experiment-executions/${encodeURIComponent(executionId)}`,
-  );
-}
-
-export async function createEmaCrossoverExperimentFromDataset(
-  request: StoredDatasetEMACrossoverRequest,
-): Promise<CreatedResearchExperiment> {
-  return postJson<CreatedResearchExperiment>(
-    '/api/v1/research/experiments/ema-crossover/from-dataset',
-    request,
   );
 }
 

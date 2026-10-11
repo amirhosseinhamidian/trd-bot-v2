@@ -9,6 +9,7 @@ from trd_bot.api.dependencies import (
     get_dataset_repository,
     get_walk_forward_run_registry,
 )
+from trd_bot.api.legacy_research import enforce_legacy_research_route_retirement
 from trd_bot.main import app
 from trd_bot.research import InMemoryDatasetRepository, InMemoryWalkForwardRunRegistry
 
@@ -28,11 +29,13 @@ def registry() -> Iterator[InMemoryWalkForwardRunRegistry]:
 
     app.dependency_overrides[get_walk_forward_run_registry] = override_registry
     app.dependency_overrides[get_dataset_repository] = override_datasets
+    app.dependency_overrides[enforce_legacy_research_route_retirement] = lambda: None
     try:
         yield run_registry
     finally:
         app.dependency_overrides.pop(get_walk_forward_run_registry, None)
         app.dependency_overrides.pop(get_dataset_repository, None)
+        app.dependency_overrides.pop(enforce_legacy_research_route_retirement, None)
 
 
 def create_candle_payload(index: int) -> dict[str, object]:

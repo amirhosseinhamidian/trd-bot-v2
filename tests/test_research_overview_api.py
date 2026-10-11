@@ -11,6 +11,7 @@ from trd_bot.api.dependencies import (
     get_experiment_registry,
     get_walk_forward_run_registry,
 )
+from trd_bot.api.legacy_research import enforce_legacy_research_route_retirement
 from trd_bot.main import app
 from trd_bot.research import (
     AcceptancePolicyPresetCatalog,
@@ -45,6 +46,7 @@ def repositories() -> Iterator[RepositorySet]:
     app.dependency_overrides[get_walk_forward_run_registry] = lambda: walk_forward_runs
 
     app.dependency_overrides[get_acceptance_policy_preset_catalog] = lambda: policy_presets
+    app.dependency_overrides[enforce_legacy_research_route_retirement] = lambda: None
 
     try:
         yield (
@@ -70,6 +72,7 @@ def repositories() -> Iterator[RepositorySet]:
             get_acceptance_policy_preset_catalog,
             None,
         )
+        app.dependency_overrides.pop(enforce_legacy_research_route_retirement, None)
 
 
 def create_candle_payload(

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import (
     APIRouter,
@@ -20,6 +20,10 @@ from trd_bot.api.dependencies import (
     get_walk_forward_execution_enqueuer,
     get_walk_forward_execution_repository,
     get_walk_forward_run_registry,
+)
+from trd_bot.api.legacy_research import (
+    LegacyResearchRetirementResponse,
+    enforce_legacy_research_route_retirement,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
@@ -103,6 +107,13 @@ router = APIRouter(
     prefix="/research",
     tags=["Research"],
 )
+
+_LEGACY_RESEARCH_RETIREMENT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    410: {
+        "model": LegacyResearchRetirementResponse,
+        "description": "The synchronous execution route is retired; use its durable successor.",
+    }
+}
 
 ExperimentRegistryDependency = Annotated[
     ExperimentRegistry,
@@ -924,6 +935,9 @@ def _run_stored_dataset_walk_forward_pipeline(
 @router.post(
     "/ema-crossover",
     response_model=ResearchPipelineResult,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def run_ema_crossover_research(
     request: EMACrossoverResearchRequest,
@@ -936,6 +950,9 @@ def run_ema_crossover_research(
 @router.post(
     "/walk-forward/ema-crossover",
     response_model=WalkForwardExecutionResult,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def run_ema_crossover_walk_forward(
     request: EMACrossoverWalkForwardRequest,
@@ -948,6 +965,9 @@ def run_ema_crossover_walk_forward(
 @router.post(
     "/walk-forward/runs/ema-crossover",
     response_model=WalkForwardResearchRun,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_walk_forward_run(
     request: EMACrossoverWalkForwardRequest,
@@ -972,6 +992,9 @@ def create_ema_crossover_walk_forward_run(
 @router.post(
     "/walk-forward/runs/ema-crossover/from-dataset",
     response_model=WalkForwardResearchRun,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_walk_forward_run_from_dataset(
     request: StoredDatasetEMACrossoverWalkForwardRequest,
@@ -1309,6 +1332,9 @@ def get_walk_forward_execution(
 @router.post(
     "/experiments/ema-crossover",
     response_model=ResearchExperiment,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_experiment(
     request: EMACrossoverResearchRequest,
@@ -1334,6 +1360,9 @@ def create_ema_crossover_experiment(
 @router.post(
     "/experiments/ema-crossover/from-dataset",
     response_model=ResearchExperiment,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_experiment_from_dataset(
     request: StoredDatasetEMACrossoverResearchRequest,
