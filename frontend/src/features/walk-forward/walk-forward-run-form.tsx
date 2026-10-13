@@ -632,6 +632,28 @@ export default function WalkForwardRunForm({
       const queuedExecution = await createWalkForwardExecution(builtRequest);
 
       setExecution(queuedExecution);
+
+      if (queuedExecution.status === 'succeeded') {
+        if (!queuedExecution.walk_forward_run_id) {
+          setFormError(copy.errors.missingResult);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const runId = queuedExecution.walk_forward_run_id;
+
+        setCreatedRunId(runId);
+        setIsSubmitting(false);
+        push('/' + locale + '/walk-forward/' + encodeURIComponent(runId));
+        return;
+      }
+
+      if (queuedExecution.status === 'failed') {
+        setFormError(copy.errors.executionFailed);
+        setIsSubmitting(false);
+        return;
+      }
+
       replace(
         '/' +
           locale +

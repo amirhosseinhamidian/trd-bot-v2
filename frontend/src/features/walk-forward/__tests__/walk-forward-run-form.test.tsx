@@ -545,6 +545,34 @@ describe('WalkForwardRunForm', () => {
     });
   });
 
+  it('opens an idempotently reused completed report without an intermediate polling route', async () => {
+    const user = userEvent.setup();
+    const runId = 'walk-forward-execution-fedcba0987654321';
+
+    apiMocks.createExecution.mockResolvedValue({
+      ...queuedExecution,
+      status: 'succeeded',
+      progress_percent: 100,
+      started_at: '2026-08-26T12:00:01Z',
+      finished_at: '2026-08-26T12:00:03Z',
+      completed_folds: 5,
+      walk_forward_run_id: runId,
+      created: false,
+    });
+
+    render(<WalkForwardRunForm locale="en" />);
+
+    await user.selectOptions(await screen.findByLabelText('Dataset'), dataset.dataset_id);
+    await user.click(screen.getByRole('button', { name: 'Queue historical walk-forward' }));
+
+    await waitFor(() => {
+      expect(navigationMocks.push).toHaveBeenCalledWith('/en/walk-forward/' + runId);
+    });
+
+    expect(navigationMocks.replace).not.toHaveBeenCalled();
+    expect(apiMocks.getExecution).not.toHaveBeenCalled();
+  });
+
   it('shows fold progress while polling a running execution', async () => {
     const user = userEvent.setup();
 
