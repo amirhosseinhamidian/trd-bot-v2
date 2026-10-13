@@ -303,6 +303,22 @@ def test_api_returns_walk_forward_stability_report(
 
     assert "strategy_return_mean_absolute_deviation" in data
 
+    assert data["stability_version"] == "walk-forward-stability-v1"
+    assert data["folds_with_trades"] + data["folds_without_trades"] == data["total_folds"]
+    assert "traded_fold_fraction" in data
+    assert "return_consistency" in data
+    assert "worst_return_fold_number" in data
+    assert "worst_drawdown_fold_number" in data
+    assert all("has_trades" in fold for fold in data["folds"])
+    assert {definition["key"] for definition in data["metric_definitions"]} == {
+        "median_fold_return",
+        "worst_fold_return",
+        "traded_fold_fraction",
+        "return_consistency",
+        "fold_drawdown",
+        "excess_return",
+    }
+
     assert data["interpretation"] == "historical_research_only"
 
 
