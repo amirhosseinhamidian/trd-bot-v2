@@ -114,6 +114,21 @@ describe('DatasetImportForm', () => {
     expect(mocks.previewDatasetFile).not.toHaveBeenCalled();
   });
 
+  it('shows the default timeframe and accepts a native timeframe selection', async () => {
+    const user = userEvent.setup();
+    render(<DatasetImportForm locale="en" />);
+
+    const timeframe = screen.getByRole('combobox', { name: 'Timeframe' });
+
+    expect(timeframe).toBeInstanceOf(HTMLSelectElement);
+    expect(timeframe).toHaveValue('1h');
+    expect(screen.getByRole('option', { name: '1 hour' })).toBeInTheDocument();
+
+    await user.selectOptions(timeframe, '4h');
+
+    expect(timeframe).toHaveValue('4h');
+  });
+
   it('inspects, previews, and commits the exact uploaded file', async () => {
     const user = userEvent.setup();
     const onQueued = vi.fn();

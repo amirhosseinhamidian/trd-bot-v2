@@ -3,18 +3,17 @@
 import {
   forwardRef,
   type AriaAttributes,
+  type ChangeEventHandler,
   type ComponentPropsWithoutRef,
-  type ComponentRef,
   type ReactNode,
   useId,
 } from 'react';
-import { Select as SelectPrimitive } from 'radix-ui';
 
 import { cn } from '@/lib/utils/cn';
 
-type SelectRootProps = ComponentPropsWithoutRef<typeof SelectPrimitive.Root>;
+type NativeSelectProps = ComponentPropsWithoutRef<'select'>;
 
-export type SelectProps = Omit<SelectRootProps, 'children'> &
+export type SelectProps = Omit<NativeSelectProps, 'children' | 'onChange'> &
   Pick<AriaAttributes, 'aria-describedby' | 'aria-invalid'> & {
     children: ReactNode;
     className?: string;
@@ -24,9 +23,18 @@ export type SelectProps = Omit<SelectRootProps, 'children'> &
     hint?: string;
     id?: string;
     label?: string;
+    onChange?: ChangeEventHandler<HTMLSelectElement>;
+    onValueChange?: (value: string) => void;
     placeholder?: string;
   };
 
+/**
+ * Browser-native select with the shared application field styling.
+ *
+ * Keeping the interaction native makes the control available before React
+ * hydration completes and delegates keyboard, touch, and popup behavior to
+ * the browser. `onValueChange` preserves the existing application-facing API.
+ */
 export function Select({
   'aria-describedby': ariaDescribedBy,
   'aria-invalid': ariaInvalid,
@@ -40,6 +48,8 @@ export function Select({
   hint,
   id,
   label,
+  onChange,
+  onValueChange,
   placeholder,
   ...props
 }: SelectProps) {
@@ -57,85 +67,49 @@ export function Select({
         </label>
       ) : null}
 
-      <SelectPrimitive.Root dir={dir} disabled={disabled} {...props}>
-        <SelectPrimitive.Trigger
+      <div className={cn('relative', contentClassName)}>
+        <select
           id={selectId}
           aria-invalid={error ? true : ariaInvalid}
           aria-describedby={describedBy}
           dir={dir}
+          disabled={disabled}
+          onChange={(event) => {
+            onChange?.(event);
+            onValueChange?.(event.currentTarget.value);
+          }}
           className={cn(
-            'flex min-h-11 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-app-control-border bg-app-surface py-2.5 ps-3.5 pe-3 text-sm text-app-foreground transition-colors outline-none',
+            'min-h-11 w-full min-w-0 appearance-none rounded-xl border border-app-control-border bg-app-surface py-2.5 ps-3.5 pe-10 text-sm text-app-foreground transition-colors outline-none',
             'hover:border-app-muted hover:bg-app-hover',
             'focus:border-app-accent focus:ring-2 focus:ring-app-accent-soft',
-            'data-[disabled]:cursor-not-allowed data-[disabled]:bg-app-surface-muted data-[disabled]:text-app-muted data-[disabled]:opacity-70',
-            'data-[placeholder]:text-app-subtle',
+            'disabled:cursor-not-allowed disabled:bg-app-surface-muted disabled:text-app-muted disabled:opacity-70',
             error &&
               'border-app-danger hover:border-app-danger focus:border-app-danger focus:ring-app-danger-soft',
             className,
           )}
+          {...props}
         >
-          <span data-slot="select-value" className="min-w-0 flex-1 truncate text-start">
-            <SelectPrimitive.Value placeholder={placeholder} />
-          </span>
+          {placeholder ? (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          ) : null}
+          {children}
+        </select>
 
-          <SelectPrimitive.Icon asChild>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-4 w-4 shrink-0 text-app-muted transition-transform duration-200 group-data-[state=open]:rotate-180"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </SelectPrimitive.Icon>
-        </SelectPrimitive.Trigger>
-
-        <SelectPrimitive.Portal>
-          <SelectPrimitive.Content
-            position="popper"
-            side="bottom"
-            dir={dir}
-            align="start"
-            sideOffset={6}
-            avoidCollisions={false}
-            className={cn(
-              'app-select-content z-100 max-h-72 w-(--radix-select-trigger-width) origin-(--radix-select-content-transform-origin) overflow-hidden rounded-xl border border-app-border bg-app-surface p-1 text-app-foreground shadow-app-surface',
-              contentClassName,
-            )}
-          >
-            <SelectPrimitive.ScrollUpButton className="flex min-h-11 items-center justify-center text-app-muted">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-4 w-4 rotate-180"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </SelectPrimitive.ScrollUpButton>
-
-            <SelectPrimitive.Viewport className="max-h-64">{children}</SelectPrimitive.Viewport>
-
-            <SelectPrimitive.ScrollDownButton className="flex min-h-11 items-center justify-center text-app-muted">
-              <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                <path
-                  fillRule="evenodd"
-                  d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </SelectPrimitive.ScrollDownButton>
-          </SelectPrimitive.Content>
-        </SelectPrimitive.Portal>
-      </SelectPrimitive.Root>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
 
       {error || hint ? (
         <p
@@ -150,37 +124,14 @@ export function Select({
   );
 }
 
-export type SelectOptionProps = ComponentPropsWithoutRef<typeof SelectPrimitive.Item>;
+export type SelectOptionProps = ComponentPropsWithoutRef<'option'>;
 
-export const SelectOption = forwardRef<
-  ComponentRef<typeof SelectPrimitive.Item>,
-  SelectOptionProps
->(({ children, className, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      'relative flex min-h-11 min-w-0 cursor-pointer items-center overflow-hidden rounded-lg py-2.5 ps-3 pe-9 text-sm text-app-foreground transition outline-none select-none',
-      'data-[highlighted]:bg-app-accent-soft data-[highlighted]:text-app-accent',
-      'data-[state=checked]:text-app-accent',
-      'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
-      className,
-    )}
-    {...props}
-  >
-    <SelectPrimitive.ItemText className="block min-w-0 truncate">
+export const SelectOption = forwardRef<HTMLOptionElement, SelectOptionProps>(
+  ({ children, className, ...props }, ref) => (
+    <option ref={ref} className={cn('bg-app-surface text-app-foreground', className)} {...props}>
       {children}
-    </SelectPrimitive.ItemText>
-
-    <SelectPrimitive.ItemIndicator className="absolute end-3 flex items-center text-app-accent">
-      <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-        <path
-          fillRule="evenodd"
-          d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.31a1 1 0 0 1-1.42 0L3.29 9.224A1 1 0 0 1 4.71 7.81l4.04 4.072 6.54-6.586a1 1 0 0 1 1.414-.006Z"
-          clipRule="evenodd"
-        />
-      </svg>
-    </SelectPrimitive.ItemIndicator>
-  </SelectPrimitive.Item>
-));
+    </option>
+  ),
+);
 
 SelectOption.displayName = 'SelectOption';

@@ -99,16 +99,6 @@ describe('Nexora design token contract', () => {
     expect(globalsCss).toContain('animation-duration: 1ms !important;');
     expect(globalsCss).toContain('animation-iteration-count: 1 !important;');
     expect(globalsCss).toContain('transition-duration: 1ms !important;');
-    expect(globalsCss).toMatch(
-      /\.app-select-content\[data-state\]\s*\{[\s\S]*?animation:\s*none !important;/,
-    );
-  });
-
-  it('uses app-scoped Select animation identifiers', () => {
-    expect(globalsCss).toContain('@keyframes app-select-open');
-    expect(globalsCss).toContain('@keyframes app-select-close');
-    expect(globalsCss).toContain(".app-select-content[data-state='open']");
-    expect(globalsCss).not.toContain('trd-select');
   });
 
   it('exports every semantic status and chart token to Tailwind', () => {
