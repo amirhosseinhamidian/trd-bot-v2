@@ -160,7 +160,7 @@ v0.3 نیست.
 | V3-D09 | raw observation/window/event store وجود ندارد | Expected gap | P0-03 قرارداد؛ P2 schema و implementation |
 | V3-D10 | Dataset payload تکراری در Text می‌تواند storage را رشد دهد | Risk | P0-04 اندازه‌گیری؛ optimization فقط با evidence |
 | V3-D11 | DB pool budget و worker concurrency صریح نیست | Risk | P0-04 baseline؛ سپس config محدود و آزمون overload در P2/P6 |
-| V3-D12 | گیت کامل backend/PostgreSQL روی SHA این مرحله محلی اجرا نشده | Verification | CI و محیط مالک مخزن؛ P1 پیش از P2 همهٔ گیت‌ها را دوباره سبز می‌کند |
+| V3-D12 | گیت کامل backend/PostgreSQL روی SHA نهایی P1 نیازمند محیط مالک مخزن است | Verification | P1-07 runner fail-closed و evidence هم-SHA را فراهم می‌کند؛ ورود به P2 تا `ready_to_enter_phase_two=true` ممنوع است |
 
 ## 9. موارد بسته یا پذیرفته‌شده
 

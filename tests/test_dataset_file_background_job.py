@@ -31,7 +31,6 @@ from trd_bot.research import (
     build_dataset_file_import_idempotency_key,
 )
 
-NOW = datetime(2026, 10, 10, 8, tzinfo=UTC)
 CSV = b"""timestamp,end,open,high,low,close,vol,closed
 2026-08-20T10:00:00+00:00,2026-08-20T11:00:00+00:00,100,102,99,101,1500,true
 2026-08-20T11:00:00+00:00,2026-08-20T12:00:00+00:00,101,103,100,102,1600,true
@@ -46,6 +45,7 @@ def test_durable_worker_consumes_stage_and_links_the_dataset(
     DatabaseBase.metadata.create_all(engine)
     factory = create_session_factory(engine)
     monkeypatch.setattr(job_handlers, "get_session_factory", lambda: factory)
+    now = datetime.now(UTC)
 
     preview_request = DatasetFilePreviewRequest(
         name="Durable file dataset",
@@ -78,7 +78,7 @@ def test_durable_worker_consumes_stage_and_links_the_dataset(
         file_name="candles.csv",
         content=CSV,
         request=commit_request,
-        now=NOW,
+        now=now,
     )
     job = BackgroundJobBuilder().build(
         kind=BackgroundJobKind.DATASET_FILE_IMPORT,
@@ -87,7 +87,7 @@ def test_durable_worker_consumes_stage_and_links_the_dataset(
             file_checksum=stage.file_checksum,
         ).model_dump(mode="json"),
         idempotency_key=build_dataset_file_import_idempotency_key(stage),
-        now=NOW,
+        now=now,
     )
 
     with factory() as session:

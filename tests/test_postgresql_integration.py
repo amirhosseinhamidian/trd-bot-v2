@@ -11,19 +11,44 @@ from alembic.config import Config
 from sqlalchemy import delete, inspect, text
 from sqlalchemy.engine import make_url
 
+import trd_bot.api.job_handlers as job_handlers
+from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.core.config import Settings
 from trd_bot.db import (
     BackgroundJobConflictError,
     SqlAlchemyBackgroundJobRepository,
+    SqlAlchemyDatasetFileImportEnqueuer,
+    SqlAlchemyDatasetFileStageRepository,
+    SqlAlchemyDatasetRepository,
     SqlAlchemySimulatedPortfolioRepository,
     create_database_engine,
     create_session_factory,
 )
-from trd_bot.db.models import BackgroundJobRow
-from trd_bot.jobs import BackgroundJob, BackgroundJobBuilder, BackgroundJobKind
+from trd_bot.db.models import BackgroundJobRow, DatasetFileStageRow, DatasetSnapshotRow
+from trd_bot.domain import Timeframe, TradingPair
+from trd_bot.jobs import (
+    BackgroundJob,
+    BackgroundJobBuilder,
+    BackgroundJobKind,
+    BackgroundJobStatus,
+    BackgroundJobWorker,
+)
 from trd_bot.paper import SimulatedPortfolioLedger, SimulationMode
+from trd_bot.research import (
+    DatasetColumnMapping,
+    DatasetFileCommitRequest,
+    DatasetFileImportJobPayload,
+    DatasetFileImportService,
+    DatasetFilePreviewRequest,
+    DatasetFileStageBuilder,
+    build_dataset_file_import_idempotency_key,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CSV = b"""timestamp,end,open,high,low,close,vol,closed
+2026-08-20T10:00:00+00:00,2026-08-20T11:00:00+00:00,100,102,99,101,1500,true
+2026-08-20T11:00:00+00:00,2026-08-20T12:00:00+00:00,101,103,100,102,1600,true
+"""
 
 
 def build_alembic_config(database_url: str) -> Config:
@@ -100,6 +125,101 @@ def test_postgresql_connection_and_migrations() -> None:
             "walk_forward_runs",
         }.issubset(table_names)
     finally:
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_dataset_file_stage_survives_request_and_worker_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    monkeypatch.setattr(job_handlers, "get_session_factory", lambda: factory)
+    now = datetime.now(UTC)
+    preview_request = DatasetFilePreviewRequest(
+        name="PostgreSQL durable file dataset",
+        source="manual-file",
+        pair=TradingPair(base_asset="BTC", quote_asset="USDT"),
+        timeframe=Timeframe.HOUR_1,
+        column_mapping=DatasetColumnMapping(
+            open_time="timestamp",
+            close_time="end",
+            open_price="open",
+            high_price="high",
+            low_price="low",
+            close_price="close",
+            volume="vol",
+            is_closed="closed",
+        ),
+    )
+    preview = DatasetFileImportService().preview(
+        file_name="candles.csv",
+        content=CSV,
+        request=preview_request,
+    )
+    commit_request = DatasetFileCommitRequest.model_validate(
+        {
+            **preview_request.model_dump(),
+            "preview_checksum": preview.preview_checksum,
+        }
+    )
+    stage = DatasetFileStageBuilder().build(
+        file_name="candles.csv",
+        content=CSV,
+        request=commit_request,
+        now=now,
+    )
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.DATASET_FILE_IMPORT,
+        payload=DatasetFileImportJobPayload(
+            stage_id=stage.stage_id,
+            file_checksum=stage.file_checksum,
+        ).model_dump(mode="json"),
+        idempotency_key=build_dataset_file_import_idempotency_key(stage),
+        now=now,
+    )
+    dataset_id: str | None = None
+
+    try:
+        with factory() as session:
+            submission = SqlAlchemyDatasetFileImportEnqueuer(session).enqueue(
+                stage=stage,
+                job=job,
+            )
+
+        with factory() as session:
+            assert SqlAlchemyDatasetFileStageRepository(session).get(stage.stage_id) == stage
+            completed = BackgroundJobWorker(
+                repository=SqlAlchemyBackgroundJobRepository(session),
+                handlers=build_background_job_handler_registry(),
+                worker_id="postgresql-dataset-file-worker",
+                lease_duration=timedelta(minutes=5),
+            ).run_once()
+
+        assert completed is not None
+        assert completed.job_id == submission.job.job_id
+        assert completed.status is BackgroundJobStatus.SUCCEEDED
+        assert completed.result_reference is not None
+        dataset_id = completed.result_reference
+
+        with factory() as session:
+            stored = SqlAlchemyDatasetRepository(session).get(dataset_id)
+            assert stored is not None
+            assert stored.checksum == preview.preview_checksum
+            assert SqlAlchemyDatasetFileStageRepository(session).get(stage.stage_id) is None
+    finally:
+        with factory() as session:
+            session.execute(
+                delete(DatasetFileStageRow).where(DatasetFileStageRow.stage_id == stage.stage_id)
+            )
+            session.execute(delete(BackgroundJobRow).where(BackgroundJobRow.job_id == job.job_id))
+            if dataset_id is not None:
+                session.execute(
+                    delete(DatasetSnapshotRow).where(DatasetSnapshotRow.dataset_id == dataset_id)
+                )
+            session.commit()
         engine.dispose()
 
 
