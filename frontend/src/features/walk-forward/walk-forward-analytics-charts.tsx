@@ -4,6 +4,7 @@ import { ResponsiveChartGroup } from '@/components/charts/responsive-chart-group
 import type { PlatformLocale } from '@/platform/i18n';
 import type { WalkForwardStabilityReport } from '@/features/walk-forward/api/types';
 import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
+import { sampleWalkForwardFolds } from '@/features/walk-forward/walk-forward-presentation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 
 type WalkForwardAnalyticsChartsProps = {
@@ -18,6 +19,10 @@ function formatPercent(value: number, locale: PlatformLocale): string {
   }).format(value);
 }
 
+function formatNumber(value: number, locale: PlatformLocale): string {
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
 function foldLabel(foldNumber: number, locale: PlatformLocale): string {
   const formatted = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(foldNumber);
   return `Fold ${formatted}`;
@@ -25,6 +30,7 @@ function foldLabel(foldNumber: number, locale: PlatformLocale): string {
 
 export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAnalyticsChartsProps) {
   const copy = getWalkForwardDetailCopy(locale);
+  const chartFolds = sampleWalkForwardFolds(stability.folds);
   const benchmarkReturns = stability.folds.map((fold) => Number(fold.benchmark_return));
   const benchmarkDrawdowns = stability.folds.map((fold) =>
     Number(fold.benchmark_max_drawdown_fraction),
@@ -52,6 +58,13 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
             {
               id: 'returns',
               label: copy.foldReturnsChart,
+              description:
+                chartFolds.length < stability.folds.length
+                  ? copy.chartSamplingNotice(
+                      formatNumber(chartFolds.length, locale),
+                      formatNumber(stability.folds.length, locale),
+                    )
+                  : undefined,
               summary: (
                 <dl className="grid grid-cols-2 gap-3">
                   <div>
@@ -78,7 +91,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
                     {
                       label: copy.strategySeries,
                       color: CHART_SERIES_COLORS.cyan,
-                      points: stability.folds.map((fold) => ({
+                      points: chartFolds.map((fold) => ({
                         category: foldLabel(fold.fold_number, locale),
                         value: Number(fold.strategy_return),
                       })),
@@ -86,7 +99,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
                     {
                       label: copy.benchmarkSeries,
                       color: CHART_SERIES_COLORS.amber,
-                      points: stability.folds.map((fold) => ({
+                      points: chartFolds.map((fold) => ({
                         category: foldLabel(fold.fold_number, locale),
                         value: Number(fold.benchmark_return),
                       })),
@@ -98,6 +111,13 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
             {
               id: 'drawdowns',
               label: copy.foldDrawdownsChart,
+              description:
+                chartFolds.length < stability.folds.length
+                  ? copy.chartSamplingNotice(
+                      formatNumber(chartFolds.length, locale),
+                      formatNumber(stability.folds.length, locale),
+                    )
+                  : undefined,
               summary: (
                 <dl className="grid grid-cols-2 gap-3">
                   <div>
@@ -124,7 +144,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
                     {
                       label: copy.strategySeries,
                       color: CHART_SERIES_COLORS.blue,
-                      points: stability.folds.map((fold) => ({
+                      points: chartFolds.map((fold) => ({
                         category: foldLabel(fold.fold_number, locale),
                         value: Number(fold.max_drawdown_fraction),
                       })),
@@ -132,7 +152,7 @@ export function WalkForwardAnalyticsCharts({ locale, stability }: WalkForwardAna
                     {
                       label: copy.benchmarkSeries,
                       color: CHART_SERIES_COLORS.rose,
-                      points: stability.folds.map((fold) => ({
+                      points: chartFolds.map((fold) => ({
                         category: foldLabel(fold.fold_number, locale),
                         value: Number(fold.benchmark_max_drawdown_fraction),
                       })),

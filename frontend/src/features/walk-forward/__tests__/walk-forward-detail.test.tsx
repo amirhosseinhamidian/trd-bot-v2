@@ -134,4 +134,24 @@ describe('WalkForwardDetail', () => {
     expect(foldsRegion).toHaveAttribute('tabindex', '0');
     expect(within(foldsRegion).getByRole('table')).toHaveClass('min-w-[48rem]');
   });
+
+  it('bounds chart and table rendering for large walk-forward reports', () => {
+    const largeFolds = Array.from({ length: 2_495 }, (_, index) => ({
+      ...stability.folds[index % stability.folds.length],
+      fold_number: index + 1,
+    }));
+
+    const { container } = render(
+      <WalkForwardDetail
+        locale="en"
+        run={{ ...run, total_folds: largeFolds.length }}
+        stability={{ ...stability, total_folds: largeFolds.length, folds: largeFolds }}
+      />,
+    );
+
+    expect(container.querySelectorAll('#fold-details tbody tr')).toHaveLength(100);
+    expect(container).toHaveTextContent('Showing folds 1–100 of 2,495');
+    expect(container).toHaveTextContent('Showing 160 representative folds out of 2,495');
+    expect(container.querySelector('nav[aria-label="Fold detail pagination"]')).not.toBeNull();
+  });
 });

@@ -9,6 +9,10 @@ import type {
 } from '@/features/walk-forward/api/types';
 import { WalkForwardAnalyticsCharts } from '@/features/walk-forward/walk-forward-analytics-charts';
 import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
+import {
+  normalizeFoldOffset,
+  WALK_FORWARD_FOLD_PAGE_SIZE,
+} from '@/features/walk-forward/walk-forward-presentation';
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
 import {
@@ -33,6 +37,7 @@ type WalkForwardDetailProps = {
   locale: PlatformLocale;
   run: WalkForwardRunSummary;
   stability: WalkForwardStabilityReport;
+  foldOffset?: number;
 };
 
 type MetricProps = {
@@ -85,7 +90,12 @@ function Metric({ label, value }: MetricProps) {
   );
 }
 
-export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailProps) {
+export function WalkForwardDetail({
+  locale,
+  run,
+  stability,
+  foldOffset = 0,
+}: WalkForwardDetailProps) {
   const copy = getWalkForwardDetailCopy(locale);
   const platformCopy = getPlatformCopy(locale);
   const direction = locale === 'fa' ? 'rtl' : 'ltr';
@@ -94,6 +104,14 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
     copy.metricLabels[key as keyof typeof copy.metricLabels] ?? key;
   const metricDescription = (key: ResearchMetricKey, fallback: string): string =>
     copy.metricDescriptions[key as keyof typeof copy.metricDescriptions] ?? fallback;
+  const normalizedFoldOffset = normalizeFoldOffset(foldOffset, stability.folds.length);
+  const visibleFolds = stability.folds.slice(
+    normalizedFoldOffset,
+    normalizedFoldOffset + WALK_FORWARD_FOLD_PAGE_SIZE,
+  );
+  const visibleFoldEnd = normalizedFoldOffset + visibleFolds.length;
+  const foldPageHref = (offset: number): string =>
+    `/${locale}/walk-forward/${encodeURIComponent(run.execution_id)}?foldOffset=${offset}#fold-details`;
 
   return (
     <PageFrame dir={direction} className="space-y-6">
@@ -268,7 +286,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
 
       <WalkForwardAnalyticsCharts locale={locale} stability={stability} />
 
-      <Card>
+      <Card id="fold-details">
         <CardHeader>
           <CardTitle>{copy.folds}</CardTitle>
           <CardDescription>{copy.foldsDescription}</CardDescription>
@@ -291,7 +309,7 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
             </TableHeader>
 
             <TableBody>
-              {stability.folds.map((fold) => (
+              {visibleFolds.map((fold) => (
                 <TableRow key={fold.fold_number}>
                   <TableCell>{formatNumber(fold.fold_number, locale)}</TableCell>
 
@@ -328,6 +346,49 @@ export function WalkForwardDetail({ locale, run, stability }: WalkForwardDetailP
               ))}
             </TableBody>
           </Table>
+
+          {stability.folds.length > WALK_FORWARD_FOLD_PAGE_SIZE ? (
+            <nav
+              aria-label={copy.pagination.label}
+              className="mt-5 flex flex-col gap-4 border-t border-app-border pt-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p className="text-center text-xs text-app-muted sm:text-start">
+                {copy.pagination.range(
+                  formatNumber(normalizedFoldOffset + 1, locale),
+                  formatNumber(visibleFoldEnd, locale),
+                  formatNumber(stability.folds.length, locale),
+                )}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                {normalizedFoldOffset > 0 ? (
+                  <Link
+                    href={foldPageHref(normalizedFoldOffset - WALK_FORWARD_FOLD_PAGE_SIZE)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                  >
+                    {copy.pagination.previous}
+                  </Link>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted opacity-50">
+                    {copy.pagination.previous}
+                  </span>
+                )}
+
+                {visibleFoldEnd < stability.folds.length ? (
+                  <Link
+                    href={foldPageHref(normalizedFoldOffset + WALK_FORWARD_FOLD_PAGE_SIZE)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                  >
+                    {copy.pagination.next}
+                  </Link>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted opacity-50">
+                    {copy.pagination.next}
+                  </span>
+                )}
+              </div>
+            </nav>
+          ) : null}
         </CardContent>
       </Card>
 

@@ -20,6 +20,7 @@ export type WalkForwardDetailCopy = {
   foldReturnsChart: string;
   foldDrawdownsChart: string;
   emptyFoldChart: string;
+  chartSamplingNotice: (visible: string, total: string) => string;
   strategySeries: string;
   benchmarkSeries: string;
   metricDefinitions: string;
@@ -110,6 +111,12 @@ export type WalkForwardDetailCopy = {
     rolling: string;
     expanding: string;
   };
+  pagination: {
+    label: string;
+    previous: string;
+    next: string;
+    range: (start: string, end: string, total: string) => string;
+  };
 };
 
 const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
@@ -137,6 +144,8 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
     foldReturnsChart: 'نمودار بازده هر Fold',
     foldDrawdownsChart: 'نمودار افت سرمایه هر Fold',
     emptyFoldChart: 'داده Fold برای نمایش وجود ندارد.',
+    chartSamplingNotice: (visible, total) =>
+      `برای حفظ خوانایی، ${visible} Fold نماینده از مجموع ${total} Fold نمایش داده شده است.`,
     strategySeries: 'Strategy',
     benchmarkSeries: 'Benchmark',
     metricDefinitions: 'تعریف شاخص‌های پایداری',
@@ -225,6 +234,12 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
       rolling: 'غلتان',
       expanding: 'گسترش‌یابنده',
     },
+    pagination: {
+      label: 'صفحه‌بندی جزئیات Foldها',
+      previous: 'Foldهای قبلی',
+      next: 'Foldهای بعدی',
+      range: (start, end, total) => `نمایش Foldهای ${start} تا ${end} از ${total}`,
+    },
   },
   en: {
     back: 'Back to walk-forward',
@@ -250,6 +265,8 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
     foldReturnsChart: 'Return by fold chart',
     foldDrawdownsChart: 'Drawdown by fold chart',
     emptyFoldChart: 'No fold data are available.',
+    chartSamplingNotice: (visible, total) =>
+      `Showing ${visible} representative folds out of ${total} to keep the chart readable.`,
     strategySeries: 'Strategy',
     benchmarkSeries: 'Benchmark',
     metricDefinitions: 'Stability metric definitions',
@@ -339,6 +356,12 @@ const copies: Record<PlatformLocale, WalkForwardDetailCopy> = {
     modes: {
       rolling: 'Rolling',
       expanding: 'Expanding',
+    },
+    pagination: {
+      label: 'Fold detail pagination',
+      previous: 'Previous folds',
+      next: 'Next folds',
+      range: (start, end, total) => `Showing folds ${start}–${end} of ${total}`,
     },
   },
 };
