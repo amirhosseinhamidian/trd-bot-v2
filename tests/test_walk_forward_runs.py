@@ -202,13 +202,9 @@ def test_stability_report_contains_every_fold() -> None:
 
     assert report.stability_version == "walk-forward-stability-v1"
 
-    assert report.folds_with_trades == sum(
-        fold.total_trades > 0 for fold in report.folds
-    )
+    assert report.folds_with_trades == sum(fold.total_trades > 0 for fold in report.folds)
 
-    assert report.folds_without_trades == (
-        report.total_folds - report.folds_with_trades
-    )
+    assert report.folds_without_trades == (report.total_folds - report.folds_with_trades)
 
     assert report.traded_fold_fraction == (
         Decimal(report.folds_with_trades) / Decimal(report.total_folds)
@@ -273,24 +269,24 @@ def test_stability_report_calculates_return_distribution() -> None:
         else Decimal("1")
         - min(
             Decimal("1"),
-            report.strategy_return_mean_absolute_deviation
-            / report.strategy_return_range,
+            report.strategy_return_mean_absolute_deviation / report.strategy_return_range,
         )
     )
 
     assert report.return_consistency == expected_consistency
 
-    assert report.worst_return_fold_number == min(
-        report.folds,
-        key=lambda fold: (fold.strategy_return, fold.fold_number),
-    ).fold_number
+    assert (
+        report.worst_return_fold_number
+        == min(
+            report.folds,
+            key=lambda fold: (fold.strategy_return, fold.fold_number),
+        ).fold_number
+    )
 
     worst_drawdown = max(fold.max_drawdown_fraction for fold in report.folds)
 
     assert report.worst_drawdown_fold_number == next(
-        fold.fold_number
-        for fold in report.folds
-        if fold.max_drawdown_fraction == worst_drawdown
+        fold.fold_number for fold in report.folds if fold.max_drawdown_fraction == worst_drawdown
     )
 
 

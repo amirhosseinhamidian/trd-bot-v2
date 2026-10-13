@@ -167,9 +167,7 @@ class WalkForwardStabilityReport(BaseModel):
 
     interpretation: Literal["historical_research_only"] = "historical_research_only"
 
-    metric_definitions: tuple[WalkForwardMetricDefinition, ...] = (
-        WALK_FORWARD_METRIC_DEFINITIONS
-    )
+    metric_definitions: tuple[WalkForwardMetricDefinition, ...] = WALK_FORWARD_METRIC_DEFINITIONS
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -222,9 +220,7 @@ class WalkForwardStabilityReport(BaseModel):
 
         worst_drawdown = max(fold.max_drawdown_fraction for fold in self.folds)
         return next(
-            fold.fold_number
-            for fold in self.folds
-            if fold.max_drawdown_fraction == worst_drawdown
+            fold.fold_number for fold in self.folds if fold.max_drawdown_fraction == worst_drawdown
         )
 
     @model_validator(mode="after")
