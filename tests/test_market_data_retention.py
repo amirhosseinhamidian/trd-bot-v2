@@ -467,9 +467,8 @@ def test_dry_run_and_execute_share_a_bounded_plan_and_preserve_protected_rows() 
             assert session.scalar(select(func.count()).select_from(MarketDataRetentionRunRow)) == 2
             audits = session.scalars(select(MarketDataRetentionRunRow)).all()
             assert all("market-raw-old" not in row.payload_json for row in audits)
-            listed = manager.list_runs(limit=1)
-            assert len(listed) == 1
-            assert listed[0].run_id == executed.run_id
+            listed = manager.list_runs(limit=2)
+            assert {item.run_id for item in listed} == {planned.run_id, executed.run_id}
 
             with pytest.raises(ValueError, match="between 1 and 100"):
                 manager.list_runs(limit=0)
