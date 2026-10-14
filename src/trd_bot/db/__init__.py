@@ -25,6 +25,7 @@ from trd_bot.db.experiment_execution_repositories import (
 from trd_bot.db.historical_dataset_commits import (
     SqlAlchemyHistoricalDatasetCommitter,
 )
+from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     BackgroundJobRow,
@@ -33,6 +34,12 @@ from trd_bot.db.models import (
     DatasetFileStageRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
+    MarketDataEventInboxRow,
+    MarketDataEventRow,
+    MarketDataOutboxRow,
+    MarketDataRawObservationRow,
+    MarketDataWatermarkRow,
+    MarketDataWindowVersionRow,
     MonitoringRuntimeStateRow,
     OptimizationExecutionRow,
     PortfolioTimelineEventRow,
@@ -88,6 +95,12 @@ __all__ = [
     "DatasetFileStageRow",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
+    "MarketDataEventInboxRow",
+    "MarketDataEventRow",
+    "MarketDataOutboxRow",
+    "MarketDataRawObservationRow",
+    "MarketDataWatermarkRow",
+    "MarketDataWindowVersionRow",
     "MonitoringRuntimeStateRow",
     "OptimizationExecutionRow",
     "PortfolioTimelineEventRow",
@@ -106,6 +119,7 @@ __all__ = [
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",
+    "SqlAlchemyMarketDataEventStore",
     "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemyOptimizationExecutionEnqueuer",
     "SqlAlchemyOptimizationExecutionRepository",

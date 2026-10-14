@@ -216,6 +216,290 @@ class DatasetFileStageRow(DatabaseBase):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
+class MarketDataRawObservationRow(DatabaseBase):
+    """Append-only provider payload captured before normalization."""
+
+    __tablename__ = "market_data_raw_observations"
+
+    __table_args__ = (
+        CheckConstraint("window_end > window_start", name="window_range_valid"),
+        CheckConstraint("length(payload_checksum) = 64", name="checksum_length"),
+        Index(
+            "ix_market_data_raw_observations_stream_observed_at",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "observed_at",
+        ),
+        Index(
+            "ix_market_data_raw_observations_window_end",
+            "window_end",
+        ),
+    )
+
+    observation_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    payload_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MarketDataEventRow(DatabaseBase):
+    """Immutable normalized market-data event with raw-observation lineage."""
+
+    __tablename__ = "market_data_events"
+
+    __table_args__ = (
+        CheckConstraint("kind = 'candle_observed'", name="kind_supported"),
+        CheckConstraint("length(payload_checksum) = 64", name="checksum_length"),
+        Index(
+            "ix_market_data_events_stream_event_time",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "event_time",
+        ),
+        Index(
+            "ix_market_data_events_window_event_time",
+            "window_id",
+            "event_time",
+        ),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    raw_observation_id: Mapped[str] = mapped_column(String(100), index=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    kind: Mapped[str] = mapped_column(String(30))
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    payload_version: Mapped[str] = mapped_column(String(50))
+    payload_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(100), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    persisted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MarketDataEventInboxRow(DatabaseBase):
+    """Mutable delivery counter and durable deduplication tombstone."""
+
+    __tablename__ = "market_data_event_inbox"
+
+    __table_args__ = (
+        CheckConstraint("length(payload_checksum) = 64", name="checksum_length"),
+        CheckConstraint("last_seen_at >= first_seen_at", name="seen_range_valid"),
+        CheckConstraint("delivery_count >= 1", name="delivery_count_positive"),
+        Index(
+            "ix_market_data_event_inbox_last_seen_at",
+            "last_seen_at",
+        ),
+    )
+
+    idempotency_key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    event_id: Mapped[str] = mapped_column(String(100), unique=True)
+    payload_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    delivery_count: Mapped[int] = mapped_column(Integer)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class MarketDataOutboxRow(DatabaseBase):
+    """Transactional handoff from accepted events to internal consumers."""
+
+    __tablename__ = "market_data_outbox"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'delivered', 'failed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "attempt_count >= 0 AND attempt_count <= 20",
+            name="attempt_count_range",
+        ),
+        CheckConstraint("available_at >= created_at", name="available_after_created"),
+        CheckConstraint("updated_at >= created_at", name="updated_after_created"),
+        CheckConstraint(
+            "delivered_at IS NULL OR delivered_at >= created_at",
+            name="delivered_after_created",
+        ),
+        CheckConstraint(
+            "(status = 'pending' AND delivered_at IS NULL "
+            "AND error_code IS NULL AND error_message IS NULL) OR "
+            "(status = 'delivered' AND delivered_at IS NOT NULL "
+            "AND error_code IS NULL AND error_message IS NULL) OR "
+            "(status = 'failed' AND delivered_at IS NULL "
+            "AND error_code IS NOT NULL AND error_message IS NOT NULL)",
+            name="outcome_consistent",
+        ),
+        Index(
+            "ux_market_data_outbox_event_topic_version",
+            "event_id",
+            "topic",
+            "payload_version",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_outbox_status_available_at",
+            "status",
+            "available_at",
+        ),
+    )
+
+    outbox_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    event_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_data_events.event_id"),
+        index=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    topic: Mapped[str] = mapped_column(String(100))
+    payload_version: Mapped[str] = mapped_column(String(50))
+    payload_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    delivered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MarketDataWindowVersionRow(DatabaseBase):
+    """Append-only version of a provisional or finalized market window."""
+
+    __tablename__ = "market_data_window_versions"
+
+    __table_args__ = (
+        CheckConstraint("version >= 1", name="version_positive"),
+        CheckConstraint(
+            "state IN ('provisional', 'finalized')",
+            name="state_supported",
+        ),
+        CheckConstraint("window_end > window_start", name="window_range_valid"),
+        CheckConstraint("length(payload_checksum) = 64", name="checksum_length"),
+        CheckConstraint(
+            "(state = 'provisional' AND finalized_at IS NULL) OR "
+            "(state = 'finalized' AND finalized_at IS NOT NULL)",
+            name="finalization_consistent",
+        ),
+        CheckConstraint(
+            "finalized_at IS NULL OR finalized_at >= created_at",
+            name="finalized_after_created",
+        ),
+        Index(
+            "ix_market_data_window_versions_stream_window_end",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "window_end",
+        ),
+        Index(
+            "ix_market_data_window_versions_state_window_end",
+            "state",
+            "window_end",
+        ),
+    )
+
+    window_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event_id: Mapped[str] = mapped_column(String(100), index=True)
+    payload_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    finalized_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class MarketDataWatermarkRow(DatabaseBase):
+    """Append-only policy-bound watermark revision for one exact stream."""
+
+    __tablename__ = "market_data_watermarks"
+
+    __table_args__ = (
+        CheckConstraint("version >= 1", name="version_positive"),
+        CheckConstraint(
+            "allowed_lateness_seconds >= 0",
+            name="allowed_lateness_nonnegative",
+        ),
+        CheckConstraint(
+            "watermark_time <= high_water_event_time",
+            name="watermark_not_after_high_water",
+        ),
+        Index(
+            "ux_market_data_watermarks_stream_version",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "version",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_watermarks_stream_calculated_at",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "calculated_at",
+        ),
+    )
+
+    watermark_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    policy_version: Mapped[str] = mapped_column(String(50))
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    version: Mapped[int] = mapped_column(Integer)
+    high_water_event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    allowed_lateness_seconds: Mapped[int] = mapped_column(Integer)
+    watermark_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    stored_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

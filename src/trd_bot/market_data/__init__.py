@@ -82,6 +82,14 @@ from trd_bot.market_data.service_levels import (
     parse_capacity_benchmark_report,
     serialize_capacity_benchmark_report,
 )
+from trd_bot.market_data.storage import (
+    MarketDataInboxReceipt,
+    MarketDataOutboxMessage,
+    MarketDataOutboxStatus,
+    MarketDataRawObservation,
+    PersistedMarketDataEvent,
+    VersionedMarketDataWatermark,
+)
 
 __all__ = [
     "BinancePublicMarketDataProvider",
@@ -112,6 +120,9 @@ __all__ = [
     "MarketDataEventDisposition",
     "MarketDataEventKind",
     "MarketDataEventReason",
+    "MarketDataInboxReceipt",
+    "MarketDataOutboxMessage",
+    "MarketDataOutboxStatus",
     "MarketDataProbeOutcome",
     "MarketDataProbePayloadError",
     "MarketDataProbeReport",
@@ -129,6 +140,7 @@ __all__ = [
     "MarketDataProviderTimeoutError",
     "MarketDataProviderUnavailableError",
     "MarketDataQualityChecker",
+    "MarketDataRawObservation",
     "MarketDataRetentionPolicy",
     "MarketDataRetryPolicy",
     "MarketDataServiceLevelPolicy",
@@ -136,8 +148,10 @@ __all__ = [
     "MarketDataWindowSnapshot",
     "MarketDataWindowState",
     "NobitexPublicMarketDataProvider",
+    "PersistedMarketDataEvent",
     "ProviderRequestBudget",
     "TimeframeServiceLevel",
+    "VersionedMarketDataWatermark",
     "available_market_data_probe_provider_ids",
     "build_market_data_event_idempotency_key",
     "build_market_data_window_id",
