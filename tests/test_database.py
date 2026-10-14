@@ -81,9 +81,11 @@ def test_database_metadata_contains_research_tables() -> None:
         "market_data_poll_runs",
         "market_data_provider_budgets",
         "market_data_raw_observations",
+        "market_data_replay_requests",
         "market_data_watchlist",
         "market_data_watermarks",
         "market_data_window_finalizations",
+        "market_data_window_revisions",
         "market_data_window_versions",
         "monitoring_runtime_state",
         "optimization_executions",
@@ -179,9 +181,11 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "market_data_poll_runs",
             "market_data_provider_budgets",
             "market_data_raw_observations",
+            "market_data_replay_requests",
             "market_data_watchlist",
             "market_data_watermarks",
             "market_data_window_finalizations",
+            "market_data_window_revisions",
             "market_data_window_versions",
             "monitoring_runtime_state",
             "portfolio_timeline_events",
@@ -229,6 +233,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "market_data_connections" not in downgraded_tables
         assert "market_data_imports" not in downgraded_tables
         assert "market_data_raw_observations" not in downgraded_tables
+        assert "market_data_replay_requests" not in downgraded_tables
         assert "market_data_events" not in downgraded_tables
         assert "market_data_event_decisions" not in downgraded_tables
         assert "market_data_event_inbox" not in downgraded_tables
@@ -237,6 +242,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "market_data_provider_budgets" not in downgraded_tables
         assert "market_data_watchlist" not in downgraded_tables
         assert "market_data_window_finalizations" not in downgraded_tables
+        assert "market_data_window_revisions" not in downgraded_tables
         assert "market_data_window_versions" not in downgraded_tables
         assert "market_data_watermarks" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables

@@ -16,6 +16,7 @@ class BackgroundJobKind(StrEnum):
     WALK_FORWARD_EXECUTION = "walk_forward_execution"
     MARKET_DATA_IMPORT = "market_data_import"
     MARKET_DATA_POLL = "market_data_poll"
+    MARKET_DATA_REPLAY = "market_data_replay"
     DATASET_FILE_IMPORT = "dataset_file_import"
     OPTIMIZATION_EXECUTION = "optimization_execution"
 
@@ -85,6 +86,11 @@ BACKGROUND_JOB_POLICIES: Mapping[BackgroundJobKind, BackgroundJobPolicy] = Mappi
         ),
         BackgroundJobKind.MARKET_DATA_POLL: BackgroundJobPolicy(
             kind=BackgroundJobKind.MARKET_DATA_POLL,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.MARKET_DATA_REPLAY: BackgroundJobPolicy(
+            kind=BackgroundJobKind.MARKET_DATA_REPLAY,
             max_attempts=3,
             retry_delays=_STANDARD_RETRY_DELAYS,
         ),

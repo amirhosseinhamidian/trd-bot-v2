@@ -8,8 +8,12 @@ from typing import Final
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.db import (
     DatabaseBase,
+    SqlAlchemyMarketDataEventStore,
+    SqlAlchemyMarketDataIngestor,
     SqlAlchemyMarketDataPollingScheduler,
     SqlAlchemyMarketDataPollJobRunner,
+    SqlAlchemyMarketDataReplayEnqueuer,
+    SqlAlchemyMarketDataReplayRunner,
     SqlAlchemyMarketDataWatchlistManager,
     create_database_engine,
     create_session_factory,
@@ -26,6 +30,7 @@ from trd_bot.market_data.connections import (
     MarketDataConnectionState,
     MarketDataProviderCatalog,
 )
+from trd_bot.market_data.events import MarketDataEvent, MarketDataWatermark
 from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
 from trd_bot.market_data.polling import MarketDataPollJobPayload, MarketDataPollRunStatus
 from trd_bot.market_data.providers import (
@@ -33,6 +38,7 @@ from trd_bot.market_data.providers import (
     MarketDataProviderAccessMode,
     MarketDataProviderMetadata,
 )
+from trd_bot.market_data.storage import MarketDataRawObservation, VersionedMarketDataWatermark
 from trd_bot.research.comparisons import ExperimentComparisonMetric
 from trd_bot.research.dataset_file_imports import (
     DatasetColumnMapping,
@@ -387,6 +393,71 @@ def _market_data_poll_workload() -> Callable[[], None]:
     return execute
 
 
+def _market_data_replay_workload() -> Callable[[], None]:
+    def execute() -> None:
+        engine = create_database_engine("sqlite+pysqlite:///:memory:")
+        DatabaseBase.metadata.create_all(engine)
+        factory = create_session_factory(engine)
+        candle = OHLCVCandle(
+            source="capacity-replay-provider",
+            pair=_PAIR,
+            timeframe=Timeframe.HOUR_1,
+            open_time=_EXECUTION_TIME - timedelta(hours=2),
+            close_time=_EXECUTION_TIME - timedelta(hours=1),
+            received_at=_EXECUTION_TIME + timedelta(minutes=1),
+            open_price=Decimal("100"),
+            high_price=Decimal("110"),
+            low_price=Decimal("95"),
+            close_price=Decimal("105"),
+            volume=Decimal("1000"),
+            is_closed=True,
+        )
+        event = MarketDataEvent.from_candle(candle)
+        observation = MarketDataRawObservation.from_candle(
+            candle,
+            created_at=candle.received_at,
+        )
+        watermark = VersionedMarketDataWatermark.build(
+            watermark=MarketDataWatermark.build(
+                source=candle.source,
+                pair=candle.pair,
+                timeframe=candle.timeframe,
+                high_water_event_time=_EXECUTION_TIME + timedelta(minutes=5),
+                allowed_lateness_seconds=300,
+                calculated_at=_EXECUTION_TIME + timedelta(minutes=6),
+            ),
+            version=1,
+            policy_version="market-data-service-level-policy-v1",
+            stored_at=_EXECUTION_TIME + timedelta(minutes=6),
+        )
+        try:
+            with factory.begin() as session:
+                SqlAlchemyMarketDataEventStore(session).stage_watermark(watermark)
+            with factory() as session:
+                ingestion = SqlAlchemyMarketDataIngestor(session).ingest(
+                    observation=observation,
+                    event=event,
+                    decided_at=_EXECUTION_TIME + timedelta(minutes=7),
+                )
+            with factory() as session:
+                queued = SqlAlchemyMarketDataReplayEnqueuer(session).enqueue(
+                    decision_id=ingestion.decision_id,
+                    requested_by="capacity-benchmark",
+                    requested_at=_EXECUTION_TIME + timedelta(minutes=8),
+                )
+            with factory() as session:
+                revision = SqlAlchemyMarketDataReplayRunner(session).apply(
+                    queued.request.replay_id,
+                    applied_at=_EXECUTION_TIME + timedelta(minutes=9),
+                )
+            if revision.revised_version != 1:
+                raise RuntimeError("market-data replay workload produced an invalid revision")
+        finally:
+            engine.dispose()
+
+    return execute
+
+
 def _experiment_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
     dataset = DatasetBuilder().build(
         name="Capacity benchmark experiment dataset",
@@ -531,6 +602,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("candles", 2), ("provider_count", 2)),
             execute=_market_data_poll_workload(),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.MARKET_DATA_REPLAY,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("events", 1), ("window_revisions", 1)),
+            execute=_market_data_replay_workload(),
         ),
         BackgroundJobWorkload(
             kind=BackgroundJobKind.EXPERIMENT_EXECUTION,

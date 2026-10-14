@@ -88,6 +88,18 @@ from trd_bot.market_data.quality import (
     DataQualityScore,
     MarketDataQualityChecker,
 )
+from trd_bot.market_data.replay import (
+    MarketDataReplayRequest,
+    MarketDataRevisionKind,
+    MarketDataWindowRevision,
+    build_revised_market_data_window,
+)
+from trd_bot.market_data.replay_jobs import (
+    MarketDataReplayEnqueueResult,
+    MarketDataReplayJobPayload,
+    build_market_data_replay_idempotency_key,
+    validate_market_data_replay_enqueue,
+)
 from trd_bot.market_data.security import redact_sensitive_text
 from trd_bot.market_data.service_levels import (
     CapacityBenchmarkReport,
@@ -178,14 +190,19 @@ __all__ = [
     "MarketDataProviderUnavailableError",
     "MarketDataQualityChecker",
     "MarketDataRawObservation",
+    "MarketDataReplayEnqueueResult",
+    "MarketDataReplayJobPayload",
+    "MarketDataReplayRequest",
     "MarketDataRetentionPolicy",
     "MarketDataRetryPolicy",
+    "MarketDataRevisionKind",
     "MarketDataServiceLevelPolicy",
     "MarketDataWatchlistEntry",
     "MarketDataWatchlistRoute",
     "MarketDataWatchlistState",
     "MarketDataWatermark",
     "MarketDataWindowFinalization",
+    "MarketDataWindowRevision",
     "MarketDataWindowSnapshot",
     "MarketDataWindowState",
     "NobitexPublicMarketDataProvider",
@@ -196,7 +213,9 @@ __all__ = [
     "VersionedMarketDataWatermark",
     "available_market_data_probe_provider_ids",
     "build_market_data_event_idempotency_key",
+    "build_market_data_replay_idempotency_key",
     "build_market_data_window_id",
+    "build_revised_market_data_window",
     "calculate_candle_payload_checksum",
     "capacity_benchmark_report_to_dict",
     "classify_market_data_probe_http_status",
@@ -212,4 +231,5 @@ __all__ = [
     "serialize_capacity_benchmark_report",
     "serialize_market_data_probe_report",
     "validate_market_data_probe_payload",
+    "validate_market_data_replay_enqueue",
 ]

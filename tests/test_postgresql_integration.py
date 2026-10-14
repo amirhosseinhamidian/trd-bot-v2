@@ -23,6 +23,8 @@ from trd_bot.db import (
     SqlAlchemyMarketDataEventStore,
     SqlAlchemyMarketDataIngestor,
     SqlAlchemyMarketDataPollingScheduler,
+    SqlAlchemyMarketDataReplayEnqueuer,
+    SqlAlchemyMarketDataReplayRunner,
     SqlAlchemyMarketDataWatchlistRepository,
     SqlAlchemyMarketDataWindowFinalizer,
     SqlAlchemySimulatedPortfolioRepository,
@@ -42,9 +44,11 @@ from trd_bot.db.models import (
     MarketDataEventRow,
     MarketDataOutboxRow,
     MarketDataRawObservationRow,
+    MarketDataReplayRequestRow,
     MarketDataWatchlistRow,
     MarketDataWatermarkRow,
     MarketDataWindowFinalizationRow,
+    MarketDataWindowRevisionRow,
     MarketDataWindowVersionRow,
 )
 from trd_bot.domain import OHLCVCandle, Timeframe, TradingPair
@@ -158,9 +162,11 @@ def test_postgresql_connection_and_migrations() -> None:
             "market_data_poll_runs",
             "market_data_provider_budgets",
             "market_data_raw_observations",
+            "market_data_replay_requests",
             "market_data_watchlist",
             "market_data_watermarks",
             "market_data_window_finalizations",
+            "market_data_window_revisions",
             "market_data_window_versions",
             "monitoring_runtime_state",
             "optimization_executions",
@@ -628,6 +634,139 @@ def test_postgresql_window_finalization_race_creates_one_version() -> None:
             session.execute(
                 delete(MarketDataWindowVersionRow).where(
                     MarketDataWindowVersionRow.window_id == provisional.window_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWatermarkRow).where(
+                    MarketDataWatermarkRow.watermark_id == watermark.watermark_id
+                )
+            )
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_market_data_replay_race_converges_to_one_revision() -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    suffix = uuid4().hex[:8]
+    pair = TradingPair(base_asset=f"R{suffix.upper()}", quote_asset="USDT")
+    source = "kraken-public"
+    requested_at = datetime(2026, 10, 14, 12, 8, tzinfo=UTC)
+    applied_at = datetime(2026, 10, 14, 12, 9, tzinfo=UTC)
+    candle = OHLCVCandle(
+        source=source,
+        pair=pair,
+        timeframe=Timeframe.HOUR_1,
+        open_time=datetime(2026, 10, 14, 10, tzinfo=UTC),
+        close_time=datetime(2026, 10, 14, 11, tzinfo=UTC),
+        received_at=datetime(2026, 10, 14, 12, 7, tzinfo=UTC),
+        open_price=Decimal("100"),
+        high_price=Decimal("110"),
+        low_price=Decimal("95"),
+        close_price=Decimal("105"),
+        volume=Decimal("1000"),
+        is_closed=True,
+    )
+    event = MarketDataEvent.from_candle(candle)
+    observation = MarketDataRawObservation.from_candle(candle, created_at=candle.received_at)
+    watermark = VersionedMarketDataWatermark.build(
+        watermark=MarketDataWatermark.build(
+            source=source,
+            pair=pair,
+            timeframe=Timeframe.HOUR_1,
+            high_water_event_time=datetime(2026, 10, 14, 12, 5, tzinfo=UTC),
+            allowed_lateness_seconds=300,
+            calculated_at=datetime(2026, 10, 14, 12, 6, tzinfo=UTC),
+        ),
+        version=1,
+        policy_version="market-data-service-level-policy-v1",
+        stored_at=datetime(2026, 10, 14, 12, 6, tzinfo=UTC),
+    )
+    barrier = Barrier(2)
+    replay_id: str | None = None
+    job_id: str | None = None
+
+    def apply_from_one_session() -> object:
+        assert replay_id is not None
+        with factory() as session:
+            barrier.wait(timeout=10)
+            return SqlAlchemyMarketDataReplayRunner(session).apply(
+                replay_id,
+                applied_at=applied_at,
+            )
+
+    try:
+        with factory.begin() as session:
+            SqlAlchemyMarketDataEventStore(session).stage_watermark(watermark)
+        with factory() as session:
+            ingestion = SqlAlchemyMarketDataIngestor(session).ingest(
+                observation=observation,
+                event=event,
+                decided_at=datetime(2026, 10, 14, 12, 7, 1, tzinfo=UTC),
+            )
+        with factory() as session:
+            queued = SqlAlchemyMarketDataReplayEnqueuer(session).enqueue(
+                decision_id=ingestion.decision_id,
+                requested_by="integration-test",
+                requested_at=requested_at,
+            )
+        replay_id = queued.request.replay_id
+        job_id = queued.job.job_id
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            revisions = list(executor.map(lambda _: apply_from_one_session(), range(2)))
+
+        assert revisions[0] == revisions[1]
+        with factory() as session:
+            latest = SqlAlchemyMarketDataEventStore(session).get_latest_window(event.window_id)
+            assert latest is not None
+            assert latest.version == 1
+            assert latest.state.value == "finalized"
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataWindowRevisionRow)
+                    .where(MarketDataWindowRevisionRow.replay_id == replay_id)
+                )
+                == 1
+            )
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(MarketDataWindowRevisionRow).where(
+                    MarketDataWindowRevisionRow.replay_id == replay_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWindowVersionRow).where(
+                    MarketDataWindowVersionRow.window_id == event.window_id
+                )
+            )
+            if job_id is not None:
+                session.execute(delete(BackgroundJobRow).where(BackgroundJobRow.job_id == job_id))
+            session.execute(
+                delete(MarketDataReplayRequestRow).where(
+                    MarketDataReplayRequestRow.replay_id == replay_id
+                )
+            )
+            session.execute(
+                delete(MarketDataEventDecisionRow).where(
+                    MarketDataEventDecisionRow.decision_id == ingestion.decision_id
+                )
+            )
+            session.execute(
+                delete(MarketDataEventInboxRow).where(
+                    MarketDataEventInboxRow.event_id == event.event_id
+                )
+            )
+            session.execute(
+                delete(MarketDataEventRow).where(MarketDataEventRow.event_id == event.event_id)
+            )
+            session.execute(
+                delete(MarketDataRawObservationRow).where(
+                    MarketDataRawObservationRow.observation_id == observation.observation_id
                 )
             )
             session.execute(

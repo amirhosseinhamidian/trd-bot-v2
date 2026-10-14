@@ -48,7 +48,7 @@ Primary و حداقل یک fallback باید صریحاً در زمان ساخت
 - Event contract latency p95 و throughput؛
 - سه query p95 PostgreSQL و pool utilization؛
 - queue wait p95؛
-- runtime p95 هر پنج `BackgroundJobKind`؛
+- runtime p95 همهٔ `BackgroundJobKind`های allowlist؛
 - projection رشد 30روزه با استفاده از اندازهٔ واقعی PostgreSQL و event count.
 
 Merge اکنون metricهای مکمل یک scope را حفظ می‌کند. بنابراین projection تعداد Event از event runner

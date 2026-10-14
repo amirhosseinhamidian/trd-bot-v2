@@ -204,7 +204,7 @@ PYTHONPATH=src python scripts/benchmark_postgresql_capacity.py \
 
 - enqueue، claim و terminal write latency؛
 - queue wait p50/p95 و throughput با concurrency برابر 1؛
-- lifecycle p95 هر پنج job kind با bounded no-op fixture؛
+- lifecycle p95 همهٔ job kindهای allowlist با bounded no-op fixture؛
 - pool checked-out/max utilization؛
 - query latency p50/p95 برای inbox، current window و time-range read؛
 - row، index، TOAST و WAL bytes برای حداقل 100,000 Event؛
@@ -218,20 +218,22 @@ Optimization را نمی‌گیرد.
 
 ## 10. بنچمارک workload واقعی Jobها
 
-fixture نسخه‌دار `background-job-workloads-v1` هر پنج مقدار `BackgroundJobKind` را پوشش می‌دهد و
+fixture نسخه‌دار `background-job-workloads-v1` همهٔ مقادیر `BackgroundJobKind` را پوشش می‌دهد و
 دادهٔ کاربر، credential یا درخواست شبکه مصرف نمی‌کند:
 
 | Job kind | مسیر واقعی | اندازهٔ ثابت fixture |
 | --- | --- | ---: |
 | `dataset_file_import` | preview و commit استاندارد CSV | 1000 candle |
 | `market_data_import` | `HistoricalDatasetJobRunner` و commit استاندارد | 1000 candle |
+| `market_data_poll` | polling، ingestion، Watermark و finalization | 2 candle، 2 provider |
+| `market_data_replay` | late ingestion، enqueue و revision finalized | 1 event، 1 revision |
 | `experiment_execution` | `ExperimentExecutionRunner` | 720 candle |
 | `walk_forward_execution` | `WalkForwardExecutionRunner` | 720 candle، 10 fold |
 | `optimization_execution` | `OptimizationExecutionJobRunner` | 720 candle، 4 trial |
 
-`dataset_file_import` در نسخهٔ فعلی handler durable ثبت‌شده ندارد؛ fixture آن مسیر canonical و
-همگام `DatasetFileImportService` را اندازه می‌گیرد. چهار kind دیگر runner واقعی production را با
-repositoryهای in-memory اجرا می‌کنند. در نتیجه این benchmark runtime منطق محصول را می‌سنجد، ولی
+هر fixture مسیر canonical همان workload را بدون شبکه و secret اجرا می‌کند؛ مسیرهای market-data
+روی SQLite موقت و مسیرهای research روی repositoryهای محدود benchmark اجرا می‌شوند. در نتیجه این
+benchmark runtime منطق محصول را می‌سنجد، ولی
 latency persistence صف را جعل نمی‌کند؛ آن بخش فقط از گزارش PostgreSQL مرحلهٔ قبل گرفته می‌شود.
 
 برای تخمین p95 حداقل 20 اجرای موفق برای هر kind و حداقل 250 lifecycle صف لازم است. گزارش صف باید

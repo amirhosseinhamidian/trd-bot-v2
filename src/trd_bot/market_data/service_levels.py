@@ -322,6 +322,7 @@ def default_market_data_service_level_policy() -> MarketDataServiceLevelPolicy:
                 "experiment_execution": Decimal("60"),
                 "market_data_import": Decimal("120"),
                 "market_data_poll": Decimal("30"),
+                "market_data_replay": Decimal("30"),
                 "optimization_execution": Decimal("600"),
                 "walk_forward_execution": Decimal("300"),
             },

@@ -734,6 +734,98 @@ class MarketDataWindowFinalizationRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class MarketDataReplayRequestRow(DatabaseBase):
+    """Immutable authorization for one late-data or correction replay."""
+
+    __tablename__ = "market_data_replay_requests"
+
+    __table_args__ = (
+        CheckConstraint(
+            "reason IN ('late_arrival', 'finalized_window_conflict')",
+            name="reason_supported",
+        ),
+        Index(
+            "ux_market_data_replay_requests_decision",
+            "decision_id",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_replay_requests_window_requested_at",
+            "window_id",
+            "requested_at",
+        ),
+    )
+
+    replay_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    decision_id: Mapped[str] = mapped_column(String(100), index=True)
+    observation_id: Mapped[str] = mapped_column(String(100), index=True)
+    event_id: Mapped[str] = mapped_column(String(100), index=True)
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    reason: Mapped[str] = mapped_column(String(50), index=True)
+    requested_by: Mapped[str] = mapped_column(String(100))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class MarketDataWindowRevisionRow(DatabaseBase):
+    """Immutable replay evidence for one corrected finalized window version."""
+
+    __tablename__ = "market_data_window_revisions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "reason IN ('late_arrival', 'finalized_window_conflict')",
+            name="reason_supported",
+        ),
+        CheckConstraint(
+            "kind IN ('late_insert', 'correction')",
+            name="kind_supported",
+        ),
+        CheckConstraint(
+            "(kind = 'late_insert' AND previous_version IS NULL "
+            "AND previous_event_id IS NULL AND previous_payload_checksum IS NULL "
+            "AND revised_version = 1) OR "
+            "(kind = 'correction' AND previous_version IS NOT NULL "
+            "AND previous_event_id IS NOT NULL AND previous_payload_checksum IS NOT NULL "
+            "AND revised_version = previous_version + 1)",
+            name="version_transition_valid",
+        ),
+        Index("ux_market_data_window_revisions_replay", "replay_id", unique=True),
+        Index(
+            "ux_market_data_window_revisions_window_version",
+            "window_id",
+            "revised_version",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_window_revisions_window_applied_at",
+            "window_id",
+            "applied_at",
+        ),
+    )
+
+    revision_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    replay_id: Mapped[str] = mapped_column(String(100), index=True)
+    decision_id: Mapped[str] = mapped_column(String(100), index=True)
+    observation_id: Mapped[str] = mapped_column(String(100), index=True)
+    event_id: Mapped[str] = mapped_column(String(100), index=True)
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    reason: Mapped[str] = mapped_column(String(50), index=True)
+    kind: Mapped[str] = mapped_column(String(20), index=True)
+    previous_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    previous_event_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    previous_payload_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    revised_version: Mapped[int] = mapped_column(Integer)
+    revised_payload_checksum: Mapped[str] = mapped_column(String(64))
+    watermark_id: Mapped[str] = mapped_column(String(100), index=True)
+    watermark_version: Mapped[int] = mapped_column(Integer)
+    watermark_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class MarketDataWatermarkRow(DatabaseBase):
     """Append-only policy-bound watermark revision for one exact stream."""
 

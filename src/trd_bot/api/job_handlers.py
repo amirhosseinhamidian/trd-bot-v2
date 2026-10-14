@@ -25,6 +25,11 @@ from trd_bot.db.market_data_import_repositories import (
     SqlAlchemyMarketDataImportRepository,
 )
 from trd_bot.db.market_data_polling import SqlAlchemyMarketDataPollJobRunner
+from trd_bot.db.market_data_replay import (
+    MarketDataReplayError,
+    MarketDataReplayRejectedError,
+    SqlAlchemyMarketDataReplayRunner,
+)
 from trd_bot.jobs import (
     PRODUCTION_BACKGROUND_JOB_KINDS,
     BackgroundJobContext,
@@ -36,6 +41,7 @@ from trd_bot.market_data import (
     MarketDataPollingFailedError,
     MarketDataPollJobPayload,
     MarketDataProviderCatalog,
+    MarketDataReplayJobPayload,
 )
 from trd_bot.research.dataset_file_jobs import (
     DatasetFileImportJobError,
@@ -243,6 +249,39 @@ def run_market_data_poll_job(
     return run.run_id
 
 
+def run_market_data_replay_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str:
+    request = _validate_job_payload(
+        MarketDataReplayJobPayload,
+        payload,
+        error_code="invalid_market_data_replay_job_payload",
+        error_message="Market-data replay job payload is invalid.",
+    )
+    context.heartbeat(10)
+    try:
+        with get_session_factory()() as session:
+            revision = SqlAlchemyMarketDataReplayRunner(session).apply(
+                request.replay_id,
+                applied_at=context.job.updated_at,
+            )
+    except MarketDataReplayRejectedError as error:
+        raise BackgroundJobHandlerError(
+            error_code="market_data_replay_rejected",
+            error_message=str(error),
+            retryable=False,
+        ) from error
+    except MarketDataReplayError as error:
+        raise BackgroundJobHandlerError(
+            error_code="market_data_replay_failed",
+            error_message="Market-data replay could not be committed safely.",
+            retryable=True,
+        ) from error
+    context.heartbeat(95)
+    return revision.revision_id
+
+
 def run_dataset_file_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
@@ -336,6 +375,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.WALK_FORWARD_EXECUTION: run_walk_forward_job,
             BackgroundJobKind.MARKET_DATA_IMPORT: run_market_data_import_job,
             BackgroundJobKind.MARKET_DATA_POLL: run_market_data_poll_job,
+            BackgroundJobKind.MARKET_DATA_REPLAY: run_market_data_replay_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }

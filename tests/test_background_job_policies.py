@@ -69,6 +69,7 @@ def test_builder_uses_the_kind_specific_retry_budget() -> None:
         BackgroundJobKind.WALK_FORWARD_EXECUTION: 3,
         BackgroundJobKind.MARKET_DATA_IMPORT: 1,
         BackgroundJobKind.MARKET_DATA_POLL: 3,
+        BackgroundJobKind.MARKET_DATA_REPLAY: 3,
         BackgroundJobKind.DATASET_FILE_IMPORT: 3,
         BackgroundJobKind.OPTIMIZATION_EXECUTION: 3,
     }

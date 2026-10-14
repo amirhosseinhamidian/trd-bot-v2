@@ -291,6 +291,37 @@ def test_production_registry_allowlists_market_data_poll_jobs() -> None:
     assert callable(handler)
 
 
+def test_production_registry_allowlists_market_data_replay_jobs() -> None:
+    handler = build_background_job_handler_registry().get(BackgroundJobKind.MARKET_DATA_REPLAY)
+
+    assert callable(handler)
+
+
+def test_market_data_replay_handler_rejects_a_malformed_payload_without_retry(
+    session: Session,
+) -> None:
+    repository = SqlAlchemyBackgroundJobRepository(session)
+    queued, _ = repository.enqueue(
+        BackgroundJobBuilder().build(
+            kind=BackgroundJobKind.MARKET_DATA_REPLAY,
+            payload={"replay_id": "not-a-replay-id"},
+            now=NOW,
+        )
+    )
+
+    failed = BackgroundJobWorker(
+        repository=repository,
+        handlers=build_background_job_handler_registry(),
+        worker_id="market-data-replay-payload-worker",
+    ).run_once(now=NOW)
+
+    assert failed is not None
+    assert failed.job_id == queued.job_id
+    assert failed.status is BackgroundJobStatus.FAILED
+    assert failed.attempt_count == 1
+    assert failed.error_code == "invalid_market_data_replay_job_payload"
+
+
 def test_production_registry_allowlists_optimization_jobs() -> None:
     handler = build_background_job_handler_registry().get(BackgroundJobKind.OPTIMIZATION_EXECUTION)
 

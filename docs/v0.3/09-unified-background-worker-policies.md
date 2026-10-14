@@ -55,7 +55,7 @@ lease claim و heartbeat هر دو به‌طور پیش‌فرض 5 دقیقه‌
 
 ## معیار خروج P1-05
 
-- [x] policy catalog دقیقاً هر پنج `BackgroundJobKind` را پوشش می‌دهد.
+- [x] policy catalog دقیقاً همهٔ `BackgroundJobKind`های allowlist را پوشش می‌دهد.
 - [x] registry تولید دقیقاً با allowlist policy برابر است.
 - [x] enqueueهای محصول budget را از policy مرکزی می‌گیرند.
 - [x] backoff برابر 5 و 30 ثانیه است و پایان budget terminal می‌شود.
