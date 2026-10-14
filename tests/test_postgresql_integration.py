@@ -8,7 +8,7 @@ from uuid import uuid4
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import delete, inspect, text
+from sqlalchemy import delete, func, inspect, select, text
 from sqlalchemy.engine import make_url
 
 import trd_bot.api.job_handlers as job_handlers
@@ -21,6 +21,7 @@ from trd_bot.db import (
     SqlAlchemyDatasetFileStageRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyMarketDataEventStore,
+    SqlAlchemyMarketDataIngestor,
     SqlAlchemySimulatedPortfolioRepository,
     create_database_engine,
     create_session_factory,
@@ -29,6 +30,7 @@ from trd_bot.db.models import (
     BackgroundJobRow,
     DatasetFileStageRow,
     DatasetSnapshotRow,
+    MarketDataEventDecisionRow,
     MarketDataEventInboxRow,
     MarketDataEventRow,
     MarketDataOutboxRow,
@@ -47,6 +49,7 @@ from trd_bot.jobs import (
 from trd_bot.market_data import (
     MarketDataEvent,
     MarketDataInboxReceipt,
+    MarketDataIngestionResult,
     MarketDataOutboxMessage,
     MarketDataRawObservation,
     MarketDataWatermark,
@@ -133,6 +136,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "dataset_snapshots",
             "experiment_executions",
             "market_data_connections",
+            "market_data_event_decisions",
             "market_data_event_inbox",
             "market_data_events",
             "market_data_imports",
@@ -271,6 +275,147 @@ def test_postgresql_market_data_event_storage_round_trip() -> None:
             session.execute(
                 delete(MarketDataRawObservationRow).where(
                     MarketDataRawObservationRow.observation_id == raw.observation_id
+                )
+            )
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_market_data_ingestion_race_returns_one_stable_result() -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    source = f"kraken-race-{uuid4().hex[:8]}"
+    pair = TradingPair(base_asset="BTC", quote_asset="USDT")
+    window_start = datetime(2026, 10, 14, 8, tzinfo=UTC)
+    window_end = datetime(2026, 10, 14, 9, tzinfo=UTC)
+    observed_at = datetime(2026, 10, 14, 9, 0, 5, tzinfo=UTC)
+    decided_at = datetime(2026, 10, 14, 9, 0, 6, tzinfo=UTC)
+    event = MarketDataEvent.from_candle(
+        OHLCVCandle(
+            source=source,
+            pair=pair,
+            timeframe=Timeframe.HOUR_1,
+            open_time=window_start,
+            close_time=window_end,
+            received_at=observed_at,
+            open_price=Decimal("100"),
+            high_price=Decimal("110"),
+            low_price=Decimal("95"),
+            close_price=Decimal("105"),
+            volume=Decimal("1250.5"),
+            is_closed=True,
+        )
+    )
+    observation = MarketDataRawObservation.build(
+        source=source,
+        pair=pair,
+        timeframe=Timeframe.HOUR_1,
+        window_start=window_start,
+        window_end=window_end,
+        observed_at=observed_at,
+        payload={"close": "105", "volume": "1250.5"},
+        created_at=decided_at,
+    )
+    watermark = VersionedMarketDataWatermark.build(
+        watermark=MarketDataWatermark.build(
+            source=source,
+            pair=pair,
+            timeframe=Timeframe.HOUR_1,
+            high_water_event_time=datetime(2026, 10, 14, 8, 30, tzinfo=UTC),
+            allowed_lateness_seconds=0,
+            calculated_at=decided_at,
+        ),
+        version=1,
+        policy_version="market-data-service-level-policy-v1",
+        stored_at=decided_at,
+    )
+    barrier = Barrier(2)
+
+    def ingest_from_one_session() -> MarketDataIngestionResult:
+        with factory() as session:
+            barrier.wait(timeout=10)
+            return SqlAlchemyMarketDataIngestor(session).ingest(
+                observation=observation,
+                event=event,
+                decided_at=decided_at,
+            )
+
+    try:
+        with factory.begin() as session:
+            SqlAlchemyMarketDataEventStore(session).stage_watermark(watermark)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda _: ingest_from_one_session(), range(2)))
+
+        assert {result.created for result in results} == {True, False}
+        assert {result.decision_id for result in results} == {results[0].decision_id}
+
+        with factory() as session:
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataRawObservationRow)
+                    .where(MarketDataRawObservationRow.observation_id == observation.observation_id)
+                )
+                == 1
+            )
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataEventDecisionRow)
+                    .where(MarketDataEventDecisionRow.event_id == event.event_id)
+                )
+                == 1
+            )
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataWindowVersionRow)
+                    .where(MarketDataWindowVersionRow.window_id == event.window_id)
+                )
+                == 1
+            )
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataOutboxRow)
+                    .where(MarketDataOutboxRow.event_id == event.event_id)
+                )
+                == 1
+            )
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(MarketDataEventDecisionRow).where(
+                    MarketDataEventDecisionRow.event_id == event.event_id
+                )
+            )
+            session.execute(
+                delete(MarketDataOutboxRow).where(MarketDataOutboxRow.event_id == event.event_id)
+            )
+            session.execute(
+                delete(MarketDataEventInboxRow).where(
+                    MarketDataEventInboxRow.event_id == event.event_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWindowVersionRow).where(
+                    MarketDataWindowVersionRow.window_id == event.window_id
+                )
+            )
+            session.execute(
+                delete(MarketDataEventRow).where(MarketDataEventRow.event_id == event.event_id)
+            )
+            session.execute(
+                delete(MarketDataRawObservationRow).where(
+                    MarketDataRawObservationRow.observation_id == observation.observation_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWatermarkRow).where(
+                    MarketDataWatermarkRow.watermark_id == watermark.watermark_id
                 )
             )
         engine.dispose()

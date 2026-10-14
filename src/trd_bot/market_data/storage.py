@@ -7,7 +7,11 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
 from trd_bot.domain.market_data import Timeframe, TradingPair
-from trd_bot.market_data.events import MarketDataEvent, MarketDataWatermark
+from trd_bot.market_data.events import (
+    MarketDataEvent,
+    MarketDataEventDecision,
+    MarketDataWatermark,
+)
 
 
 def _normalize_timestamp(value: datetime) -> datetime:
@@ -148,6 +152,53 @@ class PersistedMarketDataEvent(BaseModel):
     @classmethod
     def normalize_persisted_at(cls, value: datetime) -> datetime:
         return _normalize_timestamp(value)
+
+
+class PersistedMarketDataEventDecision(BaseModel):
+    """Append-only ingestion decision bound to an observation and watermark revision."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    decision_id: str = Field(pattern=r"^market-decision-[a-f0-9]{16}$")
+    observation_id: str = Field(pattern=r"^market-raw-[a-f0-9]{16}$")
+    watermark_id: str = Field(pattern=r"^market-watermark-[a-f0-9]{16}$")
+    decision: MarketDataEventDecision
+
+    @model_validator(mode="after")
+    def validate_identity(self) -> Self:
+        expected = self.build_decision_id(
+            observation_id=self.observation_id,
+            event_id=self.decision.event_id,
+        )
+        if self.decision_id != expected:
+            raise ValueError("persisted decision ID is inconsistent")
+        return self
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        observation_id: str,
+        watermark_id: str,
+        decision: MarketDataEventDecision,
+    ) -> Self:
+        return cls(
+            decision_id=cls.build_decision_id(
+                observation_id=observation_id,
+                event_id=decision.event_id,
+            ),
+            observation_id=observation_id,
+            watermark_id=watermark_id,
+            decision=decision,
+        )
+
+    @staticmethod
+    def build_decision_id(*, observation_id: str, event_id: str) -> str:
+        identity = {
+            "observation_id": observation_id,
+            "event_id": event_id,
+        }
+        return f"market-decision-{_sha256(identity)[:16]}"
 
 
 class MarketDataInboxReceipt(BaseModel):

@@ -25,6 +25,13 @@ from trd_bot.market_data.events import (
     calculate_candle_payload_checksum,
     decide_market_data_event,
 )
+from trd_bot.market_data.ingestion import (
+    MARKET_DATA_WINDOWING_TOPIC,
+    MarketDataIngestionConflictError,
+    MarketDataIngestionError,
+    MarketDataIngestionResult,
+    MarketDataIngestionWatermarkMissingError,
+)
 from trd_bot.market_data.kraken import KrakenPublicMarketDataProvider
 from trd_bot.market_data.nobitex import NobitexPublicMarketDataProvider
 from trd_bot.market_data.provider_probes import (
@@ -88,10 +95,12 @@ from trd_bot.market_data.storage import (
     MarketDataOutboxStatus,
     MarketDataRawObservation,
     PersistedMarketDataEvent,
+    PersistedMarketDataEventDecision,
     VersionedMarketDataWatermark,
 )
 
 __all__ = [
+    "MARKET_DATA_WINDOWING_TOPIC",
     "BinancePublicMarketDataProvider",
     "CapacityBenchmarkReport",
     "CapacityEvidence",
@@ -121,6 +130,10 @@ __all__ = [
     "MarketDataEventKind",
     "MarketDataEventReason",
     "MarketDataInboxReceipt",
+    "MarketDataIngestionConflictError",
+    "MarketDataIngestionError",
+    "MarketDataIngestionResult",
+    "MarketDataIngestionWatermarkMissingError",
     "MarketDataOutboxMessage",
     "MarketDataOutboxStatus",
     "MarketDataProbeOutcome",
@@ -149,6 +162,7 @@ __all__ = [
     "MarketDataWindowState",
     "NobitexPublicMarketDataProvider",
     "PersistedMarketDataEvent",
+    "PersistedMarketDataEventDecision",
     "ProviderRequestBudget",
     "TimeframeServiceLevel",
     "VersionedMarketDataWatermark",

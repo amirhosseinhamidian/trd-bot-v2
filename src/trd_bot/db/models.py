@@ -322,6 +322,75 @@ class MarketDataEventInboxRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class MarketDataEventDecisionRow(DatabaseBase):
+    """Append-only evidence for one raw-observation ingestion decision."""
+
+    __tablename__ = "market_data_event_decisions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "arrival IN ('on_time', 'late')",
+            name="arrival_supported",
+        ),
+        CheckConstraint(
+            "disposition IN ('accepted', 'duplicate', 'revision_required')",
+            name="disposition_supported",
+        ),
+        CheckConstraint(
+            "reason IN ('new_window', 'provisional_update', 'duplicate_payload', "
+            "'late_arrival', 'finalized_window_conflict')",
+            name="reason_supported",
+        ),
+        CheckConstraint(
+            "existing_window_version IS NULL OR existing_window_version >= 1",
+            name="existing_version_positive",
+        ),
+        CheckConstraint(
+            "proposed_window_version IS NULL OR proposed_window_version >= 1",
+            name="proposed_version_positive",
+        ),
+        CheckConstraint(
+            "(disposition = 'duplicate' AND proposed_window_version IS NULL "
+            "AND requires_replay = false) OR "
+            "(disposition = 'accepted' AND proposed_window_version IS NOT NULL "
+            "AND requires_replay = false) OR "
+            "(disposition = 'revision_required' AND proposed_window_version IS NOT NULL "
+            "AND requires_replay = true)",
+            name="decision_consistent",
+        ),
+        Index(
+            "ux_market_data_event_decisions_observation",
+            "observation_id",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_event_decisions_window_decided_at",
+            "window_id",
+            "decided_at",
+        ),
+        Index(
+            "ix_market_data_event_decisions_disposition_decided_at",
+            "disposition",
+            "decided_at",
+        ),
+    )
+
+    decision_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    observation_id: Mapped[str] = mapped_column(String(100))
+    event_id: Mapped[str] = mapped_column(String(100), index=True)
+    watermark_id: Mapped[str] = mapped_column(String(100), index=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    arrival: Mapped[str] = mapped_column(String(20))
+    disposition: Mapped[str] = mapped_column(String(30), index=True)
+    reason: Mapped[str] = mapped_column(String(50), index=True)
+    existing_window_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    proposed_window_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    requires_replay: Mapped[bool] = mapped_column()
+    decided_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class MarketDataOutboxRow(DatabaseBase):
     """Transactional handoff from accepted events to internal consumers."""
 

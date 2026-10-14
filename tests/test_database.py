@@ -73,6 +73,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "dataset_snapshots",
         "experiment_executions",
         "market_data_connections",
+        "market_data_event_decisions",
         "market_data_event_inbox",
         "market_data_events",
         "market_data_imports",
@@ -166,6 +167,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "candidate_projections",
             "dataset_snapshots",
             "market_data_connections",
+            "market_data_event_decisions",
             "market_data_event_inbox",
             "market_data_events",
             "market_data_imports",
@@ -220,6 +222,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "market_data_imports" not in downgraded_tables
         assert "market_data_raw_observations" not in downgraded_tables
         assert "market_data_events" not in downgraded_tables
+        assert "market_data_event_decisions" not in downgraded_tables
         assert "market_data_event_inbox" not in downgraded_tables
         assert "market_data_outbox" not in downgraded_tables
         assert "market_data_window_versions" not in downgraded_tables

@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from trd_bot.db.models import (
+    MarketDataEventDecisionRow,
     MarketDataEventInboxRow,
     MarketDataEventRow,
     MarketDataOutboxRow,
@@ -18,6 +19,7 @@ from trd_bot.market_data.storage import (
     MarketDataOutboxMessage,
     MarketDataRawObservation,
     PersistedMarketDataEvent,
+    PersistedMarketDataEventDecision,
     VersionedMarketDataWatermark,
 )
 
@@ -160,11 +162,95 @@ class SqlAlchemyMarketDataEventStore:
         self._session.flush()
         return receipt, True
 
-    def get_inbox_receipt(self, idempotency_key: str) -> MarketDataInboxReceipt | None:
-        row = self._session.get(MarketDataEventInboxRow, idempotency_key)
+    def get_inbox_receipt(
+        self,
+        idempotency_key: str,
+        *,
+        for_update: bool = False,
+    ) -> MarketDataInboxReceipt | None:
+        statement = select(MarketDataEventInboxRow).where(
+            MarketDataEventInboxRow.idempotency_key == idempotency_key
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        row = self._session.scalar(statement)
         if row is None:
             return None
         return MarketDataInboxReceipt.model_validate_json(row.payload_json)
+
+    def record_inbox_redelivery(self, event: MarketDataEvent) -> MarketDataInboxReceipt:
+        row = self._session.scalar(
+            select(MarketDataEventInboxRow)
+            .where(MarketDataEventInboxRow.idempotency_key == event.idempotency_key)
+            .with_for_update()
+        )
+        if row is None:
+            raise ValueError("market-data inbox receipt does not exist")
+
+        existing = MarketDataInboxReceipt.model_validate_json(row.payload_json)
+        if (
+            existing.event_id != event.event_id
+            or existing.payload_checksum != event.payload_checksum
+        ):
+            raise ValueError("market-data redelivery does not match its inbox identity")
+
+        updated = existing.record_redelivery(observed_at=event.observed_at)
+        row.last_seen_at = updated.last_seen_at
+        row.delivery_count = updated.delivery_count
+        row.payload_json = updated.model_dump_json()
+        self._session.flush()
+        return updated
+
+    def stage_decision(
+        self,
+        record: PersistedMarketDataEventDecision,
+    ) -> tuple[PersistedMarketDataEventDecision, bool]:
+        existing = self.get_decision(record.decision_id)
+        if existing is not None:
+            if existing != record:
+                raise ValueError("market-data decision ID already exists with different content")
+            return existing, False
+
+        decision = record.decision
+        self._session.add(
+            MarketDataEventDecisionRow(
+                decision_id=record.decision_id,
+                observation_id=record.observation_id,
+                event_id=decision.event_id,
+                watermark_id=record.watermark_id,
+                schema_version=decision.schema_version,
+                window_id=decision.window_id,
+                arrival=decision.arrival.value,
+                disposition=decision.disposition.value,
+                reason=decision.reason.value,
+                existing_window_version=decision.existing_window_version,
+                proposed_window_version=decision.proposed_window_version,
+                requires_replay=decision.requires_replay,
+                decided_at=decision.decided_at,
+                payload_json=record.model_dump_json(),
+            )
+        )
+        self._session.flush()
+        return record, True
+
+    def get_decision(self, decision_id: str) -> PersistedMarketDataEventDecision | None:
+        row = self._session.get(MarketDataEventDecisionRow, decision_id)
+        if row is None:
+            return None
+        return PersistedMarketDataEventDecision.model_validate_json(row.payload_json)
+
+    def get_decision_by_observation(
+        self,
+        observation_id: str,
+    ) -> PersistedMarketDataEventDecision | None:
+        row = self._session.scalar(
+            select(MarketDataEventDecisionRow).where(
+                MarketDataEventDecisionRow.observation_id == observation_id
+            )
+        )
+        if row is None:
+            return None
+        return PersistedMarketDataEventDecision.model_validate_json(row.payload_json)
 
     def stage_outbox_message(
         self,
@@ -246,13 +332,21 @@ class SqlAlchemyMarketDataEventStore:
             return None
         return MarketDataWindowSnapshot.model_validate_json(row.payload_json)
 
-    def get_latest_window(self, window_id: str) -> MarketDataWindowSnapshot | None:
-        row = self._session.scalar(
+    def get_latest_window(
+        self,
+        window_id: str,
+        *,
+        for_update: bool = False,
+    ) -> MarketDataWindowSnapshot | None:
+        statement = (
             select(MarketDataWindowVersionRow)
             .where(MarketDataWindowVersionRow.window_id == window_id)
             .order_by(MarketDataWindowVersionRow.version.desc())
             .limit(1)
         )
+        if for_update:
+            statement = statement.with_for_update()
+        row = self._session.scalar(statement)
         if row is None:
             return None
         return MarketDataWindowSnapshot.model_validate_json(row.payload_json)
@@ -315,8 +409,9 @@ class SqlAlchemyMarketDataEventStore:
         source: str,
         pair: TradingPair,
         timeframe: Timeframe,
+        for_update: bool = False,
     ) -> VersionedMarketDataWatermark | None:
-        row = self._session.scalar(
+        statement = (
             select(MarketDataWatermarkRow)
             .where(
                 MarketDataWatermarkRow.source == source,
@@ -328,6 +423,9 @@ class SqlAlchemyMarketDataEventStore:
             .order_by(MarketDataWatermarkRow.version.desc())
             .limit(1)
         )
+        if for_update:
+            statement = statement.with_for_update()
+        row = self._session.scalar(statement)
         if row is None:
             return None
         return VersionedMarketDataWatermark.model_validate_json(row.payload_json)
