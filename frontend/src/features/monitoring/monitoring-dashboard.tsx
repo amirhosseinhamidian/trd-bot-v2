@@ -17,16 +17,19 @@ import {
 } from '@/components/ui';
 import type { BackgroundJobStatus } from '@/features/jobs/api/types';
 import type {
+  MarketDataMonitoringSummary,
   MonitoringOverallStatus,
   MonitoringSummary,
   RecommendationSeverity,
   SystemMetricSample,
 } from '@/features/monitoring/api/types';
+import { MarketDataHealthPanel } from '@/features/monitoring/market-data-health-panel';
 import { getMonitoringCopy } from '@/features/monitoring/monitoring-copy';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type MonitoringDashboardProps = {
   locale: PlatformLocale;
+  marketData: MarketDataMonitoringSummary;
   summary: MonitoringSummary;
 };
 
@@ -149,7 +152,11 @@ function formatDuration(value: string | null, locale: PlatformLocale): string {
   return locale === 'fa' ? `${formatted} ثانیه` : `${formatted} seconds`;
 }
 
-export default function MonitoringDashboard({ locale, summary }: MonitoringDashboardProps) {
+export default function MonitoringDashboard({
+  locale,
+  marketData,
+  summary,
+}: MonitoringDashboardProps) {
   const copy = getMonitoringCopy(locale);
   const isDemoRecommendation = (title: string) => title.startsWith('[DEMO]');
   const operations = summary.operations;
@@ -170,6 +177,8 @@ export default function MonitoringDashboard({ locale, summary }: MonitoringDashb
           {copy.capacityPlanningOnly}
         </div>
       </PageHeader>
+
+      <MarketDataHealthPanel locale={locale} summary={marketData} />
 
       {operations ? (
         <Card>

@@ -2,6 +2,8 @@ export type BackgroundJobKind =
   | 'experiment_execution'
   | 'walk_forward_execution'
   | 'market_data_import'
+  | 'market_data_poll'
+  | 'market_data_replay'
   | 'dataset_file_import'
   | 'optimization_execution';
 

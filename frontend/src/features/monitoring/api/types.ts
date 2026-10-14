@@ -1,6 +1,96 @@
-import type { BackgroundJobSummary } from '@/features/jobs/api/types';
+import type { BackgroundJobStatus, BackgroundJobSummary } from '@/features/jobs/api/types';
 
 export type MonitoringOverallStatus = 'healthy' | 'warning' | 'critical';
+
+export type MarketDataMonitoringOverallStatus = MonitoringOverallStatus | 'no_data';
+export type MarketDataFreshnessStatus = 'fresh' | 'stale' | 'no_data';
+export type MarketDataStreamHealthStatus = 'healthy' | 'degraded' | 'paused' | 'no_data';
+export type MarketDataWatchlistState = 'active' | 'paused';
+export type MarketDataConnectionState = 'enabled' | 'disabled';
+export type MarketDataConnectionHealth = 'healthy' | 'unhealthy' | 'untested';
+export type MarketDataPollRunStatus = 'succeeded' | 'no_data' | 'failed';
+
+export interface MarketDataProviderRouteHealth {
+  ordinal: number;
+  provider_id: string;
+  connection_id: string;
+  connection_state: MarketDataConnectionState | null;
+  health_status: MarketDataConnectionHealth | null;
+  last_tested_at: string | null;
+  last_error_code: string | null;
+}
+
+export interface MarketDataStreamHealth {
+  watchlist_id: string;
+  pair: {
+    base_asset: string;
+    quote_asset: string;
+    market_type: 'spot';
+  };
+  timeframe: '15m' | '1h' | '4h' | '1d';
+  watchlist_state: MarketDataWatchlistState;
+  health_status: MarketDataStreamHealthStatus;
+  freshness_status: MarketDataFreshnessStatus;
+  provider_routes: MarketDataProviderRouteHealth[];
+  selected_provider_id: string | null;
+  latest_poll_status: MarketDataPollRunStatus | null;
+  latest_poll_completed_at: string | null;
+  latest_poll_error_code: string | null;
+  latest_finalized_window_end: string | null;
+  latest_watermark_time: string | null;
+  data_age_seconds: number | null;
+  lag_seconds: number | null;
+  freshness_target_seconds: number;
+  poll_overdue_seconds: number;
+  finalization_backlog_count: number;
+}
+
+export interface MarketDataReplayHealth {
+  replay_id: string;
+  decision_id: string;
+  window_id: string;
+  reason:
+    | 'new_window'
+    | 'provisional_update'
+    | 'duplicate_payload'
+    | 'late_arrival'
+    | 'finalized_window_conflict';
+  requested_by: string;
+  requested_at: string;
+  job_id: string;
+  job_status: BackgroundJobStatus;
+  error_code: string | null;
+  revision_id: string | null;
+  revision_kind: 'late_insert' | 'correction' | null;
+  revised_version: number | null;
+  completed_at: string | null;
+}
+
+export interface MarketDataBacklogSummary {
+  poll_jobs: number;
+  replay_jobs: number;
+  overdue_watchlists: number;
+  finalization_windows: number;
+  unrequested_revisions: number;
+  pending_replays: number;
+  failed_replays: number;
+  completed_revisions: number;
+}
+
+export interface MarketDataMonitoringSummary {
+  schema_version: 'market-data-monitoring-v1';
+  generated_at: string;
+  overall_status: MarketDataMonitoringOverallStatus;
+  stream_count: number;
+  healthy_count: number;
+  degraded_count: number;
+  stale_count: number;
+  no_data_count: number;
+  paused_count: number;
+  backlog: MarketDataBacklogSummary;
+  streams: MarketDataStreamHealth[];
+  recent_replays: MarketDataReplayHealth[];
+}
 
 export type SystemMetricName =
   | 'api_request_latency_p95'

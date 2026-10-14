@@ -35,6 +35,7 @@ const api = vi.hoisted(() => ({
   getExperimentSummary: vi.fn(async () => 'experiment-summary'),
   getExperiments: vi.fn(async () => 'experiment-page'),
   getMarketDataConnections: vi.fn(async () => 'connection-page'),
+  getMarketDataMonitoringSummary: vi.fn(async () => 'market-data-monitoring-summary'),
   getMarketDataProviders: vi.fn(async () => 'market-data-providers'),
   getMonitoringSummary: vi.fn(async () => 'monitoring-summary'),
   getPortfolioAnalytics: vi.fn(async () => 'portfolio-analytics'),
@@ -132,6 +133,7 @@ vi.mock('@/features/connections/market-data-connections-panel', () => ({
 }));
 
 vi.mock('@/features/monitoring/api/client', () => ({
+  getMarketDataMonitoringSummary: api.getMarketDataMonitoringSummary,
   getMonitoringSummary: api.getMonitoringSummary,
 }));
 vi.mock('@/features/monitoring/monitoring-dashboard', () => ({ default: screens.monitoring }));
@@ -326,5 +328,6 @@ describe.each(['fa', 'en'] as const)('P6 critical user journeys in %s', (locale)
     expect(connectionProps.initialProviders).toBe('market-data-providers');
     expect(connectionProps.initialPage).toBe('connection-page');
     expect(monitoringProps.summary).toBe('monitoring-summary');
+    expect(monitoringProps.marketData).toBe('market-data-monitoring-summary');
   });
 });

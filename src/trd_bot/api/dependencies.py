@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
+    SqlAlchemyMarketDataMonitoringReader,
     SqlAlchemyMonitoringRuntimeStateRepository,
     SqlAlchemyOptimizationExecutionEnqueuer,
     SqlAlchemyOptimizationExecutionRepository,
@@ -33,6 +34,7 @@ from trd_bot.db.market_data_import_repositories import (
 from trd_bot.jobs import BackgroundJobRepository
 from trd_bot.market_data import (
     MarketDataConnectionRepository,
+    MarketDataMonitoringReader,
     MarketDataProviderCatalog,
 )
 from trd_bot.market_data.import_history import MarketDataImportRepository
@@ -83,6 +85,14 @@ def get_market_data_import_repository(
     """Return the request-scoped historical import audit repository."""
 
     return SqlAlchemyMarketDataImportRepository(session)
+
+
+def get_market_data_monitoring_reader(
+    session: DatabaseSessionDependency,
+) -> MarketDataMonitoringReader:
+    """Return the request-scoped read-only market-data health projection."""
+
+    return SqlAlchemyMarketDataMonitoringReader(session)
 
 
 def get_market_data_provider_catalog() -> MarketDataProviderCatalog:

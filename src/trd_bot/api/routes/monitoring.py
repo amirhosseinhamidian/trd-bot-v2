@@ -14,6 +14,7 @@ from trd_bot.api.dependencies import (
     get_background_job_repository,
     get_market_data_connection_repository,
     get_market_data_import_repository,
+    get_market_data_monitoring_reader,
     get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
@@ -23,7 +24,11 @@ from trd_bot.api.pagination import (
     build_page,
 )
 from trd_bot.jobs import BackgroundJobRepository
-from trd_bot.market_data import MarketDataConnectionRepository
+from trd_bot.market_data import (
+    MarketDataConnectionRepository,
+    MarketDataMonitoringReader,
+    MarketDataMonitoringSummary,
+)
 from trd_bot.market_data.import_history import MarketDataImportRepository
 from trd_bot.monitoring import (
     ArchitectureRecommendation,
@@ -72,6 +77,11 @@ MarketDataConnectionRepositoryDependency = Annotated[
 MarketDataImportRepositoryDependency = Annotated[
     MarketDataImportRepository,
     Depends(get_market_data_import_repository),
+]
+
+MarketDataMonitoringReaderDependency = Annotated[
+    MarketDataMonitoringReader,
+    Depends(get_market_data_monitoring_reader),
 ]
 
 
@@ -296,6 +306,18 @@ def resolve_architecture_recommendation(
         ) from error
 
     return repository.upsert(updated)
+
+
+@router.get(
+    "/market-data",
+    response_model=MarketDataMonitoringSummary,
+)
+def get_market_data_monitoring_summary(
+    reader: MarketDataMonitoringReaderDependency,
+) -> MarketDataMonitoringSummary:
+    """Return sanitized freshness, health, lag, backlog, and replay state."""
+
+    return reader.read()
 
 
 @router.get(

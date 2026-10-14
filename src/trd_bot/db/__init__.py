@@ -32,6 +32,7 @@ from trd_bot.db.market_data_finalization import (
     SqlAlchemyMarketDataWindowFinalizationRepository,
     SqlAlchemyMarketDataWindowFinalizer,
 )
+from trd_bot.db.market_data_health import SqlAlchemyMarketDataMonitoringReader
 from trd_bot.db.market_data_ingestion import SqlAlchemyMarketDataIngestor
 from trd_bot.db.market_data_polling import (
     SqlAlchemyMarketDataPollingScheduler,
@@ -162,6 +163,7 @@ __all__ = [
     "SqlAlchemyHistoricalDatasetCommitter",
     "SqlAlchemyMarketDataEventStore",
     "SqlAlchemyMarketDataIngestor",
+    "SqlAlchemyMarketDataMonitoringReader",
     "SqlAlchemyMarketDataPollJobRunner",
     "SqlAlchemyMarketDataPollRunRepository",
     "SqlAlchemyMarketDataPollingScheduler",
