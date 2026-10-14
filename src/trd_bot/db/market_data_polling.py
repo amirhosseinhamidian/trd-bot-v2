@@ -13,6 +13,7 @@ from trd_bot.db.market_data_connection_repositories import (
     SqlAlchemyMarketDataConnectionRepository,
 )
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
+from trd_bot.db.market_data_finalization import SqlAlchemyMarketDataWindowFinalizer
 from trd_bot.db.market_data_ingestion import SqlAlchemyMarketDataIngestor
 from trd_bot.db.models import (
     MarketDataPollRunRow,
@@ -669,6 +670,46 @@ class SqlAlchemyMarketDataPollJobRunner:
                 raise MarketDataPollingFailedError(
                     error_code="market_data_ingestion_failed",
                     error_message="Market-data ingestion failed.",
+                    retryable=True,
+                ) from error
+
+            try:
+                with self._session_factory() as session:
+                    SqlAlchemyMarketDataWindowFinalizer(
+                        session,
+                        policy=self._policy,
+                    ).finalize_eligible(
+                        source=route.provider_id,
+                        pair=entry.pair,
+                        timeframe=entry.timeframe,
+                        finalized_at=self._now(),
+                    )
+            except Exception as error:
+                attempts.append(
+                    self._attempt(
+                        ordinal=ordinal,
+                        route=route,
+                        outcome=MarketDataPollAttemptOutcome.FINALIZATION_FAILED,
+                        error_code="market_data_finalization_failed",
+                        started_at=attempt_started_at,
+                        received_candles=len(candles),
+                    )
+                )
+                self._save_failed_run(
+                    run_id=run_id,
+                    job_id=job_id,
+                    job_attempt=job_attempt,
+                    entry=entry,
+                    payload=payload,
+                    attempts=attempts,
+                    started_at=started_at,
+                    error_code="market_data_finalization_failed",
+                    error_message="Market-data window finalization failed.",
+                    retryable=True,
+                )
+                raise MarketDataPollingFailedError(
+                    error_code="market_data_finalization_failed",
+                    error_message="Market-data window finalization failed.",
                     retryable=True,
                 ) from error
 

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from trd_bot.db.models import (
@@ -13,7 +13,11 @@ from trd_bot.db.models import (
     MarketDataWindowVersionRow,
 )
 from trd_bot.domain.market_data import Timeframe, TradingPair
-from trd_bot.market_data.events import MarketDataEvent, MarketDataWindowSnapshot
+from trd_bot.market_data.events import (
+    MarketDataEvent,
+    MarketDataWindowSnapshot,
+    MarketDataWindowState,
+)
 from trd_bot.market_data.storage import (
     MarketDataInboxReceipt,
     MarketDataOutboxMessage,
@@ -350,6 +354,55 @@ class SqlAlchemyMarketDataEventStore:
         if row is None:
             return None
         return MarketDataWindowSnapshot.model_validate_json(row.payload_json)
+
+    def list_finalization_candidate_ids(
+        self,
+        *,
+        source: str,
+        pair: TradingPair,
+        timeframe: Timeframe,
+        watermark_time: datetime,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if limit <= 0 or limit > 500:
+            raise ValueError("window finalization limit must be between 1 and 500")
+        stream_filters = (
+            MarketDataWindowVersionRow.source == source,
+            MarketDataWindowVersionRow.base_asset == pair.base_asset,
+            MarketDataWindowVersionRow.quote_asset == pair.quote_asset,
+            MarketDataWindowVersionRow.market_type == pair.market_type.value,
+            MarketDataWindowVersionRow.timeframe == timeframe.value,
+        )
+        latest_versions = (
+            select(
+                MarketDataWindowVersionRow.window_id.label("window_id"),
+                func.max(MarketDataWindowVersionRow.version).label("version"),
+            )
+            .where(*stream_filters)
+            .group_by(MarketDataWindowVersionRow.window_id)
+            .subquery()
+        )
+        rows = self._session.scalars(
+            select(MarketDataWindowVersionRow.window_id)
+            .join(
+                latest_versions,
+                and_(
+                    MarketDataWindowVersionRow.window_id == latest_versions.c.window_id,
+                    MarketDataWindowVersionRow.version == latest_versions.c.version,
+                ),
+            )
+            .where(
+                *stream_filters,
+                MarketDataWindowVersionRow.state == MarketDataWindowState.PROVISIONAL.value,
+                MarketDataWindowVersionRow.window_end <= watermark_time,
+            )
+            .order_by(
+                MarketDataWindowVersionRow.window_end,
+                MarketDataWindowVersionRow.window_id,
+            )
+            .limit(limit)
+        ).all()
+        return tuple(rows)
 
     def stage_watermark(
         self,

@@ -25,6 +25,10 @@ from trd_bot.market_data.events import (
     calculate_candle_payload_checksum,
     decide_market_data_event,
 )
+from trd_bot.market_data.finalization import (
+    MarketDataFinalizationFreshnessOutcome,
+    MarketDataWindowFinalization,
+)
 from trd_bot.market_data.ingestion import (
     MARKET_DATA_WINDOWING_TOPIC,
     MarketDataIngestionConflictError,
@@ -141,6 +145,7 @@ __all__ = [
     "MarketDataEventDisposition",
     "MarketDataEventKind",
     "MarketDataEventReason",
+    "MarketDataFinalizationFreshnessOutcome",
     "MarketDataInboxReceipt",
     "MarketDataIngestionConflictError",
     "MarketDataIngestionError",
@@ -180,6 +185,7 @@ __all__ = [
     "MarketDataWatchlistRoute",
     "MarketDataWatchlistState",
     "MarketDataWatermark",
+    "MarketDataWindowFinalization",
     "MarketDataWindowSnapshot",
     "MarketDataWindowState",
     "NobitexPublicMarketDataProvider",

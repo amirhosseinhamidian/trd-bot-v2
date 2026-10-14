@@ -166,6 +166,7 @@ class MarketDataPollAttemptOutcome(StrEnum):
     QUALITY_REJECTED = "quality_rejected"
     RATE_LIMITED_LOCALLY = "rate_limited_locally"
     INGESTION_FAILED = "ingestion_failed"
+    FINALIZATION_FAILED = "finalization_failed"
 
 
 class MarketDataPollAttempt(BaseModel):

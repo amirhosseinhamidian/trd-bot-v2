@@ -26,6 +26,12 @@ from trd_bot.db.historical_dataset_commits import (
     SqlAlchemyHistoricalDatasetCommitter,
 )
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
+from trd_bot.db.market_data_finalization import (
+    MarketDataWindowFinalizationError,
+    MarketDataWindowFinalizationWatermarkMissingError,
+    SqlAlchemyMarketDataWindowFinalizationRepository,
+    SqlAlchemyMarketDataWindowFinalizer,
+)
 from trd_bot.db.market_data_ingestion import SqlAlchemyMarketDataIngestor
 from trd_bot.db.market_data_polling import (
     SqlAlchemyMarketDataPollingScheduler,
@@ -52,6 +58,7 @@ from trd_bot.db.models import (
     MarketDataRawObservationRow,
     MarketDataWatchlistRow,
     MarketDataWatermarkRow,
+    MarketDataWindowFinalizationRow,
     MarketDataWindowVersionRow,
     MonitoringRuntimeStateRow,
     OptimizationExecutionRow,
@@ -117,6 +124,9 @@ __all__ = [
     "MarketDataRawObservationRow",
     "MarketDataWatchlistRow",
     "MarketDataWatermarkRow",
+    "MarketDataWindowFinalizationError",
+    "MarketDataWindowFinalizationRow",
+    "MarketDataWindowFinalizationWatermarkMissingError",
     "MarketDataWindowVersionRow",
     "MonitoringRuntimeStateRow",
     "OptimizationExecutionRow",
@@ -143,6 +153,8 @@ __all__ = [
     "SqlAlchemyMarketDataPollingScheduler",
     "SqlAlchemyMarketDataWatchlistManager",
     "SqlAlchemyMarketDataWatchlistRepository",
+    "SqlAlchemyMarketDataWindowFinalizationRepository",
+    "SqlAlchemyMarketDataWindowFinalizer",
     "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemyOptimizationExecutionEnqueuer",
     "SqlAlchemyOptimizationExecutionRepository",

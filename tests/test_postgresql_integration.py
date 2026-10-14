@@ -24,6 +24,7 @@ from trd_bot.db import (
     SqlAlchemyMarketDataIngestor,
     SqlAlchemyMarketDataPollingScheduler,
     SqlAlchemyMarketDataWatchlistRepository,
+    SqlAlchemyMarketDataWindowFinalizer,
     SqlAlchemySimulatedPortfolioRepository,
     create_database_engine,
     create_session_factory,
@@ -43,6 +44,7 @@ from trd_bot.db.models import (
     MarketDataRawObservationRow,
     MarketDataWatchlistRow,
     MarketDataWatermarkRow,
+    MarketDataWindowFinalizationRow,
     MarketDataWindowVersionRow,
 )
 from trd_bot.domain import OHLCVCandle, Timeframe, TradingPair
@@ -158,6 +160,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "market_data_raw_observations",
             "market_data_watchlist",
             "market_data_watermarks",
+            "market_data_window_finalizations",
             "market_data_window_versions",
             "monitoring_runtime_state",
             "optimization_executions",
@@ -529,6 +532,107 @@ def test_postgresql_watchlist_scheduler_race_enqueues_one_slot() -> None:
                     MarketDataConnectionRow.connection_id.in_(
                         [kraken_connection_id, binance_connection_id]
                     )
+                )
+            )
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_window_finalization_race_creates_one_version() -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    suffix = uuid4().hex[:8]
+    pair = TradingPair(base_asset=f"F{suffix.upper()}", quote_asset="USDT")
+    source = "kraken-public"
+    finalized_at = datetime(2026, 10, 14, 12, 8, tzinfo=UTC)
+    candle = OHLCVCandle(
+        source=source,
+        pair=pair,
+        timeframe=Timeframe.HOUR_1,
+        open_time=datetime(2026, 10, 14, 10, tzinfo=UTC),
+        close_time=datetime(2026, 10, 14, 11, tzinfo=UTC),
+        received_at=datetime(2026, 10, 14, 11, 1, tzinfo=UTC),
+        open_price=Decimal("100"),
+        high_price=Decimal("110"),
+        low_price=Decimal("95"),
+        close_price=Decimal("105"),
+        volume=Decimal("1000"),
+        is_closed=True,
+    )
+    event = MarketDataEvent.from_candle(candle)
+    provisional = MarketDataWindowSnapshot.from_event(
+        event,
+        version=1,
+        created_at=candle.received_at,
+    )
+    watermark = VersionedMarketDataWatermark.build(
+        watermark=MarketDataWatermark.build(
+            source=source,
+            pair=pair,
+            timeframe=Timeframe.HOUR_1,
+            high_water_event_time=datetime(2026, 10, 14, 12, 5, tzinfo=UTC),
+            allowed_lateness_seconds=300,
+            calculated_at=datetime(2026, 10, 14, 12, 6, tzinfo=UTC),
+        ),
+        version=1,
+        policy_version="market-data-service-level-policy-v1",
+        stored_at=datetime(2026, 10, 14, 12, 6, tzinfo=UTC),
+    )
+    barrier = Barrier(2)
+
+    def finalize_from_one_session() -> tuple[object, ...]:
+        with factory() as session:
+            barrier.wait(timeout=10)
+            return SqlAlchemyMarketDataWindowFinalizer(session).finalize_eligible(
+                source=source,
+                pair=pair,
+                timeframe=Timeframe.HOUR_1,
+                finalized_at=finalized_at,
+            )
+
+    try:
+        with factory.begin() as session:
+            store = SqlAlchemyMarketDataEventStore(session)
+            store.stage_watermark(watermark)
+            store.stage_window_version(provisional)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            batches = list(executor.map(lambda _: finalize_from_one_session(), range(2)))
+        evidence = tuple(item for batch in batches for item in batch)
+
+        assert len(evidence) == 1
+        with factory() as session:
+            latest = SqlAlchemyMarketDataEventStore(session).get_latest_window(
+                provisional.window_id
+            )
+            assert latest is not None
+            assert latest.version == 2
+            assert latest.state.value == "finalized"
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataWindowFinalizationRow)
+                    .where(MarketDataWindowFinalizationRow.window_id == provisional.window_id)
+                )
+                == 1
+            )
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(MarketDataWindowFinalizationRow).where(
+                    MarketDataWindowFinalizationRow.window_id == provisional.window_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWindowVersionRow).where(
+                    MarketDataWindowVersionRow.window_id == provisional.window_id
+                )
+            )
+            session.execute(
+                delete(MarketDataWatermarkRow).where(
+                    MarketDataWatermarkRow.watermark_id == watermark.watermark_id
                 )
             )
         engine.dispose()

@@ -299,21 +299,24 @@ def _market_data_import_workload(candles: Sequence[OHLCVCandle]) -> Callable[[],
 
 
 def _market_data_poll_workload() -> Callable[[], None]:
-    candle = OHLCVCandle(
-        source="kraken-public",
-        pair=_PAIR,
-        timeframe=Timeframe.HOUR_1,
-        open_time=_EXECUTION_TIME - timedelta(hours=1),
-        close_time=_EXECUTION_TIME,
-        received_at=_EXECUTION_TIME,
-        open_price=Decimal("100"),
-        high_price=Decimal("110"),
-        low_price=Decimal("95"),
-        close_price=Decimal("105"),
-        volume=Decimal("1000"),
-        is_closed=True,
+    candles = tuple(
+        OHLCVCandle(
+            source="kraken-public",
+            pair=_PAIR,
+            timeframe=Timeframe.HOUR_1,
+            open_time=_EXECUTION_TIME - timedelta(hours=offset),
+            close_time=_EXECUTION_TIME - timedelta(hours=offset - 1),
+            received_at=_EXECUTION_TIME,
+            open_price=Decimal("100"),
+            high_price=Decimal("110"),
+            low_price=Decimal("95"),
+            close_price=Decimal("105"),
+            volume=Decimal("1000"),
+            is_closed=True,
+        )
+        for offset in (2, 1)
     )
-    kraken = _FixtureMarketDataProvider((candle,), provider_id="kraken-public")
+    kraken = _FixtureMarketDataProvider(candles, provider_id="kraken-public")
     binance = _FixtureMarketDataProvider((), provider_id="binance-public")
     providers = MarketDataProviderCatalog(
         {
@@ -351,7 +354,7 @@ def _market_data_poll_workload() -> Callable[[], None]:
                     timeframe=Timeframe.HOUR_1,
                     kraken_connection_id="capacity-kraken-public",
                     binance_connection_id="capacity-binance-public",
-                    lookback_candles=1,
+                    lookback_candles=2,
                 )
 
             with factory() as session:
@@ -375,7 +378,7 @@ def _market_data_poll_workload() -> Callable[[], None]:
             if (
                 run.status is not MarketDataPollRunStatus.SUCCEEDED
                 or run.watchlist_id != entry.watchlist_id
-                or run.received_candles != 1
+                or run.received_candles != 2
             ):
                 raise RuntimeError("market-data poll workload produced inconsistent output")
         finally:
@@ -526,7 +529,7 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
         BackgroundJobWorkload(
             kind=BackgroundJobKind.MARKET_DATA_POLL,
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
-            dimensions=(("candles", 1), ("provider_count", 2)),
+            dimensions=(("candles", 2), ("provider_count", 2)),
             execute=_market_data_poll_workload(),
         ),
         BackgroundJobWorkload(

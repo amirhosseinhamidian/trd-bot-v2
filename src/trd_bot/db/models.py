@@ -662,6 +662,78 @@ class MarketDataWindowVersionRow(DatabaseBase):
     )
 
 
+class MarketDataWindowFinalizationRow(DatabaseBase):
+    """Immutable finalization and freshness evidence for one window version."""
+
+    __tablename__ = "market_data_window_finalizations"
+
+    __table_args__ = (
+        CheckConstraint(
+            "freshness_outcome IN ('within_target', 'missed_target')",
+            name="freshness_outcome_supported",
+        ),
+        CheckConstraint(
+            "finalized_version = provisional_version + 1",
+            name="version_transition_valid",
+        ),
+        CheckConstraint(
+            "watermark_time >= window_end",
+            name="window_passed_watermark",
+        ),
+        CheckConstraint(
+            "finalized_at >= window_end",
+            name="finalized_after_window_end",
+        ),
+        CheckConstraint(
+            "freshness_seconds >= 0 AND freshness_target_seconds >= 1",
+            name="freshness_values_valid",
+        ),
+        Index(
+            "ux_market_data_window_finalizations_window_version",
+            "window_id",
+            "finalized_version",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_window_finalizations_stream_finalized_at",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            "finalized_at",
+        ),
+        Index(
+            "ix_market_data_window_finalizations_outcome_finalized_at",
+            "freshness_outcome",
+            "finalized_at",
+        ),
+    )
+
+    finalization_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20), index=True)
+    provisional_version: Mapped[int] = mapped_column(Integer)
+    finalized_version: Mapped[int] = mapped_column(Integer)
+    event_id: Mapped[str] = mapped_column(String(100), index=True)
+    payload_checksum: Mapped[str] = mapped_column(String(64))
+    watermark_id: Mapped[str] = mapped_column(String(100), index=True)
+    watermark_version: Mapped[int] = mapped_column(Integer)
+    policy_version: Mapped[str] = mapped_column(String(50))
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    watermark_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finalized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    freshness_seconds: Mapped[Decimal] = mapped_column(Numeric(18, 6))
+    freshness_target_seconds: Mapped[int] = mapped_column(Integer)
+    freshness_outcome: Mapped[str] = mapped_column(String(30), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class MarketDataWatermarkRow(DatabaseBase):
     """Append-only policy-bound watermark revision for one exact stream."""
 

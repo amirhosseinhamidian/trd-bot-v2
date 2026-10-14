@@ -8,8 +8,10 @@ from trd_bot.db import (
     DatabaseBase,
     SqlAlchemyMarketDataPollingScheduler,
     SqlAlchemyMarketDataPollJobRunner,
+    SqlAlchemyMarketDataPollRunRepository,
     SqlAlchemyMarketDataWatchlistManager,
     SqlAlchemyMarketDataWatchlistRepository,
+    SqlAlchemyMarketDataWindowFinalizer,
     SqlAlchemyProviderRequestBudgetGate,
     create_database_engine,
     create_session_factory,
@@ -24,6 +26,7 @@ from trd_bot.db.models import (
     MarketDataProviderBudgetRow,
     MarketDataRawObservationRow,
     MarketDataWatermarkRow,
+    MarketDataWindowFinalizationRow,
     MarketDataWindowVersionRow,
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
@@ -224,7 +227,8 @@ async def test_polling_uses_explicit_kraken_then_binance_fallback_and_ingests() 
         with factory() as session:
             assert row_count(session, MarketDataRawObservationRow) == 3
             assert row_count(session, MarketDataEventDecisionRow) == 3
-            assert row_count(session, MarketDataWindowVersionRow) == 3
+            assert row_count(session, MarketDataWindowVersionRow) == 5
+            assert row_count(session, MarketDataWindowFinalizationRow) == 2
             assert row_count(session, MarketDataOutboxRow) == 3
             assert row_count(session, MarketDataWatermarkRow) == 2
             assert row_count(session, MarketDataPollRunRow) == 1
@@ -405,6 +409,63 @@ async def test_failed_poll_attempt_replays_the_same_retry_policy() -> None:
 
         with factory() as session:
             assert row_count(session, MarketDataPollRunRow) == 1
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_finalization_failure_is_recorded_as_retryable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = create_database_engine("sqlite+pysqlite:///:memory:")
+    DatabaseBase.metadata.create_all(engine)
+    factory = create_session_factory(engine)
+    kraken = SyntheticPollingProvider(
+        provider_id="kraken-public",
+        candles=create_candles("kraken-public"),
+    )
+    binance = SyntheticPollingProvider(provider_id="binance-public")
+    catalog = MarketDataProviderCatalog(
+        {
+            "kraken-public": lambda: kraken,
+            "binance-public": lambda: binance,
+        }
+    )
+
+    def fail_finalization(*_args: object, **_kwargs: object) -> tuple[object, ...]:
+        raise RuntimeError("private database detail")
+
+    monkeypatch.setattr(
+        SqlAlchemyMarketDataWindowFinalizer,
+        "finalize_eligible",
+        fail_finalization,
+    )
+
+    try:
+        prepare_watchlist(factory, catalog)
+        job, payload = enqueue_due(factory)
+        with pytest.raises(MarketDataPollingFailedError) as failure:
+            await SqlAlchemyMarketDataPollJobRunner(
+                session_factory=factory,
+                providers=catalog,
+                clock=lambda: NOW + timedelta(seconds=1),
+            ).run(
+                payload=payload,  # type: ignore[arg-type]
+                job_id=job.job_id,  # type: ignore[attr-defined]
+                job_attempt=1,
+            )
+
+        assert failure.value.error_code == "market_data_finalization_failed"
+        assert failure.value.retryable is True
+        assert binance.calls == []
+        with factory() as session:
+            stored = SqlAlchemyMarketDataPollRunRepository(session).get_by_job_attempt(
+                job_id=job.job_id,  # type: ignore[attr-defined]
+                job_attempt=1,
+            )
+            assert stored is not None
+            assert stored.failure_code == "market_data_finalization_failed"
+            assert stored.attempts[-1].outcome is (MarketDataPollAttemptOutcome.FINALIZATION_FAILED)
     finally:
         engine.dispose()
 
