@@ -285,6 +285,12 @@ def test_production_registry_allowlists_market_data_import_jobs() -> None:
     assert callable(handler)
 
 
+def test_production_registry_allowlists_market_data_poll_jobs() -> None:
+    handler = build_background_job_handler_registry().get(BackgroundJobKind.MARKET_DATA_POLL)
+
+    assert callable(handler)
+
+
 def test_production_registry_allowlists_optimization_jobs() -> None:
     handler = build_background_job_handler_registry().get(BackgroundJobKind.OPTIMIZATION_EXECUTION)
 

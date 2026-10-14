@@ -6,7 +6,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
-from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
 from trd_bot.market_data.events import (
     MarketDataEvent,
     MarketDataEventDecision,
@@ -117,6 +117,29 @@ class MarketDataRawObservation(BaseModel):
             observed_at=observed_at,
             payload_checksum=checksum,
             payload=payload,
+            created_at=created_at,
+        )
+
+    @classmethod
+    def from_candle(
+        cls,
+        candle: OHLCVCandle,
+        *,
+        created_at: datetime,
+    ) -> Self:
+        """Capture the lossless canonical provider observation before event wrapping."""
+
+        return cls.build(
+            source=candle.source,
+            pair=candle.pair,
+            timeframe=candle.timeframe,
+            window_start=candle.open_time,
+            window_end=candle.close_time,
+            observed_at=candle.received_at,
+            payload={
+                "schema_version": "canonical-provider-observation-v1",
+                "candle": candle.model_dump(mode="json"),
+            },
             created_at=created_at,
         )
 

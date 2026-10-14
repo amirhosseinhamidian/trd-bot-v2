@@ -6,6 +6,17 @@ from decimal import Decimal
 from typing import Final
 
 from trd_bot.backtesting.models import BacktestConfig
+from trd_bot.db import (
+    DatabaseBase,
+    SqlAlchemyMarketDataPollingScheduler,
+    SqlAlchemyMarketDataPollJobRunner,
+    SqlAlchemyMarketDataWatchlistManager,
+    create_database_engine,
+    create_session_factory,
+)
+from trd_bot.db.market_data_connection_repositories import (
+    SqlAlchemyMarketDataConnectionRepository,
+)
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.jobs import BackgroundJobKind
 from trd_bot.market_data.connections import (
@@ -16,6 +27,7 @@ from trd_bot.market_data.connections import (
     MarketDataProviderCatalog,
 )
 from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
+from trd_bot.market_data.polling import MarketDataPollJobPayload, MarketDataPollRunStatus
 from trd_bot.market_data.providers import (
     MarketDataProvider,
     MarketDataProviderAccessMode,
@@ -79,13 +91,19 @@ class BackgroundJobWorkload:
 
 
 class _FixtureMarketDataProvider(MarketDataProvider):
-    def __init__(self, candles: Sequence[OHLCVCandle]) -> None:
+    def __init__(
+        self,
+        candles: Sequence[OHLCVCandle],
+        *,
+        provider_id: str = "capacity-benchmark-provider",
+    ) -> None:
         self._candles = tuple(candles)
+        self._provider_id = provider_id
 
     @property
     def metadata(self) -> MarketDataProviderMetadata:
         return MarketDataProviderMetadata(
-            provider_id="capacity-benchmark-provider",
+            provider_id=self._provider_id,
             display_name="Capacity benchmark provider",
             requires_credentials=False,
             supported_market_types=(MarketType.SPOT,),
@@ -280,6 +298,92 @@ def _market_data_import_workload(candles: Sequence[OHLCVCandle]) -> Callable[[],
     return execute
 
 
+def _market_data_poll_workload() -> Callable[[], None]:
+    candle = OHLCVCandle(
+        source="kraken-public",
+        pair=_PAIR,
+        timeframe=Timeframe.HOUR_1,
+        open_time=_EXECUTION_TIME - timedelta(hours=1),
+        close_time=_EXECUTION_TIME,
+        received_at=_EXECUTION_TIME,
+        open_price=Decimal("100"),
+        high_price=Decimal("110"),
+        low_price=Decimal("95"),
+        close_price=Decimal("105"),
+        volume=Decimal("1000"),
+        is_closed=True,
+    )
+    kraken = _FixtureMarketDataProvider((candle,), provider_id="kraken-public")
+    binance = _FixtureMarketDataProvider((), provider_id="binance-public")
+    providers = MarketDataProviderCatalog(
+        {
+            "kraken-public": lambda: kraken,
+            "binance-public": lambda: binance,
+        }
+    )
+
+    def execute() -> None:
+        engine = create_database_engine("sqlite+pysqlite:///:memory:")
+        DatabaseBase.metadata.create_all(engine)
+        factory = create_session_factory(engine)
+        try:
+            with factory() as session:
+                connections = SqlAlchemyMarketDataConnectionRepository(session)
+                for provider_id in ("kraken-public", "binance-public"):
+                    connections.save(
+                        MarketDataConnection(
+                            connection_id=f"capacity-{provider_id}",
+                            provider_id=provider_id,
+                            display_name=provider_id,
+                            state=MarketDataConnectionState.ENABLED,
+                            health_status=MarketDataConnectionHealth.HEALTHY,
+                            created_at=_EXECUTION_TIME,
+                            updated_at=_EXECUTION_TIME,
+                            last_tested_at=_EXECUTION_TIME,
+                        )
+                    )
+                entry = SqlAlchemyMarketDataWatchlistManager(
+                    session=session,
+                    providers=providers,
+                    clock=lambda: _EXECUTION_TIME,
+                ).create(
+                    pair=_PAIR,
+                    timeframe=Timeframe.HOUR_1,
+                    kraken_connection_id="capacity-kraken-public",
+                    binance_connection_id="capacity-binance-public",
+                    lookback_candles=1,
+                )
+
+            with factory() as session:
+                jobs = SqlAlchemyMarketDataPollingScheduler(session).enqueue_due(
+                    now=_EXECUTION_TIME
+                )
+            if len(jobs) != 1:
+                raise RuntimeError("market-data poll workload did not enqueue one job")
+            payload = MarketDataPollJobPayload.model_validate(jobs[0].payload)
+            run = asyncio.run(
+                SqlAlchemyMarketDataPollJobRunner(
+                    session_factory=factory,
+                    providers=providers,
+                    clock=lambda: _EXECUTION_TIME + timedelta(seconds=1),
+                ).run(
+                    payload=payload,
+                    job_id=jobs[0].job_id,
+                    job_attempt=1,
+                )
+            )
+            if (
+                run.status is not MarketDataPollRunStatus.SUCCEEDED
+                or run.watchlist_id != entry.watchlist_id
+                or run.received_candles != 1
+            ):
+                raise RuntimeError("market-data poll workload produced inconsistent output")
+        finally:
+            engine.dispose()
+
+    return execute
+
+
 def _experiment_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
     dataset = DatasetBuilder().build(
         name="Capacity benchmark experiment dataset",
@@ -418,6 +522,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("candles", len(market_candles)), ("provider_count", 1)),
             execute=_market_data_import_workload(market_candles),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.MARKET_DATA_POLL,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("candles", 1), ("provider_count", 2)),
+            execute=_market_data_poll_workload(),
         ),
         BackgroundJobWorkload(
             kind=BackgroundJobKind.EXPERIMENT_EXECUTION,

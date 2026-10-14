@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -80,6 +81,151 @@ class MarketDataConnectionRow(DatabaseBase):
     )
     last_error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class MarketDataWatchlistRow(DatabaseBase):
+    """Durable polling schedule for one normalized market-data stream."""
+
+    __tablename__ = "market_data_watchlist"
+
+    __table_args__ = (
+        CheckConstraint("state IN ('active', 'paused')", name="state_supported"),
+        CheckConstraint("polling_interval_seconds >= 1", name="polling_interval_positive"),
+        CheckConstraint(
+            "lookback_candles >= 1 AND lookback_candles <= 20",
+            name="lookback_candles_bounded",
+        ),
+        CheckConstraint("updated_at >= created_at", name="updated_after_created"),
+        CheckConstraint("next_poll_at >= created_at", name="next_poll_after_created"),
+        CheckConstraint(
+            "(last_enqueued_for IS NULL AND last_job_id IS NULL) OR "
+            "(last_enqueued_for IS NOT NULL AND last_job_id IS NOT NULL)",
+            name="enqueue_reference_consistent",
+        ),
+        Index(
+            "ux_market_data_watchlist_stream",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "timeframe",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_watchlist_state_next_poll_at",
+            "state",
+            "next_poll_at",
+        ),
+    )
+
+    watchlist_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    policy_version: Mapped[str] = mapped_column(String(50))
+    polling_interval_seconds: Mapped[int] = mapped_column(Integer)
+    lookback_candles: Mapped[int] = mapped_column(Integer)
+    next_poll_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    last_enqueued_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    last_job_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MarketDataProviderBudgetRow(DatabaseBase):
+    """Durable token-bucket state shared by polling workers."""
+
+    __tablename__ = "market_data_provider_budgets"
+
+    __table_args__ = (
+        CheckConstraint("tokens >= 0", name="tokens_nonnegative"),
+        CheckConstraint("updated_at >= refilled_at", name="updated_after_refill"),
+    )
+
+    provider_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    tokens: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    refilled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MarketDataPollRunRow(DatabaseBase):
+    """Sanitized terminal evidence for one polling background-job attempt."""
+
+    __tablename__ = "market_data_poll_runs"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('succeeded', 'no_data', 'failed')",
+            name="status_supported",
+        ),
+        CheckConstraint("job_attempt >= 1 AND job_attempt <= 10", name="job_attempt_bounded"),
+        CheckConstraint("attempt_count >= 1 AND attempt_count <= 2", name="attempt_count_bounded"),
+        CheckConstraint(
+            "received_candles >= 0 AND accepted_events >= 0 "
+            "AND duplicate_events >= 0 AND revision_required_events >= 0",
+            name="counts_nonnegative",
+        ),
+        CheckConstraint("completed_at >= started_at", name="completion_after_start"),
+        CheckConstraint(
+            "(status = 'succeeded' AND selected_connection_id IS NOT NULL "
+            "AND selected_provider_id IS NOT NULL AND received_candles >= 1 "
+            "AND failure_retryable = false "
+            "AND failure_code IS NULL AND failure_message IS NULL) OR "
+            "(status = 'no_data' AND selected_connection_id IS NULL "
+            "AND selected_provider_id IS NULL AND received_candles = 0 "
+            "AND failure_retryable = false "
+            "AND failure_code IS NULL AND failure_message IS NULL) OR "
+            "(status = 'failed' AND selected_connection_id IS NULL "
+            "AND selected_provider_id IS NULL AND received_candles = 0 "
+            "AND failure_code IS NOT NULL AND failure_message IS NOT NULL)",
+            name="outcome_consistent",
+        ),
+        Index(
+            "ux_market_data_poll_runs_job_attempt",
+            "job_id",
+            "job_attempt",
+            unique=True,
+        ),
+        Index(
+            "ix_market_data_poll_runs_watchlist_scheduled_for",
+            "watchlist_id",
+            "scheduled_for",
+        ),
+        Index(
+            "ix_market_data_poll_runs_status_completed_at",
+            "status",
+            "completed_at",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    job_id: Mapped[str] = mapped_column(String(100), index=True)
+    job_attempt: Mapped[int] = mapped_column(Integer)
+    watchlist_id: Mapped[str] = mapped_column(String(100), index=True)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer)
+    selected_connection_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    selected_provider_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    received_candles: Mapped[int] = mapped_column(Integer)
+    accepted_events: Mapped[int] = mapped_column(Integer)
+    duplicate_events: Mapped[int] = mapped_column(Integer)
+    revision_required_events: Mapped[int] = mapped_column(Integer)
+    watermark_before_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    watermark_after_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    failure_retryable: Mapped[bool] = mapped_column(Boolean, default=False)
+    failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class MarketDataImportRow(DatabaseBase):

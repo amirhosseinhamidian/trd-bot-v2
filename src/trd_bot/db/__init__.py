@@ -27,6 +27,14 @@ from trd_bot.db.historical_dataset_commits import (
 )
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
 from trd_bot.db.market_data_ingestion import SqlAlchemyMarketDataIngestor
+from trd_bot.db.market_data_polling import (
+    SqlAlchemyMarketDataPollingScheduler,
+    SqlAlchemyMarketDataPollJobRunner,
+    SqlAlchemyMarketDataPollRunRepository,
+    SqlAlchemyMarketDataWatchlistManager,
+    SqlAlchemyMarketDataWatchlistRepository,
+    SqlAlchemyProviderRequestBudgetGate,
+)
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     BackgroundJobRow,
@@ -39,7 +47,10 @@ from trd_bot.db.models import (
     MarketDataEventInboxRow,
     MarketDataEventRow,
     MarketDataOutboxRow,
+    MarketDataPollRunRow,
+    MarketDataProviderBudgetRow,
     MarketDataRawObservationRow,
+    MarketDataWatchlistRow,
     MarketDataWatermarkRow,
     MarketDataWindowVersionRow,
     MonitoringRuntimeStateRow,
@@ -101,7 +112,10 @@ __all__ = [
     "MarketDataEventInboxRow",
     "MarketDataEventRow",
     "MarketDataOutboxRow",
+    "MarketDataPollRunRow",
+    "MarketDataProviderBudgetRow",
     "MarketDataRawObservationRow",
+    "MarketDataWatchlistRow",
     "MarketDataWatermarkRow",
     "MarketDataWindowVersionRow",
     "MonitoringRuntimeStateRow",
@@ -124,9 +138,15 @@ __all__ = [
     "SqlAlchemyHistoricalDatasetCommitter",
     "SqlAlchemyMarketDataEventStore",
     "SqlAlchemyMarketDataIngestor",
+    "SqlAlchemyMarketDataPollJobRunner",
+    "SqlAlchemyMarketDataPollRunRepository",
+    "SqlAlchemyMarketDataPollingScheduler",
+    "SqlAlchemyMarketDataWatchlistManager",
+    "SqlAlchemyMarketDataWatchlistRepository",
     "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemyOptimizationExecutionEnqueuer",
     "SqlAlchemyOptimizationExecutionRepository",
+    "SqlAlchemyProviderRequestBudgetGate",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
     "SqlAlchemyWalkForwardExecutionEnqueuer",

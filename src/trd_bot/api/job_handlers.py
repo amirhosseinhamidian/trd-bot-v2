@@ -24,6 +24,7 @@ from trd_bot.db.market_data_connection_repositories import (
 from trd_bot.db.market_data_import_repositories import (
     SqlAlchemyMarketDataImportRepository,
 )
+from trd_bot.db.market_data_polling import SqlAlchemyMarketDataPollJobRunner
 from trd_bot.jobs import (
     PRODUCTION_BACKGROUND_JOB_KINDS,
     BackgroundJobContext,
@@ -31,7 +32,11 @@ from trd_bot.jobs import (
     BackgroundJobHandlerRegistry,
     BackgroundJobKind,
 )
-from trd_bot.market_data import MarketDataProviderCatalog
+from trd_bot.market_data import (
+    MarketDataPollingFailedError,
+    MarketDataPollJobPayload,
+    MarketDataProviderCatalog,
+)
 from trd_bot.research.dataset_file_jobs import (
     DatasetFileImportJobError,
     DatasetFileImportJobPayload,
@@ -205,6 +210,39 @@ def run_market_data_import_job(
     return None if record is None else record.import_id
 
 
+def run_market_data_poll_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str:
+    request = _validate_job_payload(
+        MarketDataPollJobPayload,
+        payload,
+        error_code="invalid_market_data_poll_job_payload",
+        error_message="Market-data poll job payload is invalid.",
+    )
+    context.heartbeat(5)
+    runner = SqlAlchemyMarketDataPollJobRunner(
+        session_factory=get_session_factory(),
+        providers=MarketDataProviderCatalog(),
+    )
+    try:
+        run = asyncio.run(
+            runner.run(
+                payload=request,
+                job_id=context.job.job_id,
+                job_attempt=context.job.attempt_count,
+            )
+        )
+    except MarketDataPollingFailedError as error:
+        raise BackgroundJobHandlerError(
+            error_code=error.error_code,
+            error_message=error.error_message,
+            retryable=error.retryable,
+        ) from error
+    context.heartbeat(95)
+    return run.run_id
+
+
 def run_dataset_file_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
@@ -297,6 +335,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.EXPERIMENT_EXECUTION: run_experiment_job,
             BackgroundJobKind.WALK_FORWARD_EXECUTION: run_walk_forward_job,
             BackgroundJobKind.MARKET_DATA_IMPORT: run_market_data_import_job,
+            BackgroundJobKind.MARKET_DATA_POLL: run_market_data_poll_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }

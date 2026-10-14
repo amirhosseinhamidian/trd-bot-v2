@@ -22,19 +22,26 @@ from trd_bot.db import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyMarketDataEventStore,
     SqlAlchemyMarketDataIngestor,
+    SqlAlchemyMarketDataPollingScheduler,
+    SqlAlchemyMarketDataWatchlistRepository,
     SqlAlchemySimulatedPortfolioRepository,
     create_database_engine,
     create_session_factory,
+)
+from trd_bot.db.market_data_connection_repositories import (
+    SqlAlchemyMarketDataConnectionRepository,
 )
 from trd_bot.db.models import (
     BackgroundJobRow,
     DatasetFileStageRow,
     DatasetSnapshotRow,
+    MarketDataConnectionRow,
     MarketDataEventDecisionRow,
     MarketDataEventInboxRow,
     MarketDataEventRow,
     MarketDataOutboxRow,
     MarketDataRawObservationRow,
+    MarketDataWatchlistRow,
     MarketDataWatermarkRow,
     MarketDataWindowVersionRow,
 )
@@ -47,11 +54,16 @@ from trd_bot.jobs import (
     BackgroundJobWorker,
 )
 from trd_bot.market_data import (
+    MarketDataConnection,
+    MarketDataConnectionHealth,
+    MarketDataConnectionState,
     MarketDataEvent,
     MarketDataInboxReceipt,
     MarketDataIngestionResult,
     MarketDataOutboxMessage,
     MarketDataRawObservation,
+    MarketDataWatchlistEntry,
+    MarketDataWatchlistRoute,
     MarketDataWatermark,
     MarketDataWindowSnapshot,
     VersionedMarketDataWatermark,
@@ -141,7 +153,10 @@ def test_postgresql_connection_and_migrations() -> None:
             "market_data_events",
             "market_data_imports",
             "market_data_outbox",
+            "market_data_poll_runs",
+            "market_data_provider_budgets",
             "market_data_raw_observations",
+            "market_data_watchlist",
             "market_data_watermarks",
             "market_data_window_versions",
             "monitoring_runtime_state",
@@ -416,6 +431,104 @@ def test_postgresql_market_data_ingestion_race_returns_one_stable_result() -> No
             session.execute(
                 delete(MarketDataWatermarkRow).where(
                     MarketDataWatermarkRow.watermark_id == watermark.watermark_id
+                )
+            )
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_watchlist_scheduler_race_enqueues_one_slot() -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    suffix = uuid4().hex[:8]
+    pair = TradingPair(base_asset=f"T{suffix.upper()}", quote_asset="USDT")
+    now = datetime(2026, 10, 14, 12, tzinfo=UTC)
+    kraken_connection_id = f"market-data-connection-kraken-{suffix}"
+    binance_connection_id = f"market-data-connection-binance-{suffix}"
+    entry = MarketDataWatchlistEntry.build(
+        pair=pair,
+        timeframe=Timeframe.HOUR_1,
+        routes=(
+            MarketDataWatchlistRoute(
+                connection_id=kraken_connection_id,
+                provider_id="kraken-public",
+            ),
+            MarketDataWatchlistRoute(
+                connection_id=binance_connection_id,
+                provider_id="binance-public",
+            ),
+        ),
+        polling_interval_seconds=120,
+        lookback_candles=3,
+        now=now,
+    )
+    barrier = Barrier(2)
+
+    def schedule_from_one_session() -> tuple[BackgroundJob, ...]:
+        with factory() as session:
+            barrier.wait(timeout=10)
+            return SqlAlchemyMarketDataPollingScheduler(session).enqueue_due(now=now)
+
+    try:
+        with factory() as session:
+            connections = SqlAlchemyMarketDataConnectionRepository(session)
+            for connection_id, provider_id in (
+                (kraken_connection_id, "kraken-public"),
+                (binance_connection_id, "binance-public"),
+            ):
+                connections.save(
+                    MarketDataConnection(
+                        connection_id=connection_id,
+                        provider_id=provider_id,
+                        display_name=provider_id,
+                        state=MarketDataConnectionState.ENABLED,
+                        health_status=MarketDataConnectionHealth.HEALTHY,
+                        created_at=now,
+                        updated_at=now,
+                        last_tested_at=now,
+                    )
+                )
+            SqlAlchemyMarketDataWatchlistRepository(session).save(entry)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            batches = list(executor.map(lambda _: schedule_from_one_session(), range(2)))
+        jobs = tuple(job for batch in batches for job in batch)
+
+        assert len(jobs) == 1
+        with factory() as session:
+            stored = SqlAlchemyMarketDataWatchlistRepository(session).get(entry.watchlist_id)
+            assert stored is not None
+            assert stored.last_job_id == jobs[0].job_id
+            assert stored.next_poll_at == now + timedelta(seconds=120)
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(BackgroundJobRow)
+                    .where(BackgroundJobRow.job_id == jobs[0].job_id)
+                )
+                == 1
+            )
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(BackgroundJobRow).where(
+                    BackgroundJobRow.idempotency_key.like(
+                        f"market-data-poll:{entry.watchlist_id}:%"
+                    )
+                )
+            )
+            session.execute(
+                delete(MarketDataWatchlistRow).where(
+                    MarketDataWatchlistRow.watchlist_id == entry.watchlist_id
+                )
+            )
+            session.execute(
+                delete(MarketDataConnectionRow).where(
+                    MarketDataConnectionRow.connection_id.in_(
+                        [kraken_connection_id, binance_connection_id]
+                    )
                 )
             )
         engine.dispose()

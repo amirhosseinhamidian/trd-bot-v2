@@ -34,6 +34,18 @@ from trd_bot.market_data.ingestion import (
 )
 from trd_bot.market_data.kraken import KrakenPublicMarketDataProvider
 from trd_bot.market_data.nobitex import NobitexPublicMarketDataProvider
+from trd_bot.market_data.polling import (
+    MarketDataPollAttempt,
+    MarketDataPollAttemptOutcome,
+    MarketDataPollingError,
+    MarketDataPollingFailedError,
+    MarketDataPollJobPayload,
+    MarketDataPollRun,
+    MarketDataPollRunStatus,
+    MarketDataWatchlistEntry,
+    MarketDataWatchlistRoute,
+    MarketDataWatchlistState,
+)
 from trd_bot.market_data.provider_probes import (
     MarketDataProbeOutcome,
     MarketDataProbePayloadError,
@@ -136,6 +148,13 @@ __all__ = [
     "MarketDataIngestionWatermarkMissingError",
     "MarketDataOutboxMessage",
     "MarketDataOutboxStatus",
+    "MarketDataPollAttempt",
+    "MarketDataPollAttemptOutcome",
+    "MarketDataPollJobPayload",
+    "MarketDataPollRun",
+    "MarketDataPollRunStatus",
+    "MarketDataPollingError",
+    "MarketDataPollingFailedError",
     "MarketDataProbeOutcome",
     "MarketDataProbePayloadError",
     "MarketDataProbeReport",
@@ -157,6 +176,9 @@ __all__ = [
     "MarketDataRetentionPolicy",
     "MarketDataRetryPolicy",
     "MarketDataServiceLevelPolicy",
+    "MarketDataWatchlistEntry",
+    "MarketDataWatchlistRoute",
+    "MarketDataWatchlistState",
     "MarketDataWatermark",
     "MarketDataWindowSnapshot",
     "MarketDataWindowState",
