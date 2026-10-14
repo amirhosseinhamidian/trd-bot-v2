@@ -82,6 +82,9 @@ def test_database_metadata_contains_research_tables() -> None:
         "market_data_provider_budgets",
         "market_data_raw_observations",
         "market_data_replay_requests",
+        "market_data_retention_control",
+        "market_data_retention_holds",
+        "market_data_retention_runs",
         "market_data_watchlist",
         "market_data_watermarks",
         "market_data_window_finalizations",
@@ -182,6 +185,9 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "market_data_provider_budgets",
             "market_data_raw_observations",
             "market_data_replay_requests",
+            "market_data_retention_control",
+            "market_data_retention_holds",
+            "market_data_retention_runs",
             "market_data_watchlist",
             "market_data_watermarks",
             "market_data_window_finalizations",
@@ -234,6 +240,9 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "market_data_imports" not in downgraded_tables
         assert "market_data_raw_observations" not in downgraded_tables
         assert "market_data_replay_requests" not in downgraded_tables
+        assert "market_data_retention_control" not in downgraded_tables
+        assert "market_data_retention_holds" not in downgraded_tables
+        assert "market_data_retention_runs" not in downgraded_tables
         assert "market_data_events" not in downgraded_tables
         assert "market_data_event_decisions" not in downgraded_tables
         assert "market_data_event_inbox" not in downgraded_tables

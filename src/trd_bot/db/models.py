@@ -879,6 +879,93 @@ class MarketDataWatermarkRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class MarketDataRetentionControlRow(DatabaseBase):
+    """Singleton row used to serialize hold changes and bounded purge runs."""
+
+    __tablename__ = "market_data_retention_control"
+
+    __table_args__ = (
+        CheckConstraint(
+            "control_id = 'market-data-retention-control'",
+            name="singleton_identity",
+        ),
+    )
+
+    control_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MarketDataRetentionHoldRow(DatabaseBase):
+    """Persistent legal or incident hold that blocks every purge mode."""
+
+    __tablename__ = "market_data_retention_holds"
+
+    __table_args__ = (
+        CheckConstraint("kind IN ('legal', 'incident')", name="kind_supported"),
+        CheckConstraint(
+            "(released_by IS NULL AND released_at IS NULL) OR "
+            "(released_by IS NOT NULL AND released_at IS NOT NULL)",
+            name="release_consistent",
+        ),
+        CheckConstraint(
+            "released_at IS NULL OR released_at >= placed_at",
+            name="release_after_placement",
+        ),
+        Index("ix_market_data_retention_holds_active", "released_at", "placed_at"),
+    )
+
+    hold_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    kind: Mapped[str] = mapped_column(String(20), index=True)
+    reason: Mapped[str] = mapped_column(String(500))
+    placed_by: Mapped[str] = mapped_column(String(100))
+    placed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    released_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    released_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class MarketDataRetentionRunRow(DatabaseBase):
+    """Immutable sanitized audit evidence for one dry-run or purge batch."""
+
+    __tablename__ = "market_data_retention_runs"
+
+    __table_args__ = (
+        CheckConstraint("mode IN ('dry_run', 'execute')", name="mode_supported"),
+        CheckConstraint(
+            "outcome IN ('completed', 'blocked', 'failed')",
+            name="outcome_supported",
+        ),
+        CheckConstraint("batch_limit >= 1 AND batch_limit <= 500", name="batch_limit_bounded"),
+        CheckConstraint("selected_count >= 0", name="selected_count_nonnegative"),
+        CheckConstraint("deleted_count >= 0", name="deleted_count_nonnegative"),
+        CheckConstraint("completed_at >= requested_at", name="completion_after_request"),
+        Index(
+            "ix_market_data_retention_runs_outcome_completed_at",
+            "outcome",
+            "completed_at",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    policy_version: Mapped[str] = mapped_column(String(50))
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    outcome: Mapped[str] = mapped_column(String(20), index=True)
+    requested_by: Mapped[str] = mapped_column(String(100))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    batch_limit: Mapped[int] = mapped_column(Integer)
+    selected_count: Mapped[int] = mapped_column(Integer)
+    deleted_count: Mapped[int] = mapped_column(Integer)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

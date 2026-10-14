@@ -111,6 +111,16 @@ from trd_bot.market_data.replay_jobs import (
     build_market_data_replay_idempotency_key,
     validate_market_data_replay_enqueue,
 )
+from trd_bot.market_data.retention import (
+    MarketDataRetentionCounts,
+    MarketDataRetentionCutoffs,
+    MarketDataRetentionHold,
+    MarketDataRetentionHoldKind,
+    MarketDataRetentionManager,
+    MarketDataRetentionMode,
+    MarketDataRetentionOutcome,
+    MarketDataRetentionRun,
+)
 from trd_bot.market_data.security import redact_sensitive_text
 from trd_bot.market_data.service_levels import (
     CapacityBenchmarkReport,
@@ -211,7 +221,15 @@ __all__ = [
     "MarketDataReplayHealth",
     "MarketDataReplayJobPayload",
     "MarketDataReplayRequest",
+    "MarketDataRetentionCounts",
+    "MarketDataRetentionCutoffs",
+    "MarketDataRetentionHold",
+    "MarketDataRetentionHoldKind",
+    "MarketDataRetentionManager",
+    "MarketDataRetentionMode",
+    "MarketDataRetentionOutcome",
     "MarketDataRetentionPolicy",
+    "MarketDataRetentionRun",
     "MarketDataRetryPolicy",
     "MarketDataRevisionKind",
     "MarketDataServiceLevelPolicy",

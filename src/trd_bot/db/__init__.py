@@ -50,6 +50,11 @@ from trd_bot.db.market_data_replay import (
     SqlAlchemyMarketDataReplayRunner,
     SqlAlchemyMarketDataWindowRevisionRepository,
 )
+from trd_bot.db.market_data_retention import (
+    MarketDataRetentionError,
+    MarketDataRetentionHoldNotFoundError,
+    SqlAlchemyMarketDataRetentionManager,
+)
 from trd_bot.db.models import (
     ArchitectureRecommendationRow,
     BackgroundJobRow,
@@ -66,6 +71,9 @@ from trd_bot.db.models import (
     MarketDataProviderBudgetRow,
     MarketDataRawObservationRow,
     MarketDataReplayRequestRow,
+    MarketDataRetentionControlRow,
+    MarketDataRetentionHoldRow,
+    MarketDataRetentionRunRow,
     MarketDataWatchlistRow,
     MarketDataWatermarkRow,
     MarketDataWindowFinalizationRow,
@@ -136,6 +144,11 @@ __all__ = [
     "MarketDataReplayError",
     "MarketDataReplayRejectedError",
     "MarketDataReplayRequestRow",
+    "MarketDataRetentionControlRow",
+    "MarketDataRetentionError",
+    "MarketDataRetentionHoldNotFoundError",
+    "MarketDataRetentionHoldRow",
+    "MarketDataRetentionRunRow",
     "MarketDataWatchlistRow",
     "MarketDataWatermarkRow",
     "MarketDataWindowFinalizationError",
@@ -170,6 +183,7 @@ __all__ = [
     "SqlAlchemyMarketDataReplayEnqueuer",
     "SqlAlchemyMarketDataReplayRequestRepository",
     "SqlAlchemyMarketDataReplayRunner",
+    "SqlAlchemyMarketDataRetentionManager",
     "SqlAlchemyMarketDataWatchlistManager",
     "SqlAlchemyMarketDataWatchlistRepository",
     "SqlAlchemyMarketDataWindowFinalizationRepository",

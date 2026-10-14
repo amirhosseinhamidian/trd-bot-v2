@@ -25,6 +25,7 @@ from trd_bot.db import (
     SqlAlchemyMarketDataPollingScheduler,
     SqlAlchemyMarketDataReplayEnqueuer,
     SqlAlchemyMarketDataReplayRunner,
+    SqlAlchemyMarketDataRetentionManager,
     SqlAlchemyMarketDataWatchlistRepository,
     SqlAlchemyMarketDataWindowFinalizer,
     SqlAlchemySimulatedPortfolioRepository,
@@ -45,6 +46,7 @@ from trd_bot.db.models import (
     MarketDataOutboxRow,
     MarketDataRawObservationRow,
     MarketDataReplayRequestRow,
+    MarketDataRetentionRunRow,
     MarketDataWatchlistRow,
     MarketDataWatermarkRow,
     MarketDataWindowFinalizationRow,
@@ -68,6 +70,8 @@ from trd_bot.market_data import (
     MarketDataIngestionResult,
     MarketDataOutboxMessage,
     MarketDataRawObservation,
+    MarketDataRetentionMode,
+    MarketDataRetentionOutcome,
     MarketDataWatchlistEntry,
     MarketDataWatchlistRoute,
     MarketDataWatermark,
@@ -163,6 +167,9 @@ def test_postgresql_connection_and_migrations() -> None:
             "market_data_provider_budgets",
             "market_data_raw_observations",
             "market_data_replay_requests",
+            "market_data_retention_control",
+            "market_data_retention_holds",
+            "market_data_retention_runs",
             "market_data_watchlist",
             "market_data_watermarks",
             "market_data_window_finalizations",
@@ -179,6 +186,83 @@ def test_postgresql_connection_and_migrations() -> None:
             "walk_forward_runs",
         }.issubset(table_names)
     finally:
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_market_data_retention_dry_run_and_execute_are_audited() -> None:
+    database_url = get_test_database_url()
+    command.upgrade(build_alembic_config(database_url), "head")
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    observation_id = f"market-raw-{uuid4().hex[:16]}"
+    requested_by = f"integration:{uuid4().hex[:12]}"
+    old = datetime(2025, 1, 1, tzinfo=UTC)
+
+    try:
+        with factory.begin() as session:
+            session.add(
+                MarketDataRawObservationRow(
+                    observation_id=observation_id,
+                    schema_version="market-data-raw-observation-v1",
+                    source="kraken-public",
+                    base_asset="BTC",
+                    quote_asset="USDT",
+                    market_type="spot",
+                    timeframe="1h",
+                    window_start=old - timedelta(hours=1),
+                    window_end=old,
+                    observed_at=old,
+                    payload_checksum="f" * 64,
+                    payload_json="{}",
+                    created_at=old,
+                )
+            )
+
+        with factory() as session:
+            manager = SqlAlchemyMarketDataRetentionManager(session)
+            planned = manager.run(
+                mode=MarketDataRetentionMode.DRY_RUN,
+                requested_by=requested_by,
+                batch_limit=10,
+                now=datetime(2026, 10, 15, tzinfo=UTC),
+            )
+        assert planned.outcome is MarketDataRetentionOutcome.COMPLETED
+        assert planned.selected.raw_observations == 1
+        assert planned.deleted_count == 0
+
+        with factory() as session:
+            executed = SqlAlchemyMarketDataRetentionManager(session).run(
+                mode=MarketDataRetentionMode.EXECUTE,
+                requested_by=requested_by,
+                batch_limit=10,
+                now=datetime(2026, 10, 15, tzinfo=UTC),
+            )
+        assert executed.selected == planned.selected
+        assert executed.deleted_count == 1
+
+        with factory() as session:
+            assert session.get(MarketDataRawObservationRow, observation_id) is None
+            assert (
+                session.scalar(
+                    select(func.count())
+                    .select_from(MarketDataRetentionRunRow)
+                    .where(MarketDataRetentionRunRow.requested_by == requested_by)
+                )
+                == 2
+            )
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(MarketDataRetentionRunRow).where(
+                    MarketDataRetentionRunRow.requested_by == requested_by
+                )
+            )
+            session.execute(
+                delete(MarketDataRawObservationRow).where(
+                    MarketDataRawObservationRow.observation_id == observation_id
+                )
+            )
         engine.dispose()
 
 
