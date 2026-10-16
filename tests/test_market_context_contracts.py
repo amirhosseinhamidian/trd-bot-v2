@@ -10,6 +10,7 @@ from trd_bot.market_context import (
     MarketContextEvidence,
     MarketContextFeatureRequirement,
     MarketContextFeatureSetDefinition,
+    MarketContextFeatureSnapshot,
     MarketContextInputManifest,
     MarketContextWindowReference,
     MarketRegimeAssessment,
@@ -226,9 +227,38 @@ def test_feature_definition_orders_requirements_and_detects_tampering() -> None:
         MarketContextFeatureSetDefinition.model_validate(payload)
 
 
+def test_feature_snapshot_rejects_an_incomplete_feature_set() -> None:
+    manifest = complete_manifest()
+    evidence = MarketContextEvidence(
+        feature_key="trend_slope_1h",
+        timeframe=Timeframe.HOUR_1,
+        value=Decimal("0.013"),
+        calculation_version="trend-slope-v1",
+        window_reference_checksums=(manifest.windows[0].reference_checksum,),
+    )
+
+    with pytest.raises(ValueError, match="every feature-set requirement"):
+        MarketContextFeatureSnapshot.build(
+            manifest=manifest,
+            feature_set=feature_definition(),
+            features=(evidence,),
+            calculated_at=datetime(2026, 10, 16, 12, 5, tzinfo=UTC),
+        )
+
+
 def test_ready_regime_requires_determinate_evidence_and_expiry() -> None:
     manifest = complete_manifest()
-    definition = feature_definition()
+    definition = MarketContextFeatureSetDefinition.build(
+        feature_set_version="market-context-features-v1",
+        requirements=(
+            MarketContextFeatureRequirement(
+                feature_key="trend_slope_1h",
+                timeframe=Timeframe.HOUR_1,
+                lookback_windows=1,
+                calculation_version="trend-slope-v1",
+            ),
+        ),
+    )
     assessed_at = datetime(2026, 10, 16, 12, 6, tzinfo=UTC)
     assessment_id = build_market_regime_assessment_id(
         source=SOURCE,
@@ -237,6 +267,19 @@ def test_ready_regime_requires_determinate_evidence_and_expiry() -> None:
         input_checksum=manifest.input_checksum,
         feature_set_version=definition.feature_set_version,
         algorithm_version="market-regime-v1",
+    )
+    evidence = MarketContextEvidence(
+        feature_key="trend_slope_1h",
+        timeframe=Timeframe.HOUR_1,
+        value=Decimal("0.013"),
+        calculation_version="trend-slope-v1",
+        window_reference_checksums=(manifest.windows[0].reference_checksum,),
+    )
+    feature_snapshot = MarketContextFeatureSnapshot.build(
+        manifest=manifest,
+        feature_set=definition,
+        features=(evidence,),
+        calculated_at=assessed_at,
     )
 
     assessment = MarketRegimeAssessment(
@@ -248,20 +291,14 @@ def test_ready_regime_requires_determinate_evidence_and_expiry() -> None:
         input_checksum=manifest.input_checksum,
         feature_set_version=definition.feature_set_version,
         feature_set_checksum=definition.definition_checksum,
+        feature_snapshot_id=feature_snapshot.snapshot_id,
+        feature_snapshot_checksum=feature_snapshot.snapshot_checksum,
         algorithm_version="market-regime-v1",
         status=MarketContextAssessmentStatus.READY,
         trend=MarketTrendRegime.TRENDING_UP,
         volatility=MarketVolatilityRegime.NORMAL,
         confidence=Decimal("0.82"),
-        evidence=(
-            MarketContextEvidence(
-                feature_key="trend_slope_1h",
-                timeframe=Timeframe.HOUR_1,
-                value=Decimal("0.013"),
-                calculation_version="trend-slope-v1",
-                window_reference_checksums=(manifest.windows[0].reference_checksum,),
-            ),
-        ),
+        evidence=(evidence,),
         assessed_at=assessed_at,
         expires_at=assessed_at + timedelta(hours=1),
     )
@@ -271,7 +308,7 @@ def test_ready_regime_requires_determinate_evidence_and_expiry() -> None:
 
     payload = assessment.model_dump()
     payload["evidence"] = []
-    with pytest.raises(ValidationError, match="requires confidence and evidence"):
+    with pytest.raises(ValidationError, match="ready assessment requires"):
         MarketRegimeAssessment.model_validate(payload)
 
     payload = assessment.model_dump()

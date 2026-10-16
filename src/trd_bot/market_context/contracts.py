@@ -530,6 +530,150 @@ def build_market_regime_assessment_id(
     return f"market-regime-{_checksum(identity)[:16]}"
 
 
+def build_market_context_feature_snapshot_checksum(
+    *,
+    source: str,
+    pair: TradingPair,
+    as_of: datetime,
+    input_manifest_id: str,
+    input_checksum: str,
+    feature_set_version: str,
+    feature_set_checksum: str,
+    features: tuple[MarketContextEvidence, ...],
+) -> str:
+    """Hash a complete ordered feature result and all reproducibility lineage."""
+
+    payload = {
+        "as_of": _normalize_timestamp(as_of).isoformat(),
+        "feature_set_checksum": feature_set_checksum,
+        "feature_set_version": feature_set_version,
+        "features": [feature.model_dump(mode="json") for feature in features],
+        "input_checksum": input_checksum,
+        "input_manifest_id": input_manifest_id,
+        "pair": pair.model_dump(mode="json"),
+        "source": _normalize_text(source),
+    }
+    return _checksum(payload)
+
+
+class MarketContextFeatureSnapshot(BaseModel):
+    """Immutable complete feature values derived from one exact input manifest."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    schema_version: Literal["market-context-feature-snapshot-v1"] = (
+        "market-context-feature-snapshot-v1"
+    )
+    snapshot_id: str = Field(pattern=r"^market-context-features-[a-f0-9]{16}$")
+    source: str = Field(min_length=1, max_length=50)
+    pair: TradingPair
+    as_of: datetime
+    input_manifest_id: str = Field(pattern=r"^market-context-input-[a-f0-9]{16}$")
+    input_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
+    feature_set_version: str = Field(pattern=r"^market-context-features-v[1-9][0-9]*$")
+    feature_set_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
+    features: tuple[MarketContextEvidence, ...] = Field(min_length=1)
+    snapshot_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
+    calculated_at: datetime
+
+    @field_validator("source")
+    @classmethod
+    def normalize_source(cls, value: str) -> str:
+        return _normalize_text(value)
+
+    @field_validator("as_of", "calculated_at")
+    @classmethod
+    def normalize_timestamps(cls, value: datetime) -> datetime:
+        return _normalize_timestamp(value)
+
+    @model_validator(mode="after")
+    def validate_snapshot(self) -> Self:
+        if self.input_manifest_id != f"market-context-input-{self.input_checksum[:16]}":
+            raise ValueError("feature snapshot input manifest identity is inconsistent")
+        if self.calculated_at < self.as_of:
+            raise ValueError("feature calculation cannot precede its event-time boundary")
+
+        keys = tuple(feature.feature_key for feature in self.features)
+        if keys != tuple(sorted(keys)):
+            raise ValueError("feature snapshot values must use deterministic feature-key order")
+        if len(keys) != len(set(keys)):
+            raise ValueError("feature snapshot keys must be unique")
+
+        expected_checksum = build_market_context_feature_snapshot_checksum(
+            source=self.source,
+            pair=self.pair,
+            as_of=self.as_of,
+            input_manifest_id=self.input_manifest_id,
+            input_checksum=self.input_checksum,
+            feature_set_version=self.feature_set_version,
+            feature_set_checksum=self.feature_set_checksum,
+            features=self.features,
+        )
+        if self.snapshot_checksum != expected_checksum:
+            raise ValueError("feature snapshot checksum is inconsistent")
+        if self.snapshot_id != f"market-context-features-{expected_checksum[:16]}":
+            raise ValueError("feature snapshot ID is inconsistent")
+        return self
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        manifest: MarketContextInputManifest,
+        feature_set: MarketContextFeatureSetDefinition,
+        features: tuple[MarketContextEvidence, ...],
+        calculated_at: datetime,
+    ) -> Self:
+        ordered = tuple(sorted(features, key=lambda item: item.feature_key))
+        requirements = {item.feature_key: item for item in feature_set.requirements}
+        if tuple(item.feature_key for item in ordered) != tuple(sorted(requirements)):
+            raise ValueError("feature snapshot must contain every feature-set requirement once")
+
+        manifest_checksums: dict[Timeframe, list[str]] = {
+            timeframe: [] for timeframe in _TIMEFRAME_ORDER
+        }
+        for window in manifest.windows:
+            manifest_checksums[window.timeframe].append(window.reference_checksum)
+
+        for feature in ordered:
+            requirement = requirements[feature.feature_key]
+            if (
+                feature.timeframe is not requirement.timeframe
+                or feature.calculation_version != requirement.calculation_version
+            ):
+                raise ValueError("feature value does not match its versioned requirement")
+            references = manifest_checksums[feature.timeframe]
+            if len(references) < requirement.lookback_windows:
+                raise ValueError("input manifest does not satisfy feature lookback")
+            expected_references = tuple(references[-requirement.lookback_windows :])
+            if feature.window_reference_checksums != expected_references:
+                raise ValueError("feature evidence does not match the required latest lookback")
+
+        checksum = build_market_context_feature_snapshot_checksum(
+            source=manifest.source,
+            pair=manifest.pair,
+            as_of=manifest.as_of,
+            input_manifest_id=manifest.manifest_id,
+            input_checksum=manifest.input_checksum,
+            feature_set_version=feature_set.feature_set_version,
+            feature_set_checksum=feature_set.definition_checksum,
+            features=ordered,
+        )
+        return cls(
+            snapshot_id=f"market-context-features-{checksum[:16]}",
+            source=manifest.source,
+            pair=manifest.pair,
+            as_of=manifest.as_of,
+            input_manifest_id=manifest.manifest_id,
+            input_checksum=manifest.input_checksum,
+            feature_set_version=feature_set.feature_set_version,
+            feature_set_checksum=feature_set.definition_checksum,
+            features=ordered,
+            snapshot_checksum=checksum,
+            calculated_at=calculated_at,
+        )
+
+
 class MarketRegimeAssessment(BaseModel):
     """Versioned market-context output; calculation is implemented in P3-05."""
 
@@ -544,6 +688,14 @@ class MarketRegimeAssessment(BaseModel):
     input_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
     feature_set_version: str = Field(pattern=r"^market-context-features-v[1-9][0-9]*$")
     feature_set_checksum: str = Field(pattern=r"^[a-f0-9]{64}$")
+    feature_snapshot_id: str | None = Field(
+        default=None,
+        pattern=r"^market-context-features-[a-f0-9]{16}$",
+    )
+    feature_snapshot_checksum: str | None = Field(
+        default=None,
+        pattern=r"^[a-f0-9]{64}$",
+    )
     algorithm_version: str = Field(pattern=r"^market-regime-v[1-9][0-9]*$")
     status: MarketContextAssessmentStatus
     trend: MarketTrendRegime
@@ -603,8 +755,20 @@ class MarketRegimeAssessment(BaseModel):
                 raise ValueError("ready assessment requires a determinate trend regime")
             if self.volatility is MarketVolatilityRegime.UNDETERMINED:
                 raise ValueError("ready assessment requires a determinate volatility regime")
-            if self.confidence <= 0 or not self.evidence or self.issue_codes:
-                raise ValueError("ready assessment requires confidence and evidence without issues")
+            if (
+                self.confidence <= 0
+                or not self.evidence
+                or self.issue_codes
+                or self.feature_snapshot_id is None
+                or self.feature_snapshot_checksum is None
+            ):
+                raise ValueError(
+                    "ready assessment requires feature lineage, confidence, and evidence"
+                )
+            if self.feature_snapshot_id != (
+                f"market-context-features-{self.feature_snapshot_checksum[:16]}"
+            ):
+                raise ValueError("assessment feature snapshot identity is inconsistent")
             if self.expires_at <= self.assessed_at:
                 raise ValueError("ready assessment must expire after assessment time")
         else:
@@ -614,6 +778,8 @@ class MarketRegimeAssessment(BaseModel):
                 or self.confidence != 0
                 or self.evidence
                 or not self.issue_codes
+                or self.feature_snapshot_id is not None
+                or self.feature_snapshot_checksum is not None
             ):
                 raise ValueError("non-ready assessment cannot expose a partial regime")
             if self.expires_at != self.assessed_at:

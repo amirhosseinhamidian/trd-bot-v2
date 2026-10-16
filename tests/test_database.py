@@ -90,6 +90,10 @@ def test_database_metadata_contains_research_tables() -> None:
         "market_data_window_finalizations",
         "market_data_window_revisions",
         "market_data_window_versions",
+        "market_context_feature_snapshots",
+        "market_context_input_manifests",
+        "market_context_input_windows",
+        "market_regime_assessments",
         "monitoring_runtime_state",
         "optimization_executions",
         "portfolio_timeline_events",
@@ -193,6 +197,10 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "market_data_window_finalizations",
             "market_data_window_revisions",
             "market_data_window_versions",
+            "market_context_feature_snapshots",
+            "market_context_input_manifests",
+            "market_context_input_windows",
+            "market_regime_assessments",
             "monitoring_runtime_state",
             "portfolio_timeline_events",
             "research_experiments",
@@ -254,6 +262,10 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "market_data_window_revisions" not in downgraded_tables
         assert "market_data_window_versions" not in downgraded_tables
         assert "market_data_watermarks" not in downgraded_tables
+        assert "market_context_feature_snapshots" not in downgraded_tables
+        assert "market_context_input_manifests" not in downgraded_tables
+        assert "market_context_input_windows" not in downgraded_tables
+        assert "market_regime_assessments" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables
         assert "simulated_portfolios" not in downgraded_tables
         assert "simulated_positions" not in downgraded_tables

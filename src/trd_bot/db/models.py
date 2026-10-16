@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     LargeBinary,
@@ -964,6 +965,220 @@ class MarketDataRetentionRunRow(DatabaseBase):
     deleted_count: Mapped[int] = mapped_column(Integer)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     payload_json: Mapped[str] = mapped_column(Text)
+
+
+class MarketContextInputManifestRow(DatabaseBase):
+    """Immutable multi-timeframe input selected at one event-time boundary."""
+
+    __tablename__ = "market_context_input_manifests"
+
+    __table_args__ = (
+        CheckConstraint("length(input_checksum) = 64", name="checksum_length"),
+        CheckConstraint("window_count >= 3", name="window_count_minimum"),
+        CheckConstraint("created_at >= as_of", name="created_after_as_of"),
+        Index(
+            "ix_market_context_input_manifests_stream_as_of",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "as_of",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    policy_version: Mapped[str] = mapped_column(String(50), index=True)
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    input_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    window_count: Mapped[int] = mapped_column(Integer)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MarketContextInputWindowRow(DatabaseBase):
+    """Queryable finalized-window lineage for one immutable input manifest."""
+
+    __tablename__ = "market_context_input_windows"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["window_id", "window_version"],
+            ["market_data_window_versions.window_id", "market_data_window_versions.version"],
+        ),
+        CheckConstraint("ordinal >= 1", name="ordinal_positive"),
+        CheckConstraint("window_version >= 2", name="window_version_finalized"),
+        CheckConstraint("window_end > window_start", name="window_range_valid"),
+        CheckConstraint("length(reference_checksum) = 64", name="checksum_length"),
+        UniqueConstraint(
+            "manifest_id",
+            "window_id",
+            "window_version",
+            name="uq_market_context_input_windows_window_version",
+        ),
+        Index(
+            "ix_market_context_input_windows_manifest_timeframe_ordinal",
+            "manifest_id",
+            "timeframe",
+            "ordinal",
+        ),
+    )
+
+    manifest_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_context_input_manifests.manifest_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    ordinal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    window_id: Mapped[str] = mapped_column(String(100), index=True)
+    window_version: Mapped[int] = mapped_column(Integer)
+    timeframe: Mapped[str] = mapped_column(String(20), index=True)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    reference_checksum: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class MarketContextFeatureSnapshotRow(DatabaseBase):
+    """Immutable deterministic feature values for one input manifest."""
+
+    __tablename__ = "market_context_feature_snapshots"
+
+    __table_args__ = (
+        CheckConstraint("length(input_checksum) = 64", name="input_checksum_length"),
+        CheckConstraint("length(feature_set_checksum) = 64", name="feature_set_checksum_length"),
+        CheckConstraint("length(snapshot_checksum) = 64", name="snapshot_checksum_length"),
+        CheckConstraint("feature_count >= 1", name="feature_count_positive"),
+        CheckConstraint("calculated_at >= as_of", name="calculated_after_as_of"),
+        UniqueConstraint(
+            "manifest_id",
+            "feature_set_version",
+            name="uq_market_context_feature_snapshots_manifest_feature_set",
+        ),
+        Index(
+            "ix_market_context_feature_snapshots_stream_as_of",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "as_of",
+        ),
+    )
+
+    snapshot_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    manifest_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_context_input_manifests.manifest_id"),
+        index=True,
+    )
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    input_checksum: Mapped[str] = mapped_column(String(64))
+    feature_set_version: Mapped[str] = mapped_column(String(100), index=True)
+    feature_set_checksum: Mapped[str] = mapped_column(String(64))
+    feature_count: Mapped[int] = mapped_column(Integer)
+    snapshot_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    calculated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class MarketRegimeAssessmentRow(DatabaseBase):
+    """Immutable regime result or explicit non-ready outcome."""
+
+    __tablename__ = "market_regime_assessments"
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ready', 'insufficient_data', 'stale')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "trend IN ('trending_up', 'trending_down', 'ranging', 'undetermined')",
+            name="trend_supported",
+        ),
+        CheckConstraint(
+            "volatility IN ('low', 'normal', 'high', 'undetermined')",
+            name="volatility_supported",
+        ),
+        CheckConstraint("confidence >= 0 AND confidence <= 1", name="confidence_range"),
+        CheckConstraint("length(input_checksum) = 64", name="input_checksum_length"),
+        CheckConstraint("length(feature_set_checksum) = 64", name="feature_set_checksum_length"),
+        CheckConstraint(
+            "feature_snapshot_checksum IS NULL OR length(feature_snapshot_checksum) = 64",
+            name="feature_snapshot_checksum_length",
+        ),
+        CheckConstraint("assessed_at >= as_of", name="assessed_after_as_of"),
+        CheckConstraint(
+            "(status = 'ready' AND trend != 'undetermined' "
+            "AND volatility != 'undetermined' AND confidence > 0 "
+            "AND feature_snapshot_id IS NOT NULL "
+            "AND feature_snapshot_checksum IS NOT NULL AND expires_at > assessed_at) OR "
+            "(status != 'ready' AND trend = 'undetermined' "
+            "AND volatility = 'undetermined' AND confidence = 0 "
+            "AND feature_snapshot_id IS NULL "
+            "AND feature_snapshot_checksum IS NULL AND expires_at = assessed_at)",
+            name="outcome_consistent",
+        ),
+        UniqueConstraint(
+            "manifest_id",
+            "feature_set_version",
+            "algorithm_version",
+            name="uq_market_regime_assessments_manifest_algorithm",
+        ),
+        Index(
+            "ix_market_regime_assessments_stream_as_of",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "as_of",
+        ),
+        Index(
+            "ix_market_regime_assessments_status_assessed_at",
+            "status",
+            "assessed_at",
+        ),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    manifest_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_context_input_manifests.manifest_id"),
+        index=True,
+    )
+    feature_snapshot_id: Mapped[str | None] = mapped_column(
+        String(100),
+        ForeignKey("market_context_feature_snapshots.snapshot_id"),
+        nullable=True,
+        index=True,
+    )
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    as_of: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    input_checksum: Mapped[str] = mapped_column(String(64))
+    feature_set_version: Mapped[str] = mapped_column(String(100), index=True)
+    feature_set_checksum: Mapped[str] = mapped_column(String(64))
+    feature_snapshot_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    algorithm_version: Mapped[str] = mapped_column(String(100), index=True)
+    status: Mapped[str] = mapped_column(String(30), index=True)
+    trend: Mapped[str] = mapped_column(String(30))
+    volatility: Mapped[str] = mapped_column(String(30))
+    confidence: Mapped[Decimal] = mapped_column(Numeric(18, 10))
+    evidence_count: Mapped[int] = mapped_column(Integer)
+    issue_count: Mapped[int] = mapped_column(Integer)
+    payload_json: Mapped[str] = mapped_column(Text)
+    assessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class BackgroundJobRow(DatabaseBase):

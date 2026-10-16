@@ -25,6 +25,7 @@ from trd_bot.db.experiment_execution_repositories import (
 from trd_bot.db.historical_dataset_commits import (
     SqlAlchemyHistoricalDatasetCommitter,
 )
+from trd_bot.db.market_context_repositories import SqlAlchemyMarketContextStore
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
 from trd_bot.db.market_data_finalization import (
     MarketDataWindowFinalizationError,
@@ -63,6 +64,9 @@ from trd_bot.db.models import (
     DatasetFileStageRow,
     DatasetSnapshotRow,
     ExperimentExecutionRow,
+    MarketContextFeatureSnapshotRow,
+    MarketContextInputManifestRow,
+    MarketContextInputWindowRow,
     MarketDataEventDecisionRow,
     MarketDataEventInboxRow,
     MarketDataEventRow,
@@ -79,6 +83,7 @@ from trd_bot.db.models import (
     MarketDataWindowFinalizationRow,
     MarketDataWindowRevisionRow,
     MarketDataWindowVersionRow,
+    MarketRegimeAssessmentRow,
     MonitoringRuntimeStateRow,
     OptimizationExecutionRow,
     PortfolioTimelineEventRow,
@@ -134,6 +139,9 @@ __all__ = [
     "DatasetFileStageRow",
     "DatasetSnapshotRow",
     "ExperimentExecutionRow",
+    "MarketContextFeatureSnapshotRow",
+    "MarketContextInputManifestRow",
+    "MarketContextInputWindowRow",
     "MarketDataEventDecisionRow",
     "MarketDataEventInboxRow",
     "MarketDataEventRow",
@@ -156,6 +164,7 @@ __all__ = [
     "MarketDataWindowFinalizationWatermarkMissingError",
     "MarketDataWindowRevisionRow",
     "MarketDataWindowVersionRow",
+    "MarketRegimeAssessmentRow",
     "MonitoringRuntimeStateRow",
     "OptimizationExecutionRow",
     "PortfolioTimelineEventRow",
@@ -174,6 +183,7 @@ __all__ = [
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",
+    "SqlAlchemyMarketContextStore",
     "SqlAlchemyMarketDataEventStore",
     "SqlAlchemyMarketDataIngestor",
     "SqlAlchemyMarketDataMonitoringReader",
