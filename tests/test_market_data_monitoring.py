@@ -12,6 +12,7 @@ from trd_bot.db import (
     SqlAlchemyBackgroundJobRepository,
     SqlAlchemyMarketDataEventStore,
     SqlAlchemyMarketDataMonitoringReader,
+    SqlAlchemyMarketDataPollRunRepository,
     SqlAlchemyMarketDataReplayRequestRepository,
     SqlAlchemyMarketDataWatchlistRepository,
     create_database_engine,
@@ -33,6 +34,10 @@ from trd_bot.market_data import (
     MarketDataFreshnessStatus,
     MarketDataMonitoringOverallStatus,
     MarketDataMonitoringSummary,
+    MarketDataPollAttempt,
+    MarketDataPollAttemptOutcome,
+    MarketDataPollRun,
+    MarketDataPollRunStatus,
     MarketDataReplayRequest,
     MarketDataStreamHealthStatus,
     MarketDataWatchlistEntry,
@@ -171,6 +176,54 @@ def test_reader_reports_fresh_healthy_stream_from_finalized_data() -> None:
         assert stream.freshness_target_seconds == 600
         assert stream.finalization_backlog_count == 0
         assert summary.backlog.overdue_watchlists == 0
+    finally:
+        engine.dispose()  # type: ignore[attr-defined]
+
+
+def test_reader_reports_latest_poll_provider_when_finalized_window_has_older_source() -> None:
+    engine, factory = _factory()
+    job_id = "job-1234567890abcdef1234"
+    completed_at = NOW - timedelta(seconds=10)
+    run = MarketDataPollRun(
+        run_id=MarketDataPollRun.build_run_id(job_id=job_id, job_attempt=1),
+        job_id=job_id,
+        job_attempt=1,
+        watchlist_id=_watchlist().watchlist_id,
+        scheduled_for=NOW - timedelta(minutes=1),
+        status=MarketDataPollRunStatus.SUCCEEDED,
+        attempts=(
+            MarketDataPollAttempt(
+                ordinal=1,
+                connection_id=BINANCE_CONNECTION_ID,
+                provider_id="binance-public",
+                outcome=MarketDataPollAttemptOutcome.SUCCEEDED,
+                received_candles=3,
+                started_at=completed_at - timedelta(seconds=1),
+                completed_at=completed_at,
+            ),
+        ),
+        selected_connection_id=BINANCE_CONNECTION_ID,
+        selected_provider_id="binance-public",
+        received_candles=3,
+        accepted_events=3,
+        duplicate_events=0,
+        revision_required_events=0,
+        watermark_before_id="market-watermark-1111111111111111",
+        watermark_after_id="market-watermark-2222222222222222",
+        started_at=completed_at - timedelta(seconds=1),
+        completed_at=completed_at,
+    )
+    try:
+        _seed_stream(factory)
+        with factory() as session:
+            SqlAlchemyMarketDataPollRunRepository(session).save(run)
+        with factory() as session:
+            summary = SqlAlchemyMarketDataMonitoringReader(session).read(generated_at=NOW)
+
+        stream = summary.streams[0]
+        assert stream.selected_provider_id == "binance-public"
+        assert stream.latest_finalized_window_end == datetime(2026, 10, 14, 11, tzinfo=UTC)
+        assert stream.latest_watermark_time == datetime(2026, 10, 14, 11, 55, tzinfo=UTC)
     finally:
         engine.dispose()  # type: ignore[attr-defined]
 

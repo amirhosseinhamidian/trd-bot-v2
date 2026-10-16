@@ -157,14 +157,17 @@ class SqlAlchemyMarketDataMonitoringReader:
         latest_poll = self._latest_poll(entry.watchlist_id)
         latest_success = self._latest_successful_poll(entry.watchlist_id)
         finalized = self._latest_finalized_window(entry)
-        selected_provider = None if latest_success is None else latest_success.selected_provider_id
-        if finalized is not None:
+        selected_provider = None
+        if latest_success is not None:
+            selected_provider = latest_success.selected_provider_id
+        elif finalized is not None:
             selected_provider = finalized.source
+        watermark_source = finalized.source if finalized is not None else selected_provider
 
         watermark_time: datetime | None = None
-        if selected_provider is not None:
+        if watermark_source is not None:
             watermark = self._events.get_latest_watermark(
-                source=selected_provider,
+                source=watermark_source,
                 pair=entry.pair,
                 timeframe=entry.timeframe,
             )
