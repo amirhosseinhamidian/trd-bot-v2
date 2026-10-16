@@ -675,7 +675,7 @@ class MarketContextFeatureSnapshot(BaseModel):
 
 
 class MarketRegimeAssessment(BaseModel):
-    """Versioned market-context output; calculation is implemented in P3-05."""
+    """Versioned market-context regime output with complete feature lineage."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

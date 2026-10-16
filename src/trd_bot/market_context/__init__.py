@@ -37,12 +37,19 @@ from trd_bot.market_context.features import (
     calculate_normalized_close_slope,
     market_context_feature_set_v1,
 )
+from trd_bot.market_context.regimes import (
+    MARKET_REGIME_ALGORITHM_V1,
+    MarketRegimePolicyV1,
+    evaluate_market_regime_v1,
+    market_regime_policy_v1,
+)
 
 __all__ = [
     "CLOSE_RETURN_VOLATILITY_V1",
     "MARKET_CONTEXT_FEATURE_DECIMAL_PLACES",
     "MARKET_CONTEXT_FEATURE_QUANTUM",
     "MARKET_CONTEXT_FEATURE_SET_V1_VERSION",
+    "MARKET_REGIME_ALGORITHM_V1",
     "NORMALIZED_CLOSE_SLOPE_V1",
     "MarketContextAlignmentIssueCode",
     "MarketContextAlignmentPolicy",
@@ -58,6 +65,7 @@ __all__ = [
     "MarketContextTimeframeCoverage",
     "MarketContextWindowReference",
     "MarketRegimeAssessment",
+    "MarketRegimePolicyV1",
     "MarketTrendRegime",
     "MarketVolatilityRegime",
     "align_market_context_windows",
@@ -69,7 +77,9 @@ __all__ = [
     "calculate_market_context_feature_snapshot_v1",
     "calculate_normalized_close_slope",
     "default_market_context_alignment_policy",
+    "evaluate_market_regime_v1",
     "floor_market_context_boundary",
     "market_context_feature_set_v1",
+    "market_regime_policy_v1",
     "required_market_context_window_counts",
 ]
