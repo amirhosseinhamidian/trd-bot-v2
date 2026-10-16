@@ -26,8 +26,24 @@ from trd_bot.market_context.contracts import (
     build_market_regime_assessment_id,
     default_market_context_alignment_policy,
 )
+from trd_bot.market_context.features import (
+    CLOSE_RETURN_VOLATILITY_V1,
+    MARKET_CONTEXT_FEATURE_DECIMAL_PLACES,
+    MARKET_CONTEXT_FEATURE_QUANTUM,
+    MARKET_CONTEXT_FEATURE_SET_V1_VERSION,
+    NORMALIZED_CLOSE_SLOPE_V1,
+    calculate_close_return_volatility,
+    calculate_market_context_feature_snapshot_v1,
+    calculate_normalized_close_slope,
+    market_context_feature_set_v1,
+)
 
 __all__ = [
+    "CLOSE_RETURN_VOLATILITY_V1",
+    "MARKET_CONTEXT_FEATURE_DECIMAL_PLACES",
+    "MARKET_CONTEXT_FEATURE_QUANTUM",
+    "MARKET_CONTEXT_FEATURE_SET_V1_VERSION",
+    "NORMALIZED_CLOSE_SLOPE_V1",
     "MarketContextAlignmentIssueCode",
     "MarketContextAlignmentPolicy",
     "MarketContextAlignmentResult",
@@ -49,7 +65,11 @@ __all__ = [
     "build_market_context_input_checksum",
     "build_market_context_window_reference_checksum",
     "build_market_regime_assessment_id",
+    "calculate_close_return_volatility",
+    "calculate_market_context_feature_snapshot_v1",
+    "calculate_normalized_close_slope",
     "default_market_context_alignment_policy",
     "floor_market_context_boundary",
+    "market_context_feature_set_v1",
     "required_market_context_window_counts",
 ]
