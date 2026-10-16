@@ -64,6 +64,7 @@ FRONTEND_API_OPERATIONS = {
     ("GET", "/api/v1/research/portfolios/{portfolio_id}/timeline"),
     ("GET", "/api/v1/monitoring/summary"),
     ("GET", "/api/v1/monitoring/market-data"),
+    ("GET", "/api/v1/monitoring/market-context"),
 }
 
 

@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type {
+  MarketContextMonitoringSummary,
   MarketDataMonitoringSummary,
   MonitoringSummary,
 } from '@/features/monitoring/api/types';
@@ -150,9 +151,63 @@ const marketData: MarketDataMonitoringSummary = {
   ],
 };
 
+const marketContext: MarketContextMonitoringSummary = {
+  schema_version: 'market-context-monitoring-v1',
+  generated_at: '2026-10-16T13:10:00Z',
+  overall_status: 'critical',
+  stream_count: 1,
+  healthy_count: 0,
+  degraded_count: 1,
+  stale_count: 1,
+  no_data_count: 0,
+  backlog: {
+    queued_jobs: 1,
+    running_jobs: 0,
+    retrying_jobs: 1,
+    failed_streams: 0,
+    expired_assessments: 1,
+    lagging_streams: 1,
+    missing_assessments: 0,
+  },
+  streams: [
+    {
+      source: 'kraken-public',
+      pair: { base_asset: 'BTC', quote_asset: 'USDT', market_type: 'spot' },
+      health_status: 'degraded',
+      freshness_status: 'stale',
+      issue_codes: ['assessment_expired', 'boundary_lagging', 'evaluation_retrying'],
+      expected_as_of: '2026-10-16T13:00:00Z',
+      latest_assessment_id: 'market-regime-1234567890abcdef',
+      latest_assessment_status: 'ready',
+      latest_assessment_as_of: '2026-10-16T12:00:00Z',
+      assessed_at: '2026-10-16T12:05:00Z',
+      expires_at: '2026-10-16T13:05:00Z',
+      assessment_age_seconds: 3900,
+      boundary_lag_seconds: 3600,
+      feature_set_version: 'market-context-features-v1',
+      algorithm_version: 'market-regime-v1',
+      latest_job_id: 'job-abcdef12345678901234',
+      latest_job_status: 'queued',
+      latest_job_as_of: '2026-10-16T13:00:00Z',
+      latest_job_updated_at: '2026-10-16T13:09:00Z',
+      latest_job_progress_percent: 0,
+      latest_job_attempt_count: 1,
+      latest_job_max_attempts: 3,
+      latest_job_error_code: null,
+    },
+  ],
+};
+
 describe('MonitoringDashboard', () => {
   it('renders persisted operational health without recovery mutations', () => {
-    render(<MonitoringDashboard locale="en" marketData={marketData} summary={summary} />);
+    render(
+      <MonitoringDashboard
+        locale="en"
+        marketContext={marketContext}
+        marketData={marketData}
+        summary={summary}
+      />,
+    );
 
     expect(screen.getByText('Operational health')).toBeInTheDocument();
     expect(screen.getByText('25%')).toBeInTheDocument();
@@ -164,7 +219,14 @@ describe('MonitoringDashboard', () => {
   });
 
   it('renders recent jobs as mobile cards and a labeled desktop table', () => {
-    render(<MonitoringDashboard locale="en" marketData={marketData} summary={summary} />);
+    render(
+      <MonitoringDashboard
+        locale="en"
+        marketContext={marketContext}
+        marketData={marketData}
+        summary={summary}
+      />,
+    );
 
     const mobileList = screen.getByTestId('recent-jobs-mobile-list');
     const mobileJob = within(mobileList).getByRole('listitem');
@@ -188,6 +250,7 @@ describe('MonitoringDashboard', () => {
     render(
       <MonitoringDashboard
         locale="en"
+        marketContext={marketContext}
         marketData={marketData}
         summary={{ ...summary, operations: null }}
       />,
@@ -198,7 +261,14 @@ describe('MonitoringDashboard', () => {
   });
 
   it('renders read-only market-data freshness, lag, backlog, and replay state', () => {
-    render(<MonitoringDashboard locale="en" marketData={marketData} summary={summary} />);
+    render(
+      <MonitoringDashboard
+        locale="en"
+        marketContext={marketContext}
+        marketData={marketData}
+        summary={summary}
+      />,
+    );
 
     expect(screen.getByText('Market data health')).toBeInTheDocument();
     expect(screen.getByText(/Market data status: Needs review/)).toBeInTheDocument();
@@ -206,5 +276,24 @@ describe('MonitoringDashboard', () => {
     expect(screen.getByText('4,200 seconds')).toBeInTheDocument();
     expect(screen.getByText('market-replay-1234567890abcdef')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /replay|retry|trade|order/i })).toBeNull();
+  });
+
+  it('renders read-only market-context freshness, lineage versions, and job state', () => {
+    render(
+      <MonitoringDashboard
+        locale="en"
+        marketContext={marketContext}
+        marketData={marketData}
+        summary={summary}
+      />,
+    );
+
+    expect(screen.getByText('Market context health')).toBeInTheDocument();
+    expect(screen.getByText(/Context status: Critical/)).toBeInTheDocument();
+    expect(screen.getByText('market-regime-1234567890abcdef')).toBeInTheDocument();
+    expect(screen.getByText('market-context-features-v1 · market-regime-v1')).toBeInTheDocument();
+    expect(screen.getByText('Assessment expired')).toBeInTheDocument();
+    expect(screen.getByText('Evaluation retrying')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /retry|evaluate|trade|order/i })).toBeNull();
   });
 });

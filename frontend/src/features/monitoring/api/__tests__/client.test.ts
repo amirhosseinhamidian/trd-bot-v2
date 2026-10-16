@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  getMarketContextMonitoringSummary,
   getMarketDataMonitoringSummary,
   getMonitoringSummary,
 } from '@/features/monitoring/api/client';
 import type {
+  MarketContextMonitoringSummary,
   MarketDataMonitoringSummary,
   MonitoringSummary,
 } from '@/features/monitoring/api/types';
@@ -42,6 +44,27 @@ const marketDataSummary: MarketDataMonitoringSummary = {
   recent_replays: [],
 };
 
+const marketContextSummary: MarketContextMonitoringSummary = {
+  schema_version: 'market-context-monitoring-v1',
+  generated_at: '2026-10-16T12:30:00Z',
+  overall_status: 'no_data',
+  stream_count: 0,
+  healthy_count: 0,
+  degraded_count: 0,
+  stale_count: 0,
+  no_data_count: 0,
+  backlog: {
+    queued_jobs: 0,
+    running_jobs: 0,
+    retrying_jobs: 0,
+    failed_streams: 0,
+    expired_assessments: 0,
+    lagging_streams: 0,
+    missing_assessments: 0,
+  },
+  streams: [],
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -77,6 +100,23 @@ describe('monitoring client', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       `${API_BASE_URL}/api/v1/monitoring/market-data`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+  });
+
+  it('loads the market-context health projection as an uncached read', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(marketContextSummary), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getMarketContextMonitoringSummary()).resolves.toEqual(marketContextSummary);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE_URL}/api/v1/monitoring/market-context`,
       expect.objectContaining({ method: 'GET', cache: 'no-store' }),
     );
   });

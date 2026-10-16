@@ -8,7 +8,8 @@
 
 این مرحله pipeline قطعی P3-03 تا P3-05 را به صف durable موجود متصل می‌کند. یک job مجاز، windowهای
 finalized را align می‌کند، feature snapshot را می‌سازد و assessment نهایی regime را در یک transaction
-ثبت می‌کند. هیچ endpoint یا UI جدیدی در این مرحله اضافه نشده است؛ آن مرز متعلق به P3-08 است.
+ثبت می‌کند. هیچ endpoint یا UI جدیدی در این مرحله اضافه نشده است؛ observability در P3-07 و API/UI
+محصولی مصرف context در P3-08 اضافه می‌شود.
 
 ## 1. قرارداد payload
 

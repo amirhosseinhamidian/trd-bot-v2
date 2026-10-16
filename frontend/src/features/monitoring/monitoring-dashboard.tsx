@@ -17,18 +17,21 @@ import {
 } from '@/components/ui';
 import type { BackgroundJobStatus } from '@/features/jobs/api/types';
 import type {
+  MarketContextMonitoringSummary,
   MarketDataMonitoringSummary,
   MonitoringOverallStatus,
   MonitoringSummary,
   RecommendationSeverity,
   SystemMetricSample,
 } from '@/features/monitoring/api/types';
+import { MarketContextHealthPanel } from '@/features/monitoring/market-context-health-panel';
 import { MarketDataHealthPanel } from '@/features/monitoring/market-data-health-panel';
 import { getMonitoringCopy } from '@/features/monitoring/monitoring-copy';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type MonitoringDashboardProps = {
   locale: PlatformLocale;
+  marketContext: MarketContextMonitoringSummary;
   marketData: MarketDataMonitoringSummary;
   summary: MonitoringSummary;
 };
@@ -154,6 +157,7 @@ function formatDuration(value: string | null, locale: PlatformLocale): string {
 
 export default function MonitoringDashboard({
   locale,
+  marketContext,
   marketData,
   summary,
 }: MonitoringDashboardProps) {
@@ -179,6 +183,8 @@ export default function MonitoringDashboard({
       </PageHeader>
 
       <MarketDataHealthPanel locale={locale} summary={marketData} />
+
+      <MarketContextHealthPanel locale={locale} summary={marketContext} />
 
       {operations ? (
         <Card>

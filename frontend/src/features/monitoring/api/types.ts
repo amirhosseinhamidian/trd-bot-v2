@@ -92,6 +92,72 @@ export interface MarketDataMonitoringSummary {
   recent_replays: MarketDataReplayHealth[];
 }
 
+export type MarketContextMonitoringOverallStatus = MonitoringOverallStatus | 'no_data';
+export type MarketContextFreshnessStatus = 'fresh' | 'stale' | 'no_data';
+export type MarketContextStreamHealthStatus = 'healthy' | 'degraded' | 'no_data';
+export type MarketContextAssessmentStatus = 'ready' | 'insufficient_data' | 'stale';
+export type MarketContextHealthIssueCode =
+  | 'assessment_expired'
+  | 'assessment_missing'
+  | 'assessment_not_ready'
+  | 'boundary_lagging'
+  | 'evaluation_failed'
+  | 'evaluation_pending'
+  | 'evaluation_retrying';
+
+export interface MarketContextStreamHealth {
+  source: string;
+  pair: {
+    base_asset: string;
+    quote_asset: string;
+    market_type: 'spot';
+  };
+  health_status: MarketContextStreamHealthStatus;
+  freshness_status: MarketContextFreshnessStatus;
+  issue_codes: MarketContextHealthIssueCode[];
+  expected_as_of: string;
+  latest_assessment_id: string | null;
+  latest_assessment_status: MarketContextAssessmentStatus | null;
+  latest_assessment_as_of: string | null;
+  assessed_at: string | null;
+  expires_at: string | null;
+  assessment_age_seconds: number | null;
+  boundary_lag_seconds: number | null;
+  feature_set_version: string | null;
+  algorithm_version: string | null;
+  latest_job_id: string | null;
+  latest_job_status: BackgroundJobStatus | null;
+  latest_job_as_of: string | null;
+  latest_job_updated_at: string | null;
+  latest_job_progress_percent: number | null;
+  latest_job_attempt_count: number | null;
+  latest_job_max_attempts: number | null;
+  latest_job_error_code: string | null;
+}
+
+export interface MarketContextBacklogSummary {
+  queued_jobs: number;
+  running_jobs: number;
+  retrying_jobs: number;
+  failed_streams: number;
+  expired_assessments: number;
+  lagging_streams: number;
+  missing_assessments: number;
+}
+
+export interface MarketContextMonitoringSummary {
+  schema_version: 'market-context-monitoring-v1';
+  generated_at: string;
+  overall_status: MarketContextMonitoringOverallStatus;
+  stream_count: number;
+  healthy_count: number;
+  degraded_count: number;
+  stale_count: number;
+  no_data_count: number;
+  backlog: MarketContextBacklogSummary;
+  streams: MarketContextStreamHealth[];
+}
+
 export type SystemMetricName =
   | 'api_request_latency_p95'
   | 'api_error_rate'
