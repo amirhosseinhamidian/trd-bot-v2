@@ -25,6 +25,7 @@ from trd_bot.db.experiment_execution_repositories import (
 from trd_bot.db.historical_dataset_commits import (
     SqlAlchemyHistoricalDatasetCommitter,
 )
+from trd_bot.db.market_context_alignment import SqlAlchemyMarketContextAssembler
 from trd_bot.db.market_context_repositories import SqlAlchemyMarketContextStore
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
 from trd_bot.db.market_data_finalization import (
@@ -183,6 +184,7 @@ __all__ = [
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",
+    "SqlAlchemyMarketContextAssembler",
     "SqlAlchemyMarketContextStore",
     "SqlAlchemyMarketDataEventStore",
     "SqlAlchemyMarketDataIngestor",

@@ -1,3 +1,12 @@
+from trd_bot.market_context.alignment import (
+    MarketContextAlignmentIssueCode,
+    MarketContextAlignmentResult,
+    MarketContextAlignmentStatus,
+    MarketContextTimeframeCoverage,
+    align_market_context_windows,
+    floor_market_context_boundary,
+    required_market_context_window_counts,
+)
 from trd_bot.market_context.contracts import (
     MarketContextAlignmentPolicy,
     MarketContextAssessmentStatus,
@@ -19,7 +28,10 @@ from trd_bot.market_context.contracts import (
 )
 
 __all__ = [
+    "MarketContextAlignmentIssueCode",
     "MarketContextAlignmentPolicy",
+    "MarketContextAlignmentResult",
+    "MarketContextAlignmentStatus",
     "MarketContextAssessmentStatus",
     "MarketContextBoundaryConvention",
     "MarketContextEvidence",
@@ -27,13 +39,17 @@ __all__ = [
     "MarketContextFeatureSetDefinition",
     "MarketContextFeatureSnapshot",
     "MarketContextInputManifest",
+    "MarketContextTimeframeCoverage",
     "MarketContextWindowReference",
     "MarketRegimeAssessment",
     "MarketTrendRegime",
     "MarketVolatilityRegime",
+    "align_market_context_windows",
     "build_market_context_feature_snapshot_checksum",
     "build_market_context_input_checksum",
     "build_market_context_window_reference_checksum",
     "build_market_regime_assessment_id",
     "default_market_context_alignment_policy",
+    "floor_market_context_boundary",
+    "required_market_context_window_counts",
 ]
