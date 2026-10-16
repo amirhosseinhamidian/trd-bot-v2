@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
+    SqlAlchemyMarketContextEvaluationRunner,
     SqlAlchemyOptimizationExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
     get_session_factory,
@@ -36,6 +37,11 @@ from trd_bot.jobs import (
     BackgroundJobHandlerError,
     BackgroundJobHandlerRegistry,
     BackgroundJobKind,
+)
+from trd_bot.market_context import (
+    MarketContextEvaluationCancelled,
+    MarketContextEvaluationError,
+    MarketContextEvaluationJobPayload,
 )
 from trd_bot.market_data import (
     MarketDataPollingFailedError,
@@ -282,6 +288,34 @@ def run_market_data_replay_job(
     return revision.revision_id
 
 
+def run_market_context_evaluation_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str | None:
+    request = _validate_job_payload(
+        MarketContextEvaluationJobPayload,
+        payload,
+        error_code="invalid_market_context_evaluation_job_payload",
+        error_message="Market-context evaluation job payload is invalid.",
+    )
+    context.heartbeat(10)
+    try:
+        assessment = SqlAlchemyMarketContextEvaluationRunner(get_session_factory()).run(
+            request,
+            cancellation_requested=context.cancellation_requested,
+        )
+    except MarketContextEvaluationCancelled:
+        return None
+    except MarketContextEvaluationError as error:
+        raise BackgroundJobHandlerError(
+            error_code=error.code,
+            error_message=error.message,
+            retryable=error.retryable,
+        ) from error
+    context.heartbeat(95)
+    return assessment.assessment_id
+
+
 def run_dataset_file_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
@@ -376,6 +410,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.MARKET_DATA_IMPORT: run_market_data_import_job,
             BackgroundJobKind.MARKET_DATA_POLL: run_market_data_poll_job,
             BackgroundJobKind.MARKET_DATA_REPLAY: run_market_data_replay_job,
+            BackgroundJobKind.MARKET_CONTEXT_EVALUATION: run_market_context_evaluation_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }

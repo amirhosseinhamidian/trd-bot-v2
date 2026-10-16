@@ -120,6 +120,9 @@ Runtime p95 برای jobهای فعلی:
 | --- | ---: |
 | `dataset_file_import` | 120s |
 | `market_data_import` | 120s |
+| `market_context_evaluation` | 30s |
+| `market_data_poll` | 30s |
+| `market_data_replay` | 30s |
 | `experiment_execution` | 60s |
 | `walk_forward_execution` | 300s |
 | `optimization_execution` | 600s |
@@ -218,7 +221,7 @@ Optimization را نمی‌گیرد.
 
 ## 10. بنچمارک workload واقعی Jobها
 
-fixture نسخه‌دار `background-job-workloads-v1` همهٔ مقادیر `BackgroundJobKind` را پوشش می‌دهد و
+fixture نسخه‌دار `background-job-workloads-v2` همهٔ مقادیر `BackgroundJobKind` را پوشش می‌دهد و
 دادهٔ کاربر، credential یا درخواست شبکه مصرف نمی‌کند:
 
 | Job kind | مسیر واقعی | اندازهٔ ثابت fixture |
@@ -227,6 +230,7 @@ fixture نسخه‌دار `background-job-workloads-v1` همهٔ مقادیر `B
 | `market_data_import` | `HistoricalDatasetJobRunner` و commit استاندارد | 1000 candle |
 | `market_data_poll` | polling، ingestion، Watermark و finalization | 2 candle، 2 provider |
 | `market_data_replay` | late ingestion، enqueue و revision finalized | 1 event، 1 revision |
+| `market_context_evaluation` | alignment، feature calculation و regime evaluation | 56 finalized window |
 | `experiment_execution` | `ExperimentExecutionRunner` | 720 candle |
 | `walk_forward_execution` | `WalkForwardExecutionRunner` | 720 candle، 10 fold |
 | `optimization_execution` | `OptimizationExecutionJobRunner` | 720 candle، 4 trial |

@@ -4,6 +4,7 @@ export type BackgroundJobKind =
   | 'market_data_import'
   | 'market_data_poll'
   | 'market_data_replay'
+  | 'market_context_evaluation'
   | 'dataset_file_import'
   | 'optimization_execution';
 

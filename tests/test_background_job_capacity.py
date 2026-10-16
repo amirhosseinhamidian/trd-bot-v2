@@ -66,7 +66,7 @@ def test_background_job_evidence_combines_queue_and_real_runtime_samples() -> No
     )
 
     assert evidence.complete is True
-    assert evidence.observed_count == 390
+    assert evidence.observed_count == 250 + 20 * len(BackgroundJobKind)
     assert evidence.metrics["queue_wait_p95_ms"] == 3
     for kind in BackgroundJobKind:
         prefix = f"{kind.value}."

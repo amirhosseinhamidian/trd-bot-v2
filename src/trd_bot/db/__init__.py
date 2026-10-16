@@ -27,6 +27,10 @@ from trd_bot.db.historical_dataset_commits import (
 )
 from trd_bot.db.market_context_alignment import SqlAlchemyMarketContextAssembler
 from trd_bot.db.market_context_features import SqlAlchemyMarketContextFeatureCalculator
+from trd_bot.db.market_context_jobs import (
+    SqlAlchemyMarketContextEvaluationEnqueuer,
+    SqlAlchemyMarketContextEvaluationRunner,
+)
 from trd_bot.db.market_context_regimes import SqlAlchemyMarketRegimeEvaluator
 from trd_bot.db.market_context_repositories import SqlAlchemyMarketContextStore
 from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
@@ -187,6 +191,8 @@ __all__ = [
     "SqlAlchemyExperimentRegistry",
     "SqlAlchemyHistoricalDatasetCommitter",
     "SqlAlchemyMarketContextAssembler",
+    "SqlAlchemyMarketContextEvaluationEnqueuer",
+    "SqlAlchemyMarketContextEvaluationRunner",
     "SqlAlchemyMarketContextFeatureCalculator",
     "SqlAlchemyMarketContextStore",
     "SqlAlchemyMarketDataEventStore",

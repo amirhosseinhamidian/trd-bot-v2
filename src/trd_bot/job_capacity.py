@@ -8,6 +8,8 @@ from typing import Final
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.db import (
     DatabaseBase,
+    SqlAlchemyMarketContextEvaluationEnqueuer,
+    SqlAlchemyMarketContextEvaluationRunner,
     SqlAlchemyMarketDataEventStore,
     SqlAlchemyMarketDataIngestor,
     SqlAlchemyMarketDataPollingScheduler,
@@ -23,6 +25,7 @@ from trd_bot.db.market_data_connection_repositories import (
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.jobs import BackgroundJobKind
+from trd_bot.market_context import MarketContextEvaluationJobPayload
 from trd_bot.market_data.connections import (
     InMemoryMarketDataConnectionRepository,
     MarketDataConnection,
@@ -30,7 +33,12 @@ from trd_bot.market_data.connections import (
     MarketDataConnectionState,
     MarketDataProviderCatalog,
 )
-from trd_bot.market_data.events import MarketDataEvent, MarketDataWatermark
+from trd_bot.market_data.events import (
+    MarketDataEvent,
+    MarketDataWatermark,
+    MarketDataWindowSnapshot,
+    MarketDataWindowState,
+)
 from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
 from trd_bot.market_data.polling import MarketDataPollJobPayload, MarketDataPollRunStatus
 from trd_bot.market_data.providers import (
@@ -78,7 +86,7 @@ from trd_bot.research.walk_forward_executions import (
 )
 from trd_bot.research.walk_forward_runs import InMemoryWalkForwardRunRegistry
 
-BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION: Final = "background-job-workloads-v1"
+BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION: Final = "background-job-workloads-v2"
 
 _FIXTURE_TIME: Final = datetime(2026, 1, 1, tzinfo=UTC)
 _EXECUTION_TIME: Final = datetime(2026, 10, 1, tzinfo=UTC)
@@ -458,6 +466,79 @@ def _market_data_replay_workload() -> Callable[[], None]:
     return execute
 
 
+def _market_context_evaluation_workload() -> Callable[[], None]:
+    source = "capacity-context-provider"
+    requested_at = _EXECUTION_TIME + timedelta(minutes=2)
+    counts = {
+        Timeframe.HOUR_1: 24,
+        Timeframe.HOURS_4: 18,
+        Timeframe.DAY_1: 14,
+    }
+    windows: list[MarketDataWindowSnapshot] = []
+    for timeframe, count in counts.items():
+        for index in range(count):
+            window_start = _EXECUTION_TIME - timeframe.duration * (count - index)
+            window_end = window_start + timeframe.duration
+            close_price = Decimal("100") + Decimal(index + 1)
+            candle = OHLCVCandle(
+                source=source,
+                pair=_PAIR,
+                timeframe=timeframe,
+                open_time=window_start,
+                close_time=window_end,
+                received_at=window_end + timedelta(seconds=30),
+                open_price=close_price,
+                high_price=close_price + Decimal("1"),
+                low_price=close_price - Decimal("1"),
+                close_price=close_price,
+                volume=Decimal("1000") + Decimal(index),
+                is_closed=True,
+            )
+            event = MarketDataEvent.from_candle(candle)
+            windows.append(
+                MarketDataWindowSnapshot(
+                    window_id=event.window_id,
+                    version=2,
+                    state=MarketDataWindowState.FINALIZED,
+                    source=source,
+                    pair=_PAIR,
+                    timeframe=timeframe,
+                    window_start=window_start,
+                    window_end=window_end,
+                    event_id=event.event_id,
+                    payload_checksum=event.payload_checksum,
+                    candle=candle,
+                    created_at=window_end + timedelta(seconds=30),
+                    finalized_at=window_end + timedelta(minutes=1),
+                )
+            )
+
+    def execute() -> None:
+        engine = create_database_engine("sqlite+pysqlite:///:memory:")
+        DatabaseBase.metadata.create_all(engine)
+        factory = create_session_factory(engine)
+        try:
+            with factory.begin() as session:
+                store = SqlAlchemyMarketDataEventStore(session)
+                for window in windows:
+                    store.stage_window_version(window)
+            with factory() as session:
+                queued = SqlAlchemyMarketContextEvaluationEnqueuer(session).enqueue(
+                    source=source,
+                    pair=_PAIR,
+                    as_of=_EXECUTION_TIME,
+                    requested_at=requested_at,
+                )
+            payload = MarketContextEvaluationJobPayload.model_validate(queued.job.payload)
+            assessment = SqlAlchemyMarketContextEvaluationRunner(factory).run(payload)
+            if assessment.as_of != _EXECUTION_TIME or len(assessment.evidence) != 5:
+                raise RuntimeError("market-context workload produced inconsistent output")
+        finally:
+            engine.dispose()
+
+    return execute
+
+
 def _experiment_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
     dataset = DatasetBuilder().build(
         name="Capacity benchmark experiment dataset",
@@ -608,6 +689,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("events", 1), ("window_revisions", 1)),
             execute=_market_data_replay_workload(),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.MARKET_CONTEXT_EVALUATION,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("finalized_windows", 56), ("features", 5)),
+            execute=_market_context_evaluation_workload(),
         ),
         BackgroundJobWorkload(
             kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
