@@ -6,7 +6,9 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from tests.test_alert_persistence import alert_rule
 from tests.test_market_context_features import AS_OF, PAIR, SOURCE, complete_input
+from trd_bot.alerts import AlertEvaluationJobPayload
 from trd_bot.api import job_handlers
 from trd_bot.api.job_handlers import build_background_job_handler_registry
 from trd_bot.db import (
@@ -15,6 +17,7 @@ from trd_bot.db import (
     MarketContextFeatureSnapshotRow,
     MarketContextInputManifestRow,
     MarketRegimeAssessmentRow,
+    SqlAlchemyAlertStore,
     SqlAlchemyBackgroundJobRepository,
     SqlAlchemyMarketContextEvaluationEnqueuer,
     SqlAlchemyMarketContextEvaluationRunner,
@@ -240,6 +243,36 @@ def test_worker_publishes_assessment_reference_and_rejects_invalid_payload(
     assert failed is not None
     assert failed.status is BackgroundJobStatus.FAILED
     assert failed.error_code == "invalid_market_context_evaluation_job_payload"
+
+
+def test_market_context_worker_fans_out_enabled_alert_rules(
+    factory: sessionmaker[Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed_complete_input(factory)
+    with factory.begin() as session:
+        SqlAlchemyAlertStore(session).stage_rule_definition(alert_rule())
+    queued = enqueue(factory).job
+    monkeypatch.setattr(job_handlers, "get_session_factory", lambda: factory)
+
+    with factory() as session:
+        completed = BackgroundJobWorker(
+            repository=SqlAlchemyBackgroundJobRepository(session),
+            handlers=build_background_job_handler_registry(),
+            worker_id="market-context-alert-fanout-worker",
+        ).run_once()
+
+    assert completed is not None
+    assert completed.job_id == queued.job_id
+    assert completed.status is BackgroundJobStatus.SUCCEEDED
+    assert completed.result_reference is not None
+
+    with factory() as session:
+        jobs = SqlAlchemyBackgroundJobRepository(session).list_page(limit=100, offset=0)
+    alert_jobs = tuple(job for job in jobs if job.kind is BackgroundJobKind.ALERT_EVALUATION)
+    assert len(alert_jobs) == 1
+    alert_payload = AlertEvaluationJobPayload.model_validate(alert_jobs[0].payload)
+    assert alert_payload.source.source_event_id == completed.result_reference
 
 
 def test_worker_retries_not_ready_inputs_then_preserves_stable_terminal_error(

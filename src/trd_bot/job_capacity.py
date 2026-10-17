@@ -5,6 +5,15 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Final
 
+from trd_bot.alerts import (
+    AlertEvaluationDisposition,
+    AlertEvaluationJobPayload,
+    AlertRuleDefinition,
+    AlertRuleState,
+    AlertSeverity,
+    MarketContextAlertCondition,
+    evaluate_alert,
+)
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.db import (
     DatabaseBase,
@@ -25,7 +34,15 @@ from trd_bot.db.market_data_connection_repositories import (
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.jobs import BackgroundJobKind
-from trd_bot.market_context import MarketContextEvaluationJobPayload
+from trd_bot.market_context import (
+    MarketContextAssessmentStatus,
+    MarketContextEvaluationJobPayload,
+    MarketContextEvidence,
+    MarketRegimeAssessment,
+    MarketTrendRegime,
+    MarketVolatilityRegime,
+    build_market_regime_assessment_id,
+)
 from trd_bot.market_data.connections import (
     InMemoryMarketDataConnectionRepository,
     MarketDataConnection,
@@ -539,6 +556,77 @@ def _market_context_evaluation_workload() -> Callable[[], None]:
     return execute
 
 
+def _alert_evaluation_workload() -> Callable[[], None]:
+    source = "capacity-context-provider"
+    input_checksum = "a" * 64
+    evidence = MarketContextEvidence(
+        feature_key="trend_slope_1h",
+        timeframe=Timeframe.HOUR_1,
+        value=Decimal("0.013"),
+        calculation_version="trend-slope-v1",
+        window_reference_checksums=("b" * 64,),
+    )
+    assessment = MarketRegimeAssessment(
+        assessment_id=build_market_regime_assessment_id(
+            source=source,
+            pair=_PAIR,
+            as_of=_EXECUTION_TIME,
+            input_checksum=input_checksum,
+            feature_set_version="market-context-features-v1",
+            algorithm_version="market-regime-v1",
+        ),
+        source=source,
+        pair=_PAIR,
+        as_of=_EXECUTION_TIME,
+        input_manifest_id=f"market-context-input-{input_checksum[:16]}",
+        input_checksum=input_checksum,
+        feature_set_version="market-context-features-v1",
+        feature_set_checksum="c" * 64,
+        feature_snapshot_id="market-context-features-dddddddddddddddd",
+        feature_snapshot_checksum="d" * 64,
+        algorithm_version="market-regime-v1",
+        status=MarketContextAssessmentStatus.READY,
+        trend=MarketTrendRegime.TRENDING_UP,
+        volatility=MarketVolatilityRegime.HIGH,
+        confidence=Decimal("0.82"),
+        evidence=(evidence,),
+        assessed_at=_EXECUTION_TIME + timedelta(minutes=1),
+        expires_at=_EXECUTION_TIME + timedelta(hours=1),
+    )
+    rule = AlertRuleDefinition.build(
+        rule_key="capacity-high-volatility-uptrend",
+        rule_version=1,
+        name="Capacity high-volatility uptrend",
+        description="Measure deterministic alert evaluation capacity.",
+        state=AlertRuleState.ENABLED,
+        severity=AlertSeverity.WARNING,
+        condition=MarketContextAlertCondition(
+            trends=(MarketTrendRegime.TRENDING_UP,),
+            volatilities=(MarketVolatilityRegime.HIGH,),
+            minimum_confidence=Decimal("0.75"),
+        ),
+        expires_after_seconds=1800,
+        deduplication_window_seconds=3600,
+        cooldown_seconds=7200,
+        created_at=_EXECUTION_TIME + timedelta(minutes=1),
+    )
+    payload = AlertEvaluationJobPayload.build(
+        rule=rule,
+        assessment=assessment,
+        requested_at=_EXECUTION_TIME + timedelta(minutes=2),
+    )
+
+    def execute() -> None:
+        outcome = evaluate_alert(rule=rule, source=payload.source)
+        if (
+            outcome.evaluation.disposition is not AlertEvaluationDisposition.PUBLISHED
+            or outcome.draft is None
+        ):
+            raise RuntimeError("alert-evaluation workload did not publish its fixture")
+
+    return execute
+
+
 def _experiment_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
     dataset = DatasetBuilder().build(
         name="Capacity benchmark experiment dataset",
@@ -695,6 +783,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("finalized_windows", 56), ("features", 5)),
             execute=_market_context_evaluation_workload(),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.ALERT_EVALUATION,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("rules", 1), ("assessments", 1)),
+            execute=_alert_evaluation_workload(),
         ),
         BackgroundJobWorkload(
             kind=BackgroundJobKind.EXPERIMENT_EXECUTION,

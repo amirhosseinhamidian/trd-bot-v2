@@ -18,6 +18,7 @@ class BackgroundJobKind(StrEnum):
     MARKET_DATA_POLL = "market_data_poll"
     MARKET_DATA_REPLAY = "market_data_replay"
     MARKET_CONTEXT_EVALUATION = "market_context_evaluation"
+    ALERT_EVALUATION = "alert_evaluation"
     DATASET_FILE_IMPORT = "dataset_file_import"
     OPTIMIZATION_EXECUTION = "optimization_execution"
 
@@ -97,6 +98,11 @@ BACKGROUND_JOB_POLICIES: Mapping[BackgroundJobKind, BackgroundJobPolicy] = Mappi
         ),
         BackgroundJobKind.MARKET_CONTEXT_EVALUATION: BackgroundJobPolicy(
             kind=BackgroundJobKind.MARKET_CONTEXT_EVALUATION,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.ALERT_EVALUATION: BackgroundJobPolicy(
+            kind=BackgroundJobKind.ALERT_EVALUATION,
             max_attempts=3,
             retry_delays=_STANDARD_RETRY_DELAYS,
         ),

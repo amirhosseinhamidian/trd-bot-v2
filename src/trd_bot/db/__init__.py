@@ -1,3 +1,7 @@
+from trd_bot.db.alert_jobs import (
+    SqlAlchemyAlertEvaluationEnqueuer,
+    SqlAlchemyAlertEvaluationRunner,
+)
 from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
 from trd_bot.db.background_job_repositories import (
     BackgroundJobConflictError,
@@ -187,6 +191,8 @@ __all__ = [
     "ResearchExperimentRow",
     "SimulatedPortfolioRow",
     "SimulatedPositionRow",
+    "SqlAlchemyAlertEvaluationEnqueuer",
+    "SqlAlchemyAlertEvaluationRunner",
     "SqlAlchemyAlertStore",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyBackgroundJobRepository",

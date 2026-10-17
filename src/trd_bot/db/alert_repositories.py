@@ -7,6 +7,7 @@ from trd_bot.alerts import (
     AlertEvaluationRecord,
     AlertRuleDefinition,
     AlertRuleReference,
+    AlertRuleState,
     MarketContextAlertSourceReference,
 )
 from trd_bot.db.models import (
@@ -80,6 +81,28 @@ class SqlAlchemyAlertStore:
             .limit(1)
         )
         return None if row is None else self._rule_from_row(row)
+
+    def list_latest_rule_definitions(
+        self,
+        *,
+        state: AlertRuleState | None = None,
+    ) -> tuple[AlertRuleDefinition, ...]:
+        rows = self._session.scalars(
+            select(AlertRuleDefinitionRow).order_by(
+                AlertRuleDefinitionRow.rule_id,
+                AlertRuleDefinitionRow.rule_version.desc(),
+            )
+        ).all()
+        latest: list[AlertRuleDefinition] = []
+        seen_rule_ids: set[str] = set()
+        for row in rows:
+            if row.rule_id in seen_rule_ids:
+                continue
+            seen_rule_ids.add(row.rule_id)
+            rule = self._rule_from_row(row)
+            if state is None or rule.state is state:
+                latest.append(rule)
+        return tuple(latest)
 
     def stage_evaluation(
         self,

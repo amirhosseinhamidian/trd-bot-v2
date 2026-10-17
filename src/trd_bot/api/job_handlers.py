@@ -3,6 +3,11 @@ from collections.abc import Mapping
 
 from pydantic import BaseModel, ValidationError
 
+from trd_bot.alerts import (
+    AlertEvaluationJobCancelled,
+    AlertEvaluationJobError,
+    AlertEvaluationJobPayload,
+)
 from trd_bot.api.background_jobs import (
     fail_experiment_execution_with_session_factory,
     fail_walk_forward_execution_with_session_factory,
@@ -10,6 +15,8 @@ from trd_bot.api.background_jobs import (
     run_walk_forward_execution_with_session_factory,
 )
 from trd_bot.db import (
+    SqlAlchemyAlertEvaluationEnqueuer,
+    SqlAlchemyAlertEvaluationRunner,
     SqlAlchemyDatasetFileStageRepository,
     SqlAlchemyDatasetRepository,
     SqlAlchemyExperimentRegistry,
@@ -299,8 +306,9 @@ def run_market_context_evaluation_job(
         error_message="Market-context evaluation job payload is invalid.",
     )
     context.heartbeat(10)
+    session_factory = get_session_factory()
     try:
-        assessment = SqlAlchemyMarketContextEvaluationRunner(get_session_factory()).run(
+        assessment = SqlAlchemyMarketContextEvaluationRunner(session_factory).run(
             request,
             cancellation_requested=context.cancellation_requested,
         )
@@ -312,8 +320,42 @@ def run_market_context_evaluation_job(
             error_message=error.message,
             retryable=error.retryable,
         ) from error
+    context.heartbeat(90)
+    with session_factory() as session:
+        SqlAlchemyAlertEvaluationEnqueuer(session).enqueue_enabled_for_source(
+            source_event_id=assessment.assessment_id,
+            requested_at=context.job.updated_at,
+        )
     context.heartbeat(95)
     return assessment.assessment_id
+
+
+def run_alert_evaluation_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str | None:
+    request = _validate_job_payload(
+        AlertEvaluationJobPayload,
+        payload,
+        error_code="invalid_alert_evaluation_job_payload",
+        error_message="Alert evaluation job payload is invalid.",
+    )
+    context.heartbeat(10)
+    try:
+        evaluation = SqlAlchemyAlertEvaluationRunner(get_session_factory()).run(
+            request,
+            cancellation_requested=context.cancellation_requested,
+        )
+    except AlertEvaluationJobCancelled:
+        return None
+    except AlertEvaluationJobError as error:
+        raise BackgroundJobHandlerError(
+            error_code=error.code,
+            error_message=error.message,
+            retryable=error.retryable,
+        ) from error
+    context.heartbeat(95)
+    return evaluation.evaluation_id
 
 
 def run_dataset_file_import_job(
@@ -411,6 +453,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.MARKET_DATA_POLL: run_market_data_poll_job,
             BackgroundJobKind.MARKET_DATA_REPLAY: run_market_data_replay_job,
             BackgroundJobKind.MARKET_CONTEXT_EVALUATION: run_market_context_evaluation_job,
+            BackgroundJobKind.ALERT_EVALUATION: run_alert_evaluation_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }
