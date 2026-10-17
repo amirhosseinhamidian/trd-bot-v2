@@ -1,3 +1,4 @@
+from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
 from trd_bot.db.background_job_repositories import (
     BackgroundJobConflictError,
     SqlAlchemyBackgroundJobRepository,
@@ -66,6 +67,9 @@ from trd_bot.db.market_data_retention import (
     SqlAlchemyMarketDataRetentionManager,
 )
 from trd_bot.db.models import (
+    AlertEvaluationRow,
+    AlertRow,
+    AlertRuleDefinitionRow,
     ArchitectureRecommendationRow,
     BackgroundJobRow,
     CandidateJournalRow,
@@ -139,6 +143,9 @@ from trd_bot.db.walk_forward_execution_repositories import (
 )
 
 __all__ = [
+    "AlertEvaluationRow",
+    "AlertRow",
+    "AlertRuleDefinitionRow",
     "ArchitectureRecommendationRow",
     "BackgroundJobConflictError",
     "BackgroundJobRow",
@@ -180,6 +187,7 @@ __all__ = [
     "ResearchExperimentRow",
     "SimulatedPortfolioRow",
     "SimulatedPositionRow",
+    "SqlAlchemyAlertStore",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyBackgroundJobRepository",
     "SqlAlchemyCandidateJournalRepository",

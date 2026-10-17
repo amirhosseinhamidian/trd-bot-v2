@@ -1181,6 +1181,169 @@ class MarketRegimeAssessmentRow(DatabaseBase):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
+class AlertRuleDefinitionRow(DatabaseBase):
+    """Immutable operator-owned alert rule version."""
+
+    __tablename__ = "alert_rule_definitions"
+
+    __table_args__ = (
+        CheckConstraint("rule_version >= 1", name="rule_version_positive"),
+        CheckConstraint(
+            "source_kind IN ('market_context')",
+            name="source_kind_supported",
+        ),
+        CheckConstraint("state IN ('enabled', 'disabled')", name="state_supported"),
+        CheckConstraint(
+            "severity IN ('info', 'warning', 'critical')",
+            name="severity_supported",
+        ),
+        CheckConstraint("length(definition_checksum) = 64", name="checksum_length"),
+        UniqueConstraint(
+            "rule_key",
+            "rule_version",
+            name="uq_alert_rule_definitions_key_version",
+        ),
+        Index(
+            "ix_alert_rule_definitions_state_created_at",
+            "state",
+            "created_at",
+        ),
+    )
+
+    rule_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    rule_version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    rule_key: Mapped[str] = mapped_column(String(64), index=True)
+    source_kind: Mapped[str] = mapped_column(String(30), index=True)
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    severity: Mapped[str] = mapped_column(String(20), index=True)
+    definition_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class AlertEvaluationRow(DatabaseBase):
+    """Immutable publish-or-suppress decision for one exact rule/source pair."""
+
+    __tablename__ = "alert_evaluations"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["rule_id", "rule_version"],
+            ["alert_rule_definitions.rule_id", "alert_rule_definitions.rule_version"],
+        ),
+        CheckConstraint(
+            "source_kind IN ('market_context')",
+            name="source_kind_supported",
+        ),
+        CheckConstraint(
+            "disposition IN ('published', 'suppressed')",
+            name="disposition_supported",
+        ),
+        CheckConstraint(
+            "suppression_reason_count >= 0",
+            name="suppression_reason_count_nonnegative",
+        ),
+        CheckConstraint(
+            "length(source_event_checksum) = 64",
+            name="source_event_checksum_length",
+        ),
+        CheckConstraint(
+            "length(evaluation_checksum) = 64",
+            name="evaluation_checksum_length",
+        ),
+        CheckConstraint(
+            "(disposition = 'published' AND alert_id IS NOT NULL "
+            "AND suppression_reason_count = 0) OR "
+            "(disposition = 'suppressed' AND alert_id IS NULL "
+            "AND suppression_reason_count >= 1)",
+            name="outcome_consistent",
+        ),
+        UniqueConstraint(
+            "rule_id",
+            "rule_version",
+            "source_kind",
+            "source_event_id",
+            name="uq_alert_evaluations_rule_source",
+        ),
+        Index(
+            "ix_alert_evaluations_disposition_evaluated_at",
+            "disposition",
+            "evaluated_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    rule_version: Mapped[int] = mapped_column(Integer)
+    source_kind: Mapped[str] = mapped_column(String(30), index=True)
+    source_reference_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_event_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_regime_assessments.assessment_id"),
+        index=True,
+    )
+    source_event_checksum: Mapped[str] = mapped_column(String(64))
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    suppression_reason_count: Mapped[int] = mapped_column(Integer)
+    alert_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    evaluation_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class AlertRow(DatabaseBase):
+    """Immutable published in-app alert and its exact lineage."""
+
+    __tablename__ = "alerts"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["rule_id", "rule_version"],
+            ["alert_rule_definitions.rule_id", "alert_rule_definitions.rule_version"],
+        ),
+        CheckConstraint(
+            "source_kind IN ('market_context')",
+            name="source_kind_supported",
+        ),
+        CheckConstraint(
+            "delivery_channel IN ('in_app')",
+            name="delivery_channel_supported",
+        ),
+        CheckConstraint(
+            "severity IN ('info', 'warning', 'critical')",
+            name="severity_supported",
+        ),
+        CheckConstraint("expires_at > created_at", name="expiry_after_creation"),
+        CheckConstraint("length(draft_checksum) = 64", name="draft_checksum_length"),
+        Index("ix_alerts_expires_at_created_at", "expires_at", "created_at"),
+    )
+
+    alert_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alert_evaluations.evaluation_id"),
+        unique=True,
+    )
+    deduplication_key: Mapped[str] = mapped_column(String(100), unique=True)
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    rule_version: Mapped[int] = mapped_column(Integer)
+    source_kind: Mapped[str] = mapped_column(String(30), index=True)
+    source_event_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_regime_assessments.assessment_id"),
+        index=True,
+    )
+    delivery_channel: Mapped[str] = mapped_column(String(20))
+    severity: Mapped[str] = mapped_column(String(20), index=True)
+    draft_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

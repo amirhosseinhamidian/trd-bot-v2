@@ -12,6 +12,7 @@ from trd_bot.market_context import (
     MarketContextAssessmentStatus,
     MarketContextProductView,
     MarketContextUnavailableReason,
+    MarketRegimeAssessment,
     MarketTrendRegime,
     MarketVolatilityRegime,
 )
@@ -119,6 +120,12 @@ def build_alert_deduplication_key(
         "source_kind": source_kind.value,
     }
     return f"alert-dedupe-{_checksum(identity)}"
+
+
+def build_alert_source_event_checksum(assessment: MarketRegimeAssessment) -> str:
+    """Checksum the complete immutable assessment referenced by an alert source."""
+
+    return _checksum(assessment.model_dump(mode="json"))
 
 
 class MarketContextAlertSourceReference(BaseModel):
@@ -254,7 +261,7 @@ class MarketContextAlertSourceReference(BaseModel):
     @classmethod
     def from_market_context_view(cls, view: MarketContextProductView) -> Self:
         assessment = view.assessment
-        source_event_checksum = _checksum(assessment.model_dump(mode="json"))
+        source_event_checksum = build_alert_source_event_checksum(assessment)
         payload = cls._checksum_payload(
             source_event_id=assessment.assessment_id,
             source_event_checksum=source_event_checksum,

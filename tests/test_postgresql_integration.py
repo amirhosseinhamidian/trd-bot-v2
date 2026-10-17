@@ -150,6 +150,9 @@ def test_postgresql_connection_and_migrations() -> None:
 
         assert {
             "alembic_version",
+            "alert_evaluations",
+            "alert_rule_definitions",
+            "alerts",
             "architecture_recommendations",
             "background_jobs",
             "candidate_journals",
