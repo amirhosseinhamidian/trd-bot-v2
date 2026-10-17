@@ -24,7 +24,7 @@ describe('platform navigation contract', () => {
       },
       {
         key: 'strategyDecision',
-        items: ['strategies', 'signals', 'candidates', 'risk'],
+        items: ['strategies', 'signals', 'marketContext', 'candidates', 'risk'],
       },
       { key: 'simulation', items: ['portfolios'] },
       { key: 'data', items: ['connections'] },
@@ -48,6 +48,7 @@ describe('platform navigation contract', () => {
       '/en/optimizations',
       '/en/strategies',
       '/en/signals',
+      '/en/market-context',
       '/en/candidates',
       '/en/risk',
       '/en/portfolios',
@@ -84,7 +85,7 @@ describe('platform navigation contract', () => {
         key: 'strategyDecision',
         label: 'Strategy & Decision',
         href: undefined,
-        items: ['strategies', 'signals', 'candidates'],
+        items: ['strategies', 'signals', 'marketContext', 'candidates'],
       },
       {
         key: 'more',
@@ -137,6 +138,7 @@ describe('platform navigation contract', () => {
       optimizations: 'Optimizations',
       strategies: 'Strategies',
       signals: 'Signals',
+      marketContext: 'Market Context',
       candidates: 'Candidates',
       risk: 'Risk',
       portfolios: 'Historical Portfolios',

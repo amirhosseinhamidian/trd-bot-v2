@@ -12,6 +12,7 @@ const screens = vi.hoisted(() => ({
   datasetDetail: () => null,
   experimentCatalog: () => null,
   experimentDetail: () => null,
+  marketContext: () => null,
   monitoring: () => null,
   overview: () => null,
   portfolioCatalog: () => null,
@@ -36,6 +37,7 @@ const api = vi.hoisted(() => ({
   getExperiments: vi.fn(async () => 'experiment-page'),
   getMarketDataConnections: vi.fn(async () => 'connection-page'),
   getMarketContextMonitoringSummary: vi.fn(async () => 'market-context-monitoring-summary'),
+  getMarketContexts: vi.fn(async () => 'market-context-page'),
   getMarketDataMonitoringSummary: vi.fn(async () => 'market-data-monitoring-summary'),
   getMarketDataProviders: vi.fn(async () => 'market-data-providers'),
   getMonitoringSummary: vi.fn(async () => 'monitoring-summary'),
@@ -140,6 +142,13 @@ vi.mock('@/features/monitoring/api/client', () => ({
 }));
 vi.mock('@/features/monitoring/monitoring-dashboard', () => ({ default: screens.monitoring }));
 
+vi.mock('@/features/market-context/api/client', () => ({
+  getMarketContexts: api.getMarketContexts,
+}));
+vi.mock('@/features/market-context/market-context-dashboard', () => ({
+  default: screens.marketContext,
+}));
+
 import CandidateDetailPage from '@/app/[locale]/candidates/[candidateId]/page';
 import CandidatesPage from '@/app/[locale]/candidates/page';
 import ConnectionsPage from '@/app/[locale]/connections/page';
@@ -147,6 +156,7 @@ import DatasetDetailPage from '@/app/[locale]/datasets/[datasetId]/page';
 import DatasetsPage from '@/app/[locale]/datasets/page';
 import ExperimentDetailPage from '@/app/[locale]/experiments/[experimentId]/page';
 import ExperimentsPage from '@/app/[locale]/experiments/page';
+import MarketContextPage from '@/app/[locale]/market-context/page';
 import MonitoringPage from '@/app/[locale]/monitoring/page';
 import LocalePage from '@/app/[locale]/page';
 import PortfolioDetailPage from '@/app/[locale]/portfolios/[portfolioId]/page';
@@ -279,6 +289,17 @@ describe.each(['fa', 'en'] as const)('P6 critical user journeys in %s', (locale)
     expect(riskProps.initialReport).toBe('risk-report');
     expect(riskProps.portfolios).toEqual(['portfolio-summary']);
     expect(api.getCandidateProjection).toHaveBeenCalledWith('candidate-01');
+  });
+
+  it('loads the latest product-facing market context', async () => {
+    const props = expectLocalizedScreen(
+      await MarketContextPage({ params: Promise.resolve({ locale }) }),
+      screens.marketContext,
+      locale,
+    );
+
+    expect(props.initialPage).toBe('market-context-page');
+    expect(api.getMarketContexts).toHaveBeenCalledWith({ limit: 12, offset: 0 });
   });
 
   it('moves through historical portfolios down to position evidence', async () => {

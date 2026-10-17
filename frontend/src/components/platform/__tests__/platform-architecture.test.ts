@@ -14,6 +14,7 @@ const screenComponentPaths = [
   'features/experiments/experiment-detail.tsx',
   'features/connections/market-data-connections-panel.tsx',
   'features/monitoring/monitoring-dashboard.tsx',
+  'features/market-context/market-context-dashboard.tsx',
   'features/optimizations/optimization-catalog.tsx',
   'features/optimizations/optimization-detail.tsx',
   'features/overview/overview-dashboard.tsx',
@@ -56,6 +57,7 @@ const featureBoundaries = [
     'experiments-copy',
   ],
   ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
+  ['market-context', [['market-context', 'market-context-dashboard']], 'market-context-copy'],
   ['overview', [['', 'overview-dashboard']], 'overview-copy'],
   [
     'optimizations',
@@ -181,7 +183,7 @@ describe('platform architecture contract', () => {
     },
   );
 
-  it('preserves the frozen 21-route locale inventory', () => {
+  it('preserves the extended 22-route locale inventory', () => {
     const localeRoot = resolve(process.cwd(), 'src/app/[locale]');
     const actualRoutes = collectPageFiles(localeRoot)
       .map((path) => relative(localeRoot, path).replaceAll('\\', '/'))

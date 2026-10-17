@@ -74,6 +74,10 @@ const criticalLayoutContracts = [
     path: 'src/features/monitoring/monitoring-dashboard.tsx',
     tokens: ['md:hidden', 'hidden min-w-0 md:block', 'scrollLabel'],
   },
+  {
+    path: 'src/features/market-context/market-context-dashboard.tsx',
+    tokens: ['sm:grid-cols-2', 'xl:grid-cols-2', 'break-all'],
+  },
 ] as const;
 
 function setViewportWidth(width: number): void {

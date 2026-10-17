@@ -16,6 +16,8 @@ FRONTEND_API_OPERATIONS = {
     ("GET", "/api/v1/market-data/connections/{connection_id}/imports/{import_id}/versions"),
     ("POST", "/api/v1/market-data/connections/{connection_id}/imports/{import_id}/refresh"),
     ("POST", "/api/v1/market-data/connections/{connection_id}/imports/{import_id}/refresh-job"),
+    ("GET", "/api/v1/market-context"),
+    ("GET", "/api/v1/market-context/{assessment_id}"),
     ("GET", "/api/v1/research/datasets"),
     ("POST", "/api/v1/research/datasets"),
     ("POST", "/api/v1/research/datasets/files/inspect"),

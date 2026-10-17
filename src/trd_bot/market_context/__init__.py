@@ -58,6 +58,11 @@ from trd_bot.market_context.jobs import (
     validate_market_context_evaluation_enqueue,
     validate_market_context_evaluation_result,
 )
+from trd_bot.market_context.product import (
+    MarketContextProductReader,
+    MarketContextProductView,
+    MarketContextUnavailableReason,
+)
 from trd_bot.market_context.regimes import (
     MARKET_REGIME_ALGORITHM_V1,
     MarketRegimePolicyV1,
@@ -94,9 +99,12 @@ __all__ = [
     "MarketContextMonitoringOverallStatus",
     "MarketContextMonitoringReader",
     "MarketContextMonitoringSummary",
+    "MarketContextProductReader",
+    "MarketContextProductView",
     "MarketContextStreamHealth",
     "MarketContextStreamHealthStatus",
     "MarketContextTimeframeCoverage",
+    "MarketContextUnavailableReason",
     "MarketContextWindowReference",
     "MarketRegimeAssessment",
     "MarketRegimePolicyV1",

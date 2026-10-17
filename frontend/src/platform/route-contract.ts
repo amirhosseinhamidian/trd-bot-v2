@@ -16,6 +16,7 @@ export const PRESERVED_LOCALE_ROUTE_FILES = [
   'experiments/[experimentId]/page.tsx',
   'experiments/page.tsx',
   'monitoring/page.tsx',
+  'market-context/page.tsx',
   'optimizations/[executionId]/page.tsx',
   'optimizations/page.tsx',
   'page.tsx',

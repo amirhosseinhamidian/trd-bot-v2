@@ -132,6 +132,7 @@ describe('PlatformShell', () => {
       'Optimizations',
       'Strategies',
       'Signals',
+      'Market Context',
       'Candidates',
       'Risk',
       'Historical Portfolios',
