@@ -464,12 +464,15 @@ def market_context_golden_fixture_v1() -> MarketContextGoldenFixtureDefinition:
 
 
 def _build_windows(
-    fixture: MarketContextGoldenFixtureDefinition,
+    *,
+    source: str,
+    pair: TradingPair,
+    as_of: datetime,
     scenario: MarketContextGoldenScenarioDefinition,
 ) -> tuple[MarketDataWindowSnapshot, ...]:
     windows: list[MarketDataWindowSnapshot] = []
     for definition in scenario.series:
-        expected_end = floor_market_context_boundary(fixture.as_of, definition.timeframe)
+        expected_end = floor_market_context_boundary(as_of, definition.timeframe)
         close_price = definition.start_price
         for index in range(definition.window_count):
             if index:
@@ -482,8 +485,8 @@ def _build_windows(
             )
             window_end = window_start + definition.timeframe.duration
             candle = OHLCVCandle(
-                source=fixture.source,
-                pair=fixture.pair,
+                source=source,
+                pair=pair,
                 timeframe=definition.timeframe,
                 open_time=window_start,
                 close_time=window_end,
@@ -500,8 +503,8 @@ def _build_windows(
                     window_id=event.window_id,
                     version=2,
                     state=MarketDataWindowState.FINALIZED,
-                    source=fixture.source,
-                    pair=fixture.pair,
+                    source=source,
+                    pair=pair,
                     timeframe=definition.timeframe,
                     window_start=window_start,
                     window_end=window_end,
@@ -515,6 +518,26 @@ def _build_windows(
     return tuple(windows)
 
 
+def build_market_context_golden_windows(
+    scenario_id: MarketContextGoldenScenarioId,
+    *,
+    as_of: datetime | None = None,
+) -> tuple[MarketDataWindowSnapshot, ...]:
+    """Build a golden-shaped synthetic window set for repeatable local acceptance smoke."""
+
+    fixture = market_context_golden_fixture_v1()
+    selected_as_of = _normalize_timestamp(as_of or fixture.as_of)
+    if floor_market_context_boundary(selected_as_of, Timeframe.HOUR_1) != selected_as_of:
+        raise ValueError("golden window as-of time must be an hourly boundary")
+    scenario = next(item for item in fixture.scenarios if item.scenario_id is scenario_id)
+    return _build_windows(
+        source=fixture.source,
+        pair=fixture.pair,
+        as_of=selected_as_of,
+        scenario=scenario,
+    )
+
+
 def execute_market_context_golden_scenario(
     scenario: MarketContextGoldenScenarioDefinition,
     *,
@@ -523,7 +546,12 @@ def execute_market_context_golden_scenario(
     """Execute the real deterministic context pipeline for one synthetic scenario."""
 
     selected_fixture = fixture or market_context_golden_fixture_v1()
-    windows = _build_windows(selected_fixture, scenario)
+    windows = _build_windows(
+        source=selected_fixture.source,
+        pair=selected_fixture.pair,
+        as_of=selected_fixture.as_of,
+        scenario=scenario,
+    )
     alignment = align_market_context_windows(
         source=selected_fixture.source,
         pair=selected_fixture.pair,

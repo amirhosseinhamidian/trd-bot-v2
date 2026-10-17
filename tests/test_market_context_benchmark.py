@@ -6,11 +6,14 @@ import pytest
 from pydantic import ValidationError
 from scripts import benchmark_market_context
 
+from trd_bot.domain.market_data import Timeframe
 from trd_bot.market_context import (
     MARKET_CONTEXT_GOLDEN_FIXTURE_VERSION,
     MARKET_CONTEXT_GOLDEN_MINIMUM_SAMPLES,
     MarketContextGoldenBenchmarkReport,
     MarketContextGoldenFailureCode,
+    MarketContextGoldenScenarioId,
+    build_market_context_golden_windows,
     execute_market_context_golden_scenario,
     market_context_golden_fixture_v1,
     parse_market_context_golden_benchmark_report,
@@ -37,6 +40,19 @@ def test_golden_fixture_freezes_inputs_outputs_and_contract_checksums() -> None:
     assert tuple(
         execute_market_context_golden_scenario(item, fixture=fixture) for item in fixture.scenarios
     ) == tuple(item.expected for item in fixture.scenarios)
+
+
+def test_golden_window_builder_can_seed_a_current_hourly_acceptance_boundary() -> None:
+    current_boundary = datetime(2026, 10, 17, 8, tzinfo=UTC)
+
+    windows = build_market_context_golden_windows(
+        MarketContextGoldenScenarioId.TRENDING_UP_LOW,
+        as_of=current_boundary,
+    )
+
+    assert len(windows) == 56
+    hourly = [item for item in windows if item.timeframe is Timeframe.HOUR_1]
+    assert hourly[-1].window_end == current_boundary
 
 
 def test_benchmark_accepts_repeated_golden_outputs_and_records_sanitized_metrics() -> None:
