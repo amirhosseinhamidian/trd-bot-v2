@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 
 import { PageFrame } from '@/components/platform/page-frame';
 import { PageHeader } from '@/components/platform/page-header';
@@ -14,8 +14,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  Checkbox,
   EmptyState,
   ErrorState,
+  Input,
   Pagination,
   Select,
   SelectOption,
@@ -24,14 +26,19 @@ import {
 import type { BadgeVariant } from '@/components/ui';
 import {
   acknowledgeAlert,
+  getAlertExpirySummary,
   getAlerts,
   getAlertSummary,
   snoozeAlert,
+  sweepExpiredAlerts,
+  updateAlertPublicationPolicy,
 } from '@/features/alerts/api/client';
 import type {
+  AlertExpirySummary,
   AlertInboxItem,
   AlertInboxStatus,
   AlertInboxSummary,
+  AlertPublicationPolicy,
   AlertSeverity,
 } from '@/features/alerts/api/types';
 import { getAlertCenterCopy } from '@/features/alerts/alert-center-copy';
@@ -44,6 +51,8 @@ const DEFAULT_SNOOZE_SECONDS = 3600;
 type AlertCenterProps = {
   initialPage: Page<AlertInboxItem>;
   initialSummary: AlertInboxSummary;
+  initialPolicy: AlertPublicationPolicy;
+  initialExpirySummary: AlertExpirySummary;
   locale: PlatformLocale;
 };
 
@@ -82,10 +91,42 @@ function formatPercent(value: string, locale: PlatformLocale): string {
   }).format(number);
 }
 
-export default function AlertCenter({ initialPage, initialSummary, locale }: AlertCenterProps) {
+function minuteToTime(value: number): string {
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function timeToMinute(value: string): number {
+  const [hours = '0', minutes = '0'] = value.split(':');
+  return Number(hours) * 60 + Number(minutes);
+}
+
+export default function AlertCenter({
+  initialPage,
+  initialSummary,
+  initialPolicy,
+  initialExpirySummary,
+  locale,
+}: AlertCenterProps) {
   const copy = getAlertCenterCopy(locale);
   const [page, setPage] = useState(initialPage);
   const [summary, setSummary] = useState(initialSummary);
+  const [policy, setPolicy] = useState(initialPolicy);
+  const [expirySummary, setExpirySummary] = useState(initialExpirySummary);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(initialPolicy.quiet_hours_enabled);
+  const [quietHoursStart, setQuietHoursStart] = useState(
+    minuteToTime(initialPolicy.quiet_hours_start_minute),
+  );
+  const [quietHoursEnd, setQuietHoursEnd] = useState(
+    minuteToTime(initialPolicy.quiet_hours_end_minute),
+  );
+  const [timezoneName, setTimezoneName] = useState(initialPolicy.timezone_name);
+  const [criticalBypass, setCriticalBypass] = useState(initialPolicy.critical_bypass_quiet_hours);
+  const [isSavingPolicy, setIsSavingPolicy] = useState(false);
+  const [policyFeedback, setPolicyFeedback] = useState<'saved' | 'error' | null>(null);
+  const [isSweepingExpiry, setIsSweepingExpiry] = useState(false);
+  const [expiryFeedback, setExpiryFeedback] = useState<'saved' | 'error' | null>(null);
   const [statusFilter, setStatusFilter] = useState<AlertInboxStatus | ''>('');
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | ''>('');
   const [snoozeDurations, setSnoozeDurations] = useState<Record<string, number>>({});
@@ -144,6 +185,41 @@ export default function AlertCenter({ initialPage, initialSummary, locale }: Ale
     }
   }
 
+  async function savePolicy(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    setIsSavingPolicy(true);
+    setPolicyFeedback(null);
+    try {
+      const updated = await updateAlertPublicationPolicy({
+        quiet_hours_enabled: quietHoursEnabled,
+        quiet_hours_start_minute: timeToMinute(quietHoursStart),
+        quiet_hours_end_minute: timeToMinute(quietHoursEnd),
+        timezone_name: timezoneName.trim(),
+        critical_bypass_quiet_hours: criticalBypass,
+      });
+      setPolicy(updated);
+      setPolicyFeedback('saved');
+    } catch {
+      setPolicyFeedback('error');
+    } finally {
+      setIsSavingPolicy(false);
+    }
+  }
+
+  async function runExpirySweep(): Promise<void> {
+    setIsSweepingExpiry(true);
+    setExpiryFeedback(null);
+    try {
+      await sweepExpiredAlerts();
+      setExpirySummary(await getAlertExpirySummary());
+      setExpiryFeedback('saved');
+    } catch {
+      setExpiryFeedback('error');
+    } finally {
+      setIsSweepingExpiry(false);
+    }
+  }
+
   const summaryCards: Array<[AlertInboxStatus, number]> = [
     ['active', summary.active],
     ['snoozed', summary.snoozed],
@@ -170,6 +246,127 @@ export default function AlertCenter({ initialPage, initialSummary, locale }: Ale
           {copy.disclaimer}
         </p>
       </PageHeader>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+        <Card>
+          <CardHeader className="border-b border-app-border">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>{copy.publicationPolicy}</CardTitle>
+                <CardDescription className="mt-2">
+                  {copy.publicationPolicyDescription}
+                </CardDescription>
+              </div>
+              <Badge variant="info">
+                {copy.policyVersion}: {policy.policy_version}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form className="space-y-5" onSubmit={(event) => void savePolicy(event)}>
+              <Checkbox
+                checked={quietHoursEnabled}
+                disabled={isSavingPolicy}
+                label={copy.quietHoursEnabled}
+                description={copy.quietHoursHint}
+                onChange={(event) => setQuietHoursEnabled(event.target.checked)}
+              />
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <Input
+                  type="time"
+                  label={copy.quietHoursStart}
+                  value={quietHoursStart}
+                  disabled={isSavingPolicy || !quietHoursEnabled}
+                  required={quietHoursEnabled}
+                  onChange={(event) => setQuietHoursStart(event.target.value)}
+                />
+                <Input
+                  type="time"
+                  label={copy.quietHoursEnd}
+                  value={quietHoursEnd}
+                  disabled={isSavingPolicy || !quietHoursEnabled}
+                  required={quietHoursEnabled}
+                  onChange={(event) => setQuietHoursEnd(event.target.value)}
+                />
+                <Input
+                  dir="ltr"
+                  label={copy.timezone}
+                  hint={copy.timezoneHint}
+                  value={timezoneName}
+                  disabled={isSavingPolicy}
+                  required
+                  onChange={(event) => setTimezoneName(event.target.value)}
+                />
+              </div>
+              <Checkbox
+                checked={criticalBypass}
+                disabled={isSavingPolicy || !quietHoursEnabled}
+                label={copy.criticalBypass}
+                description={copy.criticalBypassHint}
+                onChange={(event) => setCriticalBypass(event.target.checked)}
+              />
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div aria-live="polite" className="text-sm">
+                  {policyFeedback === 'saved' ? (
+                    <span className="text-app-success">{copy.policySaved}</span>
+                  ) : policyFeedback === 'error' ? (
+                    <span role="alert" className="text-app-danger">
+                      {copy.policyError}
+                    </span>
+                  ) : null}
+                </div>
+                <Button type="submit" isLoading={isSavingPolicy} loadingText={copy.savingPolicy}>
+                  {copy.savePolicy}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{copy.expiryLifecycle}</CardTitle>
+            <CardDescription className="mt-2">{copy.expiryDescription}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl bg-app-surface-muted p-3">
+                <dt className="text-app-muted">{copy.materializedExpiry}</dt>
+                <dd className="mt-2 text-2xl font-bold">
+                  {new Intl.NumberFormat(localeCode(locale)).format(
+                    expirySummary.materialized_total,
+                  )}
+                </dd>
+              </div>
+              <div className="rounded-xl bg-app-surface-muted p-3">
+                <dt className="text-app-muted">{copy.pendingExpiry}</dt>
+                <dd className="mt-2 text-2xl font-bold">
+                  {new Intl.NumberFormat(localeCode(locale)).format(expirySummary.pending_total)}
+                </dd>
+              </div>
+            </dl>
+            <Button
+              fullWidth
+              variant="secondary"
+              disabled={expirySummary.pending_total === 0}
+              isLoading={isSweepingExpiry}
+              loadingText={copy.sweepingExpiry}
+              onClick={() => void runExpirySweep()}
+            >
+              {copy.sweepExpiry}
+            </Button>
+            <div aria-live="polite" className="text-sm">
+              {expiryFeedback === 'saved' ? (
+                <span className="text-app-success">{copy.expirySweepComplete}</span>
+              ) : expiryFeedback === 'error' ? (
+                <span role="alert" className="text-app-danger">
+                  {copy.actionError}
+                </span>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label={copy.total}>
         {summaryCards.map(([status, count]) => (

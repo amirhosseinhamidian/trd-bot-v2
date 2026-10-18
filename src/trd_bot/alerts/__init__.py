@@ -42,8 +42,17 @@ from trd_bot.alerts.jobs import (
     validate_alert_evaluation_enqueue,
     validate_alert_evaluation_result,
 )
+from trd_bot.alerts.publication import (
+    DEFAULT_ALERT_PUBLICATION_POLICY_ID,
+    AlertExpiryRecord,
+    AlertExpirySummary,
+    AlertExpirySweepResult,
+    AlertPublicationDecision,
+    AlertPublicationPolicy,
+)
 
 __all__ = [
+    "DEFAULT_ALERT_PUBLICATION_POLICY_ID",
     "AlertActionConflictError",
     "AlertActionKind",
     "AlertActionRecord",
@@ -56,10 +65,15 @@ __all__ = [
     "AlertEvaluationJobPayload",
     "AlertEvaluationOutcome",
     "AlertEvaluationRecord",
+    "AlertExpiryRecord",
+    "AlertExpirySummary",
+    "AlertExpirySweepResult",
     "AlertInboxItem",
     "AlertInboxState",
     "AlertInboxStatus",
     "AlertInboxSummary",
+    "AlertPublicationDecision",
+    "AlertPublicationPolicy",
     "AlertRuleDefinition",
     "AlertRuleReference",
     "AlertRuleState",

@@ -1,8 +1,14 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { AlertInboxItem, AlertInboxSummary } from '@/features/alerts/api/types';
+import type {
+  AlertExpirySummary,
+  AlertInboxItem,
+  AlertInboxSummary,
+  AlertPublicationPolicy,
+} from '@/features/alerts/api/types';
 import AlertCenter from '@/features/alerts/alert-center';
 import type { Page } from '@/lib/api/core/types';
 
@@ -90,11 +96,48 @@ const summary: AlertInboxSummary = {
   expired: 0,
 };
 
+const publicationPolicy: AlertPublicationPolicy = {
+  schema_version: 'alert-publication-policy-v1',
+  policy_id: 'alert-publication-policy-default',
+  policy_version: 1,
+  quiet_hours_enabled: true,
+  quiet_hours_start_minute: 1320,
+  quiet_hours_end_minute: 420,
+  timezone_name: 'Asia/Tehran',
+  critical_bypass_quiet_hours: true,
+  updated_by: 'operator:alert-center',
+  updated_at: '2026-10-17T12:00:00Z',
+  policy_checksum: '6'.repeat(64),
+};
+
+const expirySummary: AlertExpirySummary = {
+  schema_version: 'alert-expiry-summary-v1',
+  evaluated_at: '2026-10-17T12:25:00Z',
+  expired_total: 2,
+  materialized_total: 1,
+  pending_total: 1,
+};
+
+function renderAlertCenter(
+  overrides: Partial<ComponentProps<typeof AlertCenter>> = {},
+): ReturnType<typeof render> {
+  return render(
+    <AlertCenter
+      initialPage={initialPage}
+      initialSummary={summary}
+      initialPolicy={publicationPolicy}
+      initialExpirySummary={expirySummary}
+      locale="en"
+      {...overrides}
+    />,
+  );
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('AlertCenter', () => {
   it('shows the decision summary, responsive actions, and disclosed lineage', () => {
-    render(<AlertCenter initialPage={initialPage} initialSummary={summary} locale="en" />);
+    renderAlertCenter();
 
     expect(screen.getByRole('heading', { name: 'Alert Center' })).toBeInTheDocument();
     expect(screen.getByText('High-volatility uptrend')).toBeInTheDocument();
@@ -104,6 +147,9 @@ describe('AlertCenter', () => {
     expect(screen.getByRole('button', { name: 'Acknowledge' })).toHaveClass('min-h-11');
     expect(screen.getByRole('button', { name: 'Snooze' })).toHaveClass('min-h-11');
     expect(screen.getByLabelText('Snooze duration')).toBeInTheDocument();
+    expect(screen.getByLabelText('Enable quiet hours')).toBeChecked();
+    expect(screen.getByLabelText('Time zone')).toHaveValue('Asia/Tehran');
+    expect(screen.getByRole('button', { name: 'Record pending expiries' })).toBeEnabled();
 
     const disclosure = screen.getByText('Lineage and technical details').closest('details');
     expect(disclosure).not.toBeNull();
@@ -142,7 +188,7 @@ describe('AlertCenter', () => {
       });
     });
     vi.stubGlobal('fetch', fetchMock);
-    render(<AlertCenter initialPage={initialPage} initialSummary={summary} locale="en" />);
+    renderAlertCenter();
 
     await user.click(screen.getByRole('button', { name: 'Acknowledge' }));
 
@@ -166,7 +212,7 @@ describe('AlertCenter', () => {
       });
     });
     vi.stubGlobal('fetch', fetchMock);
-    render(<AlertCenter initialPage={initialPage} initialSummary={summary} locale="en" />);
+    renderAlertCenter();
 
     fireEvent.change(screen.getByLabelText('Status filter'), { target: { value: 'snoozed' } });
 
@@ -179,14 +225,73 @@ describe('AlertCenter', () => {
   });
 
   it('renders a clear empty state', () => {
-    render(
-      <AlertCenter
-        initialPage={{ ...initialPage, items: [], total: 0, count: 0 }}
-        initialSummary={{ ...summary, total: 0, active: 0 }}
-        locale="en"
-      />,
-    );
+    renderAlertCenter({
+      initialPage: { ...initialPage, items: [], total: 0, count: 0 },
+      initialSummary: { ...summary, total: 0, active: 0 },
+    });
 
     expect(screen.getByText('No alerts match these filters')).toBeInTheDocument();
+  });
+
+  it('saves a versioned quiet-hours policy', async () => {
+    const user = userEvent.setup();
+    const updated = { ...publicationPolicy, policy_version: 2, timezone_name: 'UTC' };
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify(updated), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    renderAlertCenter();
+
+    await user.clear(screen.getByLabelText('Time zone'));
+    await user.type(screen.getByLabelText('Time zone'), 'UTC');
+    await user.click(screen.getByRole('button', { name: 'Save policy' }));
+
+    await screen.findByText('Publication policy saved successfully.');
+    expect(screen.getByText(/Policy version:/)).toHaveTextContent('2');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/alerts/publication-policy'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"timezone_name":"UTC"'),
+      }),
+    );
+  });
+
+  it('materializes pending expiry evidence and refreshes its summary', async () => {
+    const user = userEvent.setup();
+    const swept = {
+      schema_version: 'alert-expiry-sweep-v1',
+      evaluated_at: expirySummary.evaluated_at,
+      recorded_by: 'operator:alert-center',
+      recorded_count: 1,
+      expiry_ids: ['alert-expiry-1234567890abcdef'],
+      remaining_pending: 0,
+    };
+    const refreshed = { ...expirySummary, materialized_total: 2, pending_total: 0 };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(swept), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(refreshed), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    renderAlertCenter();
+
+    await user.click(screen.getByRole('button', { name: 'Record pending expiries' }));
+
+    await screen.findByText('Expiry lifecycle updated.');
+    expect(screen.getByRole('button', { name: 'Record pending expiries' })).toBeDisabled();
   });
 });

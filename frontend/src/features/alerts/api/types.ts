@@ -88,3 +88,42 @@ export interface AlertInboxSummary {
   acknowledged: number;
   expired: number;
 }
+
+export interface AlertPublicationPolicy {
+  schema_version: 'alert-publication-policy-v1';
+  policy_id: 'alert-publication-policy-default';
+  policy_version: number;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start_minute: number;
+  quiet_hours_end_minute: number;
+  timezone_name: string;
+  critical_bypass_quiet_hours: boolean;
+  updated_by: string;
+  updated_at: string;
+  policy_checksum: string;
+}
+
+export interface AlertPublicationPolicyInput {
+  quiet_hours_enabled: boolean;
+  quiet_hours_start_minute: number;
+  quiet_hours_end_minute: number;
+  timezone_name: string;
+  critical_bypass_quiet_hours: boolean;
+}
+
+export interface AlertExpirySummary {
+  schema_version: 'alert-expiry-summary-v1';
+  evaluated_at: string;
+  expired_total: number;
+  materialized_total: number;
+  pending_total: number;
+}
+
+export interface AlertExpirySweepResult {
+  schema_version: 'alert-expiry-sweep-v1';
+  evaluated_at: string;
+  recorded_by: string;
+  recorded_count: number;
+  expiry_ids: string[];
+  remaining_pending: number;
+}

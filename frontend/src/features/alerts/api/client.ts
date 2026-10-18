@@ -1,7 +1,16 @@
 import { getJson, postJson } from '@/lib/api/core/transport';
 import type { Page } from '@/lib/api/core/types';
 
-import type { AlertInboxItem, AlertInboxStatus, AlertInboxSummary, AlertSeverity } from './types';
+import type {
+  AlertExpirySummary,
+  AlertExpirySweepResult,
+  AlertInboxItem,
+  AlertInboxStatus,
+  AlertInboxSummary,
+  AlertPublicationPolicy,
+  AlertPublicationPolicyInput,
+  AlertSeverity,
+} from './types';
 
 export interface AlertFilters {
   limit?: number;
@@ -23,6 +32,30 @@ export async function getAlerts(filters: AlertFilters = {}): Promise<Page<AlertI
 
 export async function getAlertSummary(): Promise<AlertInboxSummary> {
   return getJson<AlertInboxSummary>('/api/v1/alerts/summary');
+}
+
+export async function getAlertPublicationPolicy(): Promise<AlertPublicationPolicy> {
+  return getJson<AlertPublicationPolicy>('/api/v1/alerts/publication-policy');
+}
+
+export async function updateAlertPublicationPolicy(
+  policy: AlertPublicationPolicyInput,
+): Promise<AlertPublicationPolicy> {
+  return postJson<AlertPublicationPolicy>('/api/v1/alerts/publication-policy', {
+    acted_by: ALERT_CENTER_ACTOR,
+    ...policy,
+  });
+}
+
+export async function getAlertExpirySummary(): Promise<AlertExpirySummary> {
+  return getJson<AlertExpirySummary>('/api/v1/alerts/expiry');
+}
+
+export async function sweepExpiredAlerts(limit = 100): Promise<AlertExpirySweepResult> {
+  return postJson<AlertExpirySweepResult>('/api/v1/alerts/expiry/sweep', {
+    acted_by: ALERT_CENTER_ACTOR,
+    limit,
+  });
 }
 
 export async function acknowledgeAlert(alertId: string): Promise<AlertInboxItem> {

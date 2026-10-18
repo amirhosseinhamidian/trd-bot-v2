@@ -6,20 +6,30 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from trd_bot.alerts import (
     AlertActionConflictError,
+    AlertExpirySummary,
+    AlertExpirySweepResult,
     AlertInboxItem,
     AlertInboxStatus,
     AlertInboxSummary,
+    AlertPublicationPolicy,
     AlertSeverity,
 )
-from trd_bot.api.dependencies import get_alert_inbox_repository
+from trd_bot.api.dependencies import (
+    get_alert_inbox_repository,
+    get_alert_publication_repository,
+)
 from trd_bot.api.pagination import Page, PaginationParams, build_page
-from trd_bot.db import SqlAlchemyAlertInboxRepository
+from trd_bot.db import SqlAlchemyAlertInboxRepository, SqlAlchemyAlertPublicationRepository
 
 router = APIRouter(prefix="/alerts", tags=["Alert Center"])
 
 AlertInboxRepositoryDependency = Annotated[
     SqlAlchemyAlertInboxRepository,
     Depends(get_alert_inbox_repository),
+]
+AlertPublicationRepositoryDependency = Annotated[
+    SqlAlchemyAlertPublicationRepository,
+    Depends(get_alert_publication_repository),
 ]
 
 
@@ -41,6 +51,22 @@ class AlertActionRequest(BaseModel):
 
 class AlertSnoozeRequest(AlertActionRequest):
     duration_seconds: int = Field(ge=300, le=86_400)
+
+
+class AlertPublicationPolicyRequest(AlertActionRequest):
+    quiet_hours_enabled: bool
+    quiet_hours_start_minute: int = Field(ge=0, le=1439)
+    quiet_hours_end_minute: int = Field(ge=0, le=1439)
+    timezone_name: str = Field(
+        min_length=1,
+        max_length=64,
+        pattern=r"^[A-Za-z0-9_+./-]+$",
+    )
+    critical_bypass_quiet_hours: bool = True
+
+
+class AlertExpirySweepRequest(AlertActionRequest):
+    limit: int = Field(default=100, ge=1, le=1000)
 
 
 CatalogQuery = Annotated[AlertCatalogParams, Query()]
@@ -91,6 +117,48 @@ def list_alerts(
 @router.get("/summary", response_model=AlertInboxSummary)
 def get_alert_summary(repository: AlertInboxRepositoryDependency) -> AlertInboxSummary:
     return repository.summary(evaluated_at=_now())
+
+
+@router.get("/publication-policy", response_model=AlertPublicationPolicy)
+def get_publication_policy(
+    repository: AlertPublicationRepositoryDependency,
+) -> AlertPublicationPolicy:
+    return repository.get_policy()
+
+
+@router.post("/publication-policy", response_model=AlertPublicationPolicy)
+def update_publication_policy(
+    request: AlertPublicationPolicyRequest,
+    repository: AlertPublicationRepositoryDependency,
+) -> AlertPublicationPolicy:
+    return repository.update_policy(
+        quiet_hours_enabled=request.quiet_hours_enabled,
+        quiet_hours_start_minute=request.quiet_hours_start_minute,
+        quiet_hours_end_minute=request.quiet_hours_end_minute,
+        timezone_name=request.timezone_name,
+        critical_bypass_quiet_hours=request.critical_bypass_quiet_hours,
+        updated_by=request.acted_by,
+        updated_at=_now(),
+    )
+
+
+@router.get("/expiry", response_model=AlertExpirySummary)
+def get_expiry_summary(
+    repository: AlertPublicationRepositoryDependency,
+) -> AlertExpirySummary:
+    return repository.expiry_summary(evaluated_at=_now())
+
+
+@router.post("/expiry/sweep", response_model=AlertExpirySweepResult)
+def sweep_expired_alerts(
+    request: AlertExpirySweepRequest,
+    repository: AlertPublicationRepositoryDependency,
+) -> AlertExpirySweepResult:
+    return repository.sweep_expired(
+        evaluated_at=_now(),
+        recorded_by=request.acted_by,
+        limit=request.limit,
+    )
 
 
 @router.get("/{alert_id}", response_model=AlertInboxItem)

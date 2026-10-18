@@ -170,6 +170,7 @@ def evaluate_alert(
     *,
     rule: AlertRuleDefinition,
     source: MarketContextAlertSourceReference,
+    publication_suppression_reasons: tuple[AlertSuppressionReason, ...] = (),
 ) -> AlertEvaluationOutcome:
     reasons: set[AlertSuppressionReason] = set()
     if rule.state is AlertRuleState.DISABLED:
@@ -192,6 +193,14 @@ def evaluate_alert(
             rule=rule,
             source=source,
             reasons=(AlertSuppressionReason.CONDITION_NOT_MATCHED,),
+        )
+        return AlertEvaluationOutcome(evaluation=evaluation, draft=None)
+
+    if publication_suppression_reasons:
+        evaluation = AlertEvaluationRecord.suppressed(
+            rule=rule,
+            source=source,
+            reasons=publication_suppression_reasons,
         )
         return AlertEvaluationOutcome(evaluation=evaluation, draft=None)
 

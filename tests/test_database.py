@@ -67,7 +67,10 @@ def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
         "alert_actions",
         "alert_evaluations",
+        "alert_expiry_records",
         "alert_inbox_states",
+        "alert_publication_decisions",
+        "alert_publication_policies",
         "alert_rule_definitions",
         "alerts",
         "architecture_recommendations",

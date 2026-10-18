@@ -1425,6 +1425,110 @@ class AlertActionRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class AlertPublicationPolicyRow(DatabaseBase):
+    """Append-only operator publication preference revision."""
+
+    __tablename__ = "alert_publication_policies"
+
+    __table_args__ = (
+        CheckConstraint("policy_version >= 1", name="policy_version_positive"),
+        CheckConstraint(
+            "quiet_hours_start_minute >= 0 AND quiet_hours_start_minute <= 1439",
+            name="quiet_hours_start_minute_range",
+        ),
+        CheckConstraint(
+            "quiet_hours_end_minute >= 0 AND quiet_hours_end_minute <= 1439",
+            name="quiet_hours_end_minute_range",
+        ),
+        CheckConstraint(
+            "quiet_hours_enabled = 0 OR quiet_hours_start_minute != quiet_hours_end_minute",
+            name="quiet_hours_window_nonempty",
+        ),
+        CheckConstraint("length(policy_checksum) = 64", name="checksum_length"),
+    )
+
+    policy_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    policy_version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    quiet_hours_enabled: Mapped[bool] = mapped_column(default=False)
+    quiet_hours_start_minute: Mapped[int] = mapped_column(Integer)
+    quiet_hours_end_minute: Mapped[int] = mapped_column(Integer)
+    timezone_name: Mapped[str] = mapped_column(String(64))
+    critical_bypass_quiet_hours: Mapped[bool] = mapped_column(default=True)
+    updated_by: Mapped[str] = mapped_column(String(100))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    policy_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class AlertPublicationDecisionRow(DatabaseBase):
+    """Immutable publication guard decision for one alert evaluation."""
+
+    __tablename__ = "alert_publication_decisions"
+
+    __table_args__ = (
+        CheckConstraint("policy_version >= 0", name="policy_version_nonnegative"),
+        CheckConstraint("suppression_reason_count >= 0", name="reason_count_nonnegative"),
+        CheckConstraint(
+            "(allowed = 1 AND suppression_reason_count = 0) OR "
+            "(allowed = 0 AND suppression_reason_count >= 1)",
+            name="outcome_consistent",
+        ),
+        CheckConstraint("length(policy_checksum) = 64", name="policy_checksum_length"),
+        CheckConstraint("length(decision_checksum) = 64", name="decision_checksum_length"),
+        Index("ix_alert_publication_decisions_allowed_evaluated_at", "allowed", "evaluated_at"),
+    )
+
+    decision_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alert_evaluations.evaluation_id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+    )
+    policy_id: Mapped[str] = mapped_column(String(100), index=True)
+    policy_version: Mapped[int] = mapped_column(Integer)
+    policy_checksum: Mapped[str] = mapped_column(String(64))
+    allowed: Mapped[bool] = mapped_column(index=True)
+    suppression_reason_count: Mapped[int] = mapped_column(Integer)
+    previous_alert_id: Mapped[str | None] = mapped_column(
+        String(100),
+        ForeignKey("alerts.alert_id"),
+        nullable=True,
+    )
+    blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    decision_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class AlertExpiryRecordRow(DatabaseBase):
+    """Append-only materialization of an alert's immutable expiry boundary."""
+
+    __tablename__ = "alert_expiry_records"
+
+    __table_args__ = (
+        CheckConstraint("recorded_at >= expired_at", name="recorded_after_expiry"),
+        CheckConstraint("length(record_checksum) = 64", name="checksum_length"),
+        Index("ix_alert_expiry_records_expired_recorded", "expired_at", "recorded_at"),
+    )
+
+    expiry_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    alert_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alerts.alert_id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+    )
+    expired_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    recorded_by: Mapped[str] = mapped_column(String(100))
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

@@ -2,9 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   acknowledgeAlert,
+  getAlertExpirySummary,
+  getAlertPublicationPolicy,
   getAlerts,
   getAlertSummary,
   snoozeAlert,
+  sweepExpiredAlerts,
+  updateAlertPublicationPolicy,
 } from '@/features/alerts/api/client';
 import type { AlertInboxItem, AlertInboxSummary } from '@/features/alerts/api/types';
 import { API_BASE_URL } from '@/lib/api/core/transport';
@@ -79,6 +83,57 @@ describe('Alert Center client', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ acted_by: 'operator:alert-center', duration_seconds: 3600 }),
+      }),
+    );
+  });
+
+  it('reads and mutates publication policy and expiry lifecycle endpoints', async () => {
+    const payload = { policy_version: 2 };
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getAlertPublicationPolicy();
+    await updateAlertPublicationPolicy({
+      quiet_hours_enabled: true,
+      quiet_hours_start_minute: 1320,
+      quiet_hours_end_minute: 420,
+      timezone_name: 'Asia/Tehran',
+      critical_bypass_quiet_hours: true,
+    });
+    await getAlertExpirySummary();
+    await sweepExpiredAlerts(25);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${API_BASE_URL}/api/v1/alerts/publication-policy`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${API_BASE_URL}/api/v1/alerts/publication-policy`,
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"timezone_name":"Asia/Tehran"'),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      `${API_BASE_URL}/api/v1/alerts/expiry`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      `${API_BASE_URL}/api/v1/alerts/expiry/sweep`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ acted_by: 'operator:alert-center', limit: 25 }),
       }),
     );
   });

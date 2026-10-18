@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Mapping
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, ValidationError
 
@@ -345,6 +346,7 @@ def run_alert_evaluation_job(
         evaluation = SqlAlchemyAlertEvaluationRunner(get_session_factory()).run(
             request,
             cancellation_requested=context.cancellation_requested,
+            executed_at=datetime.now(UTC),
         )
     except AlertEvaluationJobCancelled:
         return None

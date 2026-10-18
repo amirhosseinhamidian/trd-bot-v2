@@ -16,11 +16,13 @@ from trd_bot.alerts import (
     AlertRuleVersionNotFoundError,
     AlertSourceAssessmentNotFoundError,
     MarketContextAlertSourceReference,
+    build_alert_evaluation_id,
     build_alert_evaluation_job,
     evaluate_alert,
     validate_alert_evaluation_enqueue,
     validate_alert_evaluation_result,
 )
+from trd_bot.db.alert_publication import SqlAlchemyAlertPublicationRepository
 from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
 from trd_bot.db.background_job_repositories import SqlAlchemyBackgroundJobRepository
 from trd_bot.db.market_context_repositories import SqlAlchemyMarketContextStore
@@ -103,6 +105,7 @@ class SqlAlchemyAlertEvaluationRunner:
         payload: AlertEvaluationJobPayload,
         *,
         cancellation_requested: Callable[[], bool] = lambda: False,
+        executed_at: datetime | None = None,
     ) -> AlertEvaluationRecord:
         if cancellation_requested():
             raise AlertEvaluationJobCancelled
@@ -135,7 +138,34 @@ class SqlAlchemyAlertEvaluationRunner:
                 if cancellation_requested():
                     raise AlertEvaluationJobCancelled
 
+                evaluation_id = build_alert_evaluation_id(
+                    rule_id=rule.rule_id,
+                    rule_version=rule.rule_version,
+                    source_kind=source.source_kind,
+                    source_event_id=source.source_event_id,
+                )
+                existing = alerts.get_evaluation(evaluation_id)
+                if existing is not None:
+                    return existing
+
                 outcome = evaluate_alert(rule=rule, source=source)
+                publication_decision = None
+                if outcome.draft is not None:
+                    publication = SqlAlchemyAlertPublicationRepository(session)
+                    publication_decision = publication.evaluate(
+                        evaluation_id=evaluation_id,
+                        rule=rule,
+                        source=source,
+                        evaluated_at=executed_at or payload.requested_at,
+                    )
+                    if not publication_decision.allowed:
+                        outcome = evaluate_alert(
+                            rule=rule,
+                            source=source,
+                            publication_suppression_reasons=(
+                                publication_decision.suppression_reasons
+                            ),
+                        )
                 validate_alert_evaluation_result(payload=payload, outcome=outcome)
                 if cancellation_requested():
                     raise AlertEvaluationJobCancelled
@@ -144,6 +174,11 @@ class SqlAlchemyAlertEvaluationRunner:
                     outcome.evaluation,
                     draft=outcome.draft,
                 )
+                if publication_decision is not None:
+                    publication.stage_decision(
+                        publication_decision,
+                        evaluation=evaluation,
+                    )
                 return evaluation
         except (
             AlertEvaluationJobCancelled,
