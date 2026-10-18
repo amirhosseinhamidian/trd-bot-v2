@@ -7,6 +7,11 @@ import type {
   AlertInboxItem,
   AlertInboxStatus,
   AlertInboxSummary,
+  AlertOutcomeClassification,
+  AlertOutcomeInput,
+  AlertOutcomeRecord,
+  AlertOutcomeRecordResult,
+  AlertOutcomeSummary,
   AlertPublicationPolicy,
   AlertPublicationPolicyInput,
   AlertSeverity,
@@ -30,6 +35,14 @@ export interface AlertSimulationFilters {
   alertId?: string;
   mode?: AlertSimulationMode;
   status?: AlertSimulationStatus;
+}
+
+export interface AlertOutcomeFilters {
+  limit?: number;
+  offset?: number;
+  alertId?: string;
+  simulationId?: string;
+  classification?: AlertOutcomeClassification;
 }
 
 const ALERT_CENTER_ACTOR = 'operator:alert-center';
@@ -99,6 +112,32 @@ export async function startAlertSimulation(
       mode,
       horizon_seconds: horizonSeconds,
     },
+  );
+}
+
+export async function getAlertOutcomes(
+  filters: AlertOutcomeFilters = {},
+): Promise<Page<AlertOutcomeRecord>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 100));
+  params.set('offset', String(filters.offset ?? 0));
+  if (filters.alertId) params.set('alert_id', filters.alertId);
+  if (filters.simulationId) params.set('simulation_id', filters.simulationId);
+  if (filters.classification) params.set('classification', filters.classification);
+  return getJson<Page<AlertOutcomeRecord>>(`/api/v1/alerts/outcomes?${params.toString()}`);
+}
+
+export async function getAlertOutcomeSummary(): Promise<AlertOutcomeSummary> {
+  return getJson<AlertOutcomeSummary>('/api/v1/alerts/outcomes/summary');
+}
+
+export async function recordAlertOutcome(
+  simulationId: string,
+  input: AlertOutcomeInput,
+): Promise<AlertOutcomeRecordResult> {
+  return postJson<AlertOutcomeRecordResult>(
+    `/api/v1/alerts/simulations/${encodeURIComponent(simulationId)}/outcome`,
+    { acted_by: ALERT_CENTER_ACTOR, ...input },
   );
 }
 

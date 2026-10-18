@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 
 import {
   getAlertExpirySummary,
+  getAlertOutcomes,
+  getAlertOutcomeSummary,
   getAlertPublicationPolicy,
   getAlertSimulations,
   getAlertSimulationSummary,
@@ -25,6 +27,8 @@ export default async function AlertsPage({ params }: AlertsPageProps) {
     initialExpirySummary,
     initialSimulations,
     initialSimulationSummary,
+    initialOutcomes,
+    initialOutcomeSummary,
   ] = await Promise.all([
     getAlerts({ limit: 12, offset: 0 }),
     getAlertSummary(),
@@ -32,6 +36,8 @@ export default async function AlertsPage({ params }: AlertsPageProps) {
     getAlertExpirySummary(),
     getAlertSimulations({ limit: 100, offset: 0 }),
     getAlertSimulationSummary(),
+    getAlertOutcomes({ limit: 100, offset: 0 }),
+    getAlertOutcomeSummary(),
   ]);
 
   return (
@@ -42,6 +48,8 @@ export default async function AlertsPage({ params }: AlertsPageProps) {
       initialExpirySummary={initialExpirySummary}
       initialSimulations={initialSimulations.items}
       initialSimulationSummary={initialSimulationSummary}
+      initialOutcomes={initialOutcomes.items}
+      initialOutcomeSummary={initialOutcomeSummary}
       locale={locale}
     />
   );

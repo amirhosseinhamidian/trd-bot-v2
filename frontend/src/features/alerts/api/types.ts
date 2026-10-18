@@ -175,3 +175,67 @@ export interface AlertSimulationStartResult {
   created: boolean;
   view: AlertSimulationView;
 }
+
+export type AlertOutcomeClassification = 'confirmed' | 'neutral' | 'false_positive';
+
+export interface AlertOutcomeRecord {
+  schema_version: 'alert-outcome-v1';
+  outcome_id: string;
+  simulation_id: string;
+  simulation_checksum: string;
+  alert_id: string;
+  alert_checksum: string;
+  mode: AlertSimulationMode;
+  expected_trend: MarketTrendRegime;
+  observed_trend: MarketTrendRegime;
+  reference_price: string;
+  end_price: string;
+  high_price: string;
+  low_price: string;
+  raw_return: string;
+  directional_return: string;
+  max_favorable_excursion: string;
+  max_adverse_excursion: string;
+  classification: AlertOutcomeClassification;
+  false_positive: boolean;
+  drifted: boolean;
+  policy_version: 'alert-outcome-policy-v1';
+  policy_checksum: string;
+  classification_threshold: string;
+  observed_at: string;
+  recorded_at: string;
+  recorded_by: string;
+  offline_only: true;
+  external_order_submission_allowed: false;
+  record_checksum: string;
+}
+
+export interface AlertOutcomeInput {
+  reference_price: string;
+  end_price: string;
+  high_price: string;
+  low_price: string;
+  observed_trend: MarketTrendRegime;
+}
+
+export interface AlertOutcomeRecordResult {
+  schema_version: 'alert-outcome-record-result-v1';
+  created: boolean;
+  outcome: AlertOutcomeRecord;
+}
+
+export interface AlertOutcomeSummary {
+  schema_version: 'alert-outcome-summary-v1';
+  evaluated_at: string;
+  completed: number;
+  awaiting_outcome: number;
+  confirmed: number;
+  neutral: number;
+  false_positive: number;
+  drifted: number;
+  paper: number;
+  shadow: number;
+  false_positive_rate: string;
+  drift_rate: string;
+  average_directional_return: string;
+}

@@ -3,6 +3,10 @@ from trd_bot.db.alert_jobs import (
     SqlAlchemyAlertEvaluationEnqueuer,
     SqlAlchemyAlertEvaluationRunner,
 )
+from trd_bot.db.alert_outcomes import (
+    AlertOutcomeConflictError,
+    SqlAlchemyAlertOutcomeRepository,
+)
 from trd_bot.db.alert_publication import SqlAlchemyAlertPublicationRepository
 from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
 from trd_bot.db.alert_simulations import (
@@ -81,6 +85,7 @@ from trd_bot.db.models import (
     AlertEvaluationRow,
     AlertExpiryRecordRow,
     AlertInboxStateRow,
+    AlertOutcomeRow,
     AlertPublicationDecisionRow,
     AlertPublicationPolicyRow,
     AlertRow,
@@ -163,6 +168,8 @@ __all__ = [
     "AlertEvaluationRow",
     "AlertExpiryRecordRow",
     "AlertInboxStateRow",
+    "AlertOutcomeConflictError",
+    "AlertOutcomeRow",
     "AlertPublicationDecisionRow",
     "AlertPublicationPolicyRow",
     "AlertRow",
@@ -213,6 +220,7 @@ __all__ = [
     "SqlAlchemyAlertEvaluationEnqueuer",
     "SqlAlchemyAlertEvaluationRunner",
     "SqlAlchemyAlertInboxRepository",
+    "SqlAlchemyAlertOutcomeRepository",
     "SqlAlchemyAlertPublicationRepository",
     "SqlAlchemyAlertSimulationRepository",
     "SqlAlchemyAlertStore",

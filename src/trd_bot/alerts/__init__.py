@@ -42,6 +42,16 @@ from trd_bot.alerts.jobs import (
     validate_alert_evaluation_enqueue,
     validate_alert_evaluation_result,
 )
+from trd_bot.alerts.outcomes import (
+    ALERT_OUTCOME_POLICY_VERSION,
+    ALERT_OUTCOME_THRESHOLD,
+    AlertOutcomeClassification,
+    AlertOutcomeRecord,
+    AlertOutcomeRecordResult,
+    AlertOutcomeSummary,
+    alert_outcome_policy_checksum,
+    build_alert_outcome_id,
+)
 from trd_bot.alerts.publication import (
     DEFAULT_ALERT_PUBLICATION_POLICY_ID,
     AlertExpiryRecord,
@@ -61,6 +71,8 @@ from trd_bot.alerts.simulations import (
 )
 
 __all__ = [
+    "ALERT_OUTCOME_POLICY_VERSION",
+    "ALERT_OUTCOME_THRESHOLD",
     "DEFAULT_ALERT_PUBLICATION_POLICY_ID",
     "AlertActionConflictError",
     "AlertActionKind",
@@ -81,6 +93,10 @@ __all__ = [
     "AlertInboxState",
     "AlertInboxStatus",
     "AlertInboxSummary",
+    "AlertOutcomeClassification",
+    "AlertOutcomeRecord",
+    "AlertOutcomeRecordResult",
+    "AlertOutcomeSummary",
     "AlertPublicationDecision",
     "AlertPublicationPolicy",
     "AlertRuleDefinition",
@@ -99,11 +115,13 @@ __all__ = [
     "AlertSuppressionReason",
     "MarketContextAlertCondition",
     "MarketContextAlertSourceReference",
+    "alert_outcome_policy_checksum",
     "build_alert_deduplication_key",
     "build_alert_evaluation_id",
     "build_alert_evaluation_idempotency_key",
     "build_alert_evaluation_job",
     "build_alert_id",
+    "build_alert_outcome_id",
     "build_alert_rule_id",
     "build_alert_simulation_id",
     "build_alert_source_event_checksum",

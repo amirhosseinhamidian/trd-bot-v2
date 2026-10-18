@@ -27,8 +27,10 @@ import type { BadgeVariant } from '@/components/ui';
 import {
   acknowledgeAlert,
   getAlertExpirySummary,
+  getAlertOutcomeSummary,
   getAlerts,
   getAlertSummary,
+  recordAlertOutcome,
   snoozeAlert,
   startAlertSimulation,
   sweepExpiredAlerts,
@@ -39,6 +41,9 @@ import type {
   AlertInboxItem,
   AlertInboxStatus,
   AlertInboxSummary,
+  AlertOutcomeInput,
+  AlertOutcomeRecord,
+  AlertOutcomeSummary,
   AlertPublicationPolicy,
   AlertSeverity,
   AlertSimulationMode,
@@ -59,6 +64,8 @@ type AlertCenterProps = {
   initialExpirySummary: AlertExpirySummary;
   initialSimulations: AlertSimulationView[];
   initialSimulationSummary: AlertSimulationSummary;
+  initialOutcomes: AlertOutcomeRecord[];
+  initialOutcomeSummary: AlertOutcomeSummary;
   locale: PlatformLocale;
 };
 
@@ -115,6 +122,8 @@ export default function AlertCenter({
   initialExpirySummary,
   initialSimulations,
   initialSimulationSummary,
+  initialOutcomes,
+  initialOutcomeSummary,
   locale,
 }: AlertCenterProps) {
   const copy = getAlertCenterCopy(locale);
@@ -124,6 +133,8 @@ export default function AlertCenter({
   const [expirySummary, setExpirySummary] = useState(initialExpirySummary);
   const [simulations, setSimulations] = useState(initialSimulations);
   const [simulationSummary, setSimulationSummary] = useState(initialSimulationSummary);
+  const [outcomes, setOutcomes] = useState(initialOutcomes);
+  const [outcomeSummary, setOutcomeSummary] = useState(initialOutcomeSummary);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(initialPolicy.quiet_hours_enabled);
   const [quietHoursStart, setQuietHoursStart] = useState(
     minuteToTime(initialPolicy.quiet_hours_start_minute),
@@ -153,6 +164,9 @@ export default function AlertCenter({
     mode: AlertSimulationMode;
   } | null>(null);
   const [simulationError, setSimulationError] = useState(false);
+  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, AlertOutcomeInput>>({});
+  const [pendingOutcome, setPendingOutcome] = useState<string | null>(null);
+  const [outcomeError, setOutcomeError] = useState<string | null>(null);
   const requestSequence = useRef(0);
 
   async function loadPage(
@@ -260,6 +274,61 @@ export default function AlertCenter({
       setSimulationError(true);
     } finally {
       setPendingSimulation(null);
+    }
+  }
+
+  function outcomeDraft(simulationId: string): AlertOutcomeInput {
+    return (
+      outcomeDrafts[simulationId] ?? {
+        reference_price: '',
+        end_price: '',
+        high_price: '',
+        low_price: '',
+        observed_trend: 'undetermined',
+      }
+    );
+  }
+
+  function updateOutcomeDraft(
+    simulationId: string,
+    field: keyof AlertOutcomeInput,
+    value: string,
+  ): void {
+    setOutcomeDrafts((current) => {
+      const existing = current[simulationId] ?? {
+        reference_price: '',
+        end_price: '',
+        high_price: '',
+        low_price: '',
+        observed_trend: 'undetermined',
+      };
+      return { ...current, [simulationId]: { ...existing, [field]: value } };
+    });
+  }
+
+  async function submitOutcome(
+    event: FormEvent<HTMLFormElement>,
+    simulationId: string,
+  ): Promise<void> {
+    event.preventDefault();
+    setPendingOutcome(simulationId);
+    setOutcomeError(null);
+    try {
+      const result = await recordAlertOutcome(simulationId, outcomeDraft(simulationId));
+      setOutcomes((current) => [
+        result.outcome,
+        ...current.filter((item) => item.outcome_id !== result.outcome.outcome_id),
+      ]);
+      setOutcomeSummary(await getAlertOutcomeSummary());
+      setOutcomeDrafts((current) => {
+        const next = { ...current };
+        delete next[simulationId];
+        return next;
+      });
+    } catch {
+      setOutcomeError(simulationId);
+    } finally {
+      setPendingOutcome(null);
     }
   }
 
@@ -456,6 +525,38 @@ export default function AlertCenter({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="border-b border-app-border">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>{copy.outcomeJournal}</CardTitle>
+              <CardDescription className="mt-2">{copy.outcomeDescription}</CardDescription>
+            </div>
+            <Badge variant="neutral">{copy.outcomePolicy}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
+          {(
+            [
+              ['completed', outcomeSummary.completed],
+              ['awaiting', outcomeSummary.awaiting_outcome],
+              ['falsePositiveRate', formatPercent(outcomeSummary.false_positive_rate, locale)],
+              ['driftRate', formatPercent(outcomeSummary.drift_rate, locale)],
+              ['averageReturn', formatPercent(outcomeSummary.average_directional_return, locale)],
+            ] as const
+          ).map(([label, value]) => (
+            <div key={label} className="rounded-xl bg-app-surface-muted p-4">
+              <p className="text-sm text-app-muted">{copy.outcomeSummary[label]}</p>
+              <p dir="ltr" className="mt-2 text-left text-2xl font-bold">
+                {typeof value === 'number'
+                  ? new Intl.NumberFormat(localeCode(locale)).format(value)
+                  : value}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
       {simulationError ? (
         <p
           role="alert"
@@ -537,6 +638,9 @@ export default function AlertCenter({
               const isAcknowledging = isActing && pendingAction.kind === 'acknowledge';
               const alertSimulations = simulations.filter(
                 (view) => view.simulation.alert_id === alert.alert_id,
+              );
+              const alertOutcomes = outcomes.filter(
+                (outcome) => outcome.alert_id === alert.alert_id,
               );
               const simulationHorizon = simulationHorizons[alert.alert_id] ?? 3600;
               const simulationIsPending = pendingSimulation?.alertId === alert.alert_id;
@@ -634,16 +738,122 @@ export default function AlertCenter({
                       </div>
 
                       {alertSimulations.length > 0 ? (
-                        <div className="flex flex-wrap gap-2" aria-label={copy.existingSimulations}>
-                          {alertSimulations.map((view) => (
-                            <Badge
-                              key={view.simulation.simulation_id}
-                              variant={view.status === 'observing' ? 'success' : 'warning'}
-                            >
-                              {copy.simulationModes[view.simulation.mode]} ·{' '}
-                              {copy.simulationStatuses[view.status]}
-                            </Badge>
-                          ))}
+                        <div className="space-y-3" aria-label={copy.existingSimulations}>
+                          {alertSimulations.map((view) => {
+                            const outcome = alertOutcomes.find(
+                              (item) => item.simulation_id === view.simulation.simulation_id,
+                            );
+                            const draft = outcomeDraft(view.simulation.simulation_id);
+                            return (
+                              <div
+                                key={view.simulation.simulation_id}
+                                className="rounded-xl border border-app-border bg-app-surface p-3"
+                              >
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge
+                                    variant={
+                                      outcome?.false_positive
+                                        ? 'danger'
+                                        : outcome
+                                          ? 'success'
+                                          : view.status === 'observing'
+                                            ? 'info'
+                                            : 'warning'
+                                    }
+                                  >
+                                    {copy.simulationModes[view.simulation.mode]} ·{' '}
+                                    {outcome
+                                      ? copy.outcomeClassifications[outcome.classification]
+                                      : copy.simulationStatuses[view.status]}
+                                  </Badge>
+                                  {outcome?.drifted ? (
+                                    <Badge variant="warning">{copy.driftDetected}</Badge>
+                                  ) : null}
+                                  {outcome ? (
+                                    <span dir="ltr" className="text-xs text-app-muted">
+                                      {copy.directionalReturn}:{' '}
+                                      {formatPercent(outcome.directional_return, locale)}
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                {view.status === 'awaiting_outcome' && !outcome ? (
+                                  <form
+                                    className="mt-4 space-y-3"
+                                    onSubmit={(event) =>
+                                      void submitOutcome(event, view.simulation.simulation_id)
+                                    }
+                                  >
+                                    <p className="text-xs leading-6 text-app-muted">
+                                      {copy.manualOutcomeEvidence}
+                                    </p>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                      {(
+                                        [
+                                          ['reference_price', copy.referencePrice],
+                                          ['end_price', copy.endPrice],
+                                          ['high_price', copy.highPrice],
+                                          ['low_price', copy.lowPrice],
+                                        ] as const
+                                      ).map(([field, label]) => (
+                                        <Input
+                                          key={field}
+                                          dir="ltr"
+                                          type="number"
+                                          min="0.0000000001"
+                                          step="any"
+                                          label={label}
+                                          value={draft[field]}
+                                          disabled={
+                                            pendingOutcome === view.simulation.simulation_id
+                                          }
+                                          required
+                                          onChange={(event) =>
+                                            updateOutcomeDraft(
+                                              view.simulation.simulation_id,
+                                              field,
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      ))}
+                                    </div>
+                                    <Select
+                                      label={copy.observedTrend}
+                                      value={draft.observed_trend}
+                                      disabled={pendingOutcome === view.simulation.simulation_id}
+                                      onValueChange={(value) =>
+                                        updateOutcomeDraft(
+                                          view.simulation.simulation_id,
+                                          'observed_trend',
+                                          value,
+                                        )
+                                      }
+                                    >
+                                      {Object.entries(copy.trends).map(([value, label]) => (
+                                        <SelectOption key={value} value={value}>
+                                          {label}
+                                        </SelectOption>
+                                      ))}
+                                    </Select>
+                                    {outcomeError === view.simulation.simulation_id ? (
+                                      <p role="alert" className="text-sm text-app-danger">
+                                        {copy.outcomeError}
+                                      </p>
+                                    ) : null}
+                                    <Button
+                                      type="submit"
+                                      fullWidth
+                                      isLoading={pendingOutcome === view.simulation.simulation_id}
+                                      loadingText={copy.recordingOutcome}
+                                    >
+                                      {copy.recordOutcome}
+                                    </Button>
+                                  </form>
+                                ) : null}
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : null}
 

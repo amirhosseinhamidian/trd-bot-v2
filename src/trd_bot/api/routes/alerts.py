@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -11,6 +12,10 @@ from trd_bot.alerts import (
     AlertInboxItem,
     AlertInboxStatus,
     AlertInboxSummary,
+    AlertOutcomeClassification,
+    AlertOutcomeRecord,
+    AlertOutcomeRecordResult,
+    AlertOutcomeSummary,
     AlertPublicationPolicy,
     AlertSeverity,
     AlertSimulationMode,
@@ -21,16 +26,20 @@ from trd_bot.alerts import (
 )
 from trd_bot.api.dependencies import (
     get_alert_inbox_repository,
+    get_alert_outcome_repository,
     get_alert_publication_repository,
     get_alert_simulation_repository,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.db import (
+    AlertOutcomeConflictError,
     AlertSimulationConflictError,
     SqlAlchemyAlertInboxRepository,
+    SqlAlchemyAlertOutcomeRepository,
     SqlAlchemyAlertPublicationRepository,
     SqlAlchemyAlertSimulationRepository,
 )
+from trd_bot.market_context import MarketTrendRegime
 
 router = APIRouter(prefix="/alerts", tags=["Alert Center"])
 
@@ -41,6 +50,10 @@ AlertInboxRepositoryDependency = Annotated[
 AlertPublicationRepositoryDependency = Annotated[
     SqlAlchemyAlertPublicationRepository,
     Depends(get_alert_publication_repository),
+]
+AlertOutcomeRepositoryDependency = Annotated[
+    SqlAlchemyAlertOutcomeRepository,
+    Depends(get_alert_outcome_repository),
 ]
 AlertSimulationRepositoryDependency = Annotated[
     SqlAlchemyAlertSimulationRepository,
@@ -57,6 +70,12 @@ class AlertSimulationCatalogParams(PaginationParams):
     alert_id: str | None = Field(default=None, pattern=r"^alert-[a-f0-9]{16}$")
     mode: AlertSimulationMode | None = None
     status: AlertSimulationStatus | None = None
+
+
+class AlertOutcomeCatalogParams(PaginationParams):
+    alert_id: str | None = Field(default=None, pattern=r"^alert-[a-f0-9]{16}$")
+    simulation_id: str | None = Field(default=None, pattern=r"^alert-simulation-[a-f0-9]{16}$")
+    classification: AlertOutcomeClassification | None = None
 
 
 class AlertActionRequest(BaseModel):
@@ -95,8 +114,17 @@ class AlertSimulationStartRequest(AlertActionRequest):
     horizon_seconds: int = Field(ge=900, le=2_592_000)
 
 
+class AlertOutcomeRecordRequest(AlertActionRequest):
+    reference_price: Decimal = Field(gt=0, max_digits=28, decimal_places=10)
+    end_price: Decimal = Field(gt=0, max_digits=28, decimal_places=10)
+    high_price: Decimal = Field(gt=0, max_digits=28, decimal_places=10)
+    low_price: Decimal = Field(gt=0, max_digits=28, decimal_places=10)
+    observed_trend: MarketTrendRegime
+
+
 CatalogQuery = Annotated[AlertCatalogParams, Query()]
 SimulationCatalogQuery = Annotated[AlertSimulationCatalogParams, Query()]
+OutcomeCatalogQuery = Annotated[AlertOutcomeCatalogParams, Query()]
 
 
 def _now() -> datetime:
@@ -210,6 +238,78 @@ def get_alert_simulation_summary(
     repository: AlertSimulationRepositoryDependency,
 ) -> AlertSimulationSummary:
     return repository.summary(evaluated_at=_now())
+
+
+@router.get("/outcomes", response_model=Page[AlertOutcomeRecord])
+def list_alert_outcomes(
+    repository: AlertOutcomeRepositoryDependency,
+    params: OutcomeCatalogQuery,
+) -> Page[AlertOutcomeRecord]:
+    items, total = repository.list_page(
+        limit=params.limit,
+        offset=params.offset,
+        alert_id=params.alert_id,
+        simulation_id=params.simulation_id,
+        classification=params.classification,
+    )
+    return build_page(items, total=total, pagination=params)
+
+
+@router.get("/outcomes/summary", response_model=AlertOutcomeSummary)
+def get_alert_outcome_summary(
+    repository: AlertOutcomeRepositoryDependency,
+) -> AlertOutcomeSummary:
+    return repository.summary(evaluated_at=_now())
+
+
+@router.get("/outcomes/{outcome_id}", response_model=AlertOutcomeRecord)
+def get_alert_outcome(
+    outcome_id: str,
+    repository: AlertOutcomeRepositoryDependency,
+) -> AlertOutcomeRecord:
+    outcome = repository.get(outcome_id)
+    if outcome is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="alert outcome not found",
+        )
+    return outcome
+
+
+@router.post(
+    "/simulations/{simulation_id}/outcome",
+    response_model=AlertOutcomeRecordResult,
+)
+def record_alert_outcome(
+    simulation_id: str,
+    request: AlertOutcomeRecordRequest,
+    repository: AlertOutcomeRepositoryDependency,
+) -> AlertOutcomeRecordResult:
+    recorded_at = _now()
+    try:
+        result = repository.record(
+            simulation_id=simulation_id,
+            reference_price=request.reference_price,
+            end_price=request.end_price,
+            high_price=request.high_price,
+            low_price=request.low_price,
+            observed_trend=request.observed_trend,
+            observed_at=recorded_at,
+            recorded_at=recorded_at,
+            recorded_by=request.acted_by,
+        )
+    except AlertOutcomeConflictError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": error.code, "message": error.message},
+        ) from error
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="alert simulation not found",
+        )
+    outcome, created = result
+    return AlertOutcomeRecordResult(created=created, outcome=outcome)
 
 
 @router.get("/simulations/{simulation_id}", response_model=AlertSimulationView)

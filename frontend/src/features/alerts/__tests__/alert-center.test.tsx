@@ -7,6 +7,8 @@ import type {
   AlertExpirySummary,
   AlertInboxItem,
   AlertInboxSummary,
+  AlertOutcomeRecord,
+  AlertOutcomeSummary,
   AlertPublicationPolicy,
   AlertSimulationSummary,
   AlertSimulationView,
@@ -130,6 +132,54 @@ const simulationSummary: AlertSimulationSummary = {
   awaiting_outcome: 0,
 };
 
+const outcomeSummary: AlertOutcomeSummary = {
+  schema_version: 'alert-outcome-summary-v1',
+  evaluated_at: '2026-10-17T12:25:00Z',
+  completed: 0,
+  awaiting_outcome: 0,
+  confirmed: 0,
+  neutral: 0,
+  false_positive: 0,
+  drifted: 0,
+  paper: 0,
+  shadow: 0,
+  false_positive_rate: '0',
+  drift_rate: '0',
+  average_directional_return: '0',
+};
+
+const confirmedOutcome: AlertOutcomeRecord = {
+  schema_version: 'alert-outcome-v1',
+  outcome_id: 'alert-outcome-1234567890abcdef',
+  simulation_id: 'alert-simulation-1234567890abcdef',
+  simulation_checksum: '7'.repeat(64),
+  alert_id: alertId,
+  alert_checksum: '2'.repeat(64),
+  mode: 'paper',
+  expected_trend: 'trending_up',
+  observed_trend: 'trending_up',
+  reference_price: '100',
+  end_price: '101',
+  high_price: '102',
+  low_price: '99',
+  raw_return: '0.01',
+  directional_return: '0.01',
+  max_favorable_excursion: '0.02',
+  max_adverse_excursion: '-0.01',
+  classification: 'confirmed',
+  false_positive: false,
+  drifted: false,
+  policy_version: 'alert-outcome-policy-v1',
+  policy_checksum: '8'.repeat(64),
+  classification_threshold: '0.005',
+  observed_at: '2026-10-17T13:26:00Z',
+  recorded_at: '2026-10-17T13:26:00Z',
+  recorded_by: 'operator:alert-center',
+  offline_only: true,
+  external_order_submission_allowed: false,
+  record_checksum: '9'.repeat(64),
+};
+
 const paperSimulation: AlertSimulationView = {
   schema_version: 'alert-simulation-view-v1',
   status: 'observing',
@@ -168,6 +218,8 @@ function renderAlertCenter(
       initialExpirySummary={expirySummary}
       initialSimulations={[]}
       initialSimulationSummary={simulationSummary}
+      initialOutcomes={[]}
+      initialOutcomeSummary={outcomeSummary}
       locale="en"
       {...overrides}
     />,
@@ -362,6 +414,78 @@ describe('AlertCenter', () => {
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('"mode":"paper"'),
+      }),
+    );
+  });
+
+  it('records an immutable outcome for a completed simulation and refreshes analytics', async () => {
+    const user = userEvent.setup();
+    const awaitingSimulation: AlertSimulationView = {
+      ...paperSimulation,
+      status: 'awaiting_outcome',
+      seconds_remaining: 0,
+      simulation: {
+        ...paperSimulation.simulation,
+        started_at: '2026-10-17T11:00:00Z',
+        ends_at: '2026-10-17T12:00:00Z',
+      },
+    };
+    const refreshedSummary: AlertOutcomeSummary = {
+      ...outcomeSummary,
+      completed: 1,
+      confirmed: 1,
+      paper: 1,
+      average_directional_return: '0.01',
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            schema_version: 'alert-outcome-record-result-v1',
+            created: true,
+            outcome: confirmedOutcome,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(refreshedSummary), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    renderAlertCenter({
+      initialSimulations: [awaitingSimulation],
+      initialSimulationSummary: {
+        ...simulationSummary,
+        total: 1,
+        paper: 1,
+        awaiting_outcome: 1,
+      },
+      initialOutcomeSummary: { ...outcomeSummary, awaiting_outcome: 1 },
+    });
+
+    await user.type(screen.getByLabelText('Start price'), '100');
+    await user.type(screen.getByLabelText('End price'), '101');
+    await user.type(screen.getByLabelText('High price'), '102');
+    await user.type(screen.getByLabelText('Low price'), '99');
+    fireEvent.change(screen.getByLabelText('Observed trend'), {
+      target: { value: 'trending_up' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Record offline outcome' }));
+
+    await screen.findByText('Paper · Confirmed');
+    expect(screen.getByText('Directional return: 1%')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining(
+        '/api/v1/alerts/simulations/alert-simulation-1234567890abcdef/outcome',
+      ),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"reference_price":"100"'),
       }),
     );
   });

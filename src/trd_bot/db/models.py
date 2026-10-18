@@ -1576,6 +1576,89 @@ class AlertSimulationRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class AlertOutcomeRow(DatabaseBase):
+    """Append-only outcome evidence for one completed offline simulation."""
+
+    __tablename__ = "alert_outcomes"
+
+    __table_args__ = (
+        CheckConstraint(
+            "classification IN ('confirmed', 'neutral', 'false_positive')",
+            name="classification_supported",
+        ),
+        CheckConstraint("mode IN ('paper', 'shadow')", name="mode_supported"),
+        CheckConstraint("reference_price > 0", name="reference_price_positive"),
+        CheckConstraint("end_price > 0", name="end_price_positive"),
+        CheckConstraint("high_price > 0", name="high_price_positive"),
+        CheckConstraint("low_price > 0", name="low_price_positive"),
+        CheckConstraint(
+            "high_price >= reference_price AND high_price >= end_price", name="high_price_valid"
+        ),
+        CheckConstraint(
+            "low_price <= reference_price AND low_price <= end_price", name="low_price_valid"
+        ),
+        CheckConstraint("recorded_at >= observed_at", name="recorded_after_observation"),
+        CheckConstraint(
+            "false_positive = (classification = 'false_positive')",
+            name="false_positive_consistent",
+        ),
+        CheckConstraint(
+            "policy_version = 'alert-outcome-policy-v1'",
+            name="policy_version_supported",
+        ),
+        CheckConstraint(
+            "classification_threshold = 0.005",
+            name="classification_threshold_supported",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_submission_forbidden",
+        ),
+        CheckConstraint("length(record_checksum) = 64", name="checksum_length"),
+        Index("ix_alert_outcomes_classification_recorded", "classification", "recorded_at"),
+        Index("ix_alert_outcomes_mode_recorded", "mode", "recorded_at"),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    simulation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alert_simulations.simulation_id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+    )
+    simulation_checksum: Mapped[str] = mapped_column(String(64))
+    alert_id: Mapped[str] = mapped_column(
+        String(100), ForeignKey("alerts.alert_id", ondelete="CASCADE"), index=True
+    )
+    alert_checksum: Mapped[str] = mapped_column(String(64))
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    expected_trend: Mapped[str] = mapped_column(String(30))
+    observed_trend: Mapped[str] = mapped_column(String(30))
+    reference_price: Mapped[Decimal] = mapped_column(Numeric(28, 10))
+    end_price: Mapped[Decimal] = mapped_column(Numeric(28, 10))
+    high_price: Mapped[Decimal] = mapped_column(Numeric(28, 10))
+    low_price: Mapped[Decimal] = mapped_column(Numeric(28, 10))
+    raw_return: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    directional_return: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    max_favorable_excursion: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    max_adverse_excursion: Mapped[Decimal] = mapped_column(Numeric(18, 8))
+    classification: Mapped[str] = mapped_column(String(30), index=True)
+    false_positive: Mapped[bool] = mapped_column(Boolean, index=True)
+    drifted: Mapped[bool] = mapped_column(Boolean, index=True)
+    policy_version: Mapped[str] = mapped_column(String(50))
+    policy_checksum: Mapped[str] = mapped_column(String(64))
+    classification_threshold: Mapped[Decimal] = mapped_column(Numeric(8, 6))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    recorded_by: Mapped[str] = mapped_column(String(100))
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

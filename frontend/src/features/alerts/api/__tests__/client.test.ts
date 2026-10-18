@@ -3,11 +3,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   acknowledgeAlert,
   getAlertExpirySummary,
+  getAlertOutcomes,
+  getAlertOutcomeSummary,
   getAlertPublicationPolicy,
   getAlerts,
   getAlertSummary,
   getAlertSimulations,
   getAlertSimulationSummary,
+  recordAlertOutcome,
   snoozeAlert,
   startAlertSimulation,
   sweepExpiredAlerts,
@@ -182,6 +185,61 @@ describe('Alert Center client', () => {
           acted_by: 'operator:alert-center',
           mode: 'shadow',
           horizon_seconds: 14_400,
+        }),
+      }),
+    );
+  });
+
+  it('reads and records offline alert outcomes', async () => {
+    const payload = { created: true };
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getAlertOutcomes({
+      limit: 25,
+      offset: 0,
+      alertId: 'alert-1234567890abcdef',
+      simulationId: 'alert-simulation-1234567890abcdef',
+      classification: 'confirmed',
+    });
+    await getAlertOutcomeSummary();
+    await recordAlertOutcome('simulation/id', {
+      reference_price: '100',
+      end_price: '101',
+      high_price: '102',
+      low_price: '99',
+      observed_trend: 'trending_up',
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${API_BASE_URL}/api/v1/alerts/outcomes?limit=25&offset=0&alert_id=alert-1234567890abcdef&simulation_id=alert-simulation-1234567890abcdef&classification=confirmed`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${API_BASE_URL}/api/v1/alerts/outcomes/summary`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      `${API_BASE_URL}/api/v1/alerts/simulations/simulation%2Fid/outcome`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          acted_by: 'operator:alert-center',
+          reference_price: '100',
+          end_price: '101',
+          high_price: '102',
+          low_price: '99',
+          observed_trend: 'trending_up',
         }),
       }),
     );

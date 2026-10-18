@@ -1,5 +1,6 @@
 import type {
   AlertInboxStatus,
+  AlertOutcomeClassification,
   AlertSeverity,
   AlertSimulationMode,
   AlertSimulationStatus,
@@ -91,6 +92,25 @@ export type AlertCenterCopy = {
   startSimulation: Record<AlertSimulationMode, string>;
   startingSimulation: string;
   simulationError: string;
+  outcomeJournal: string;
+  outcomeDescription: string;
+  outcomePolicy: string;
+  outcomeSummary: Record<
+    'completed' | 'awaiting' | 'falsePositiveRate' | 'driftRate' | 'averageReturn',
+    string
+  >;
+  outcomeClassifications: Record<AlertOutcomeClassification, string>;
+  driftDetected: string;
+  directionalReturn: string;
+  manualOutcomeEvidence: string;
+  referencePrice: string;
+  endPrice: string;
+  highPrice: string;
+  lowPrice: string;
+  observedTrend: string;
+  recordOutcome: string;
+  recordingOutcome: string;
+  outcomeError: string;
 };
 
 const copies: Record<PlatformLocale, AlertCenterCopy> = {
@@ -200,6 +220,34 @@ const copies: Record<PlatformLocale, AlertCenterCopy> = {
     startSimulation: { paper: 'شروع Paper', shadow: 'شروع Shadow' },
     startingSimulation: 'در حال ثبت',
     simulationError: 'شروع ارزیابی آفلاین ناموفق بود. انقضای هشدار و اتصال Backend را بررسی کنید.',
+    outcomeJournal: 'دفتر نتایج هشدار',
+    outcomeDescription:
+      'نتیجه مشاهده‌های پایان‌یافته را با lineage کامل، بازده جهت‌دار، drift و false-positive ثبت می‌کند.',
+    outcomePolicy: 'سیاست v1 · آستانه ۰٫۵٪',
+    outcomeSummary: {
+      completed: 'نتیجه‌های ثبت‌شده',
+      awaiting: 'در انتظار نتیجه',
+      falsePositiveRate: 'نرخ خطای مثبت',
+      driftRate: 'نرخ Drift',
+      averageReturn: 'میانگین بازده جهت‌دار',
+    },
+    outcomeClassifications: {
+      confirmed: 'تأییدشده',
+      neutral: 'خنثی',
+      false_positive: 'خطای مثبت',
+    },
+    driftDetected: 'Drift مشاهده شد',
+    directionalReturn: 'بازده جهت‌دار',
+    manualOutcomeEvidence:
+      'قیمت‌های شروع، پایان، بیشینه و کمینه را از یک منبع بازار قابل بازبینی وارد کنید. ثبت نتیجه immutable است.',
+    referencePrice: 'قیمت شروع',
+    endPrice: 'قیمت پایان',
+    highPrice: 'بیشترین قیمت',
+    lowPrice: 'کمترین قیمت',
+    observedTrend: 'روند مشاهده‌شده',
+    recordOutcome: 'ثبت نتیجه آفلاین',
+    recordingOutcome: 'در حال ثبت نتیجه',
+    outcomeError: 'ثبت نتیجه ناموفق بود. پایان افق و سازگاری قیمت‌ها را بررسی کنید.',
   },
   en: {
     eyebrow: 'Decision intelligence',
@@ -308,6 +356,34 @@ const copies: Record<PlatformLocale, AlertCenterCopy> = {
     startingSimulation: 'Starting',
     simulationError:
       'Unable to start offline evaluation. Check alert expiry and the backend connection.',
+    outcomeJournal: 'Alert outcome journal',
+    outcomeDescription:
+      'Records completed observations with full lineage, directional performance, drift, and false-positive evidence.',
+    outcomePolicy: 'v1 policy · 0.5% threshold',
+    outcomeSummary: {
+      completed: 'Recorded outcomes',
+      awaiting: 'Awaiting outcome',
+      falsePositiveRate: 'False-positive rate',
+      driftRate: 'Drift rate',
+      averageReturn: 'Average directional return',
+    },
+    outcomeClassifications: {
+      confirmed: 'Confirmed',
+      neutral: 'Neutral',
+      false_positive: 'False positive',
+    },
+    driftDetected: 'Drift detected',
+    directionalReturn: 'Directional return',
+    manualOutcomeEvidence:
+      'Enter start, end, high, and low prices from a reviewable market source. Outcome records are immutable.',
+    referencePrice: 'Start price',
+    endPrice: 'End price',
+    highPrice: 'High price',
+    lowPrice: 'Low price',
+    observedTrend: 'Observed trend',
+    recordOutcome: 'Record offline outcome',
+    recordingOutcome: 'Recording outcome',
+    outcomeError: 'Unable to record the outcome. Check the horizon and price consistency.',
   },
 };
 
