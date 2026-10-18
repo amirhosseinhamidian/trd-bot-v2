@@ -1529,6 +1529,53 @@ class AlertExpiryRecordRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class AlertSimulationRow(DatabaseBase):
+    """Immutable offline Paper/Shadow enrollment for a published alert."""
+
+    __tablename__ = "alert_simulations"
+
+    __table_args__ = (
+        CheckConstraint("mode IN ('paper', 'shadow')", name="mode_supported"),
+        CheckConstraint(
+            "horizon_seconds >= 900 AND horizon_seconds <= 2592000",
+            name="horizon_bounded",
+        ),
+        CheckConstraint("ends_at > started_at", name="ends_after_started"),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_submission_forbidden",
+        ),
+        CheckConstraint("length(record_checksum) = 64", name="checksum_length"),
+        Index("ix_alert_simulations_alert_started_at", "alert_id", "started_at"),
+        Index("ix_alert_simulations_mode_ends_at", "mode", "ends_at"),
+    )
+
+    simulation_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    alert_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alerts.alert_id", ondelete="CASCADE"),
+        index=True,
+    )
+    alert_checksum: Mapped[str] = mapped_column(String(64))
+    source_reference_id: Mapped[str] = mapped_column(String(100), index=True)
+    source_reference_checksum: Mapped[str] = mapped_column(String(64))
+    rule_id: Mapped[str] = mapped_column(String(100), index=True)
+    rule_version: Mapped[int] = mapped_column(Integer)
+    rule_definition_checksum: Mapped[str] = mapped_column(String(64))
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    expected_trend: Mapped[str] = mapped_column(String(30))
+    horizon_seconds: Mapped[int] = mapped_column(Integer)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    ends_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    started_by: Mapped[str] = mapped_column(String(100))
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

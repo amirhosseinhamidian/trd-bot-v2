@@ -50,6 +50,15 @@ from trd_bot.alerts.publication import (
     AlertPublicationDecision,
     AlertPublicationPolicy,
 )
+from trd_bot.alerts.simulations import (
+    AlertSimulationMode,
+    AlertSimulationRecord,
+    AlertSimulationStartResult,
+    AlertSimulationStatus,
+    AlertSimulationSummary,
+    AlertSimulationView,
+    build_alert_simulation_id,
+)
 
 __all__ = [
     "DEFAULT_ALERT_PUBLICATION_POLICY_ID",
@@ -79,6 +88,12 @@ __all__ = [
     "AlertRuleState",
     "AlertRuleVersionNotFoundError",
     "AlertSeverity",
+    "AlertSimulationMode",
+    "AlertSimulationRecord",
+    "AlertSimulationStartResult",
+    "AlertSimulationStatus",
+    "AlertSimulationSummary",
+    "AlertSimulationView",
     "AlertSourceAssessmentNotFoundError",
     "AlertSourceKind",
     "AlertSuppressionReason",
@@ -90,6 +105,7 @@ __all__ = [
     "build_alert_evaluation_job",
     "build_alert_id",
     "build_alert_rule_id",
+    "build_alert_simulation_id",
     "build_alert_source_event_checksum",
     "evaluate_alert",
     "validate_alert_evaluation_enqueue",

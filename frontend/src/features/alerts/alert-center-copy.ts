@@ -1,4 +1,9 @@
-import type { AlertInboxStatus, AlertSeverity } from '@/features/alerts/api/types';
+import type {
+  AlertInboxStatus,
+  AlertSeverity,
+  AlertSimulationMode,
+  AlertSimulationStatus,
+} from '@/features/alerts/api/types';
 import type {
   MarketTrendRegime,
   MarketVolatilityRegime,
@@ -72,6 +77,20 @@ export type AlertCenterCopy = {
   sweepExpiry: string;
   sweepingExpiry: string;
   expirySweepComplete: string;
+  simulationTitle: string;
+  simulationDescription: string;
+  simulationCardDescription: string;
+  offlineOnly: string;
+  noOrder: string;
+  existingSimulations: string;
+  simulationHorizon: string;
+  simulationHorizons: Record<string, string>;
+  simulationModes: Record<AlertSimulationMode, string>;
+  simulationStatuses: Record<AlertSimulationStatus, string>;
+  simulationSummary: Record<'paper' | 'shadow' | 'observing' | 'awaitingOutcome', string>;
+  startSimulation: Record<AlertSimulationMode, string>;
+  startingSimulation: string;
+  simulationError: string;
 };
 
 const copies: Record<PlatformLocale, AlertCenterCopy> = {
@@ -155,6 +174,32 @@ const copies: Record<PlatformLocale, AlertCenterCopy> = {
     sweepExpiry: 'ثبت انقضاهای معوق',
     sweepingExpiry: 'در حال ثبت',
     expirySweepComplete: 'چرخه انقضا به‌روزرسانی شد.',
+    simulationTitle: 'ارزیابی Paper / Shadow',
+    simulationDescription:
+      'هشدارهای منتشرشده را فقط در یک مشاهده آفلاین ثبت می‌کند؛ هیچ سفارش، اتصال معاملاتی یا دارایی واقعی ایجاد نمی‌شود.',
+    simulationCardDescription:
+      'یک افق زمانی انتخاب کنید تا نتیجه هشدار در مرحله Outcome Journal بررسی شود.',
+    offlineOnly: 'صرفاً آفلاین',
+    noOrder: 'بدون سفارش واقعی',
+    existingSimulations: 'ارزیابی‌های ثبت‌شده',
+    simulationHorizon: 'افق ارزیابی',
+    simulationHorizons: {
+      '3600': '۱ ساعت',
+      '14400': '۴ ساعت',
+      '86400': '۲۴ ساعت',
+      '604800': '۷ روز',
+    },
+    simulationModes: { paper: 'Paper', shadow: 'Shadow' },
+    simulationStatuses: { observing: 'در حال مشاهده', awaiting_outcome: 'منتظر ثبت نتیجه' },
+    simulationSummary: {
+      paper: 'Paper',
+      shadow: 'Shadow',
+      observing: 'در حال مشاهده',
+      awaitingOutcome: 'منتظر نتیجه',
+    },
+    startSimulation: { paper: 'شروع Paper', shadow: 'شروع Shadow' },
+    startingSimulation: 'در حال ثبت',
+    simulationError: 'شروع ارزیابی آفلاین ناموفق بود. انقضای هشدار و اتصال Backend را بررسی کنید.',
   },
   en: {
     eyebrow: 'Decision intelligence',
@@ -236,6 +281,33 @@ const copies: Record<PlatformLocale, AlertCenterCopy> = {
     sweepExpiry: 'Record pending expiries',
     sweepingExpiry: 'Recording expiries',
     expirySweepComplete: 'Expiry lifecycle updated.',
+    simulationTitle: 'Paper / Shadow evaluation',
+    simulationDescription:
+      'Enrolls published alerts in offline observation only. It creates no order, trading connection, or real asset exposure.',
+    simulationCardDescription:
+      'Choose a horizon so the later Outcome Journal can assess the alert result.',
+    offlineOnly: 'Offline only',
+    noOrder: 'No live order',
+    existingSimulations: 'Existing evaluations',
+    simulationHorizon: 'Evaluation horizon',
+    simulationHorizons: {
+      '3600': '1 hour',
+      '14400': '4 hours',
+      '86400': '24 hours',
+      '604800': '7 days',
+    },
+    simulationModes: { paper: 'Paper', shadow: 'Shadow' },
+    simulationStatuses: { observing: 'Observing', awaiting_outcome: 'Awaiting outcome' },
+    simulationSummary: {
+      paper: 'Paper',
+      shadow: 'Shadow',
+      observing: 'Observing',
+      awaitingOutcome: 'Awaiting outcome',
+    },
+    startSimulation: { paper: 'Start Paper', shadow: 'Start Shadow' },
+    startingSimulation: 'Starting',
+    simulationError:
+      'Unable to start offline evaluation. Check alert expiry and the backend connection.',
   },
 };
 

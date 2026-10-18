@@ -10,6 +10,11 @@ import type {
   AlertPublicationPolicy,
   AlertPublicationPolicyInput,
   AlertSeverity,
+  AlertSimulationMode,
+  AlertSimulationStartResult,
+  AlertSimulationStatus,
+  AlertSimulationSummary,
+  AlertSimulationView,
 } from './types';
 
 export interface AlertFilters {
@@ -17,6 +22,14 @@ export interface AlertFilters {
   offset?: number;
   status?: AlertInboxStatus;
   severity?: AlertSeverity;
+}
+
+export interface AlertSimulationFilters {
+  limit?: number;
+  offset?: number;
+  alertId?: string;
+  mode?: AlertSimulationMode;
+  status?: AlertSimulationStatus;
 }
 
 const ALERT_CENTER_ACTOR = 'operator:alert-center';
@@ -56,6 +69,37 @@ export async function sweepExpiredAlerts(limit = 100): Promise<AlertExpirySweepR
     acted_by: ALERT_CENTER_ACTOR,
     limit,
   });
+}
+
+export async function getAlertSimulations(
+  filters: AlertSimulationFilters = {},
+): Promise<Page<AlertSimulationView>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 100));
+  params.set('offset', String(filters.offset ?? 0));
+  if (filters.alertId) params.set('alert_id', filters.alertId);
+  if (filters.mode) params.set('mode', filters.mode);
+  if (filters.status) params.set('status', filters.status);
+  return getJson<Page<AlertSimulationView>>(`/api/v1/alerts/simulations?${params.toString()}`);
+}
+
+export async function getAlertSimulationSummary(): Promise<AlertSimulationSummary> {
+  return getJson<AlertSimulationSummary>('/api/v1/alerts/simulations/summary');
+}
+
+export async function startAlertSimulation(
+  alertId: string,
+  mode: AlertSimulationMode,
+  horizonSeconds: number,
+): Promise<AlertSimulationStartResult> {
+  return postJson<AlertSimulationStartResult>(
+    `/api/v1/alerts/${encodeURIComponent(alertId)}/simulations`,
+    {
+      acted_by: ALERT_CENTER_ACTOR,
+      mode,
+      horizon_seconds: horizonSeconds,
+    },
+  );
 }
 
 export async function acknowledgeAlert(alertId: string): Promise<AlertInboxItem> {

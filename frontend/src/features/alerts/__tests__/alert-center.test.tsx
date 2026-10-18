@@ -8,6 +8,8 @@ import type {
   AlertInboxItem,
   AlertInboxSummary,
   AlertPublicationPolicy,
+  AlertSimulationSummary,
+  AlertSimulationView,
 } from '@/features/alerts/api/types';
 import AlertCenter from '@/features/alerts/alert-center';
 import type { Page } from '@/lib/api/core/types';
@@ -118,6 +120,43 @@ const expirySummary: AlertExpirySummary = {
   pending_total: 1,
 };
 
+const simulationSummary: AlertSimulationSummary = {
+  schema_version: 'alert-simulation-summary-v1',
+  evaluated_at: '2026-10-17T12:25:00Z',
+  total: 0,
+  paper: 0,
+  shadow: 0,
+  observing: 0,
+  awaiting_outcome: 0,
+};
+
+const paperSimulation: AlertSimulationView = {
+  schema_version: 'alert-simulation-view-v1',
+  status: 'observing',
+  evaluated_at: '2026-10-17T12:25:00Z',
+  seconds_remaining: 3600,
+  simulation: {
+    schema_version: 'alert-simulation-v1',
+    simulation_id: 'alert-simulation-1234567890abcdef',
+    alert_id: alertId,
+    alert_checksum: '2'.repeat(64),
+    source_reference_id: 'alert-source-1234567890abcdef',
+    source_reference_checksum: '5'.repeat(64),
+    rule_id: 'alert-rule-1234567890abcdef',
+    rule_version: 1,
+    rule_definition_checksum: '3'.repeat(64),
+    mode: 'paper',
+    expected_trend: 'trending_up',
+    horizon_seconds: 3600,
+    started_at: '2026-10-17T12:25:00Z',
+    ends_at: '2026-10-17T13:25:00Z',
+    started_by: 'operator:alert-center',
+    offline_only: true,
+    external_order_submission_allowed: false,
+    record_checksum: '7'.repeat(64),
+  },
+};
+
 function renderAlertCenter(
   overrides: Partial<ComponentProps<typeof AlertCenter>> = {},
 ): ReturnType<typeof render> {
@@ -127,6 +166,8 @@ function renderAlertCenter(
       initialSummary={summary}
       initialPolicy={publicationPolicy}
       initialExpirySummary={expirySummary}
+      initialSimulations={[]}
+      initialSimulationSummary={simulationSummary}
       locale="en"
       {...overrides}
     />,
@@ -150,6 +191,9 @@ describe('AlertCenter', () => {
     expect(screen.getByLabelText('Enable quiet hours')).toBeChecked();
     expect(screen.getByLabelText('Time zone')).toHaveValue('Asia/Tehran');
     expect(screen.getByRole('button', { name: 'Record pending expiries' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Start Paper' })).toHaveClass('min-h-11');
+    expect(screen.getByRole('button', { name: 'Start Shadow' })).toHaveClass('min-h-11');
+    expect(screen.getByText('No live order')).toBeInTheDocument();
 
     const disclosure = screen.getByText('Lineage and technical details').closest('details');
     expect(disclosure).not.toBeNull();
@@ -293,5 +337,32 @@ describe('AlertCenter', () => {
 
     await screen.findByText('Expiry lifecycle updated.');
     expect(screen.getByRole('button', { name: 'Record pending expiries' })).toBeDisabled();
+  });
+
+  it('starts an idempotent offline paper evaluation from an alert', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          schema_version: 'alert-simulation-start-result-v1',
+          created: true,
+          view: paperSimulation,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    renderAlertCenter();
+
+    await user.click(screen.getByRole('button', { name: 'Start Paper' }));
+
+    await screen.findByText('Paper · Observing');
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(`/api/v1/alerts/${alertId}/simulations`),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"mode":"paper"'),
+      }),
+    );
   });
 });

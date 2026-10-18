@@ -72,6 +72,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "alert_publication_decisions",
         "alert_publication_policies",
         "alert_rule_definitions",
+        "alert_simulations",
         "alerts",
         "architecture_recommendations",
         "background_jobs",

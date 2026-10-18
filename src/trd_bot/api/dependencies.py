@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from trd_bot.db import (
     SqlAlchemyAlertInboxRepository,
     SqlAlchemyAlertPublicationRepository,
+    SqlAlchemyAlertSimulationRepository,
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyBackgroundJobRepository,
     SqlAlchemyCandidateJournalRepository,
@@ -82,6 +83,14 @@ def get_alert_publication_repository(
     """Return the request-scoped alert publication policy repository."""
 
     return SqlAlchemyAlertPublicationRepository(session)
+
+
+def get_alert_simulation_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertSimulationRepository:
+    """Return the request-scoped offline alert observation repository."""
+
+    return SqlAlchemyAlertSimulationRepository(session)
 
 
 def get_market_data_connection_repository(

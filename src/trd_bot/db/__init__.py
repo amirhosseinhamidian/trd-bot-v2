@@ -5,6 +5,10 @@ from trd_bot.db.alert_jobs import (
 )
 from trd_bot.db.alert_publication import SqlAlchemyAlertPublicationRepository
 from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
+from trd_bot.db.alert_simulations import (
+    AlertSimulationConflictError,
+    SqlAlchemyAlertSimulationRepository,
+)
 from trd_bot.db.background_job_repositories import (
     BackgroundJobConflictError,
     SqlAlchemyBackgroundJobRepository,
@@ -81,6 +85,7 @@ from trd_bot.db.models import (
     AlertPublicationPolicyRow,
     AlertRow,
     AlertRuleDefinitionRow,
+    AlertSimulationRow,
     ArchitectureRecommendationRow,
     BackgroundJobRow,
     CandidateJournalRow,
@@ -162,6 +167,8 @@ __all__ = [
     "AlertPublicationPolicyRow",
     "AlertRow",
     "AlertRuleDefinitionRow",
+    "AlertSimulationConflictError",
+    "AlertSimulationRow",
     "ArchitectureRecommendationRow",
     "BackgroundJobConflictError",
     "BackgroundJobRow",
@@ -207,6 +214,7 @@ __all__ = [
     "SqlAlchemyAlertEvaluationRunner",
     "SqlAlchemyAlertInboxRepository",
     "SqlAlchemyAlertPublicationRepository",
+    "SqlAlchemyAlertSimulationRepository",
     "SqlAlchemyAlertStore",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyBackgroundJobRepository",

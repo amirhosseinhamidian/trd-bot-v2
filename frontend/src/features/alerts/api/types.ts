@@ -127,3 +127,51 @@ export interface AlertExpirySweepResult {
   expiry_ids: string[];
   remaining_pending: number;
 }
+
+export type AlertSimulationMode = 'paper' | 'shadow';
+export type AlertSimulationStatus = 'observing' | 'awaiting_outcome';
+
+export interface AlertSimulationRecord {
+  schema_version: 'alert-simulation-v1';
+  simulation_id: string;
+  alert_id: string;
+  alert_checksum: string;
+  source_reference_id: string;
+  source_reference_checksum: string;
+  rule_id: string;
+  rule_version: number;
+  rule_definition_checksum: string;
+  mode: AlertSimulationMode;
+  expected_trend: MarketTrendRegime;
+  horizon_seconds: number;
+  started_at: string;
+  ends_at: string;
+  started_by: string;
+  offline_only: true;
+  external_order_submission_allowed: false;
+  record_checksum: string;
+}
+
+export interface AlertSimulationView {
+  schema_version: 'alert-simulation-view-v1';
+  simulation: AlertSimulationRecord;
+  status: AlertSimulationStatus;
+  evaluated_at: string;
+  seconds_remaining: number;
+}
+
+export interface AlertSimulationSummary {
+  schema_version: 'alert-simulation-summary-v1';
+  evaluated_at: string;
+  total: number;
+  paper: number;
+  shadow: number;
+  observing: number;
+  awaiting_outcome: number;
+}
+
+export interface AlertSimulationStartResult {
+  schema_version: 'alert-simulation-start-result-v1';
+  created: boolean;
+  view: AlertSimulationView;
+}

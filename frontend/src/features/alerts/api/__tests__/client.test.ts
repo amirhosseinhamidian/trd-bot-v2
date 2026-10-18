@@ -6,7 +6,10 @@ import {
   getAlertPublicationPolicy,
   getAlerts,
   getAlertSummary,
+  getAlertSimulations,
+  getAlertSimulationSummary,
   snoozeAlert,
+  startAlertSimulation,
   sweepExpiredAlerts,
   updateAlertPublicationPolicy,
 } from '@/features/alerts/api/client';
@@ -134,6 +137,52 @@ describe('Alert Center client', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ acted_by: 'operator:alert-center', limit: 25 }),
+      }),
+    );
+  });
+
+  it('reads and starts offline alert simulations', async () => {
+    const payload = { created: true };
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getAlertSimulations({
+      limit: 25,
+      offset: 0,
+      alertId: 'alert-1234567890abcdef',
+      mode: 'paper',
+      status: 'observing',
+    });
+    await getAlertSimulationSummary();
+    await startAlertSimulation('alert/id', 'shadow', 14_400);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `${API_BASE_URL}/api/v1/alerts/simulations?limit=25&offset=0&alert_id=alert-1234567890abcdef&mode=paper&status=observing`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `${API_BASE_URL}/api/v1/alerts/simulations/summary`,
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      `${API_BASE_URL}/api/v1/alerts/alert%2Fid/simulations`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          acted_by: 'operator:alert-center',
+          mode: 'shadow',
+          horizon_seconds: 14_400,
+        }),
       }),
     );
   });

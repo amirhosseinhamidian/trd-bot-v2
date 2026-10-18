@@ -30,6 +30,7 @@ import {
   getAlerts,
   getAlertSummary,
   snoozeAlert,
+  startAlertSimulation,
   sweepExpiredAlerts,
   updateAlertPublicationPolicy,
 } from '@/features/alerts/api/client';
@@ -40,6 +41,9 @@ import type {
   AlertInboxSummary,
   AlertPublicationPolicy,
   AlertSeverity,
+  AlertSimulationMode,
+  AlertSimulationSummary,
+  AlertSimulationView,
 } from '@/features/alerts/api/types';
 import { getAlertCenterCopy } from '@/features/alerts/alert-center-copy';
 import type { Page } from '@/lib/api/core/types';
@@ -53,6 +57,8 @@ type AlertCenterProps = {
   initialSummary: AlertInboxSummary;
   initialPolicy: AlertPublicationPolicy;
   initialExpirySummary: AlertExpirySummary;
+  initialSimulations: AlertSimulationView[];
+  initialSimulationSummary: AlertSimulationSummary;
   locale: PlatformLocale;
 };
 
@@ -107,6 +113,8 @@ export default function AlertCenter({
   initialSummary,
   initialPolicy,
   initialExpirySummary,
+  initialSimulations,
+  initialSimulationSummary,
   locale,
 }: AlertCenterProps) {
   const copy = getAlertCenterCopy(locale);
@@ -114,6 +122,8 @@ export default function AlertCenter({
   const [summary, setSummary] = useState(initialSummary);
   const [policy, setPolicy] = useState(initialPolicy);
   const [expirySummary, setExpirySummary] = useState(initialExpirySummary);
+  const [simulations, setSimulations] = useState(initialSimulations);
+  const [simulationSummary, setSimulationSummary] = useState(initialSimulationSummary);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(initialPolicy.quiet_hours_enabled);
   const [quietHoursStart, setQuietHoursStart] = useState(
     minuteToTime(initialPolicy.quiet_hours_start_minute),
@@ -137,6 +147,12 @@ export default function AlertCenter({
     kind: 'acknowledge' | 'snooze';
   } | null>(null);
   const [actionError, setActionError] = useState(false);
+  const [simulationHorizons, setSimulationHorizons] = useState<Record<string, number>>({});
+  const [pendingSimulation, setPendingSimulation] = useState<{
+    alertId: string;
+    mode: AlertSimulationMode;
+  } | null>(null);
+  const [simulationError, setSimulationError] = useState(false);
   const requestSequence = useRef(0);
 
   async function loadPage(
@@ -217,6 +233,33 @@ export default function AlertCenter({
       setExpiryFeedback('error');
     } finally {
       setIsSweepingExpiry(false);
+    }
+  }
+
+  async function runSimulation(alertId: string, mode: AlertSimulationMode): Promise<void> {
+    setPendingSimulation({ alertId, mode });
+    setSimulationError(false);
+    try {
+      const result = await startAlertSimulation(alertId, mode, simulationHorizons[alertId] ?? 3600);
+      setSimulations((current) => [
+        result.view,
+        ...current.filter(
+          (item) => item.simulation.simulation_id !== result.view.simulation.simulation_id,
+        ),
+      ]);
+      if (result.created) {
+        setSimulationSummary((current) => ({
+          ...current,
+          total: current.total + 1,
+          paper: current.paper + (mode === 'paper' ? 1 : 0),
+          shadow: current.shadow + (mode === 'shadow' ? 1 : 0),
+          observing: current.observing + 1,
+        }));
+      }
+    } catch {
+      setSimulationError(true);
+    } finally {
+      setPendingSimulation(null);
     }
   }
 
@@ -385,6 +428,44 @@ export default function AlertCenter({
       </section>
 
       <Card>
+        <CardHeader className="border-b border-app-border">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>{copy.simulationTitle}</CardTitle>
+              <CardDescription className="mt-2">{copy.simulationDescription}</CardDescription>
+            </div>
+            <Badge variant="info">{copy.offlineOnly}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+          {(
+            [
+              ['paper', simulationSummary.paper],
+              ['shadow', simulationSummary.shadow],
+              ['observing', simulationSummary.observing],
+              ['awaitingOutcome', simulationSummary.awaiting_outcome],
+            ] as const
+          ).map(([label, count]) => (
+            <div key={label} className="rounded-xl bg-app-surface-muted p-4">
+              <p className="text-sm text-app-muted">{copy.simulationSummary[label]}</p>
+              <p className="mt-2 text-2xl font-bold">
+                {new Intl.NumberFormat(localeCode(locale)).format(count)}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {simulationError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-app-danger-border bg-app-danger-soft p-4 text-sm text-app-danger"
+        >
+          {copy.simulationError}
+        </p>
+      ) : null}
+
+      <Card>
         <CardContent className="grid gap-4 p-5 sm:grid-cols-2">
           <Select
             label={copy.statusFilter}
@@ -454,6 +535,11 @@ export default function AlertCenter({
               const isActing = pendingAction?.alertId === alert.alert_id;
               const isSnoozing = isActing && pendingAction.kind === 'snooze';
               const isAcknowledging = isActing && pendingAction.kind === 'acknowledge';
+              const alertSimulations = simulations.filter(
+                (view) => view.simulation.alert_id === alert.alert_id,
+              );
+              const simulationHorizon = simulationHorizons[alert.alert_id] ?? 3600;
+              const simulationIsPending = pendingSimulation?.alertId === alert.alert_id;
               return (
                 <Card key={alert.alert_id} className="overflow-hidden">
                   <CardHeader className="border-b border-app-border">
@@ -532,6 +618,69 @@ export default function AlertCenter({
                         </>
                       ) : null}
                     </dl>
+
+                    <section
+                      className="space-y-4 rounded-2xl border border-app-border bg-app-surface-muted p-4"
+                      aria-label={copy.simulationTitle}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold">{copy.simulationTitle}</h3>
+                          <p className="mt-1 text-xs leading-6 text-app-muted">
+                            {copy.simulationCardDescription}
+                          </p>
+                        </div>
+                        <Badge variant="neutral">{copy.noOrder}</Badge>
+                      </div>
+
+                      {alertSimulations.length > 0 ? (
+                        <div className="flex flex-wrap gap-2" aria-label={copy.existingSimulations}>
+                          {alertSimulations.map((view) => (
+                            <Badge
+                              key={view.simulation.simulation_id}
+                              variant={view.status === 'observing' ? 'success' : 'warning'}
+                            >
+                              {copy.simulationModes[view.simulation.mode]} ·{' '}
+                              {copy.simulationStatuses[view.status]}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                        <Select
+                          label={copy.simulationHorizon}
+                          value={String(simulationHorizon)}
+                          disabled={simulationIsPending || item.status === 'expired'}
+                          onValueChange={(value) =>
+                            setSimulationHorizons((current) => ({
+                              ...current,
+                              [alert.alert_id]: Number(value),
+                            }))
+                          }
+                        >
+                          {Object.entries(copy.simulationHorizons).map(([seconds, label]) => (
+                            <SelectOption key={seconds} value={seconds}>
+                              {label}
+                            </SelectOption>
+                          ))}
+                        </Select>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          {(['paper', 'shadow'] as const).map((mode) => (
+                            <Button
+                              key={mode}
+                              variant={mode === 'paper' ? 'primary' : 'secondary'}
+                              disabled={simulationIsPending || item.status === 'expired'}
+                              isLoading={simulationIsPending && pendingSimulation?.mode === mode}
+                              loadingText={copy.startingSimulation}
+                              onClick={() => void runSimulation(alert.alert_id, mode)}
+                            >
+                              {copy.startSimulation[mode]}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
 
                     <AdvancedDisclosure
                       title={copy.technicalDetails}
