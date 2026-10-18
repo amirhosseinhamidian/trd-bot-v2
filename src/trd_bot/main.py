@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from trd_bot.api.error_handlers import sanitized_request_validation_error_handler
 from trd_bot.api.monitoring_lifecycle import build_monitoring_lifespan
 from trd_bot.api.monitoring_middleware import ApiMetricsMiddleware
+from trd_bot.api.routes.alerts import router as alerts_router
 from trd_bot.api.routes.candidates import router as candidates_router
 from trd_bot.api.routes.datasets import router as datasets_router
 from trd_bot.api.routes.health import router as health_router
@@ -88,6 +89,11 @@ def create_app() -> FastAPI:
 
     application.include_router(
         market_context_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        alerts_router,
         prefix="/api/v1",
     )
 

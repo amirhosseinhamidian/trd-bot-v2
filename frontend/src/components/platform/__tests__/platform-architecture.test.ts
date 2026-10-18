@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { PRESERVED_LOCALE_ROUTE_FILES } from '@/platform/route-contract';
 
 const screenComponentPaths = [
+  'features/alerts/alert-center.tsx',
   'features/candidates/candidate-catalog.tsx',
   'features/candidates/candidate-detail.tsx',
   'features/datasets/dataset-catalog.tsx',
@@ -31,6 +32,7 @@ const screenComponentPaths = [
 ] as const;
 
 const featureBoundaries = [
+  ['alerts', [['alerts', 'alert-center']], 'alert-center-copy'],
   [
     'candidates',
     [
@@ -183,7 +185,7 @@ describe('platform architecture contract', () => {
     },
   );
 
-  it('preserves the extended 22-route locale inventory', () => {
+  it('preserves the extended 23-route locale inventory', () => {
     const localeRoot = resolve(process.cwd(), 'src/app/[locale]');
     const actualRoutes = collectPageFiles(localeRoot)
       .map((path) => relative(localeRoot, path).replaceAll('\\', '/'))

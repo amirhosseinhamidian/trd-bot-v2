@@ -1,3 +1,4 @@
+from trd_bot.db.alert_inbox import SqlAlchemyAlertInboxRepository
 from trd_bot.db.alert_jobs import (
     SqlAlchemyAlertEvaluationEnqueuer,
     SqlAlchemyAlertEvaluationRunner,
@@ -71,7 +72,9 @@ from trd_bot.db.market_data_retention import (
     SqlAlchemyMarketDataRetentionManager,
 )
 from trd_bot.db.models import (
+    AlertActionRow,
     AlertEvaluationRow,
+    AlertInboxStateRow,
     AlertRow,
     AlertRuleDefinitionRow,
     ArchitectureRecommendationRow,
@@ -147,7 +150,9 @@ from trd_bot.db.walk_forward_execution_repositories import (
 )
 
 __all__ = [
+    "AlertActionRow",
     "AlertEvaluationRow",
+    "AlertInboxStateRow",
     "AlertRow",
     "AlertRuleDefinitionRow",
     "ArchitectureRecommendationRow",
@@ -193,6 +198,7 @@ __all__ = [
     "SimulatedPositionRow",
     "SqlAlchemyAlertEvaluationEnqueuer",
     "SqlAlchemyAlertEvaluationRunner",
+    "SqlAlchemyAlertInboxRepository",
     "SqlAlchemyAlertStore",
     "SqlAlchemyArchitectureRecommendationRepository",
     "SqlAlchemyBackgroundJobRepository",

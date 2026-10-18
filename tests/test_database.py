@@ -65,7 +65,9 @@ def test_session_factory_executes_sqlite_query() -> None:
 
 def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
+        "alert_actions",
         "alert_evaluations",
+        "alert_inbox_states",
         "alert_rule_definitions",
         "alerts",
         "architecture_recommendations",

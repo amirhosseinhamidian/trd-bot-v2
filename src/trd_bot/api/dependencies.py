@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from trd_bot.db import (
+    SqlAlchemyAlertInboxRepository,
     SqlAlchemyArchitectureRecommendationRepository,
     SqlAlchemyBackgroundJobRepository,
     SqlAlchemyCandidateJournalRepository,
@@ -64,6 +65,14 @@ from trd_bot.research.walk_forward_runs import WalkForwardRunRegistry
 _acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
 _market_data_provider_catalog = MarketDataProviderCatalog()
 DatabaseSessionDependency = Annotated[Session, Depends(get_database_session)]
+
+
+def get_alert_inbox_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertInboxRepository:
+    """Return the request-scoped Alert Center repository."""
+
+    return SqlAlchemyAlertInboxRepository(session)
 
 
 def get_market_data_connection_repository(

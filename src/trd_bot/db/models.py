@@ -1344,6 +1344,87 @@ class AlertRow(DatabaseBase):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
+class AlertInboxStateRow(DatabaseBase):
+    """Current operator-facing state for one immutable published alert."""
+
+    __tablename__ = "alert_inbox_states"
+
+    __table_args__ = (
+        CheckConstraint(
+            "(acknowledged_at IS NULL AND acknowledged_by IS NULL) OR "
+            "(acknowledged_at IS NOT NULL AND acknowledged_by IS NOT NULL)",
+            name="acknowledgement_consistent",
+        ),
+        CheckConstraint(
+            "(snoozed_until IS NULL AND snoozed_by IS NULL) OR "
+            "(snoozed_until IS NOT NULL AND snoozed_by IS NOT NULL)",
+            name="snooze_consistent",
+        ),
+        CheckConstraint(
+            "acknowledged_at IS NULL OR snoozed_until IS NULL",
+            name="acknowledged_not_snoozed",
+        ),
+        Index("ix_alert_inbox_states_acknowledged_at", "acknowledged_at"),
+        Index("ix_alert_inbox_states_snoozed_until", "snoozed_until"),
+    )
+
+    alert_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alerts.alert_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    acknowledged_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    snoozed_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    snoozed_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class AlertActionRow(DatabaseBase):
+    """Append-only audit record for one Alert Center operator action."""
+
+    __tablename__ = "alert_actions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('acknowledged', 'snoozed')",
+            name="kind_supported",
+        ),
+        CheckConstraint(
+            "(kind = 'acknowledged' AND snoozed_until IS NULL) OR "
+            "(kind = 'snoozed' AND snoozed_until IS NOT NULL "
+            "AND snoozed_until > occurred_at)",
+            name="payload_consistent",
+        ),
+        CheckConstraint("length(action_checksum) = 64", name="checksum_length"),
+        Index("ix_alert_actions_alert_occurred_at", "alert_id", "occurred_at"),
+    )
+
+    action_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    alert_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("alerts.alert_id", ondelete="CASCADE"),
+        index=True,
+    )
+    kind: Mapped[str] = mapped_column(String(20), index=True)
+    acted_by: Mapped[str] = mapped_column(String(100))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    snoozed_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    action_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

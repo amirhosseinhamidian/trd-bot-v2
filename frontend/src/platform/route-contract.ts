@@ -8,6 +8,7 @@ import type { Locale } from '@/i18n/config';
  * duplication, or dynamic parameter drift before release.
  */
 export const PRESERVED_LOCALE_ROUTE_FILES = [
+  'alerts/page.tsx',
   'candidates/[candidateId]/page.tsx',
   'candidates/page.tsx',
   'connections/page.tsx',

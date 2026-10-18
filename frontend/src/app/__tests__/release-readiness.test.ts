@@ -23,14 +23,14 @@ const dynamicRoutePatterns = [
 ] as const;
 
 describe('P6 release route contract', () => {
-  it('expands the 22 preserved pages into 44 unique fa/en route patterns', () => {
+  it('expands the 23 preserved pages into 46 unique fa/en route patterns', () => {
     const localizedRoutes = locales.flatMap((locale) => getLocalizedRoutePatterns(locale));
 
     expect(locales).toEqual(['fa', 'en']);
-    expect(PRESERVED_LOCALE_ROUTE_FILES).toHaveLength(22);
-    expect(new Set(PRESERVED_LOCALE_ROUTE_FILES).size).toBe(22);
-    expect(localizedRoutes).toHaveLength(44);
-    expect(new Set(localizedRoutes).size).toBe(44);
+    expect(PRESERVED_LOCALE_ROUTE_FILES).toHaveLength(23);
+    expect(new Set(PRESERVED_LOCALE_ROUTE_FILES).size).toBe(23);
+    expect(localizedRoutes).toHaveLength(46);
+    expect(new Set(localizedRoutes).size).toBe(46);
     expect(localizedRoutes).toContain('/fa');
     expect(localizedRoutes).toContain('/en');
   });

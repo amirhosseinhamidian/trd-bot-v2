@@ -12,6 +12,7 @@ export type PlatformNavigationItemKey =
   | 'strategies'
   | 'signals'
   | 'marketContext'
+  | 'alerts'
   | 'candidates'
   | 'risk'
   | 'portfolios'
@@ -69,6 +70,7 @@ export const PLATFORM_NAVIGATION_GROUPS = [
       { key: 'strategies', path: '/strategies', enabled: true },
       { key: 'signals', path: '/signals', enabled: true },
       { key: 'marketContext', path: '/market-context', enabled: true },
+      { key: 'alerts', path: '/alerts', enabled: true },
       { key: 'candidates', path: '/candidates', enabled: true },
       { key: 'risk', path: '/risk', enabled: true },
     ],

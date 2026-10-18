@@ -5,6 +5,7 @@ from trd_bot.alerts import (
     AlertDraft,
     AlertEvaluationDisposition,
     AlertEvaluationRecord,
+    AlertInboxState,
     AlertRuleDefinition,
     AlertRuleReference,
     AlertRuleState,
@@ -12,6 +13,7 @@ from trd_bot.alerts import (
 )
 from trd_bot.db.models import (
     AlertEvaluationRow,
+    AlertInboxStateRow,
     AlertRow,
     AlertRuleDefinitionRow,
     MarketRegimeAssessmentRow,
@@ -170,6 +172,10 @@ class SqlAlchemyAlertStore:
         self._session.flush()
 
         if draft is not None:
+            inbox_state = AlertInboxState.initial(
+                alert_id=draft.alert_id,
+                created_at=draft.created_at,
+            )
             self._session.add(
                 AlertRow(
                     alert_id=draft.alert_id,
@@ -186,6 +192,18 @@ class SqlAlchemyAlertStore:
                     payload_json=draft.model_dump_json(),
                     created_at=draft.created_at,
                     expires_at=draft.expires_at,
+                )
+            )
+            self._session.flush()
+            self._session.add(
+                AlertInboxStateRow(
+                    alert_id=inbox_state.alert_id,
+                    schema_version=inbox_state.schema_version,
+                    acknowledged_at=None,
+                    acknowledged_by=None,
+                    snoozed_until=None,
+                    snoozed_by=None,
+                    updated_at=inbox_state.updated_at,
                 )
             )
             self._session.flush()
