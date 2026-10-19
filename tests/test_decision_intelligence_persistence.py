@@ -207,6 +207,7 @@ def seed_assessment_dependencies(
             created_at=value.assessed_at,
         )
     )
+    session.flush()
     assert value.feature_snapshot_id is not None
     assert value.feature_snapshot_checksum is not None
     session.add(
@@ -228,6 +229,7 @@ def seed_assessment_dependencies(
             calculated_at=value.assessed_at,
         )
     )
+    session.flush()
 
 
 def seed_intent_lineage(
