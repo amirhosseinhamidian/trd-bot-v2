@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -312,6 +313,27 @@ def test_expiry_sweep_is_bounded_durable_and_idempotent(
         assert first.remaining_pending == 0
         assert second.recorded_count == 0
         assert session.scalar(select(func.count()).select_from(AlertExpiryRecordRow)) == 1
+
+
+def test_expiry_sweep_locks_only_alert_rows_for_postgresql() -> None:
+    session_mock = Mock(spec=Session)
+    session_mock.scalars.return_value.all.return_value = []
+    session_mock.scalar.return_value = 0
+
+    result = SqlAlchemyAlertPublicationRepository(cast(Session, session_mock)).sweep_expired(
+        evaluated_at=AS_OF + timedelta(hours=2),
+        recorded_by="operator:expiry",
+        limit=10,
+    )
+
+    statement = session_mock.scalars.call_args.args[0]
+    compiled = str(
+        statement.compile(dialect=postgresql.dialect())  # type: ignore[no-untyped-call]
+    )
+
+    assert "FOR UPDATE OF alerts" in compiled
+    assert result.recorded_count == 0
+    assert result.remaining_pending == 0
 
 
 @pytest.fixture

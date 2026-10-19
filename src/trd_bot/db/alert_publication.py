@@ -248,7 +248,10 @@ class SqlAlchemyAlertPublicationRepository:
             )
             .order_by(AlertRow.expires_at, AlertRow.alert_id)
             .limit(limit)
-            .with_for_update()
+            # PostgreSQL rejects an unqualified FOR UPDATE when a nullable
+            # outer-join target is present.  Only Alert rows coordinate
+            # concurrent expiry sweepers; expiry evidence remains append-only.
+            .with_for_update(of=AlertRow)
         ).all()
         records = tuple(
             AlertExpiryRecord.build(
