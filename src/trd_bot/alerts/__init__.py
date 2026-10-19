@@ -1,3 +1,12 @@
+from trd_bot.alerts.benchmark import (
+    ALERT_PIPELINE_BENCHMARK_MINIMUM_SAMPLES,
+    ALERT_PIPELINE_BENCHMARK_RUNTIME_BUDGET_MS,
+    AlertPipelineBenchmarkReport,
+    alert_pipeline_benchmark_fixture_checksum,
+    parse_alert_pipeline_benchmark_report,
+    run_alert_pipeline_benchmark,
+    serialize_alert_pipeline_benchmark_report,
+)
 from trd_bot.alerts.contracts import (
     AlertDeliveryChannel,
     AlertDraft,
@@ -73,6 +82,8 @@ from trd_bot.alerts.simulations import (
 __all__ = [
     "ALERT_OUTCOME_POLICY_VERSION",
     "ALERT_OUTCOME_THRESHOLD",
+    "ALERT_PIPELINE_BENCHMARK_MINIMUM_SAMPLES",
+    "ALERT_PIPELINE_BENCHMARK_RUNTIME_BUDGET_MS",
     "DEFAULT_ALERT_PUBLICATION_POLICY_ID",
     "AlertActionConflictError",
     "AlertActionKind",
@@ -97,6 +108,7 @@ __all__ = [
     "AlertOutcomeRecord",
     "AlertOutcomeRecordResult",
     "AlertOutcomeSummary",
+    "AlertPipelineBenchmarkReport",
     "AlertPublicationDecision",
     "AlertPublicationPolicy",
     "AlertRuleDefinition",
@@ -116,6 +128,7 @@ __all__ = [
     "MarketContextAlertCondition",
     "MarketContextAlertSourceReference",
     "alert_outcome_policy_checksum",
+    "alert_pipeline_benchmark_fixture_checksum",
     "build_alert_deduplication_key",
     "build_alert_evaluation_id",
     "build_alert_evaluation_idempotency_key",
@@ -126,6 +139,9 @@ __all__ = [
     "build_alert_simulation_id",
     "build_alert_source_event_checksum",
     "evaluate_alert",
+    "parse_alert_pipeline_benchmark_report",
+    "run_alert_pipeline_benchmark",
+    "serialize_alert_pipeline_benchmark_report",
     "validate_alert_evaluation_enqueue",
     "validate_alert_evaluation_result",
 ]
