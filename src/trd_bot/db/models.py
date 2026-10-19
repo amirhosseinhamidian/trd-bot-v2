@@ -1659,6 +1659,207 @@ class AlertOutcomeRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class DecisionPolicyDefinitionRow(DatabaseBase):
+    """Immutable version of the offline decision admission policy."""
+
+    __tablename__ = "decision_policy_definitions"
+
+    __table_args__ = (
+        CheckConstraint("policy_version >= 1", name="policy_version_positive"),
+        CheckConstraint(
+            "(policy_version = 1 AND supersedes_version IS NULL) OR "
+            "(policy_version > 1 AND supersedes_version = policy_version - 1)",
+            name="lineage_consistent",
+        ),
+        CheckConstraint("state IN ('enabled', 'disabled')", name="state_supported"),
+        CheckConstraint(
+            "allowed_mode_count >= 1 AND allowed_mode_count <= 3",
+            name="allowed_mode_count_bounded",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_submission_forbidden",
+        ),
+        CheckConstraint("length(definition_checksum) = 64", name="checksum_length"),
+        UniqueConstraint(
+            "policy_key",
+            "policy_version",
+            name="uq_decision_policy_definitions_key_version",
+        ),
+        Index(
+            "ix_decision_policy_definitions_state_created_at",
+            "state",
+            "created_at",
+        ),
+    )
+
+    policy_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    policy_version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    policy_key: Mapped[str] = mapped_column(String(100), index=True)
+    supersedes_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    state: Mapped[str] = mapped_column(String(20), index=True)
+    allowed_mode_count: Mapped[int] = mapped_column(Integer)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    definition_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class DecisionEvaluationIntentRow(DatabaseBase):
+    """Immutable input and lineage envelope for one offline decision evaluation."""
+
+    __tablename__ = "decision_evaluation_intents"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["policy_id", "policy_version"],
+            [
+                "decision_policy_definitions.policy_id",
+                "decision_policy_definitions.policy_version",
+            ],
+        ),
+        CheckConstraint(
+            "stage = 'strategy_evaluation'",
+            name="stage_supported",
+        ),
+        CheckConstraint(
+            "mode IN ('research', 'shadow', 'paper')",
+            name="mode_supported",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_submission_forbidden",
+        ),
+        CheckConstraint("length(dataset_reference_checksum) = 64", name="dataset_checksum_length"),
+        CheckConstraint(
+            "length(strategy_reference_checksum) = 64",
+            name="strategy_checksum_length",
+        ),
+        CheckConstraint(
+            "length(market_context_reference_checksum) = 64",
+            name="market_context_checksum_length",
+        ),
+        CheckConstraint(
+            "length(policy_definition_checksum) = 64",
+            name="policy_checksum_length",
+        ),
+        CheckConstraint("length(intent_checksum) = 64", name="intent_checksum_length"),
+        Index(
+            "ix_decision_evaluation_intents_stream_requested_at",
+            "source",
+            "base_asset",
+            "quote_asset",
+            "market_type",
+            "requested_at",
+        ),
+        Index(
+            "ix_decision_evaluation_intents_strategy_requested_at",
+            "strategy_name",
+            "strategy_version",
+            "requested_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    stage: Mapped[str] = mapped_column(String(30))
+    mode: Mapped[str] = mapped_column(String(20), index=True)
+    dataset_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("dataset_snapshots.dataset_id"),
+        index=True,
+    )
+    dataset_reference_id: Mapped[str] = mapped_column(String(100), index=True)
+    dataset_reference_checksum: Mapped[str] = mapped_column(String(64))
+    strategy_reference_id: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_name: Mapped[str] = mapped_column(String(100), index=True)
+    strategy_version: Mapped[str] = mapped_column(String(50))
+    strategy_behavior_fingerprint: Mapped[str] = mapped_column(String(71))
+    strategy_reference_checksum: Mapped[str] = mapped_column(String(64))
+    market_context_reference_id: Mapped[str] = mapped_column(String(100), index=True)
+    market_context_assessment_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("market_regime_assessments.assessment_id"),
+        index=True,
+    )
+    market_context_reference_checksum: Mapped[str] = mapped_column(String(64))
+    policy_id: Mapped[str] = mapped_column(String(100), index=True)
+    policy_version: Mapped[int] = mapped_column(Integer)
+    policy_definition_checksum: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(50), index=True)
+    base_asset: Mapped[str] = mapped_column(String(30))
+    quote_asset: Mapped[str] = mapped_column(String(30))
+    market_type: Mapped[str] = mapped_column(String(30))
+    timeframe: Mapped[str] = mapped_column(String(20))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    idempotency_key: Mapped[str] = mapped_column(String(100), unique=True)
+    intent_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class DecisionStageOutcomeRow(DatabaseBase):
+    """Append-only semantic evidence for one decision pipeline stage."""
+
+    __tablename__ = "decision_stage_outcomes"
+
+    __table_args__ = (
+        CheckConstraint(
+            "stage IN ('strategy_evaluation', 'candidate_ranking', "
+            "'risk_gate', 'portfolio_simulation')",
+            name="stage_supported",
+        ),
+        CheckConstraint(
+            "disposition IN ('accepted', 'rejected', 'deferred', 'unavailable')",
+            name="disposition_supported",
+        ),
+        CheckConstraint("reason_code_count >= 0", name="reason_code_count_nonnegative"),
+        CheckConstraint(
+            "(disposition = 'accepted' AND reason_code_count = 0) OR "
+            "(disposition != 'accepted' AND reason_code_count >= 1)",
+            name="outcome_consistent",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_submission_forbidden",
+        ),
+        CheckConstraint("length(outcome_checksum) = 64", name="checksum_length"),
+        UniqueConstraint(
+            "evaluation_id",
+            "stage",
+            name="uq_decision_stage_outcomes_evaluation_stage",
+        ),
+        Index(
+            "ix_decision_stage_outcomes_stage_disposition_evaluated_at",
+            "stage",
+            "disposition",
+            "evaluated_at",
+        ),
+    )
+
+    outcome_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="CASCADE"),
+        index=True,
+    )
+    stage: Mapped[str] = mapped_column(String(30), index=True)
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    reason_code_count: Mapped[int] = mapped_column(Integer)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    outcome_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 
