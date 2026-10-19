@@ -1,0 +1,278 @@
+{
+  "benchmark": {
+    "failure_reasons": [],
+    "fixture_checksum": "8250e6ed1c70c543f69f9b2debb0ad7e261992d3c258f63dc617b582db683a3a",
+    "observations": {
+      "requested_samples": "1000",
+      "runtime_budget_ms": "5",
+      "runtime_p50_ms": "0.06684509571641684",
+      "runtime_p95_ms": "0.07024290971457958",
+      "successful_samples": "1000",
+      "unique_output_fingerprints": "1"
+    },
+    "outcome_policy_checksum": "00e096743bd23b5f7feff6b6e6be913c85fff7ce17466510a85c4f2eb0a375f5",
+    "passed": true,
+    "publication_policy_checksum": "28ed18bae6b76d81640e95e3241206fb4f04a4156cb48d5332e1d56adc98eee8",
+    "report_checksum": "e54763eeadeaca2a25971c11cc18f5eb769cec856c5262ca9674c0a89ecf5bdc",
+    "report_commit_sha": "65fd12a9a2f57f8ef5bcbdaa8fc41f532efba4ea",
+    "report_environment_label": "macbook-pro-reference",
+    "report_generated_at": "2026-10-19T16:54:31.558284Z"
+  },
+  "branch": "feature/v0.3-market-intelligence",
+  "ci": {
+    "conclusion": "success",
+    "head_sha": "65fd12a9a2f57f8ef5bcbdaa8fc41f532efba4ea",
+    "run_url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/39287840342"
+  },
+  "commit_sha": "65fd12a9a2f57f8ef5bcbdaa8fc41f532efba4ea",
+  "database_name": "trd_bot_test",
+  "environment_label": "macbook-pro-reference",
+  "failed_gates": [],
+  "gates": [
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_release_security_boundary.py",
+            "tests/test_phase_three_acceptance.py",
+            "tests/test_phase_four_acceptance.py",
+            "-q"
+          ],
+          "duration_ms": 5007,
+          "exit_code": 0,
+          "label": "Freeze contract tests"
+        }
+      ],
+      "gate_id": "repository_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_benchmark.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_contracts.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_inbox.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_jobs.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_outcomes.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_persistence.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_publication.py",
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/tests/test_alert_simulations.py",
+            "-q"
+          ],
+          "duration_ms": 13693,
+          "exit_code": 0,
+          "label": "Phase 4 alert tests"
+        }
+      ],
+      "gate_id": "alert_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "format",
+            "--check",
+            "."
+          ],
+          "duration_ms": 74,
+          "exit_code": 0,
+          "label": "Backend format"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "check",
+            "."
+          ],
+          "duration_ms": 87,
+          "exit_code": 0,
+          "label": "Backend lint"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "mypy"
+          ],
+          "duration_ms": 1029,
+          "exit_code": 0,
+          "label": "Backend typing"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "not integration"
+          ],
+          "duration_ms": 132926,
+          "exit_code": 0,
+          "label": "Backend tests"
+        }
+      ],
+      "gate_id": "backend",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 2620,
+          "exit_code": 0,
+          "label": "Alembic upgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "downgrade",
+            "base"
+          ],
+          "duration_ms": 3510,
+          "exit_code": 0,
+          "label": "Alembic downgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 3598,
+          "exit_code": 0,
+          "label": "Alembic rebuild"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "check"
+          ],
+          "duration_ms": 2616,
+          "exit_code": 0,
+          "label": "Alembic drift"
+        }
+      ],
+      "gate_id": "migration_cycle",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_alert_persistence.py",
+            "tests/test_alert_jobs.py",
+            "tests/test_alert_inbox.py",
+            "tests/test_alert_publication.py",
+            "tests/test_alert_simulations.py",
+            "tests/test_alert_outcomes.py",
+            "-q"
+          ],
+          "duration_ms": 15471,
+          "exit_code": 0,
+          "label": "Alert PostgreSQL integration"
+        }
+      ],
+      "gate_id": "postgresql_resilience",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "pnpm",
+            "format:check"
+          ],
+          "duration_ms": 6559,
+          "exit_code": 0,
+          "label": "Frontend format"
+        },
+        {
+          "command": [
+            "pnpm",
+            "lint"
+          ],
+          "duration_ms": 13023,
+          "exit_code": 0,
+          "label": "Frontend lint"
+        },
+        {
+          "command": [
+            "pnpm",
+            "typecheck"
+          ],
+          "duration_ms": 12485,
+          "exit_code": 0,
+          "label": "Frontend typecheck"
+        },
+        {
+          "command": [
+            "pnpm",
+            "test",
+            "--",
+            "--run"
+          ],
+          "duration_ms": 62847,
+          "exit_code": 0,
+          "label": "Frontend tests"
+        },
+        {
+          "command": [
+            "pnpm",
+            "build"
+          ],
+          "duration_ms": 15805,
+          "exit_code": 0,
+          "label": "Frontend build"
+        }
+      ],
+      "gate_id": "frontend",
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-10-19T17:07:45.158884Z",
+  "manual": {
+    "alert_center_and_actions": "pass",
+    "monitoring_and_audit_lineage": "pass",
+    "no_live_trading_security_inventory": "pass",
+    "paper_shadow_outcome_journal": "pass",
+    "quiet_hours_expiry_and_deduplication": "pass",
+    "worker_restart_and_reclaim": "pass"
+  },
+  "prior_freeze": {
+    "phase_three_commit_sha": "0e8f978a8fefbfa9111aad2ca30689a9fafd8c34",
+    "phase_three_ready": true,
+    "phase_three_record_checksum": "5047e85bc5bce9104295c21a5c5d01f16791d59beb45dc5388af01ddb5ca8f4d"
+  },
+  "ready_to_freeze_phase_four": true,
+  "schema_version": "phase-four-acceptance-record-v1",
+  "scope": "crypto-spot-public-read-only-offline-alerts",
+  "worktree_clean_at_start": true
+}
