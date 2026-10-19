@@ -17,6 +17,14 @@ from trd_bot.decision_intelligence.contracts import (
     build_decision_policy_id,
     build_decision_source_assessment_checksum,
 )
+from trd_bot.decision_intelligence.evaluation import (
+    StrategyContextCompatibilityPolicyV1,
+    StrategyContextCompatibilityRule,
+    StrategyEvaluationIntegrityError,
+    StrategyEvaluationRecord,
+    evaluate_strategy_intent,
+    strategy_context_compatibility_policy_v1,
+)
 
 __all__ = [
     "DecisionDatasetReference",
@@ -32,8 +40,14 @@ __all__ = [
     "DecisionStrategyParameterValue",
     "DecisionStrategyReference",
     "MarketContextDecisionReference",
+    "StrategyContextCompatibilityPolicyV1",
+    "StrategyContextCompatibilityRule",
+    "StrategyEvaluationIntegrityError",
+    "StrategyEvaluationRecord",
     "build_decision_evaluation_id",
     "build_decision_evaluation_idempotency_key",
     "build_decision_policy_id",
     "build_decision_source_assessment_checksum",
+    "evaluate_strategy_intent",
+    "strategy_context_compatibility_policy_v1",
 ]

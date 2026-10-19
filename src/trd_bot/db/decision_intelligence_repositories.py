@@ -6,6 +6,7 @@ from trd_bot.db.models import (
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
+    DecisionStrategyEvaluationRow,
     MarketRegimeAssessmentRow,
 )
 from trd_bot.decision_intelligence import (
@@ -17,6 +18,7 @@ from trd_bot.decision_intelligence import (
     DecisionStage,
     DecisionStageOutcome,
     MarketContextDecisionReference,
+    StrategyEvaluationRecord,
     build_decision_evaluation_idempotency_key,
 )
 from trd_bot.market_context import MarketContextProductView, MarketRegimeAssessment
@@ -252,6 +254,57 @@ class SqlAlchemyDecisionIntelligenceStore:
         outcomes = [self._outcome_from_row(row) for row in rows]
         order = {stage: index for index, stage in enumerate(_STAGE_ORDER)}
         return tuple(sorted(outcomes, key=lambda item: order[item.stage]))
+
+    def stage_strategy_evaluation(
+        self,
+        record: StrategyEvaluationRecord,
+    ) -> tuple[StrategyEvaluationRecord, bool]:
+        existing = self.get_strategy_evaluation(record.evaluation_id)
+        if existing is not None:
+            if existing != record:
+                raise ValueError("decision strategy evaluation exists with different content")
+            return existing, False
+
+        intent = self.get_evaluation_intent(record.evaluation_id)
+        if intent is None:
+            raise ValueError("decision strategy evaluation intent does not exist")
+        outcome = self.get_stage_outcome(
+            record.evaluation_id,
+            stage=DecisionStage.STRATEGY_EVALUATION,
+        )
+        if outcome is None:
+            raise ValueError("decision strategy evaluation outcome does not exist")
+        if outcome != record.outcome:
+            raise ValueError("decision strategy evaluation outcome is inconsistent")
+
+        self._session.add(
+            DecisionStrategyEvaluationRow(
+                evaluation_id=record.evaluation_id,
+                outcome_id=record.outcome.outcome_id,
+                schema_version=record.schema_version,
+                compatibility_policy_version=record.compatibility_policy_version,
+                compatibility_policy_checksum=record.compatibility_policy_checksum,
+                disposition=record.outcome.disposition.value,
+                signal_count=record.signal_count,
+                latest_signal_id=record.latest_signal_id,
+                evaluated_at=record.outcome.evaluated_at,
+                offline_only=record.offline_only,
+                external_order_submission_allowed=(record.external_order_submission_allowed),
+                record_checksum=record.record_checksum,
+                payload_json=record.model_dump_json(),
+            )
+        )
+        self._session.flush()
+        return record, True
+
+    def get_strategy_evaluation(
+        self,
+        evaluation_id: str,
+    ) -> StrategyEvaluationRecord | None:
+        row = self._session.get(DecisionStrategyEvaluationRow, evaluation_id)
+        if row is None:
+            return None
+        return StrategyEvaluationRecord.model_validate_json(row.payload_json)
 
     def _validate_policy_reference(self, intent: DecisionEvaluationIntent) -> None:
         policy = self.get_policy_definition(

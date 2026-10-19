@@ -34,6 +34,9 @@ from trd_bot.db.dataset_file_stage_repositories import (
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
+from trd_bot.db.decision_strategy_evaluation import (
+    SqlAlchemyContextAwareStrategyEvaluator,
+)
 from trd_bot.db.experiment_execution_enqueues import (
     SqlAlchemyExperimentExecutionEnqueuer,
 )
@@ -103,6 +106,7 @@ from trd_bot.db.models import (
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
+    DecisionStrategyEvaluationRow,
     ExperimentExecutionRow,
     MarketContextFeatureSnapshotRow,
     MarketContextInputManifestRow,
@@ -193,6 +197,7 @@ __all__ = [
     "DecisionEvaluationIntentRow",
     "DecisionPolicyDefinitionRow",
     "DecisionStageOutcomeRow",
+    "DecisionStrategyEvaluationRow",
     "ExperimentExecutionRow",
     "MarketContextFeatureSnapshotRow",
     "MarketContextInputManifestRow",
@@ -238,6 +243,7 @@ __all__ = [
     "SqlAlchemyCandidateJournalRepository",
     "SqlAlchemyCandidateProjectionRebuilder",
     "SqlAlchemyCandidateProjectionRepository",
+    "SqlAlchemyContextAwareStrategyEvaluator",
     "SqlAlchemyDatasetFileImportEnqueuer",
     "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",

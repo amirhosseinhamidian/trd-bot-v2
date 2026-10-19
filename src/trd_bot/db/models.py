@@ -1679,7 +1679,7 @@ class DecisionPolicyDefinitionRow(DatabaseBase):
         CheckConstraint("offline_only", name="offline_only_required"),
         CheckConstraint(
             "NOT external_order_submission_allowed",
-            name="external_order_submission_forbidden",
+            name="external_order_forbidden",
         ),
         CheckConstraint("length(definition_checksum) = 64", name="checksum_length"),
         UniqueConstraint(
@@ -1732,7 +1732,7 @@ class DecisionEvaluationIntentRow(DatabaseBase):
         CheckConstraint("offline_only", name="offline_only_required"),
         CheckConstraint(
             "NOT external_order_submission_allowed",
-            name="external_order_submission_forbidden",
+            name="external_order_forbidden",
         ),
         CheckConstraint("length(dataset_reference_checksum) = 64", name="dataset_checksum_length"),
         CheckConstraint(
@@ -1857,6 +1857,67 @@ class DecisionStageOutcomeRow(DatabaseBase):
     offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
     external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
     outcome_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class DecisionStrategyEvaluationRow(DatabaseBase):
+    """Immutable context-aware strategy signals and admission evidence."""
+
+    __tablename__ = "decision_strategy_evaluations"
+
+    __table_args__ = (
+        CheckConstraint(
+            "disposition IN ('accepted', 'rejected', 'deferred', 'unavailable')",
+            name="disposition_supported",
+        ),
+        CheckConstraint("signal_count >= 0", name="signal_count_nonnegative"),
+        CheckConstraint(
+            "(disposition = 'accepted' AND signal_count > 0 AND latest_signal_id IS NOT NULL) "
+            "OR (disposition != 'accepted' AND signal_count = 0 "
+            "AND latest_signal_id IS NULL)",
+            name="signals_consistent",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_forbidden",
+        ),
+        CheckConstraint(
+            "length(compatibility_policy_checksum) = 64",
+            name="policy_checksum_length",
+        ),
+        CheckConstraint("length(record_checksum) = 64", name="record_checksum_length"),
+        Index(
+            "ix_decision_strategy_evaluations_disposition_evaluated_at",
+            "disposition",
+            "evaluated_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    outcome_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_stage_outcomes.outcome_id", ondelete="CASCADE"),
+        unique=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    compatibility_policy_version: Mapped[str] = mapped_column(String(50))
+    compatibility_policy_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    signal_count: Mapped[int] = mapped_column(Integer)
+    latest_signal_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
     payload_json: Mapped[str] = mapped_column(Text)
 
 

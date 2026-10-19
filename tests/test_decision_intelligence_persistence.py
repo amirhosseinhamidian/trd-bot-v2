@@ -16,9 +16,11 @@ from trd_bot.db import (
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
+    DecisionStrategyEvaluationRow,
     MarketContextFeatureSnapshotRow,
     MarketContextInputManifestRow,
     MarketRegimeAssessmentRow,
+    SqlAlchemyContextAwareStrategyEvaluator,
     SqlAlchemyDatasetRepository,
     SqlAlchemyDecisionIntelligenceStore,
     create_database_engine,
@@ -542,6 +544,102 @@ def test_postgresql_decision_evidence_round_trip() -> None:
             assert store.list_stage_outcomes(intent.evaluation_id) == (outcome,)
     finally:
         with factory.begin() as session:
+            session.execute(
+                delete(DecisionStageOutcomeRow).where(
+                    DecisionStageOutcomeRow.evaluation_id == intent.evaluation_id
+                )
+            )
+            session.execute(
+                delete(DecisionEvaluationIntentRow).where(
+                    DecisionEvaluationIntentRow.evaluation_id == intent.evaluation_id
+                )
+            )
+            session.execute(
+                delete(DecisionPolicyDefinitionRow).where(
+                    DecisionPolicyDefinitionRow.policy_id == input_policy.policy_id
+                )
+            )
+            session.execute(
+                delete(MarketRegimeAssessmentRow).where(
+                    MarketRegimeAssessmentRow.assessment_id == input_assessment.assessment_id
+                )
+            )
+            session.execute(
+                delete(MarketContextFeatureSnapshotRow).where(
+                    MarketContextFeatureSnapshotRow.snapshot_id
+                    == input_assessment.feature_snapshot_id
+                )
+            )
+            session.execute(
+                delete(MarketContextInputManifestRow).where(
+                    MarketContextInputManifestRow.manifest_id == input_assessment.input_manifest_id
+                )
+            )
+            session.execute(
+                delete(DatasetSnapshotRow).where(
+                    DatasetSnapshotRow.dataset_id == input_dataset.dataset_id
+                )
+            )
+        engine.dispose()
+
+
+@pytest.mark.integration
+def test_postgresql_context_aware_strategy_evaluation_round_trip() -> None:
+    database_url = Settings().test_database_url
+    if database_url is None:
+        pytest.skip("TRD_BOT_TEST_DATABASE_URL is not configured")
+    parsed_url = make_url(database_url)
+    if parsed_url.get_backend_name() != "postgresql":
+        raise AssertionError("decision integration tests require PostgreSQL")
+    if parsed_url.database != "trd_bot_test":
+        raise AssertionError("decision integration tests may run only against trd_bot_test")
+
+    config = Config(str(PROJECT_ROOT / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", database_url)
+    command.upgrade(config, "head")
+
+    engine = create_database_engine(database_url)
+    factory = create_session_factory(engine)
+    input_dataset = dataset()
+    input_assessment = assessment()
+    input_policy = policy()
+    intent = evaluation_intent(
+        input_dataset=input_dataset,
+        input_assessment=input_assessment,
+        input_policy=input_policy,
+    )
+
+    try:
+        with factory.begin() as session:
+            SqlAlchemyDatasetRepository(session).stage(input_dataset)
+            seed_assessment_dependencies(session, input_assessment)
+            seed_assessment(session, input_assessment)
+            store = SqlAlchemyDecisionIntelligenceStore(session)
+            store.stage_policy_definition(input_policy)
+            store.stage_evaluation_intent(intent)
+
+            evaluator = SqlAlchemyContextAwareStrategyEvaluator(session)
+            record, created = evaluator.evaluate(intent.evaluation_id)
+            repeated, repeated_created = evaluator.evaluate(intent.evaluation_id)
+
+            assert created is True
+            assert repeated_created is False
+            assert repeated == record
+            assert record.outcome.disposition is DecisionDisposition.DEFERRED
+            assert record.outcome.reason_codes == (DecisionReasonCode.SIGNAL_NEUTRAL,)
+
+        with factory() as session:
+            stored = SqlAlchemyDecisionIntelligenceStore(session).get_strategy_evaluation(
+                intent.evaluation_id
+            )
+            assert stored == record
+    finally:
+        with factory.begin() as session:
+            session.execute(
+                delete(DecisionStrategyEvaluationRow).where(
+                    DecisionStrategyEvaluationRow.evaluation_id == intent.evaluation_id
+                )
+            )
             session.execute(
                 delete(DecisionStageOutcomeRow).where(
                     DecisionStageOutcomeRow.evaluation_id == intent.evaluation_id
