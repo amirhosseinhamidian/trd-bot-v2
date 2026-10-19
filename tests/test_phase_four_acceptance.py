@@ -1,10 +1,11 @@
+import itertools
 import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-
 from scripts.verify_v0_3_phase_four import _specs
+
 from trd_bot.alerts import AlertPipelineBenchmarkReport, run_alert_pipeline_benchmark
 from trd_bot.phase_four_acceptance import (
     PHASE_FOUR_GATE_IDS,
@@ -159,7 +160,7 @@ def test_postgresql_resilience_gate_selects_the_alert_test_suite() -> None:
 
     assert len(commands) == 1
     label, command, _ = commands[0]
-    adjacent_arguments = tuple(zip(command, command[1:], strict=False))
+    adjacent_arguments = tuple(itertools.pairwise(command))
 
     assert label == "Alert PostgreSQL integration"
     assert ("-m", "integration") not in adjacent_arguments
