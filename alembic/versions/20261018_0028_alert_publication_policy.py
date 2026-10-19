@@ -43,7 +43,7 @@ def upgrade() -> None:
             name=op.f("ck_alert_publication_policies_quiet_hours_end_minute_range"),
         ),
         sa.CheckConstraint(
-            "quiet_hours_enabled = 0 OR quiet_hours_start_minute != quiet_hours_end_minute",
+            "NOT quiet_hours_enabled OR quiet_hours_start_minute != quiet_hours_end_minute",
             name=op.f("ck_alert_publication_policies_quiet_hours_window_nonempty"),
         ),
         sa.CheckConstraint(
@@ -90,8 +90,8 @@ def upgrade() -> None:
             name=op.f("ck_alert_publication_decisions_reason_count_nonnegative"),
         ),
         sa.CheckConstraint(
-            "(allowed = 1 AND suppression_reason_count = 0) OR "
-            "(allowed = 0 AND suppression_reason_count >= 1)",
+            "(allowed AND suppression_reason_count = 0) OR "
+            "(NOT allowed AND suppression_reason_count >= 1)",
             name=op.f("ck_alert_publication_decisions_outcome_consistent"),
         ),
         sa.CheckConstraint(

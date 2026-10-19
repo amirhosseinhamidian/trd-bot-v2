@@ -1441,7 +1441,7 @@ class AlertPublicationPolicyRow(DatabaseBase):
             name="quiet_hours_end_minute_range",
         ),
         CheckConstraint(
-            "quiet_hours_enabled = 0 OR quiet_hours_start_minute != quiet_hours_end_minute",
+            "NOT quiet_hours_enabled OR quiet_hours_start_minute != quiet_hours_end_minute",
             name="quiet_hours_window_nonempty",
         ),
         CheckConstraint("length(policy_checksum) = 64", name="checksum_length"),
@@ -1470,8 +1470,8 @@ class AlertPublicationDecisionRow(DatabaseBase):
         CheckConstraint("policy_version >= 0", name="policy_version_nonnegative"),
         CheckConstraint("suppression_reason_count >= 0", name="reason_count_nonnegative"),
         CheckConstraint(
-            "(allowed = 1 AND suppression_reason_count = 0) OR "
-            "(allowed = 0 AND suppression_reason_count >= 1)",
+            "(allowed AND suppression_reason_count = 0) OR "
+            "(NOT allowed AND suppression_reason_count >= 1)",
             name="outcome_consistent",
         ),
         CheckConstraint("length(policy_checksum) = 64", name="policy_checksum_length"),

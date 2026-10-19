@@ -1,12 +1,16 @@
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlalchemy import func, select
+from sqlalchemy import Table, func, select
+from sqlalchemy.dialects import postgresql, sqlite
+from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.schema import CreateTable
 
 from tests.test_alert_persistence import (
     AS_OF,
@@ -93,6 +97,26 @@ def policy(**overrides: object) -> AlertPublicationPolicy:
     }
     values.update(overrides)
     return AlertPublicationPolicy.build(**values)  # type: ignore[arg-type]
+
+
+def test_publication_constraints_use_cross_database_boolean_predicates() -> None:
+    dialects: tuple[Dialect, ...] = (
+        postgresql.dialect(),  # type: ignore[no-untyped-call]
+        sqlite.dialect(),
+    )
+    policy_table = cast(Table, AlertPublicationPolicyRow.__table__)
+    decision_table = cast(Table, AlertPublicationDecisionRow.__table__)
+
+    for dialect in dialects:
+        policy_ddl = str(CreateTable(policy_table).compile(dialect=dialect))
+        decision_ddl = str(CreateTable(decision_table).compile(dialect=dialect))
+
+        assert "NOT quiet_hours_enabled" in policy_ddl
+        assert "quiet_hours_enabled = 0" not in policy_ddl
+        assert "allowed AND suppression_reason_count = 0" in decision_ddl
+        assert "NOT allowed AND suppression_reason_count >= 1" in decision_ddl
+        assert "allowed = 1" not in decision_ddl
+        assert "allowed = 0" not in decision_ddl
 
 
 def seed_published_alert(factory: sessionmaker[Session]) -> str:
