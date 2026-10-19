@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 
+from scripts.verify_v0_3_phase_four import _specs
 from trd_bot.alerts import AlertPipelineBenchmarkReport, run_alert_pipeline_benchmark
 from trd_bot.phase_four_acceptance import (
     PHASE_FOUR_GATE_IDS,
@@ -150,3 +151,23 @@ def test_command_evidence_rejects_database_credentials() -> None:
             exit_code=0,
             duration_ms=1,
         )
+
+
+def test_postgresql_resilience_gate_selects_the_alert_test_suite() -> None:
+    specs_by_gate = dict(_specs())
+    commands = specs_by_gate["postgresql_resilience"]
+
+    assert len(commands) == 1
+    label, command, _ = commands[0]
+    adjacent_arguments = tuple(zip(command, command[1:], strict=False))
+
+    assert label == "Alert PostgreSQL integration"
+    assert ("-m", "integration") not in adjacent_arguments
+    assert {
+        "tests/test_alert_persistence.py",
+        "tests/test_alert_jobs.py",
+        "tests/test_alert_inbox.py",
+        "tests/test_alert_publication.py",
+        "tests/test_alert_simulations.py",
+        "tests/test_alert_outcomes.py",
+    } <= set(command)
