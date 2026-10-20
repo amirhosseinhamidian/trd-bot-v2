@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from trd_bot.db.models import (
     DatasetSnapshotRow,
+    DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
@@ -10,6 +11,7 @@ from trd_bot.db.models import (
     MarketRegimeAssessmentRow,
 )
 from trd_bot.decision_intelligence import (
+    DecisionCandidateRankingRecord,
     DecisionDatasetReference,
     DecisionDisposition,
     DecisionEvaluationIntent,
@@ -305,6 +307,70 @@ class SqlAlchemyDecisionIntelligenceStore:
         if row is None:
             return None
         return StrategyEvaluationRecord.model_validate_json(row.payload_json)
+
+    def stage_candidate_ranking(
+        self,
+        record: DecisionCandidateRankingRecord,
+    ) -> tuple[DecisionCandidateRankingRecord, bool]:
+        existing = self.get_candidate_ranking(record.evaluation_id)
+        if existing is not None:
+            if existing != record:
+                raise ValueError("decision candidate ranking exists with different content")
+            return existing, False
+
+        intent = self.get_evaluation_intent(record.evaluation_id)
+        if intent is None:
+            raise ValueError("decision candidate ranking intent does not exist")
+        strategy_evaluation = self.get_strategy_evaluation(record.evaluation_id)
+        if strategy_evaluation is None:
+            raise ValueError("decision candidate ranking requires strategy evidence")
+        if strategy_evaluation.outcome.disposition is not DecisionDisposition.ACCEPTED:
+            raise ValueError("decision candidate ranking requires accepted strategy evidence")
+        outcome = self.get_stage_outcome(
+            record.evaluation_id,
+            stage=DecisionStage.CANDIDATE_RANKING,
+        )
+        if outcome is None:
+            raise ValueError("decision candidate ranking outcome does not exist")
+        if outcome != record.outcome:
+            raise ValueError("decision candidate ranking outcome is inconsistent")
+        source_signal_ids = {item.signal_id for item in strategy_evaluation.signals}
+        candidate_signal_ids = {item.candidate.signal_id for item in record.entries}
+        if not candidate_signal_ids.issubset(source_signal_ids):
+            raise ValueError("decision candidate ranking contains an unknown source signal")
+        if record.source_signal_count != strategy_evaluation.signal_count:
+            raise ValueError("decision candidate ranking source signal count is inconsistent")
+
+        self._session.add(
+            DecisionCandidateRankingRow(
+                evaluation_id=record.evaluation_id,
+                outcome_id=record.outcome.outcome_id,
+                schema_version=record.schema_version,
+                policy_version=record.policy_version,
+                policy_checksum=record.policy_checksum,
+                disposition=record.outcome.disposition.value,
+                source_signal_count=record.source_signal_count,
+                candidate_count=record.candidate_count,
+                excluded_signal_count=record.excluded_signal_count,
+                top_candidate_id=record.top_candidate_id,
+                ranked_at=record.ranked_at,
+                offline_only=record.offline_only,
+                external_order_submission_allowed=(record.external_order_submission_allowed),
+                record_checksum=record.record_checksum,
+                payload_json=record.model_dump_json(),
+            )
+        )
+        self._session.flush()
+        return record, True
+
+    def get_candidate_ranking(
+        self,
+        evaluation_id: str,
+    ) -> DecisionCandidateRankingRecord | None:
+        row = self._session.get(DecisionCandidateRankingRow, evaluation_id)
+        if row is None:
+            return None
+        return DecisionCandidateRankingRecord.model_validate_json(row.payload_json)
 
     def _validate_policy_reference(self, intent: DecisionEvaluationIntent) -> None:
         policy = self.get_policy_definition(

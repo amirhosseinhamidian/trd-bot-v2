@@ -31,6 +31,7 @@ from trd_bot.db.dataset_file_stage_repositories import (
     SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetFileStageRepository,
 )
+from trd_bot.db.decision_candidate_ranking import SqlAlchemyDecisionCandidateRanker
 from trd_bot.db.decision_evaluation_jobs import (
     SqlAlchemyDecisionEvaluationEnqueuer,
     SqlAlchemyDecisionEvaluationRunner,
@@ -107,6 +108,7 @@ from trd_bot.db.models import (
     CandidateProjectionRow,
     DatasetFileStageRow,
     DatasetSnapshotRow,
+    DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
@@ -198,6 +200,7 @@ __all__ = [
     "DatabaseBase",
     "DatasetFileStageRow",
     "DatasetSnapshotRow",
+    "DecisionCandidateRankingRow",
     "DecisionEvaluationIntentRow",
     "DecisionPolicyDefinitionRow",
     "DecisionStageOutcomeRow",
@@ -251,6 +254,7 @@ __all__ = [
     "SqlAlchemyDatasetFileImportEnqueuer",
     "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",
+    "SqlAlchemyDecisionCandidateRanker",
     "SqlAlchemyDecisionEvaluationEnqueuer",
     "SqlAlchemyDecisionEvaluationRunner",
     "SqlAlchemyDecisionIntelligenceStore",

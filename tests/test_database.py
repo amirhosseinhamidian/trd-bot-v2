@@ -82,6 +82,7 @@ def test_database_metadata_contains_research_tables() -> None:
         "dataset_file_stages",
         "dataset_snapshots",
         "decision_evaluation_intents",
+        "decision_candidate_rankings",
         "decision_policy_definitions",
         "decision_stage_outcomes",
         "decision_strategy_evaluations",
@@ -194,6 +195,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "candidate_projections",
             "dataset_snapshots",
             "decision_evaluation_intents",
+            "decision_candidate_rankings",
             "decision_policy_definitions",
             "decision_stage_outcomes",
             "decision_strategy_evaluations",
@@ -289,6 +291,7 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "simulated_positions" not in downgraded_tables
         assert "portfolio_timeline_events" not in downgraded_tables
         assert "decision_evaluation_intents" not in downgraded_tables
+        assert "decision_candidate_rankings" not in downgraded_tables
         assert "decision_policy_definitions" not in downgraded_tables
         assert "decision_stage_outcomes" not in downgraded_tables
         assert "decision_strategy_evaluations" not in downgraded_tables

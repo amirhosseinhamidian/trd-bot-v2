@@ -159,6 +159,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "candidate_projections",
             "dataset_file_stages",
             "dataset_snapshots",
+            "decision_candidate_rankings",
             "decision_evaluation_intents",
             "decision_policy_definitions",
             "decision_stage_outcomes",

@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from trd_bot.db.background_job_repositories import SqlAlchemyBackgroundJobRepository
+from trd_bot.db.decision_candidate_ranking import SqlAlchemyDecisionCandidateRanker
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
@@ -12,6 +13,8 @@ from trd_bot.db.decision_strategy_evaluation import (
     SqlAlchemyContextAwareStrategyEvaluator,
 )
 from trd_bot.decision_intelligence import (
+    DecisionCandidateIntegrityError,
+    DecisionDisposition,
     DecisionEvaluationEnqueueResult,
     DecisionEvaluationIntentNotFoundError,
     DecisionEvaluationJobCancelled,
@@ -89,6 +92,10 @@ class SqlAlchemyDecisionEvaluationRunner:
                 )
                 if cancellation_requested():
                     raise DecisionEvaluationJobCancelled
+                if record.outcome.disposition is DecisionDisposition.ACCEPTED:
+                    SqlAlchemyDecisionCandidateRanker(session).rank(payload.evaluation_id)
+                    if cancellation_requested():
+                        raise DecisionEvaluationJobCancelled
                 return record
         except (
             DecisionEvaluationJobCancelled,
@@ -96,7 +103,7 @@ class SqlAlchemyDecisionEvaluationRunner:
             SQLAlchemyError,
         ):
             raise
-        except StrategyEvaluationIntegrityError as error:
+        except (DecisionCandidateIntegrityError, StrategyEvaluationIntegrityError) as error:
             raise DecisionEvaluationJobError(
                 code="decision_evaluation_integrity_error",
                 message="Decision evaluation failed persisted-lineage validation.",

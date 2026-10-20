@@ -1,3 +1,16 @@
+from trd_bot.decision_intelligence.candidates import (
+    DecisionCandidate,
+    DecisionCandidateAction,
+    DecisionCandidateIntegrityError,
+    DecisionCandidatePolicyV1,
+    DecisionCandidateRankingEntry,
+    DecisionCandidateRankingRecord,
+    DecisionCandidateScoreComponent,
+    DecisionCandidateScoreComponentName,
+    DecisionCandidateTradePlan,
+    build_decision_candidate_ranking,
+    decision_candidate_policy_v1,
+)
 from trd_bot.decision_intelligence.contracts import (
     DecisionDatasetReference,
     DecisionDisposition,
@@ -38,6 +51,15 @@ from trd_bot.decision_intelligence.jobs import (
 )
 
 __all__ = [
+    "DecisionCandidate",
+    "DecisionCandidateAction",
+    "DecisionCandidateIntegrityError",
+    "DecisionCandidatePolicyV1",
+    "DecisionCandidateRankingEntry",
+    "DecisionCandidateRankingRecord",
+    "DecisionCandidateScoreComponent",
+    "DecisionCandidateScoreComponentName",
+    "DecisionCandidateTradePlan",
     "DecisionDatasetReference",
     "DecisionDisposition",
     "DecisionEvaluationEnqueueResult",
@@ -60,11 +82,13 @@ __all__ = [
     "StrategyContextCompatibilityRule",
     "StrategyEvaluationIntegrityError",
     "StrategyEvaluationRecord",
+    "build_decision_candidate_ranking",
     "build_decision_evaluation_id",
     "build_decision_evaluation_idempotency_key",
     "build_decision_evaluation_job",
     "build_decision_policy_id",
     "build_decision_source_assessment_checksum",
+    "decision_candidate_policy_v1",
     "evaluate_strategy_intent",
     "strategy_context_compatibility_policy_v1",
     "validate_decision_evaluation_enqueue",

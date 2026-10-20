@@ -26,6 +26,7 @@ from trd_bot.db import (
     BackgroundJobRow,
     DatabaseBase,
     DatasetSnapshotRow,
+    DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
     DecisionStageOutcomeRow,
@@ -42,6 +43,7 @@ from trd_bot.db import (
     create_session_factory,
 )
 from trd_bot.decision_intelligence import (
+    DecisionDisposition,
     DecisionEvaluationEnqueueResult,
     DecisionEvaluationIntent,
     DecisionEvaluationIntentNotFoundError,
@@ -185,8 +187,9 @@ def test_runner_commits_evidence_atomically_and_idempotently(
     assert repeated == first
     assert first.evaluation_id == evaluation_intent.evaluation_id
     with factory() as session:
-        assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 2
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
 
 
 def test_runner_rolls_back_evidence_on_cooperative_cancellation(
@@ -199,7 +202,7 @@ def test_runner_rolls_back_evidence_on_cooperative_cancellation(
     def cancelled() -> bool:
         nonlocal checks
         checks += 1
-        return checks == 3
+        return checks == 4
 
     with pytest.raises(DecisionEvaluationJobCancelled):
         SqlAlchemyDecisionEvaluationRunner(factory).run(
@@ -210,6 +213,7 @@ def test_runner_rolls_back_evidence_on_cooperative_cancellation(
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 0
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 0
+        assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 0
 
 
 def test_worker_retries_transient_failure_then_succeeds_without_duplicate_evidence(
@@ -258,6 +262,7 @@ def test_worker_retries_transient_failure_then_succeeds_without_duplicate_eviden
     assert completed.result_reference == evaluation_intent.evaluation_id
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
 
 
 def test_expired_lease_reclaim_reuses_committed_evidence(
@@ -293,6 +298,7 @@ def test_expired_lease_reclaim_reuses_committed_evidence(
     assert committed.evaluation_id == completed.result_reference
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
 
 
 def test_decision_job_is_visible_in_safe_operational_monitoring(
@@ -376,16 +382,23 @@ def test_postgresql_decision_evaluation_worker_round_trip(
         assert completed.status is BackgroundJobStatus.SUCCEEDED
         assert completed.result_reference == evaluation_intent.evaluation_id
         with database_factory() as session:
-            stored = SqlAlchemyDecisionIntelligenceStore(session).get_strategy_evaluation(
-                evaluation_intent.evaluation_id
-            )
+            store = SqlAlchemyDecisionIntelligenceStore(session)
+            stored = store.get_strategy_evaluation(evaluation_intent.evaluation_id)
             assert stored is not None
             assert stored.offline_only is True
             assert stored.external_order_submission_allowed is False
+            ranking = store.get_candidate_ranking(evaluation_intent.evaluation_id)
+            assert ranking is not None
+            assert ranking.outcome.disposition is DecisionDisposition.ACCEPTED
     finally:
         with database_factory.begin() as session:
             if job_id is not None:
                 session.execute(delete(BackgroundJobRow).where(BackgroundJobRow.job_id == job_id))
+            session.execute(
+                delete(DecisionCandidateRankingRow).where(
+                    DecisionCandidateRankingRow.evaluation_id == evaluation_intent.evaluation_id
+                )
+            )
             session.execute(
                 delete(DecisionStrategyEvaluationRow).where(
                     DecisionStrategyEvaluationRow.evaluation_id == evaluation_intent.evaluation_id

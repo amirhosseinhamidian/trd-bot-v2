@@ -1921,6 +1921,73 @@ class DecisionStrategyEvaluationRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class DecisionCandidateRankingRow(DatabaseBase):
+    """Immutable candidate construction and deterministic ranking evidence."""
+
+    __tablename__ = "decision_candidate_rankings"
+
+    __table_args__ = (
+        CheckConstraint(
+            "disposition IN ('accepted', 'deferred')",
+            name="disposition_supported",
+        ),
+        CheckConstraint("source_signal_count > 0", name="source_count_positive"),
+        CheckConstraint("candidate_count >= 0", name="candidate_count_nonnegative"),
+        CheckConstraint("excluded_signal_count >= 0", name="excluded_count_nonnegative"),
+        CheckConstraint(
+            "candidate_count + excluded_signal_count = source_signal_count",
+            name="counts_consistent",
+        ),
+        CheckConstraint(
+            "(disposition = 'accepted' AND candidate_count > 0 "
+            "AND top_candidate_id IS NOT NULL) OR "
+            "(disposition = 'deferred' AND candidate_count = 0 "
+            "AND top_candidate_id IS NULL)",
+            name="ranking_consistent",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_forbidden",
+        ),
+        CheckConstraint("length(policy_checksum) = 64", name="policy_checksum_length"),
+        CheckConstraint("length(record_checksum) = 64", name="record_checksum_length"),
+        Index(
+            "ix_decision_candidate_rankings_disposition_ranked_at",
+            "disposition",
+            "ranked_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    outcome_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_stage_outcomes.outcome_id", ondelete="CASCADE"),
+        unique=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    policy_version: Mapped[str] = mapped_column(String(50))
+    policy_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    source_signal_count: Mapped[int] = mapped_column(Integer)
+    candidate_count: Mapped[int] = mapped_column(Integer)
+    excluded_signal_count: Mapped[int] = mapped_column(Integer)
+    top_candidate_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    ranked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 
