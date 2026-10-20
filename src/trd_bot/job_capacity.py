@@ -32,12 +32,20 @@ from trd_bot.db import (
 from trd_bot.db.market_data_connection_repositories import (
     SqlAlchemyMarketDataConnectionRepository,
 )
+from trd_bot.decision_intelligence import (
+    DecisionEvaluationIntent,
+    DecisionMode,
+    DecisionPolicyDefinition,
+    DecisionPolicyState,
+    evaluate_strategy_intent,
+)
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
 from trd_bot.jobs import BackgroundJobKind
 from trd_bot.market_context import (
     MarketContextAssessmentStatus,
     MarketContextEvaluationJobPayload,
     MarketContextEvidence,
+    MarketContextProductView,
     MarketRegimeAssessment,
     MarketTrendRegime,
     MarketVolatilityRegime,
@@ -102,6 +110,7 @@ from trd_bot.research.walk_forward_executions import (
     WalkForwardExecutionStatus,
 )
 from trd_bot.research.walk_forward_runs import InMemoryWalkForwardRunRegistry
+from trd_bot.strategies import build_default_strategy_registry
 
 BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION: Final = "background-job-workloads-v2"
 
@@ -627,6 +636,90 @@ def _alert_evaluation_workload() -> Callable[[], None]:
     return execute
 
 
+def _decision_evaluation_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
+    dataset = DatasetBuilder().build(
+        name="Capacity benchmark decision dataset",
+        candles=candles,
+        created_at=_EXECUTION_TIME,
+    )
+    as_of = dataset.end_time
+    requested_at = as_of + timedelta(minutes=2)
+    input_checksum = "e" * 64
+    assessment = MarketRegimeAssessment(
+        assessment_id=build_market_regime_assessment_id(
+            source=dataset.source,
+            pair=dataset.pair,
+            as_of=as_of,
+            input_checksum=input_checksum,
+            feature_set_version="market-context-features-v1",
+            algorithm_version="market-regime-v1",
+        ),
+        source=dataset.source,
+        pair=dataset.pair,
+        as_of=as_of,
+        input_manifest_id=f"market-context-input-{input_checksum[:16]}",
+        input_checksum=input_checksum,
+        feature_set_version="market-context-features-v1",
+        feature_set_checksum="f" * 64,
+        feature_snapshot_id="market-context-features-1111111111111111",
+        feature_snapshot_checksum="1" * 64,
+        algorithm_version="market-regime-v1",
+        status=MarketContextAssessmentStatus.READY,
+        trend=MarketTrendRegime.TRENDING_UP,
+        volatility=MarketVolatilityRegime.NORMAL,
+        confidence=Decimal("0.82"),
+        evidence=(
+            MarketContextEvidence(
+                feature_key="trend_slope_1h",
+                timeframe=Timeframe.HOUR_1,
+                value=Decimal("0.013"),
+                calculation_version="trend-slope-v1",
+                window_reference_checksums=("2" * 64,),
+            ),
+        ),
+        assessed_at=as_of + timedelta(minutes=1),
+        expires_at=as_of + timedelta(hours=1),
+    )
+    decision_policy = DecisionPolicyDefinition.build(
+        policy_key="capacity-context-aware-decision",
+        policy_version=1,
+        name="Capacity context-aware decision policy",
+        description="Measure deterministic offline decision evaluation capacity.",
+        state=DecisionPolicyState.ENABLED,
+        allowed_modes=tuple(DecisionMode),
+        created_at=as_of + timedelta(minutes=1),
+    )
+    registry = build_default_strategy_registry()
+    metadata = registry.get_metadata(name="sma-crossover", version="1.0.0")
+    if metadata is None:  # pragma: no cover - canonical registry invariant
+        raise RuntimeError("decision workload strategy metadata is unavailable")
+    evaluation_intent = DecisionEvaluationIntent.build(
+        mode=DecisionMode.SHADOW,
+        dataset=dataset,
+        strategy=metadata,
+        strategy_parameters={"fast_period": 9, "slow_period": 21},
+        market_context=MarketContextProductView.from_assessment(
+            assessment,
+            evaluated_at=requested_at,
+        ),
+        policy=decision_policy,
+        requested_at=requested_at,
+    )
+
+    def execute() -> None:
+        record = evaluate_strategy_intent(
+            intent=evaluation_intent,
+            dataset=dataset,
+            registry=registry,
+        )
+        if record.evaluation_id != evaluation_intent.evaluation_id:
+            raise RuntimeError("decision-evaluation workload produced inconsistent output")
+        if not record.offline_only or record.external_order_submission_allowed:
+            raise RuntimeError("decision-evaluation workload crossed its safety boundary")
+
+    return execute
+
+
 def _experiment_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]:
     dataset = DatasetBuilder().build(
         name="Capacity benchmark experiment dataset",
@@ -789,6 +882,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("rules", 1), ("assessments", 1)),
             execute=_alert_evaluation_workload(),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.DECISION_EVALUATION,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("candles", len(research_candles)), ("strategy_count", 1)),
+            execute=_decision_evaluation_workload(research_candles),
         ),
         BackgroundJobWorkload(
             kind=BackgroundJobKind.EXPERIMENT_EXECUTION,

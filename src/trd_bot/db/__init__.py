@@ -31,6 +31,10 @@ from trd_bot.db.dataset_file_stage_repositories import (
     SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetFileStageRepository,
 )
+from trd_bot.db.decision_evaluation_jobs import (
+    SqlAlchemyDecisionEvaluationEnqueuer,
+    SqlAlchemyDecisionEvaluationRunner,
+)
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
@@ -247,6 +251,8 @@ __all__ = [
     "SqlAlchemyDatasetFileImportEnqueuer",
     "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",
+    "SqlAlchemyDecisionEvaluationEnqueuer",
+    "SqlAlchemyDecisionEvaluationRunner",
     "SqlAlchemyDecisionIntelligenceStore",
     "SqlAlchemyExperimentExecutionEnqueuer",
     "SqlAlchemyExperimentExecutionRepository",

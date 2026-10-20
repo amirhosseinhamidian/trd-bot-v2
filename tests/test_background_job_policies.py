@@ -72,6 +72,7 @@ def test_builder_uses_the_kind_specific_retry_budget() -> None:
         BackgroundJobKind.MARKET_DATA_REPLAY: 3,
         BackgroundJobKind.MARKET_CONTEXT_EVALUATION: 3,
         BackgroundJobKind.ALERT_EVALUATION: 3,
+        BackgroundJobKind.DECISION_EVALUATION: 3,
         BackgroundJobKind.DATASET_FILE_IMPORT: 3,
         BackgroundJobKind.OPTIMIZATION_EXECUTION: 3,
     }
@@ -225,6 +226,10 @@ def test_worker_rejects_an_unsupported_payload_version_before_dispatch(
         (
             BackgroundJobKind.ALERT_EVALUATION,
             "invalid_alert_evaluation_job_payload",
+        ),
+        (
+            BackgroundJobKind.DECISION_EVALUATION,
+            "invalid_decision_evaluation_job_payload",
         ),
         (
             BackgroundJobKind.DATASET_FILE_IMPORT,

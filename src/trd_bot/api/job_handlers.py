@@ -20,6 +20,7 @@ from trd_bot.db import (
     SqlAlchemyAlertEvaluationRunner,
     SqlAlchemyDatasetFileStageRepository,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyDecisionEvaluationRunner,
     SqlAlchemyExperimentRegistry,
     SqlAlchemyHistoricalDatasetCommitter,
     SqlAlchemyMarketContextEvaluationRunner,
@@ -38,6 +39,11 @@ from trd_bot.db.market_data_replay import (
     MarketDataReplayError,
     MarketDataReplayRejectedError,
     SqlAlchemyMarketDataReplayRunner,
+)
+from trd_bot.decision_intelligence import (
+    DecisionEvaluationJobCancelled,
+    DecisionEvaluationJobError,
+    DecisionEvaluationJobPayload,
 )
 from trd_bot.jobs import (
     PRODUCTION_BACKGROUND_JOB_KINDS,
@@ -360,6 +366,34 @@ def run_alert_evaluation_job(
     return evaluation.evaluation_id
 
 
+def run_decision_evaluation_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str | None:
+    request = _validate_job_payload(
+        DecisionEvaluationJobPayload,
+        payload,
+        error_code="invalid_decision_evaluation_job_payload",
+        error_message="Decision evaluation job payload is invalid.",
+    )
+    context.heartbeat(10)
+    try:
+        record = SqlAlchemyDecisionEvaluationRunner(get_session_factory()).run(
+            request,
+            cancellation_requested=context.cancellation_requested,
+        )
+    except DecisionEvaluationJobCancelled:
+        return None
+    except DecisionEvaluationJobError as error:
+        raise BackgroundJobHandlerError(
+            error_code=error.code,
+            error_message=error.message,
+            retryable=error.retryable,
+        ) from error
+    context.heartbeat(95)
+    return record.evaluation_id
+
+
 def run_dataset_file_import_job(
     context: BackgroundJobContext,
     payload: Mapping[str, object],
@@ -456,6 +490,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.MARKET_DATA_REPLAY: run_market_data_replay_job,
             BackgroundJobKind.MARKET_CONTEXT_EVALUATION: run_market_context_evaluation_job,
             BackgroundJobKind.ALERT_EVALUATION: run_alert_evaluation_job,
+            BackgroundJobKind.DECISION_EVALUATION: run_decision_evaluation_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
         }
