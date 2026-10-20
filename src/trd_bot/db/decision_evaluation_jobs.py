@@ -9,6 +9,7 @@ from trd_bot.db.decision_candidate_ranking import SqlAlchemyDecisionCandidateRan
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
+from trd_bot.db.decision_risk_gate import SqlAlchemyDecisionRiskGate
 from trd_bot.db.decision_strategy_evaluation import (
     SqlAlchemyContextAwareStrategyEvaluator,
 )
@@ -20,6 +21,7 @@ from trd_bot.decision_intelligence import (
     DecisionEvaluationJobCancelled,
     DecisionEvaluationJobError,
     DecisionEvaluationJobPayload,
+    DecisionRiskIntegrityError,
     StrategyEvaluationIntegrityError,
     StrategyEvaluationRecord,
     build_decision_evaluation_job,
@@ -93,9 +95,15 @@ class SqlAlchemyDecisionEvaluationRunner:
                 if cancellation_requested():
                     raise DecisionEvaluationJobCancelled
                 if record.outcome.disposition is DecisionDisposition.ACCEPTED:
-                    SqlAlchemyDecisionCandidateRanker(session).rank(payload.evaluation_id)
+                    ranking, _ = SqlAlchemyDecisionCandidateRanker(session).rank(
+                        payload.evaluation_id
+                    )
                     if cancellation_requested():
                         raise DecisionEvaluationJobCancelled
+                    if ranking.outcome.disposition is DecisionDisposition.ACCEPTED:
+                        SqlAlchemyDecisionRiskGate(session).evaluate(payload.evaluation_id)
+                        if cancellation_requested():
+                            raise DecisionEvaluationJobCancelled
                 return record
         except (
             DecisionEvaluationJobCancelled,
@@ -103,7 +111,11 @@ class SqlAlchemyDecisionEvaluationRunner:
             SQLAlchemyError,
         ):
             raise
-        except (DecisionCandidateIntegrityError, StrategyEvaluationIntegrityError) as error:
+        except (
+            DecisionCandidateIntegrityError,
+            DecisionRiskIntegrityError,
+            StrategyEvaluationIntegrityError,
+        ) as error:
             raise DecisionEvaluationJobError(
                 code="decision_evaluation_integrity_error",
                 message="Decision evaluation failed persisted-lineage validation.",

@@ -39,6 +39,7 @@ from trd_bot.db.decision_evaluation_jobs import (
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
+from trd_bot.db.decision_risk_gate import SqlAlchemyDecisionRiskGate
 from trd_bot.db.decision_strategy_evaluation import (
     SqlAlchemyContextAwareStrategyEvaluator,
 )
@@ -111,6 +112,7 @@ from trd_bot.db.models import (
     DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
+    DecisionRiskGateRow,
     DecisionStageOutcomeRow,
     DecisionStrategyEvaluationRow,
     ExperimentExecutionRow,
@@ -203,6 +205,7 @@ __all__ = [
     "DecisionCandidateRankingRow",
     "DecisionEvaluationIntentRow",
     "DecisionPolicyDefinitionRow",
+    "DecisionRiskGateRow",
     "DecisionStageOutcomeRow",
     "DecisionStrategyEvaluationRow",
     "ExperimentExecutionRow",
@@ -258,6 +261,7 @@ __all__ = [
     "SqlAlchemyDecisionEvaluationEnqueuer",
     "SqlAlchemyDecisionEvaluationRunner",
     "SqlAlchemyDecisionIntelligenceStore",
+    "SqlAlchemyDecisionRiskGate",
     "SqlAlchemyExperimentExecutionEnqueuer",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",

@@ -1988,6 +1988,77 @@ class DecisionCandidateRankingRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class DecisionRiskGateRow(DatabaseBase):
+    """Immutable risk decision and offline position-sizing evidence."""
+
+    __tablename__ = "decision_risk_gates"
+
+    __table_args__ = (
+        CheckConstraint(
+            "disposition IN ('accepted', 'rejected')",
+            name="disposition_supported",
+        ),
+        CheckConstraint(
+            "decision IN ('approved', 'rejected')",
+            name="decision_supported",
+        ),
+        CheckConstraint(
+            "(disposition = 'accepted' AND decision = 'approved' "
+            "AND approved_candidate_id IS NOT NULL AND has_position_sizing) OR "
+            "(disposition = 'rejected' AND decision = 'rejected' "
+            "AND approved_candidate_id IS NULL AND NOT has_position_sizing)",
+            name="risk_result_consistent",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_forbidden",
+        ),
+        CheckConstraint(
+            "length(candidate_ranking_checksum) = 64",
+            name="ranking_checksum_length",
+        ),
+        CheckConstraint("length(policy_checksum) = 64", name="policy_checksum_length"),
+        CheckConstraint("length(assessment_checksum) = 64", name="assessment_checksum_length"),
+        CheckConstraint("length(record_checksum) = 64", name="record_checksum_length"),
+        Index(
+            "ix_decision_risk_gates_disposition_evaluated_at",
+            "disposition",
+            "evaluated_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    outcome_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_stage_outcomes.outcome_id", ondelete="CASCADE"),
+        unique=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    candidate_ranking_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    policy_version: Mapped[str] = mapped_column(String(50))
+    policy_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    decision: Mapped[str] = mapped_column(String(20), index=True)
+    assessment_id: Mapped[str] = mapped_column(String(100), unique=True)
+    assessment_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    approved_candidate_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    has_position_sizing: Mapped[bool] = mapped_column(Boolean)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 

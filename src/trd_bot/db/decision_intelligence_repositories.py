@@ -6,6 +6,7 @@ from trd_bot.db.models import (
     DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
+    DecisionRiskGateRow,
     DecisionStageOutcomeRow,
     DecisionStrategyEvaluationRow,
     MarketRegimeAssessmentRow,
@@ -17,6 +18,8 @@ from trd_bot.decision_intelligence import (
     DecisionEvaluationIntent,
     DecisionPolicyDefinition,
     DecisionPolicyReference,
+    DecisionRiskDecision,
+    DecisionRiskGateRecord,
     DecisionStage,
     DecisionStageOutcome,
     MarketContextDecisionReference,
@@ -371,6 +374,74 @@ class SqlAlchemyDecisionIntelligenceStore:
         if row is None:
             return None
         return DecisionCandidateRankingRecord.model_validate_json(row.payload_json)
+
+    def stage_risk_gate(
+        self,
+        record: DecisionRiskGateRecord,
+    ) -> tuple[DecisionRiskGateRecord, bool]:
+        existing = self.get_risk_gate(record.evaluation_id)
+        if existing is not None:
+            if existing != record:
+                raise ValueError("decision risk gate exists with different content")
+            return existing, False
+
+        intent = self.get_evaluation_intent(record.evaluation_id)
+        if intent is None:
+            raise ValueError("decision risk gate intent does not exist")
+        ranking = self.get_candidate_ranking(record.evaluation_id)
+        if ranking is None:
+            raise ValueError("decision risk gate requires candidate ranking evidence")
+        if ranking.outcome.disposition is not DecisionDisposition.ACCEPTED:
+            raise ValueError("decision risk gate requires accepted candidate ranking")
+        if record.candidate_ranking_checksum != ranking.record_checksum:
+            raise ValueError("decision risk gate ranking checksum is inconsistent")
+        if record.assessment.candidate_id != ranking.top_candidate_id:
+            raise ValueError("decision risk gate did not assess the top candidate")
+        outcome = self.get_stage_outcome(
+            record.evaluation_id,
+            stage=DecisionStage.RISK_GATE,
+        )
+        if outcome is None:
+            raise ValueError("decision risk gate outcome does not exist")
+        if outcome != record.outcome:
+            raise ValueError("decision risk gate outcome is inconsistent")
+
+        self._session.add(
+            DecisionRiskGateRow(
+                evaluation_id=record.evaluation_id,
+                outcome_id=record.outcome.outcome_id,
+                schema_version=record.schema_version,
+                candidate_ranking_checksum=record.candidate_ranking_checksum,
+                policy_version=record.policy_version,
+                policy_checksum=record.policy_checksum,
+                disposition=record.outcome.disposition.value,
+                decision=record.assessment.decision.value,
+                assessment_id=record.assessment.assessment_id,
+                assessment_checksum=record.assessment.assessment_checksum,
+                approved_candidate_id=record.approved_candidate_id,
+                has_position_sizing=(record.assessment.position_sizing is not None),
+                evaluated_at=record.evaluated_at,
+                offline_only=record.offline_only,
+                external_order_submission_allowed=(record.external_order_submission_allowed),
+                record_checksum=record.record_checksum,
+                payload_json=record.model_dump_json(),
+            )
+        )
+        self._session.flush()
+        return record, True
+
+    def get_risk_gate(
+        self,
+        evaluation_id: str,
+    ) -> DecisionRiskGateRecord | None:
+        row = self._session.get(DecisionRiskGateRow, evaluation_id)
+        if row is None:
+            return None
+        record = DecisionRiskGateRecord.model_validate_json(row.payload_json)
+        approved = record.assessment.decision is DecisionRiskDecision.APPROVED
+        if approved != (record.approved_candidate_id is not None):
+            raise ValueError("persisted decision risk approval columns are inconsistent")
+        return record
 
     def _validate_policy_reference(self, intent: DecisionEvaluationIntent) -> None:
         policy = self.get_policy_definition(

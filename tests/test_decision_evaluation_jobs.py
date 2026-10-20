@@ -29,6 +29,7 @@ from trd_bot.db import (
     DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
+    DecisionRiskGateRow,
     DecisionStageOutcomeRow,
     DecisionStrategyEvaluationRow,
     MarketContextFeatureSnapshotRow,
@@ -187,9 +188,10 @@ def test_runner_commits_evidence_atomically_and_idempotently(
     assert repeated == first
     assert first.evaluation_id == evaluation_intent.evaluation_id
     with factory() as session:
-        assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 2
+        assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 3
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
         assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionRiskGateRow)) == 1
 
 
 def test_runner_rolls_back_evidence_on_cooperative_cancellation(
@@ -202,7 +204,7 @@ def test_runner_rolls_back_evidence_on_cooperative_cancellation(
     def cancelled() -> bool:
         nonlocal checks
         checks += 1
-        return checks == 4
+        return checks == 5
 
     with pytest.raises(DecisionEvaluationJobCancelled):
         SqlAlchemyDecisionEvaluationRunner(factory).run(
@@ -214,6 +216,7 @@ def test_runner_rolls_back_evidence_on_cooperative_cancellation(
         assert session.scalar(select(func.count()).select_from(DecisionStageOutcomeRow)) == 0
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 0
         assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 0
+        assert session.scalar(select(func.count()).select_from(DecisionRiskGateRow)) == 0
 
 
 def test_worker_retries_transient_failure_then_succeeds_without_duplicate_evidence(
@@ -263,6 +266,7 @@ def test_worker_retries_transient_failure_then_succeeds_without_duplicate_eviden
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
         assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionRiskGateRow)) == 1
 
 
 def test_expired_lease_reclaim_reuses_committed_evidence(
@@ -299,6 +303,7 @@ def test_expired_lease_reclaim_reuses_committed_evidence(
     with factory() as session:
         assert session.scalar(select(func.count()).select_from(DecisionStrategyEvaluationRow)) == 1
         assert session.scalar(select(func.count()).select_from(DecisionCandidateRankingRow)) == 1
+        assert session.scalar(select(func.count()).select_from(DecisionRiskGateRow)) == 1
 
 
 def test_decision_job_is_visible_in_safe_operational_monitoring(
@@ -390,10 +395,18 @@ def test_postgresql_decision_evaluation_worker_round_trip(
             ranking = store.get_candidate_ranking(evaluation_intent.evaluation_id)
             assert ranking is not None
             assert ranking.outcome.disposition is DecisionDisposition.ACCEPTED
+            risk_gate = store.get_risk_gate(evaluation_intent.evaluation_id)
+            assert risk_gate is not None
+            assert risk_gate.outcome.disposition is DecisionDisposition.ACCEPTED
     finally:
         with database_factory.begin() as session:
             if job_id is not None:
                 session.execute(delete(BackgroundJobRow).where(BackgroundJobRow.job_id == job_id))
+            session.execute(
+                delete(DecisionRiskGateRow).where(
+                    DecisionRiskGateRow.evaluation_id == evaluation_intent.evaluation_id
+                )
+            )
             session.execute(
                 delete(DecisionCandidateRankingRow).where(
                     DecisionCandidateRankingRow.evaluation_id == evaluation_intent.evaluation_id

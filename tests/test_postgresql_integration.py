@@ -162,6 +162,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "decision_candidate_rankings",
             "decision_evaluation_intents",
             "decision_policy_definitions",
+            "decision_risk_gates",
             "decision_stage_outcomes",
             "decision_strategy_evaluations",
             "experiment_executions",

@@ -49,6 +49,18 @@ from trd_bot.decision_intelligence.jobs import (
     validate_decision_evaluation_payload_intent,
     validate_decision_evaluation_result,
 )
+from trd_bot.decision_intelligence.risk import (
+    DecisionPositionSizing,
+    DecisionRiskAssessment,
+    DecisionRiskCheck,
+    DecisionRiskCheckName,
+    DecisionRiskDecision,
+    DecisionRiskGateRecord,
+    DecisionRiskIntegrityError,
+    DecisionRiskPolicyV1,
+    decision_risk_policy_v1,
+    evaluate_decision_risk,
+)
 
 __all__ = [
     "DecisionCandidate",
@@ -72,7 +84,15 @@ __all__ = [
     "DecisionPolicyDefinition",
     "DecisionPolicyReference",
     "DecisionPolicyState",
+    "DecisionPositionSizing",
     "DecisionReasonCode",
+    "DecisionRiskAssessment",
+    "DecisionRiskCheck",
+    "DecisionRiskCheckName",
+    "DecisionRiskDecision",
+    "DecisionRiskGateRecord",
+    "DecisionRiskIntegrityError",
+    "DecisionRiskPolicyV1",
     "DecisionStage",
     "DecisionStageOutcome",
     "DecisionStrategyParameterValue",
@@ -89,6 +109,8 @@ __all__ = [
     "build_decision_policy_id",
     "build_decision_source_assessment_checksum",
     "decision_candidate_policy_v1",
+    "decision_risk_policy_v1",
+    "evaluate_decision_risk",
     "evaluate_strategy_intent",
     "strategy_context_compatibility_policy_v1",
     "validate_decision_evaluation_enqueue",
