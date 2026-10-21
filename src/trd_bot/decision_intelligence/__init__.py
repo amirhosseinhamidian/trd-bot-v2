@@ -1,3 +1,12 @@
+from trd_bot.decision_intelligence.benchmark import (
+    DECISION_PIPELINE_BENCHMARK_MINIMUM_SAMPLES,
+    DECISION_PIPELINE_BENCHMARK_RUNTIME_BUDGET_MS,
+    DecisionPipelineBenchmarkReport,
+    decision_pipeline_benchmark_fixture_checksum,
+    parse_decision_pipeline_benchmark_report,
+    run_decision_pipeline_benchmark,
+    serialize_decision_pipeline_benchmark_report,
+)
 from trd_bot.decision_intelligence.candidates import (
     DecisionCandidate,
     DecisionCandidateAction,
@@ -82,6 +91,8 @@ from trd_bot.decision_intelligence.risk import (
 )
 
 __all__ = [
+    "DECISION_PIPELINE_BENCHMARK_MINIMUM_SAMPLES",
+    "DECISION_PIPELINE_BENCHMARK_RUNTIME_BUDGET_MS",
     "DecisionCandidate",
     "DecisionCandidateAction",
     "DecisionCandidateIntegrityError",
@@ -100,6 +111,7 @@ __all__ = [
     "DecisionEvaluationJobError",
     "DecisionEvaluationJobPayload",
     "DecisionMode",
+    "DecisionPipelineBenchmarkReport",
     "DecisionPolicyDefinition",
     "DecisionPolicyReference",
     "DecisionPolicyState",
@@ -143,11 +155,15 @@ __all__ = [
     "build_decision_policy_id",
     "build_decision_source_assessment_checksum",
     "decision_candidate_policy_v1",
+    "decision_pipeline_benchmark_fixture_checksum",
     "decision_portfolio_policy_v1",
     "decision_risk_policy_v1",
     "evaluate_decision_risk",
     "evaluate_portfolio_intelligence",
     "evaluate_strategy_intent",
+    "parse_decision_pipeline_benchmark_report",
+    "run_decision_pipeline_benchmark",
+    "serialize_decision_pipeline_benchmark_report",
     "strategy_context_compatibility_policy_v1",
     "validate_decision_evaluation_enqueue",
     "validate_decision_evaluation_payload_intent",
