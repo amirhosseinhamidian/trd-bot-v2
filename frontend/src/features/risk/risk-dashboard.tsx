@@ -21,6 +21,8 @@ import {
   SelectOption,
   Spinner,
 } from '@/components/ui';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
 import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
 import { getRiskDashboard, type RiskDashboardFilters } from '@/features/risk/api/client';
 import type { RiskDashboardReport } from '@/features/risk/api/types';
@@ -30,6 +32,7 @@ import type { PlatformLocale } from '@/platform/i18n';
 const ALL_PORTFOLIOS = '__all_portfolios__';
 
 type RiskDashboardProps = {
+  decisionEvidence?: DecisionEvaluationDetail | null;
   initialReport: RiskDashboardReport;
   locale: PlatformLocale;
   portfolios: SimulatedPortfolioSummary[];
@@ -158,7 +161,12 @@ function RiskGauge({
   );
 }
 
-export default function RiskDashboard({ initialReport, locale, portfolios }: RiskDashboardProps) {
+export default function RiskDashboard({
+  decisionEvidence = null,
+  initialReport,
+  locale,
+  portfolios,
+}: RiskDashboardProps) {
   const copy = getRiskCopy(locale);
   const [report, setReport] = useState(initialReport);
   const [fromTime, setFromTime] = useState('');
@@ -257,6 +265,8 @@ export default function RiskDashboard({ initialReport, locale, portfolios }: Ris
           </>
         }
       />
+
+      <DecisionIntelligenceEvidence evidence={decisionEvidence} focus="risk" locale={locale} />
 
       <Card>
         <CardHeader>

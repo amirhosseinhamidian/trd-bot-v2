@@ -26,7 +26,9 @@ const screens = vi.hoisted(() => ({
 const api = vi.hoisted(() => ({
   getAcceptancePolicyPresets: vi.fn(async () => 'acceptance-policy-presets'),
   getCandidateLineage: vi.fn(async () => 'candidate-lineage'),
-  getCandidateProjection: vi.fn(async () => 'candidate-projection'),
+  getCandidateProjection: vi.fn(async () => ({
+    candidate: { signal_id: 'signal-1234567890abcdef' },
+  })),
   getCandidateProjections: vi.fn(async () => 'candidate-page'),
   getDatasetCandles: vi.fn(async () => 'dataset-candles'),
   getDatasetSummary: vi.fn(async () => 'dataset-summary'),
@@ -40,6 +42,7 @@ const api = vi.hoisted(() => ({
   getMarketContexts: vi.fn(async () => 'market-context-page'),
   getMarketDataMonitoringSummary: vi.fn(async () => 'market-data-monitoring-summary'),
   getMarketDataProviders: vi.fn(async () => 'market-data-providers'),
+  getLatestDecisionEvaluation: vi.fn(async () => 'decision-evidence'),
   getMonitoringSummary: vi.fn(async () => 'monitoring-summary'),
   getPortfolioAnalytics: vi.fn(async () => 'portfolio-analytics'),
   getResearchActivity: vi.fn(async () => 'research-activity'),
@@ -109,6 +112,10 @@ vi.mock('@/features/candidates/candidate-catalog', () => ({
   default: screens.candidateCatalog,
 }));
 vi.mock('@/features/candidates/candidate-detail', () => ({ default: screens.candidateDetail }));
+
+vi.mock('@/features/decision-intelligence/api/client', () => ({
+  getLatestDecisionEvaluation: api.getLatestDecisionEvaluation,
+}));
 
 vi.mock('@/features/risk/api/client', () => ({ getRiskDashboard: api.getRiskDashboard }));
 vi.mock('@/features/risk/risk-dashboard', () => ({ default: screens.risk }));
@@ -284,8 +291,11 @@ describe.each(['fa', 'en'] as const)('P6 critical user journeys in %s', (locale)
     );
 
     expect(catalogProps.initialPage).toBe('candidate-page');
-    expect(detailProps.candidate).toBe('candidate-projection');
+    expect(detailProps.candidate).toEqual({
+      candidate: { signal_id: 'signal-1234567890abcdef' },
+    });
     expect(detailProps.initialLineage).toBe('candidate-lineage');
+    expect(detailProps.decisionEvidence).toBe('decision-evidence');
     expect(riskProps.initialReport).toBe('risk-report');
     expect(riskProps.portfolios).toEqual(['portfolio-summary']);
     expect(api.getCandidateProjection).toHaveBeenCalledWith('candidate-01');
@@ -332,6 +342,7 @@ describe.each(['fa', 'en'] as const)('P6 critical user journeys in %s', (locale)
     expect(detailProps.initialPositions).toBe('portfolio-positions');
     expect(detailProps.initialTimeline).toBe('portfolio-timeline');
     expect(detailProps.analytics).toBe('portfolio-analytics');
+    expect(detailProps.decisionEvidence).toBe('decision-evidence');
     expect(positionProps.report).toBe('position-report');
     expect(api.getSimulatedPositionDetail).toHaveBeenCalledWith('portfolio-01', 'position-01');
   });

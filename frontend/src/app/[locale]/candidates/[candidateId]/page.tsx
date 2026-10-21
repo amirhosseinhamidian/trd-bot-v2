@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { getCandidateLineage, getCandidateProjection } from '@/features/candidates/api/client';
+import { getLatestDecisionEvaluation } from '@/features/decision-intelligence/api/client';
 import CandidateDetail from '@/features/candidates/candidate-detail';
 
 type CandidateDetailPageProps = {
@@ -17,13 +18,21 @@ export default async function CandidateDetailPage({ params }: CandidateDetailPag
     notFound();
   }
 
-  const [candidate, initialLineage] = await Promise.all([
-    getCandidateProjection(candidateId),
+  const candidate = await getCandidateProjection(candidateId);
+  const [initialLineage, decisionEvidence] = await Promise.all([
     getCandidateLineage(candidateId, {
       limit: 10,
       offset: 0,
     }),
+    getLatestDecisionEvaluation({ signalId: candidate.candidate.signal_id }),
   ]);
 
-  return <CandidateDetail candidate={candidate} initialLineage={initialLineage} locale={locale} />;
+  return (
+    <CandidateDetail
+      candidate={candidate}
+      initialLineage={initialLineage}
+      locale={locale}
+      decisionEvidence={decisionEvidence}
+    />
+  );
 }

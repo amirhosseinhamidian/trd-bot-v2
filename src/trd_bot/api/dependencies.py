@@ -14,6 +14,7 @@ from trd_bot.db import (
     SqlAlchemyCandidateProjectionRepository,
     SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyDecisionIntelligenceStore,
     SqlAlchemyExperimentExecutionEnqueuer,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
@@ -162,6 +163,14 @@ def get_dataset_repository(
     """Return the request-scoped dataset repository."""
 
     return SqlAlchemyDatasetRepository(session)
+
+
+def get_decision_intelligence_store(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyDecisionIntelligenceStore:
+    """Return the request-scoped read-only Decision Intelligence store."""
+
+    return SqlAlchemyDecisionIntelligenceStore(session)
 
 
 def get_dataset_file_import_enqueuer(

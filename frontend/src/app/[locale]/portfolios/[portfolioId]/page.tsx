@@ -6,6 +6,7 @@ import {
   getSimulatedPortfolioPositions,
   getSimulatedPortfolioTimeline,
 } from '@/features/portfolios/api/client';
+import { getLatestDecisionEvaluation } from '@/features/decision-intelligence/api/client';
 import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 
 type PortfolioDetailPageProps = {
@@ -22,12 +23,14 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
     notFound();
   }
 
-  const [portfolio, initialPositions, initialTimeline, analytics] = await Promise.all([
-    getSimulatedPortfolio(portfolioId),
-    getSimulatedPortfolioPositions(portfolioId, { limit: 10, offset: 0 }),
-    getSimulatedPortfolioTimeline(portfolioId, { limit: 10, offset: 0 }),
-    getPortfolioAnalytics(portfolioId),
-  ]);
+  const [portfolio, initialPositions, initialTimeline, analytics, decisionEvidence] =
+    await Promise.all([
+      getSimulatedPortfolio(portfolioId),
+      getSimulatedPortfolioPositions(portfolioId, { limit: 10, offset: 0 }),
+      getSimulatedPortfolioTimeline(portfolioId, { limit: 10, offset: 0 }),
+      getPortfolioAnalytics(portfolioId),
+      getLatestDecisionEvaluation({ portfolioId }),
+    ]);
 
   return (
     <PortfolioDetail
@@ -36,6 +39,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
       initialTimeline={initialTimeline}
       analytics={analytics}
       locale={locale}
+      decisionEvidence={decisionEvidence}
     />
   );
 }

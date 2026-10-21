@@ -12,12 +12,15 @@ import {
   CardTitle,
 } from '@/components/ui';
 import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
 import type { SignalDirection, StrategySignal } from '@/features/signals/api/types';
 import { getSignalsCopy } from '@/features/signals/signals-copy';
 import { getStrategyDisplayName } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type SignalDetailProps = {
+  decisionEvidence?: DecisionEvaluationDetail | null;
   experiment: ExperimentSummary;
   locale: PlatformLocale;
   signal: StrategySignal;
@@ -54,7 +57,12 @@ function directionVariant(direction: SignalDirection): 'success' | 'danger' | 'n
   return 'neutral';
 }
 
-export default function SignalDetail({ experiment, locale, signal }: SignalDetailProps) {
+export default function SignalDetail({
+  decisionEvidence = null,
+  experiment,
+  locale,
+  signal,
+}: SignalDetailProps) {
   const copy = getSignalsCopy(locale);
 
   return (
@@ -78,6 +86,13 @@ export default function SignalDetail({ experiment, locale, signal }: SignalDetai
             </Badge>
           </>
         }
+      />
+
+      <DecisionIntelligenceEvidence
+        evidence={decisionEvidence}
+        focus="signal"
+        locale={locale}
+        subjectId={signal.signal_id}
       />
 
       <Card>

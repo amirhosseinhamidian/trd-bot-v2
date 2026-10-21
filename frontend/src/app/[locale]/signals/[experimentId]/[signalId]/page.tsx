@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { getExperimentSummary } from '@/features/experiments/api/client';
+import { getLatestDecisionEvaluation } from '@/features/decision-intelligence/api/client';
 import { getExperimentSignal } from '@/features/signals/api/client';
 import SignalDetail from '@/features/signals/signal-detail';
 import { ApiRequestError } from '@/lib/api/core/transport';
@@ -18,6 +19,7 @@ async function loadSignalDetail(experimentId: string, signalId: string) {
     return await Promise.all([
       getExperimentSummary(experimentId),
       getExperimentSignal(experimentId, signalId),
+      getLatestDecisionEvaluation({ signalId }),
     ]);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
@@ -35,7 +37,14 @@ export default async function SignalDetailPage({ params }: SignalDetailPageProps
     notFound();
   }
 
-  const [experiment, signal] = await loadSignalDetail(experimentId, signalId);
+  const [experiment, signal, decisionEvidence] = await loadSignalDetail(experimentId, signalId);
 
-  return <SignalDetail experiment={experiment} locale={locale} signal={signal} />;
+  return (
+    <SignalDetail
+      experiment={experiment}
+      locale={locale}
+      signal={signal}
+      decisionEvidence={decisionEvidence}
+    />
+  );
 }

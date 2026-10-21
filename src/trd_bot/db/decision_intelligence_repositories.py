@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from trd_bot.db.models import (
@@ -17,6 +17,7 @@ from trd_bot.decision_intelligence import (
     DecisionDatasetReference,
     DecisionDisposition,
     DecisionEvaluationIntent,
+    DecisionMode,
     DecisionPolicyDefinition,
     DecisionPolicyReference,
     DecisionPortfolioIntelligenceRecord,
@@ -170,6 +171,68 @@ class SqlAlchemyDecisionIntelligenceStore:
     ) -> DecisionEvaluationIntent | None:
         row = self._session.get(DecisionEvaluationIntentRow, evaluation_id)
         return None if row is None else self._intent_from_row(row)
+
+    def list_evaluation_intents(
+        self,
+        *,
+        strategy_name: str | None = None,
+        strategy_version: str | None = None,
+        mode: DecisionMode | None = None,
+        stage: DecisionStage | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[DecisionEvaluationIntent, ...]:
+        """List immutable evaluation intents newest first for read-only projections."""
+
+        statement = select(DecisionEvaluationIntentRow)
+        if strategy_name is not None:
+            statement = statement.where(DecisionEvaluationIntentRow.strategy_name == strategy_name)
+        if strategy_version is not None:
+            statement = statement.where(
+                DecisionEvaluationIntentRow.strategy_version == strategy_version
+            )
+        if mode is not None:
+            statement = statement.where(DecisionEvaluationIntentRow.mode == mode.value)
+        if stage is not None:
+            statement = statement.join(
+                DecisionStageOutcomeRow,
+                DecisionStageOutcomeRow.evaluation_id == DecisionEvaluationIntentRow.evaluation_id,
+            ).where(DecisionStageOutcomeRow.stage == stage.value)
+        statement = statement.order_by(
+            DecisionEvaluationIntentRow.requested_at.desc(),
+            DecisionEvaluationIntentRow.evaluation_id.desc(),
+        ).offset(offset)
+        if limit is not None:
+            statement = statement.limit(limit)
+
+        rows = self._session.scalars(statement).all()
+        return tuple(self._intent_from_row(row) for row in rows)
+
+    def count_evaluation_intents(
+        self,
+        *,
+        strategy_name: str | None = None,
+        strategy_version: str | None = None,
+        mode: DecisionMode | None = None,
+        stage: DecisionStage | None = None,
+    ) -> int:
+        """Count immutable intents using the same SQL filters as the product projection."""
+
+        statement = select(func.count()).select_from(DecisionEvaluationIntentRow)
+        if strategy_name is not None:
+            statement = statement.where(DecisionEvaluationIntentRow.strategy_name == strategy_name)
+        if strategy_version is not None:
+            statement = statement.where(
+                DecisionEvaluationIntentRow.strategy_version == strategy_version
+            )
+        if mode is not None:
+            statement = statement.where(DecisionEvaluationIntentRow.mode == mode.value)
+        if stage is not None:
+            statement = statement.join(
+                DecisionStageOutcomeRow,
+                DecisionStageOutcomeRow.evaluation_id == DecisionEvaluationIntentRow.evaluation_id,
+            ).where(DecisionStageOutcomeRow.stage == stage.value)
+        return int(self._session.scalar(statement) or 0)
 
     def get_evaluation_intent_by_idempotency_key(
         self,

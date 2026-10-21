@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 
 import { getExperiments } from '@/features/experiments/api/client';
+import { getLatestDecisionEvaluation } from '@/features/decision-intelligence/api/client';
 import { getResearchStrategyVersion } from '@/features/strategies/api/client';
 import StrategyDetail from '@/features/strategies/strategy-detail';
 import { ApiRequestError } from '@/lib/api/core/transport';
@@ -25,6 +26,10 @@ async function loadStrategyDetail(strategyName: string, version: string) {
         limit: 5,
         offset: 0,
       }),
+      getLatestDecisionEvaluation({
+        strategyName,
+        strategyVersion: version,
+      }),
     ]);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
@@ -42,9 +47,17 @@ export default async function StrategyDetailPage({ params }: StrategyDetailPageP
     notFound();
   }
 
-  const [strategy, experimentHistory] = await loadStrategyDetail(strategyName, version);
+  const [strategy, experimentHistory, decisionEvidence] = await loadStrategyDetail(
+    strategyName,
+    version,
+  );
 
   return (
-    <StrategyDetail locale={locale} strategy={strategy} experimentHistory={experimentHistory} />
+    <StrategyDetail
+      locale={locale}
+      strategy={strategy}
+      experimentHistory={experimentHistory}
+      decisionEvidence={decisionEvidence}
+    />
   );
 }

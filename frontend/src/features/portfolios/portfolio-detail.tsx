@@ -17,6 +17,8 @@ import {
   Pagination,
   Spinner,
 } from '@/components/ui';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
 import {
   getSimulatedPortfolioPositions,
   getSimulatedPortfolioTimeline,
@@ -36,6 +38,7 @@ const RESOURCE_PAGE_SIZE = 10;
 
 type PortfolioDetailProps = {
   analytics?: PortfolioAnalyticsReport;
+  decisionEvidence?: DecisionEvaluationDetail | null;
   portfolio: SimulatedPortfolio;
   initialPositions: Page<SimulatedPosition>;
   initialTimeline: Page<PortfolioTimelineEvent>;
@@ -99,6 +102,7 @@ function pnlClassName(value: string | null): string {
 
 export default function PortfolioDetail({
   analytics,
+  decisionEvidence = null,
   portfolio,
   initialPositions,
   initialTimeline,
@@ -188,6 +192,8 @@ export default function PortfolioDetail({
           </>
         }
       />
+
+      <DecisionIntelligenceEvidence evidence={decisionEvidence} focus="portfolio" locale={locale} />
 
       {analytics &&
         (new Date(analytics.as_of).getTime() === new Date(portfolio.updated_at).getTime() ? (

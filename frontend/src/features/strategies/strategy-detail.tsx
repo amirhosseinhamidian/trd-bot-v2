@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from '@/components/ui';
 import type { ExperimentSummary } from '@/features/experiments/api/types';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
 import type {
   ResearchStrategyMetadata,
   StrategyParameterMetadata,
@@ -23,6 +25,7 @@ import { getStrategyParameterLabel } from '@/lib/strategies/presentation';
 import type { PlatformLocale } from '@/platform/i18n';
 
 type StrategyDetailProps = {
+  decisionEvidence?: DecisionEvaluationDetail | null;
   locale: PlatformLocale;
   strategy: ResearchStrategyMetadata;
   experimentHistory?: Page<ExperimentSummary>;
@@ -66,6 +69,7 @@ function formatMaximum(
 }
 
 export default function StrategyDetail({
+  decisionEvidence = null,
   locale,
   strategy,
   experimentHistory,
@@ -124,6 +128,8 @@ export default function StrategyDetail({
           </Badge>
         }
       />
+
+      <DecisionIntelligenceEvidence evidence={decisionEvidence} focus="strategy" locale={locale} />
 
       <AdvancedDisclosure
         title={copy.detail.metadataTitle}

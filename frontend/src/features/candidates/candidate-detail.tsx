@@ -22,6 +22,8 @@ import type {
   CandidateJournalOccurrence,
   CandidateProjectionDetail,
 } from '@/features/candidates/api/types';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
 import CandidateDecisionLineageView from '@/features/candidates/candidate-decision-lineage';
 import { getCandidateDetailCopy } from '@/features/candidates/candidate-detail-copy';
 import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
@@ -33,6 +35,7 @@ const LINEAGE_PAGE_SIZE = 10;
 
 type CandidateDetailProps = {
   candidate: CandidateProjectionDetail;
+  decisionEvidence?: DecisionEvaluationDetail | null;
   initialLineage: Page<CandidateJournalOccurrence>;
   locale: PlatformLocale;
 };
@@ -72,6 +75,7 @@ function formatDate(value: string, locale: PlatformLocale): string {
 
 export default function CandidateDetail({
   candidate,
+  decisionEvidence = null,
   initialLineage,
   locale,
 }: CandidateDetailProps) {
@@ -137,6 +141,13 @@ export default function CandidateDetail({
             <Badge variant="warning">{copy.actions[snapshot.action]}</Badge>
           </>
         }
+      />
+
+      <DecisionIntelligenceEvidence
+        evidence={decisionEvidence}
+        focus="candidate"
+        locale={locale}
+        subjectId={candidate.candidate.signal_id}
       />
 
       <Card>
