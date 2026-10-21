@@ -2,6 +2,38 @@
 
 All notable changes to TRD BOT v2 are documented in this file.
 
+## 0.3.0 - local release candidate
+
+Status: untagged candidate for local research, paper, and shadow use. Server deployment, public
+release publication, exchange-account connectivity, and live execution remain deferred.
+
+### Added
+
+- Near-real-time public Crypto Spot ingestion with versioned events, provisional/finalized windows,
+  watermark semantics, late-data replay, retention controls, and freshness observability.
+- Deterministic multi-timeframe Market Context, feature and regime evidence, durable context jobs,
+  monitoring, API/UI integration, and a golden acceptance benchmark.
+- Versioned alert rules, durable evaluation jobs, inbox lifecycle, quiet-hours and expiry policy,
+  Paper/Shadow simulation, outcome journals, and drift evidence.
+- Decision Intelligence lineage from Strategy and Context through Candidate ranking, Risk Gate,
+  position sizing, and limited simulated Portfolio Intelligence.
+- Read-only progressive disclosure across Strategy, Signal, Candidate, Risk, and Portfolio screens.
+- Phase-by-phase acceptance records and same-SHA benchmark evidence through the Phase 5 freeze.
+
+### Changed
+
+- Long-running imports, experiments, walk-forward runs, optimization, context evaluation, alerts,
+  and decision evaluation use durable, retry-safe worker policies.
+- The runtime, backend package, environment example, and frontend manifests now identify v0.3.0.
+
+### Operating boundary
+
+- Supported modes remain `RESEARCH`, `BACKTEST`, `PAPER`, and `SHADOW`.
+- Market access remains public and read-only; no exchange credentials or private account APIs exist.
+- Portfolio Intelligence remains advisory for simulated portfolios and cannot submit orders or
+  manage real assets.
+- This release cut does not create a tag, GitHub Release, deployment, or merge to `main`.
+
 ## 0.2.0 — local release candidate
 
 Status: untagged candidate for local research use. Server deployment and public

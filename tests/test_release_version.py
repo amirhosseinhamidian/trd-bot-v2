@@ -7,7 +7,7 @@ from trd_bot import __version__
 from trd_bot.core.config import Settings
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "0.2.0"
+RELEASE_VERSION = "0.3.0"
 
 
 def test_release_version_is_consistent_across_runtime_and_manifests() -> None:

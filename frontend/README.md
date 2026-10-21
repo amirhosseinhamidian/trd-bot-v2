@@ -1,8 +1,8 @@
 # Nexora / TRD BOT frontend
 
-The frontend is a Next.js 16 application for the local TRD BOT v0.2.0 research platform. It
-supports Persian (`fa`, RTL) and English (`en`, LTR), dark and light themes, and 21 frozen public
-route patterns.
+The frontend is a Next.js 16 application for the local TRD BOT v0.3.0 research platform. It
+supports Persian (`fa`, RTL) and English (`en`, LTR), dark and light themes, and the frozen public
+route contract.
 
 ## Local development
 

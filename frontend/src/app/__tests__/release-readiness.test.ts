@@ -68,7 +68,7 @@ describe('P6 final freeze gate', () => {
     const pyproject = readFileSync(resolve(process.cwd(), '../pyproject.toml'), 'utf8');
     const backendVersion = pyproject.match(/^version = "([^"]+)"$/m)?.[1];
 
-    expect(packageJson.version).toBe('0.2.0');
+    expect(packageJson.version).toBe('0.3.0');
     expect(backendVersion).toBe(packageJson.version);
   });
 

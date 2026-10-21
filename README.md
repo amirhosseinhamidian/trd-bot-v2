@@ -1,6 +1,6 @@
 # TRD BOT v2
 
-Current local release candidate: **v0.2.0**. This repository is configured for
+Current local release candidate: **v0.3.0**. This repository is configured for
 local research use; server staging and deployment are intentionally deferred.
 
 TRD BOT v2 is a single-user research platform for:
@@ -140,7 +140,7 @@ The GitHub Actions workflow runs the same backend, PostgreSQL, and frontend
 quality gates for pushes to `main`, `feature/**`, `fix/**`, `bugfix/**`, and
 `refactor/**`, as well as pull requests targeting `main`.
 
-## MVP release verification
+## Release verification
 
 The final fresh-start and release checklist is documented in
 [`docs/mvp-release-checklist.md`](docs/mvp-release-checklist.md).
@@ -149,9 +149,10 @@ The local v0.2.0 candidate runbook and evidence template are documented in
 The frozen Nexora UI contract, release notes, and upgrade guidance are documented in
 [`docs/nexora-ui-release-and-migration.md`](docs/nexora-ui-release-and-migration.md).
 
-Development of v0.3 starts from the frozen product scope and Crypto Spot market target in
-[`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). The runtime
-and release manifests remain at v0.2.0 until the v0.3 release gates are complete.
+The v0.3 scope starts from the frozen Crypto Spot market target in
+[`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). Phase 5 is
+frozen by the committed acceptance record, and the local v0.3.0 release cut is documented in
+[`docs/v0.3/47-v0.3.0-release-cut.md`](docs/v0.3/47-v0.3.0-release-cut.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in
