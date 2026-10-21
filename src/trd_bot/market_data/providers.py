@@ -10,12 +10,15 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from trd_bot import __version__
 from trd_bot.domain.market_data import (
     MarketType,
     OHLCVCandle,
     Timeframe,
     TradingPair,
 )
+
+MARKET_DATA_PROVIDER_USER_AGENT = f"trd-bot-v2-research/{__version__}"
 
 
 class MarketDataProviderErrorCode(StrEnum):
@@ -156,7 +159,7 @@ async def _fetch_json(url: str, timeout_seconds: float) -> object:
             url,
             headers={
                 "Accept": "application/json",
-                "User-Agent": "trd-bot-v2-research/0.1",
+                "User-Agent": MARKET_DATA_PROVIDER_USER_AGENT,
             },
         )
 

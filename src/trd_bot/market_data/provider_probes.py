@@ -11,6 +11,10 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
+from trd_bot import __version__
+
+MARKET_DATA_PROBE_USER_AGENT = f"trd-bot-v2-provider-probe/{__version__}"
+
 
 class MarketDataProbeOutcome(StrEnum):
     """Stable, credential-free connectivity probe outcomes."""
@@ -488,7 +492,7 @@ def probe_market_data_provider(
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "trd-bot-v2-provider-probe/0.1",
+            "User-Agent": MARKET_DATA_PROBE_USER_AGENT,
         },
     )
     http_started_at = time.monotonic()

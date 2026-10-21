@@ -1,64 +1,15 @@
-from collections.abc import Mapping
 from pathlib import Path
 
-from fastapi.routing import APIRoute
+import pytest
 
-from trd_bot.main import create_app
-from trd_bot.market_data import MarketDataProviderCatalog
+from trd_bot.release_hardening import (
+    PROHIBITED_CREDENTIAL_FIELDS,
+    PROHIBITED_LIVE_ROUTE_SEGMENTS,
+    ReleaseSurfaceInventory,
+    build_release_surface_inventory,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-PROHIBITED_LIVE_ROUTE_SEGMENTS = frozenset(
-    {
-        "brokerage",
-        "deposit",
-        "deposits",
-        "exchange-account",
-        "exchange-accounts",
-        "live-order",
-        "live-orders",
-        "order",
-        "orders",
-        "trade",
-        "trades",
-        "trading",
-        "wallet",
-        "wallets",
-        "withdraw",
-        "withdrawal",
-        "withdrawals",
-    }
-)
-
-PROHIBITED_CREDENTIAL_FIELDS = frozenset(
-    {
-        "access_token",
-        "api_key",
-        "api_secret",
-        "client_secret",
-        "passphrase",
-        "password",
-        "private_key",
-        "refresh_token",
-        "secret",
-        "withdrawal_address",
-    }
-)
-
-
-def collect_property_names(value: object) -> set[str]:
-    """Collect JSON schema property names without trusting schema shape."""
-
-    names: set[str] = set()
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            if key == "properties" and isinstance(nested, Mapping):
-                names.update(str(name).casefold() for name in nested)
-            names.update(collect_property_names(nested))
-    elif isinstance(value, list):
-        for nested in value:
-            names.update(collect_property_names(nested))
-    return names
 
 
 def route_segments(path: str) -> set[str]:
@@ -69,31 +20,36 @@ def route_segments(path: str) -> set[str]:
     }
 
 
-def test_release_api_has_no_live_execution_routes_or_credential_inputs() -> None:
-    application = create_app()
-    api_routes = tuple(route for route in application.routes if isinstance(route, APIRoute))
+@pytest.fixture(scope="module")
+def release_inventory() -> ReleaseSurfaceInventory:
+    return build_release_surface_inventory(PROJECT_ROOT)
 
-    exposed_segments: set[str] = set()
-    for route in api_routes:
-        exposed_segments.update(route_segments(route.path_format))
+
+def test_release_api_has_no_live_execution_routes_or_credential_inputs(
+    release_inventory: ReleaseSurfaceInventory,
+) -> None:
+    assert release_inventory.api_operations
+    exposed_segments = set().union(
+        *(route_segments(operation.path) for operation in release_inventory.api_operations)
+    )
     assert PROHIBITED_LIVE_ROUTE_SEGMENTS.isdisjoint(exposed_segments)
-
-    openapi_property_names = collect_property_names(application.openapi())
-    assert PROHIBITED_CREDENTIAL_FIELDS.isdisjoint(openapi_property_names)
+    assert PROHIBITED_CREDENTIAL_FIELDS.isdisjoint(release_inventory.openapi_property_names)
 
 
-def test_release_frontend_has_no_live_execution_page() -> None:
-    app_root = PROJECT_ROOT / "frontend" / "src" / "app"
+def test_release_frontend_has_no_live_execution_page(
+    release_inventory: ReleaseSurfaceInventory,
+) -> None:
     page_segments: set[str] = set()
-    for page in app_root.rglob("page.tsx"):
-        page_segments.update(route_segments(page.relative_to(app_root).as_posix()))
+    for page in release_inventory.frontend_page_files:
+        page_segments.update(route_segments(page))
 
     assert PROHIBITED_LIVE_ROUTE_SEGMENTS.isdisjoint(page_segments)
 
 
-def test_release_provider_catalog_remains_public_and_read_only() -> None:
-    providers = MarketDataProviderCatalog().list_metadata()
-
-    assert providers
-    assert all(provider.provider_id.endswith("-public") for provider in providers)
-    assert all(provider.requires_credentials is False for provider in providers)
+def test_release_provider_catalog_remains_public_and_read_only(
+    release_inventory: ReleaseSurfaceInventory,
+) -> None:
+    assert release_inventory.providers
+    assert all(provider.provider_id.endswith("-public") for provider in release_inventory.providers)
+    assert all(provider.requires_credentials is False for provider in release_inventory.providers)
+    assert all(provider.market_types == ("spot",) for provider in release_inventory.providers)

@@ -153,6 +153,8 @@ The v0.3 scope starts from the frozen Crypto Spot market target in
 [`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). Phase 5 is
 frozen by the committed acceptance record, and the local v0.3.0 release cut is documented in
 [`docs/v0.3/47-v0.3.0-release-cut.md`](docs/v0.3/47-v0.3.0-release-cut.md).
+The Phase 6 hardening baseline and deterministic release-surface inventory are documented in
+[`docs/v0.3/48-cross-cutting-hardening-release-inventory.md`](docs/v0.3/48-cross-cutting-hardening-release-inventory.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

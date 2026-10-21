@@ -19,6 +19,8 @@ release publication, exchange-account connectivity, and live execution remain de
   position sizing, and limited simulated Portfolio Intelligence.
 - Read-only progressive disclosure across Strategy, Signal, Candidate, Risk, and Portfolio screens.
 - Phase-by-phase acceptance records and same-SHA benchmark evidence through the Phase 5 freeze.
+- A deterministic release-surface inventory covering OpenAPI operations, frontend pages, public
+  providers, worker policies, database tables, migrations, version sources, and network identity.
 
 ### Changed
 
