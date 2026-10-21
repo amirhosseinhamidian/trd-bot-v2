@@ -103,6 +103,7 @@ class DecisionReasonCode(StrEnum):
     SIGNAL_NEUTRAL = "signal_neutral"
     CANDIDATE_NOT_SELECTABLE = "candidate_not_selectable"
     RISK_POLICY_REJECTED = "risk_policy_rejected"
+    PORTFOLIO_POLICY_REJECTED = "portfolio_policy_rejected"
     PORTFOLIO_UNAVAILABLE = "portfolio_unavailable"
     UNCERTAINTY_ABOVE_LIMIT = "uncertainty_above_limit"
 

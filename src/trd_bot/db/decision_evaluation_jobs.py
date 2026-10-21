@@ -9,6 +9,9 @@ from trd_bot.db.decision_candidate_ranking import SqlAlchemyDecisionCandidateRan
 from trd_bot.db.decision_intelligence_repositories import (
     SqlAlchemyDecisionIntelligenceStore,
 )
+from trd_bot.db.decision_portfolio_intelligence import (
+    SqlAlchemyDecisionPortfolioIntelligence,
+)
 from trd_bot.db.decision_risk_gate import SqlAlchemyDecisionRiskGate
 from trd_bot.db.decision_strategy_evaluation import (
     SqlAlchemyContextAwareStrategyEvaluator,
@@ -21,6 +24,7 @@ from trd_bot.decision_intelligence import (
     DecisionEvaluationJobCancelled,
     DecisionEvaluationJobError,
     DecisionEvaluationJobPayload,
+    DecisionPortfolioIntegrityError,
     DecisionRiskIntegrityError,
     StrategyEvaluationIntegrityError,
     StrategyEvaluationRecord,
@@ -101,9 +105,17 @@ class SqlAlchemyDecisionEvaluationRunner:
                     if cancellation_requested():
                         raise DecisionEvaluationJobCancelled
                     if ranking.outcome.disposition is DecisionDisposition.ACCEPTED:
-                        SqlAlchemyDecisionRiskGate(session).evaluate(payload.evaluation_id)
+                        risk_gate, _ = SqlAlchemyDecisionRiskGate(session).evaluate(
+                            payload.evaluation_id
+                        )
                         if cancellation_requested():
                             raise DecisionEvaluationJobCancelled
+                        if risk_gate.outcome.disposition is DecisionDisposition.ACCEPTED:
+                            SqlAlchemyDecisionPortfolioIntelligence(session).evaluate(
+                                payload.evaluation_id
+                            )
+                            if cancellation_requested():
+                                raise DecisionEvaluationJobCancelled
                 return record
         except (
             DecisionEvaluationJobCancelled,
@@ -113,6 +125,7 @@ class SqlAlchemyDecisionEvaluationRunner:
             raise
         except (
             DecisionCandidateIntegrityError,
+            DecisionPortfolioIntegrityError,
             DecisionRiskIntegrityError,
             StrategyEvaluationIntegrityError,
         ) as error:

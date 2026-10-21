@@ -6,6 +6,7 @@ from trd_bot.db.models import (
     DecisionCandidateRankingRow,
     DecisionEvaluationIntentRow,
     DecisionPolicyDefinitionRow,
+    DecisionPortfolioIntelligenceRow,
     DecisionRiskGateRow,
     DecisionStageOutcomeRow,
     DecisionStrategyEvaluationRow,
@@ -18,6 +19,7 @@ from trd_bot.decision_intelligence import (
     DecisionEvaluationIntent,
     DecisionPolicyDefinition,
     DecisionPolicyReference,
+    DecisionPortfolioIntelligenceRecord,
     DecisionRiskDecision,
     DecisionRiskGateRecord,
     DecisionStage,
@@ -441,6 +443,69 @@ class SqlAlchemyDecisionIntelligenceStore:
         approved = record.assessment.decision is DecisionRiskDecision.APPROVED
         if approved != (record.approved_candidate_id is not None):
             raise ValueError("persisted decision risk approval columns are inconsistent")
+        return record
+
+    def stage_portfolio_intelligence(
+        self,
+        record: DecisionPortfolioIntelligenceRecord,
+    ) -> tuple[DecisionPortfolioIntelligenceRecord, bool]:
+        existing = self.get_portfolio_intelligence(record.evaluation_id)
+        if existing is not None:
+            if existing != record:
+                raise ValueError("decision portfolio intelligence exists with different content")
+            return existing, False
+
+        intent = self.get_evaluation_intent(record.evaluation_id)
+        if intent is None:
+            raise ValueError("decision portfolio intelligence intent does not exist")
+        risk_gate = self.get_risk_gate(record.evaluation_id)
+        if risk_gate is None:
+            raise ValueError("decision portfolio intelligence requires risk evidence")
+        if risk_gate.outcome.disposition is not DecisionDisposition.ACCEPTED:
+            raise ValueError("decision portfolio intelligence requires accepted risk evidence")
+        if record.risk_gate_checksum != risk_gate.record_checksum:
+            raise ValueError("decision portfolio intelligence risk lineage is inconsistent")
+        outcome = self.get_stage_outcome(
+            record.evaluation_id,
+            stage=DecisionStage.PORTFOLIO_SIMULATION,
+        )
+        if outcome is None or outcome != record.outcome:
+            raise ValueError("decision portfolio intelligence outcome is inconsistent")
+
+        analysis = record.analysis
+        self._session.add(
+            DecisionPortfolioIntelligenceRow(
+                evaluation_id=record.evaluation_id,
+                outcome_id=record.outcome.outcome_id,
+                schema_version=record.schema_version,
+                risk_gate_checksum=record.risk_gate_checksum,
+                policy_version=record.policy_version,
+                policy_checksum=record.policy_checksum,
+                disposition=record.outcome.disposition.value,
+                recommendation=record.recommendation.value,
+                has_analysis=analysis is not None,
+                snapshot_id=None if analysis is None else analysis.snapshot.snapshot_id,
+                candidate_id=None if analysis is None else analysis.candidate_id,
+                analyzed_at=record.analyzed_at,
+                offline_only=record.offline_only,
+                external_order_submission_allowed=(record.external_order_submission_allowed),
+                record_checksum=record.record_checksum,
+                payload_json=record.model_dump_json(),
+            )
+        )
+        self._session.flush()
+        return record, True
+
+    def get_portfolio_intelligence(
+        self,
+        evaluation_id: str,
+    ) -> DecisionPortfolioIntelligenceRecord | None:
+        row = self._session.get(DecisionPortfolioIntelligenceRow, evaluation_id)
+        if row is None:
+            return None
+        record = DecisionPortfolioIntelligenceRecord.model_validate_json(row.payload_json)
+        if (record.analysis is not None) != row.has_analysis:
+            raise ValueError("persisted portfolio analysis columns are inconsistent")
         return record
 
     def _validate_policy_reference(self, intent: DecisionEvaluationIntent) -> None:

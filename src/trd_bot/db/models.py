@@ -2059,6 +2059,68 @@ class DecisionRiskGateRow(DatabaseBase):
     payload_json: Mapped[str] = mapped_column(Text)
 
 
+class DecisionPortfolioIntelligenceRow(DatabaseBase):
+    """Immutable, advisory-only analysis of one simulated portfolio snapshot."""
+
+    __tablename__ = "decision_portfolio_intelligence"
+
+    __table_args__ = (
+        CheckConstraint(
+            "disposition IN ('accepted', 'rejected', 'unavailable')",
+            name="disposition_supported",
+        ),
+        CheckConstraint(
+            "recommendation IN ('accept', 'reject', 'unavailable')",
+            name="recommendation_supported",
+        ),
+        CheckConstraint(
+            "(disposition = 'accepted' AND recommendation = 'accept' AND has_analysis) OR "
+            "(disposition = 'rejected' AND recommendation = 'reject' AND has_analysis) OR "
+            "(disposition = 'unavailable' AND recommendation = 'unavailable' "
+            "AND NOT has_analysis)",
+            name="result_consistent",
+        ),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT external_order_submission_allowed",
+            name="external_order_forbidden",
+        ),
+        CheckConstraint("length(risk_gate_checksum) = 64", name="risk_checksum_length"),
+        CheckConstraint("length(policy_checksum) = 64", name="policy_checksum_length"),
+        CheckConstraint("length(record_checksum) = 64", name="record_checksum_length"),
+        Index(
+            "ix_decision_portfolio_intelligence_disposition_analyzed_at",
+            "disposition",
+            "analyzed_at",
+        ),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    outcome_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_stage_outcomes.outcome_id", ondelete="CASCADE"),
+        unique=True,
+    )
+    schema_version: Mapped[str] = mapped_column(String(50))
+    risk_gate_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    policy_version: Mapped[str] = mapped_column(String(50))
+    policy_checksum: Mapped[str] = mapped_column(String(64), index=True)
+    disposition: Mapped[str] = mapped_column(String(20), index=True)
+    recommendation: Mapped[str] = mapped_column(String(20), index=True)
+    has_analysis: Mapped[bool] = mapped_column(Boolean)
+    snapshot_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    candidate_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    record_checksum: Mapped[str] = mapped_column(String(64), unique=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
 class BackgroundJobRow(DatabaseBase):
     """Durable generic queue row claimed through a time-bounded worker lease."""
 
