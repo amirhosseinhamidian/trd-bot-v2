@@ -21,7 +21,8 @@ def test_v0_3_release_notes_preserve_the_operating_boundary() -> None:
         encoding="utf-8"
     )
 
-    assert "## 0.3.0 - local release candidate" in changelog
+    assert "## 0.3.0 - 2026-10-22" in changelog
+    assert "Status: frozen and release-approved" in changelog
     assert "`RESEARCH`, `BACKTEST`, `PAPER`, and `SHADOW`" in changelog
     assert "no exchange credentials or private account APIs exist" in changelog
     assert "tag، GitHub Release، deploy، merge به `main`" in release_runbook
