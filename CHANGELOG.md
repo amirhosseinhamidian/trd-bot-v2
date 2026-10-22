@@ -21,6 +21,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - Phase-by-phase acceptance records and same-SHA benchmark evidence through the Phase 5 freeze.
 - A deterministic release-surface inventory covering OpenAPI operations, frontend pages, public
   providers, worker policies, database tables, migrations, version sources, and network identity.
+- A commit-bound PostgreSQL release-capacity benchmark covering the 100-job overload boundary,
+  single-worker drain budget, concurrent claim and enqueue safety, retry, lease reclaim,
+  stale-owner fencing, and cleanup.
 
 ### Changed
 
