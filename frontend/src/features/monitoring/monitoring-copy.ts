@@ -1,0 +1,257 @@
+import type {
+  ArchitectureCandidate,
+  MonitoringOverallStatus,
+  RecommendationSeverity,
+  SystemMetricName,
+} from '@/features/monitoring/api/types';
+import type { BackgroundJobStatus } from '@/features/jobs/api/types';
+import type { PlatformLocale } from '@/platform/i18n';
+
+export type MonitoringCopy = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  capacityPlanningOnly: string;
+  overallStatus: string;
+  latestMetrics: string;
+  latestMetricsDescription: string;
+  recommendations: string;
+  recommendationsDescription: string;
+  operations: string;
+  operationsDescription: string;
+  queue: string;
+  providers: string;
+  imports: string;
+  averageDuration: string;
+  queued: string;
+  running: string;
+  stuck: string;
+  healthy: string;
+  unhealthy: string;
+  untested: string;
+  enabled: string;
+  succeeded: string;
+  failed: string;
+  recentSample: string;
+  noData: string;
+  recentJobs: string;
+  recentJobsDescription: string;
+  noRecentJobs: string;
+  jobId: string;
+  kind: string;
+  status: string;
+  progress: string;
+  error: string;
+  updatedAt: string;
+  latestTest: string;
+  latestSuccess: string;
+  latestFailure: string;
+  failureReasons: string;
+  noFailureReasons: string;
+  emptyMetricsTitle: string;
+  emptyMetricsDescription: string;
+  emptyRecommendationsTitle: string;
+  emptyRecommendationsDescription: string;
+  demoEvidence: string;
+  source: string;
+  recordedAt: string;
+  statuses: Record<MonitoringOverallStatus, string>;
+  severities: Record<RecommendationSeverity, string>;
+  candidates: Record<ArchitectureCandidate, string>;
+  metrics: Record<SystemMetricName, string>;
+  jobStatuses: Record<BackgroundJobStatus, string>;
+};
+
+const copies: Record<PlatformLocale, MonitoringCopy> = {
+  fa: {
+    eyebrow: 'Infrastructure capacity monitoring',
+    title: 'پایش معماری سیستم',
+    description:
+      'متریک‌های عملیاتی را بررسی کنید و تنها زمانی درباره افزودن Redis، TimescaleDB یا ClickHouse تصمیم بگیرید که شواهد پایدار ثبت شده باشد.',
+    capacityPlanningOnly:
+      'این پیشنهادها فقط برای برنامه‌ریزی ظرفیت و معماری نرم‌افزار هستند و پیشنهاد مالی یا معاملاتی محسوب نمی‌شوند.',
+    overallStatus: 'وضعیت کلی',
+    latestMetrics: 'آخرین متریک‌ها',
+    latestMetricsDescription: 'جدیدترین نمونه ثبت‌شده برای هر شاخص عملیاتی',
+    recommendations: 'پیشنهادهای فعال معماری',
+    recommendationsDescription: 'پیشنهادهایی که از چند پنجره متوالی شواهد عبور کرده‌اند',
+    operations: 'سلامت عملیاتی',
+    operationsDescription:
+      'وضعیت ماندگار اتصال‌های داده، ورودهای اخیر و صف worker؛ بدون نمایش payload یا اطلاعات محرمانه',
+    queue: 'صف پردازش',
+    providers: 'اتصال‌های داده',
+    imports: 'ورودهای اخیر',
+    averageDuration: 'میانگین زمان اجرا',
+    queued: 'در صف',
+    running: 'در حال اجرا',
+    stuck: 'گیرکرده',
+    healthy: 'سالم',
+    unhealthy: 'ناسالم',
+    untested: 'آزمایش‌نشده',
+    enabled: 'فعال',
+    succeeded: 'موفق',
+    failed: 'ناموفق',
+    recentSample: 'نمونه اخیر',
+    noData: 'داده‌ای نیست',
+    recentJobs: 'jobهای اخیر',
+    recentJobsDescription: 'وضعیت و پیشرفت persisted؛ شناسه worker و payload نمایش داده نمی‌شوند.',
+    noRecentJobs: 'هنوز jobی ثبت نشده است.',
+    jobId: 'شناسه job',
+    kind: 'نوع',
+    status: 'وضعیت',
+    progress: 'پیشرفت',
+    error: 'کد خطا',
+    updatedAt: 'آخرین تغییر',
+    latestTest: 'آخرین آزمایش',
+    latestSuccess: 'آخرین موفقیت',
+    latestFailure: 'آخرین شکست',
+    failureReasons: 'علت‌های شکست اخیر',
+    noFailureReasons: 'در نمونه اخیر شکست ثبت نشده است.',
+    emptyMetricsTitle: 'هنوز متریکی ثبت نشده است',
+    emptyMetricsDescription: 'Collector یا اسکریپت داده نمایشی را اجرا کنید.',
+    emptyRecommendationsTitle: 'پیشنهاد فعالی وجود ندارد',
+    emptyRecommendationsDescription: 'در حال حاضر شواهد پایداری برای تغییر معماری ثبت نشده است.',
+    demoEvidence: 'داده نمایشی',
+    source: 'منبع',
+    recordedAt: 'زمان ثبت',
+    statuses: {
+      healthy: 'سالم',
+      warning: 'نیازمند بررسی',
+      critical: 'بحرانی',
+    },
+    severities: {
+      info: 'اطلاعاتی',
+      warning: 'هشدار',
+      critical: 'بحرانی',
+    },
+    candidates: {
+      postgresql_tuning: 'بهینه‌سازی PostgreSQL',
+      redis: 'بررسی Redis',
+      timescaledb: 'بررسی TimescaleDB',
+      clickhouse: 'بررسی ClickHouse',
+    },
+    metrics: {
+      api_request_latency_p95: 'تأخیر P95 درخواست‌های API',
+      api_error_rate: 'نرخ خطای API',
+      api_repeated_read_ratio: 'نسبت خواندن‌های تکراری API',
+      database_query_latency_p95: 'تأخیر P95 کوئری دیتابیس',
+      database_pool_utilization: 'مصرف Connection Pool',
+      database_cpu_utilization: 'مصرف CPU دیتابیس',
+      database_disk_utilization: 'مصرف دیسک دیتابیس',
+      job_queue_wait_p95: 'زمان انتظار P95 صف پردازش',
+      backtest_failure_rate: 'نرخ شکست Backtest',
+      market_data_lag: 'تأخیر داده بازار',
+      invalid_candle_ratio: 'نسبت کندل‌های نامعتبر',
+      candle_storage_share: 'سهم کندل‌ها از فضای ذخیره‌سازی',
+      time_series_query_latency_p95: 'تأخیر P95 کوئری‌های سری زمانی',
+      analytical_query_latency_p95: 'تأخیر P95 کوئری‌های تحلیلی',
+      analytical_database_resource_share: 'سهم تحلیل از منابع دیتابیس',
+    },
+    jobStatuses: {
+      queued: 'در صف',
+      running: 'در حال اجرا',
+      succeeded: 'موفق',
+      failed: 'ناموفق',
+      cancelled: 'لغوشده',
+    },
+  },
+  en: {
+    eyebrow: 'Infrastructure capacity monitoring',
+    title: 'System architecture monitoring',
+    description:
+      'Review operational metrics and consider Redis, TimescaleDB, or ClickHouse only after sustained evidence has been recorded.',
+    capacityPlanningOnly:
+      'These recommendations are only for software architecture and capacity planning. They are not financial or trading recommendations.',
+    overallStatus: 'Overall status',
+    latestMetrics: 'Latest metrics',
+    latestMetricsDescription: 'Most recent recorded sample for each operational metric',
+    recommendations: 'Active architecture recommendations',
+    recommendationsDescription:
+      'Recommendations supported by evidence across consecutive evaluation windows',
+    operations: 'Operational health',
+    operationsDescription:
+      'Persisted provider, recent import, and worker queue health without exposing payloads or secrets',
+    queue: 'Worker queue',
+    providers: 'Data connections',
+    imports: 'Recent imports',
+    averageDuration: 'Average duration',
+    queued: 'Queued',
+    running: 'Running',
+    stuck: 'Stuck',
+    healthy: 'Healthy',
+    unhealthy: 'Unhealthy',
+    untested: 'Untested',
+    enabled: 'Enabled',
+    succeeded: 'Succeeded',
+    failed: 'Failed',
+    recentSample: 'Recent sample',
+    noData: 'No data',
+    recentJobs: 'Recent jobs',
+    recentJobsDescription:
+      'Persisted status and progress; worker identity and payload are not exposed.',
+    noRecentJobs: 'No jobs have been recorded yet.',
+    jobId: 'Job ID',
+    kind: 'Kind',
+    status: 'Status',
+    progress: 'Progress',
+    error: 'Error code',
+    updatedAt: 'Updated',
+    latestTest: 'Latest test',
+    latestSuccess: 'Latest success',
+    latestFailure: 'Latest failure',
+    failureReasons: 'Recent failure reasons',
+    noFailureReasons: 'No failures were recorded in the recent sample.',
+    emptyMetricsTitle: 'No metrics recorded yet',
+    emptyMetricsDescription: 'Run a collector or the monitoring demo seed script.',
+    emptyRecommendationsTitle: 'No active recommendations',
+    emptyRecommendationsDescription:
+      'No sustained evidence currently supports an architecture change.',
+    demoEvidence: 'Demo evidence',
+    source: 'Source',
+    recordedAt: 'Recorded at',
+    statuses: {
+      healthy: 'Healthy',
+      warning: 'Needs review',
+      critical: 'Critical',
+    },
+    severities: {
+      info: 'Information',
+      warning: 'Warning',
+      critical: 'Critical',
+    },
+    candidates: {
+      postgresql_tuning: 'PostgreSQL tuning',
+      redis: 'Evaluate Redis',
+      timescaledb: 'Evaluate TimescaleDB',
+      clickhouse: 'Evaluate ClickHouse',
+    },
+    metrics: {
+      api_request_latency_p95: 'API request latency P95',
+      api_error_rate: 'API error rate',
+      api_repeated_read_ratio: 'Repeated API read ratio',
+      database_query_latency_p95: 'Database query latency P95',
+      database_pool_utilization: 'Database pool utilization',
+      database_cpu_utilization: 'Database CPU utilization',
+      database_disk_utilization: 'Database disk utilization',
+      job_queue_wait_p95: 'Job queue wait P95',
+      backtest_failure_rate: 'Backtest failure rate',
+      market_data_lag: 'Market data lag',
+      invalid_candle_ratio: 'Invalid candle ratio',
+      candle_storage_share: 'Candle storage share',
+      time_series_query_latency_p95: 'Time-series query latency P95',
+      analytical_query_latency_p95: 'Analytical query latency P95',
+      analytical_database_resource_share: 'Analytical database resource share',
+    },
+    jobStatuses: {
+      queued: 'Queued',
+      running: 'Running',
+      succeeded: 'Succeeded',
+      failed: 'Failed',
+      cancelled: 'Cancelled',
+    },
+  },
+};
+
+export function getMonitoringCopy(locale: PlatformLocale): MonitoringCopy {
+  return copies[locale];
+}

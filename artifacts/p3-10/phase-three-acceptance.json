@@ -1,0 +1,304 @@
+{
+  "background_jobs": {
+    "failure_reasons": [],
+    "fixture_reference": "background-job-workloads-v2+postgresql-queue-v1",
+    "observations": {
+      "market_context_evaluation.failure_count": "0",
+      "market_context_evaluation.fixture_features": "5",
+      "market_context_evaluation.fixture_finalized_windows": "56",
+      "market_context_evaluation.runtime_p95_seconds": "0.420012",
+      "market_context_evaluation.runtime_target_seconds": "30",
+      "market_context_evaluation.runtime_within_target": "1",
+      "market_context_evaluation.samples": "20",
+      "market_context_evaluation.success_fraction": "1",
+      "queue_wait_p95_ms": "1239.361"
+    },
+    "observed_count": 410,
+    "passed": true,
+    "report_checksum": "2188aec53a64ad5f306917437c21eff2653c1f8cc6e79af1e57c31774c646987",
+    "report_commit_sha": "0e8f978a8fefbfa9111aad2ca30689a9fafd8c34",
+    "report_environment_label": "macbook-pro-reference",
+    "report_generated_at": "2026-10-17T06:20:02.452713Z"
+  },
+  "branch": "feature/v0.3-market-intelligence",
+  "ci": {
+    "conclusion": "success",
+    "head_sha": "0e8f978a8fefbfa9111aad2ca30689a9fafd8c34",
+    "run_url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/39008067025"
+  },
+  "commit_sha": "0e8f978a8fefbfa9111aad2ca30689a9fafd8c34",
+  "database_name": "trd_bot_test",
+  "environment_label": "macbook-pro-reference",
+  "failed_gates": [],
+  "gates": [
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_release_version.py",
+            "tests/test_release_security_boundary.py",
+            "tests/test_phase_zero_acceptance.py",
+            "tests/test_phase_one_acceptance.py",
+            "tests/test_phase_two_acceptance.py",
+            "tests/test_phase_three_acceptance.py",
+            "tests/test_market_context_benchmark.py",
+            "-q"
+          ],
+          "duration_ms": 18735,
+          "exit_code": 0,
+          "label": "Repository and freeze contract tests"
+        }
+      ],
+      "gate_id": "repository_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_market_context_contracts.py",
+            "tests/test_market_context_persistence.py",
+            "tests/test_market_context_alignment.py",
+            "tests/test_market_context_features.py",
+            "tests/test_market_context_regimes.py",
+            "tests/test_market_context_jobs.py",
+            "tests/test_market_context_monitoring.py",
+            "tests/test_market_context_product.py",
+            "tests/test_market_context_benchmark.py",
+            "-q"
+          ],
+          "duration_ms": 21385,
+          "exit_code": 0,
+          "label": "Phase 3 market-context contract tests"
+        }
+      ],
+      "gate_id": "market_context_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "format",
+            "--check",
+            "."
+          ],
+          "duration_ms": 142,
+          "exit_code": 0,
+          "label": "Backend format"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "check",
+            "."
+          ],
+          "duration_ms": 101,
+          "exit_code": 0,
+          "label": "Backend lint"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "mypy"
+          ],
+          "duration_ms": 5180,
+          "exit_code": 0,
+          "label": "Backend typing"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "not integration"
+          ],
+          "duration_ms": 58352,
+          "exit_code": 0,
+          "label": "Backend tests"
+        }
+      ],
+      "gate_id": "backend",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 1757,
+          "exit_code": 0,
+          "label": "Alembic upgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "downgrade",
+            "base"
+          ],
+          "duration_ms": 2260,
+          "exit_code": 0,
+          "label": "Alembic downgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 2345,
+          "exit_code": 0,
+          "label": "Alembic rebuild"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "check"
+          ],
+          "duration_ms": 1867,
+          "exit_code": 0,
+          "label": "Alembic drift check"
+        }
+      ],
+      "gate_id": "migration_cycle",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "integration",
+            "-v"
+          ],
+          "duration_ms": 6224,
+          "exit_code": 0,
+          "label": "PostgreSQL race, recovery, deduplication and context durability"
+        }
+      ],
+      "gate_id": "postgresql_resilience",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "duration_ms": 5601,
+          "exit_code": 0,
+          "label": "Frontend format"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "duration_ms": 11867,
+          "exit_code": 0,
+          "label": "Frontend lint"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "typecheck"
+          ],
+          "duration_ms": 7830,
+          "exit_code": 0,
+          "label": "Frontend typing"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "test"
+          ],
+          "duration_ms": 31386,
+          "exit_code": 0,
+          "label": "Frontend tests"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "duration_ms": 13824,
+          "exit_code": 0,
+          "label": "Frontend build"
+        }
+      ],
+      "gate_id": "frontend",
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-10-17T11:40:47.006321Z",
+  "golden": {
+    "algorithm_policy_checksum": "b8ace4b9c2a53c79f15b2f9da6689aae3dc344c35a178a00a4dd8e7acff153db",
+    "failure_reasons": [],
+    "feature_set_checksum": "50b734675aa69382002e87e0d2a512d28182dc24048d708874936715c70ac683",
+    "fixture_checksum": "79d082e0a2152032b033fc31d5cbb419d807b6669d93c2d2f5a994b6807ff521",
+    "fixture_version": "market-context-golden-v1",
+    "observations": {
+      "ranging_normal.runtime_p95_ms": "40.935104",
+      "ranging_normal.samples": "30",
+      "trending_down_high.runtime_p95_ms": "40.313106",
+      "trending_down_high.samples": "30",
+      "trending_up_low.runtime_p95_ms": "39.887222",
+      "trending_up_low.samples": "30"
+    },
+    "passed": true,
+    "report_checksum": "9bad32c52b7124742579c4bf4fdf8f4ba1bf533f79fb4ce1400928a9abbc5b9a",
+    "report_commit_sha": "0e8f978a8fefbfa9111aad2ca30689a9fafd8c34",
+    "report_environment_label": "macbook-pro-reference",
+    "report_generated_at": "2026-10-17T06:12:07.130456Z"
+  },
+  "manual": {
+    "context_generation_and_ui": "pass",
+    "local_api_worker_frontend": "pass",
+    "monitoring_freshness_recovery": "pass",
+    "security_network_inventory": "pass",
+    "stale_context_fail_closed": "pass",
+    "worker_restart_deduplication": "pass"
+  },
+  "prior_freeze": {
+    "phase_two_commit_sha": "6fc55e3e7ae5d6ce574590b4fb15080c543e6c89",
+    "phase_two_ready": true,
+    "phase_two_record_checksum": "9f8b003d7032becf92b94e084e5e1328628535f12007b7f2372bef3581488507"
+  },
+  "ready_to_freeze_phase_three": true,
+  "schema_version": "phase-three-acceptance-record-v1",
+  "scope": "crypto-spot-public-read-only",
+  "worktree_clean_at_start": true
+}

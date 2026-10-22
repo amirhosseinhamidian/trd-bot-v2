@@ -12,6 +12,7 @@ from trd_bot.db.walk_forward_execution_repositories import (
 )
 from trd_bot.research.experiment_executions import (
     EMACrossoverExecutionParameters,
+    RSIThresholdExecutionParameters,
 )
 from trd_bot.research.walk_forward import WalkForwardConfig, WalkForwardMode
 from trd_bot.research.walk_forward_executions import (
@@ -92,6 +93,37 @@ def test_sqlalchemy_repository_saves_and_reads_execution(
     assert stored == execution
     assert loaded == execution
     assert repository.count() == 1
+
+
+def test_sqlalchemy_repository_round_trips_rsi_parameters(
+    session: Session,
+    walk_forward_config: WalkForwardConfig,
+) -> None:
+    repository = SqlAlchemyWalkForwardExecutionRepository(session)
+    execution = WalkForwardExecutionBuilder().build(
+        dataset_id="dataset-1234567890abcdef",
+        parameters=RSIThresholdExecutionParameters(
+            period=14,
+            oversold_threshold=Decimal("30"),
+            overbought_threshold=Decimal("70"),
+            horizon_candles=1,
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
+        walk_forward_config=walk_forward_config,
+        total_folds=4,
+        now=datetime(2026, 8, 30, 9, tzinfo=UTC),
+    )
+
+    repository.save(execution)
+    loaded = repository.get(execution.execution_id)
+
+    assert loaded is not None
+    assert loaded.strategy_name == "rsi-threshold"
+    assert isinstance(loaded.parameters, RSIThresholdExecutionParameters)
+    assert loaded.parameters == execution.parameters
 
 
 def test_sqlalchemy_repository_updates_fold_progress(

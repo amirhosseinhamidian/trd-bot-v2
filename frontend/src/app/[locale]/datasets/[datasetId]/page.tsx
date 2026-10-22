@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import DatasetDetail from '@/components/dashboard/dataset-detail';
-import { ApiRequestError, getDatasetCandles, getDatasetSummary } from '@/lib/api/client';
+import { getDatasetCandles, getDatasetSummary } from '@/features/datasets/api/client';
+import DatasetDetail from '@/features/datasets/dataset-detail';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type DatasetDetailPageProps = {
   params: Promise<{

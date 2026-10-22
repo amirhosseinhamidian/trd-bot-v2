@@ -200,6 +200,27 @@ def test_stability_report_contains_every_fold() -> None:
 
     assert report.interpretation == "historical_research_only"
 
+    assert report.stability_version == "walk-forward-stability-v1"
+
+    assert report.folds_with_trades == sum(fold.total_trades > 0 for fold in report.folds)
+
+    assert report.folds_without_trades == (report.total_folds - report.folds_with_trades)
+
+    assert report.traded_fold_fraction == (
+        Decimal(report.folds_with_trades) / Decimal(report.total_folds)
+    )
+
+    assert all(fold.has_trades == (fold.total_trades > 0) for fold in report.folds)
+
+    assert {definition.key for definition in report.metric_definitions} == {
+        "median_fold_return",
+        "worst_fold_return",
+        "traded_fold_fraction",
+        "return_consistency",
+        "fold_drawdown",
+        "excess_return",
+    }
+
 
 def test_stability_return_outcome_counts_equal_total_folds() -> None:
     report = WalkForwardStabilityAnalyzer().analyze(create_run())
@@ -241,6 +262,32 @@ def test_stability_report_calculates_return_distribution() -> None:
     assert report.strategy_return_range == (max(strategy_returns) - min(strategy_returns))
 
     assert report.strategy_return_mean_absolute_deviation >= 0
+
+    expected_consistency = (
+        Decimal("1")
+        if report.strategy_return_range == 0
+        else Decimal("1")
+        - min(
+            Decimal("1"),
+            report.strategy_return_mean_absolute_deviation / report.strategy_return_range,
+        )
+    )
+
+    assert report.return_consistency == expected_consistency
+
+    assert (
+        report.worst_return_fold_number
+        == min(
+            report.folds,
+            key=lambda fold: (fold.strategy_return, fold.fold_number),
+        ).fold_number
+    )
+
+    worst_drawdown = max(fold.max_drawdown_fraction for fold in report.folds)
+
+    assert report.worst_drawdown_fold_number == next(
+        fold.fold_number for fold in report.folds if fold.max_drawdown_fraction == worst_drawdown
+    )
 
 
 def test_stability_fold_metrics_match_pipeline_results() -> None:

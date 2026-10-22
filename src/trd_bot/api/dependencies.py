@@ -3,45 +3,158 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from trd_bot.api.background_jobs import (
-    ExperimentExecutionTask,
-    WalkForwardExecutionTask,
-    run_experiment_execution_job,
-    run_walk_forward_execution_job,
-)
 from trd_bot.db import (
+    SqlAlchemyAlertInboxRepository,
+    SqlAlchemyAlertOutcomeRepository,
+    SqlAlchemyAlertPublicationRepository,
+    SqlAlchemyAlertSimulationRepository,
     SqlAlchemyArchitectureRecommendationRepository,
+    SqlAlchemyBackgroundJobRepository,
     SqlAlchemyCandidateJournalRepository,
     SqlAlchemyCandidateProjectionRepository,
+    SqlAlchemyDatasetFileImportEnqueuer,
     SqlAlchemyDatasetRepository,
+    SqlAlchemyDecisionIntelligenceStore,
+    SqlAlchemyExperimentExecutionEnqueuer,
     SqlAlchemyExperimentExecutionRepository,
     SqlAlchemyExperimentRegistry,
+    SqlAlchemyHistoricalDatasetCommitter,
+    SqlAlchemyMarketContextMonitoringReader,
+    SqlAlchemyMarketContextProductReader,
+    SqlAlchemyMarketDataMonitoringReader,
     SqlAlchemyMonitoringRuntimeStateRepository,
+    SqlAlchemyOptimizationExecutionEnqueuer,
+    SqlAlchemyOptimizationExecutionRepository,
     SqlAlchemySimulatedPortfolioRepository,
     SqlAlchemySystemMetricRepository,
+    SqlAlchemyWalkForwardExecutionEnqueuer,
     SqlAlchemyWalkForwardExecutionRepository,
     SqlAlchemyWalkForwardRunRegistry,
     get_database_session,
 )
+from trd_bot.db.market_data_connection_repositories import (
+    SqlAlchemyMarketDataConnectionRepository,
+)
+from trd_bot.db.market_data_import_repositories import (
+    SqlAlchemyMarketDataImportRepository,
+)
+from trd_bot.jobs import BackgroundJobRepository
+from trd_bot.market_context import MarketContextMonitoringReader, MarketContextProductReader
+from trd_bot.market_data import (
+    MarketDataConnectionRepository,
+    MarketDataMonitoringReader,
+    MarketDataProviderCatalog,
+)
+from trd_bot.market_data.import_history import MarketDataImportRepository
 from trd_bot.monitoring import (
     ArchitectureRecommendationRepository,
     MonitoringRuntimeStateRepository,
     SystemMetricRepository,
 )
 from trd_bot.paper import SimulatedPortfolioRepository
-from trd_bot.research import (
-    AcceptancePolicyPresetCatalog,
-    DatasetRepository,
-    ExperimentExecutionRepository,
-    ExperimentRegistry,
-    WalkForwardRunRegistry,
-)
-from trd_bot.research.walk_forward_executions import (
-    WalkForwardExecutionRepository,
-)
+from trd_bot.research.dataset_file_jobs import DatasetFileImportEnqueuer
+from trd_bot.research.datasets import DatasetRepository
+from trd_bot.research.experiment_execution_jobs import ExperimentExecutionEnqueuer
+from trd_bot.research.experiment_executions import ExperimentExecutionRepository
+from trd_bot.research.experiments import ExperimentRegistry
+from trd_bot.research.historical_dataset_commits import HistoricalDatasetCommitter
+from trd_bot.research.optimization_executions import OptimizationExecutionRepository
+from trd_bot.research.optimization_jobs import OptimizationExecutionEnqueuer
+from trd_bot.research.optimization_runner import OptimizationRunner
+from trd_bot.research.policy_presets import AcceptancePolicyPresetCatalog
+from trd_bot.research.walk_forward_execution_jobs import WalkForwardExecutionEnqueuer
+from trd_bot.research.walk_forward_executions import WalkForwardExecutionRepository
+from trd_bot.research.walk_forward_runs import WalkForwardRunRegistry
 
 _acceptance_policy_preset_catalog = AcceptancePolicyPresetCatalog()
+_market_data_provider_catalog = MarketDataProviderCatalog()
 DatabaseSessionDependency = Annotated[Session, Depends(get_database_session)]
+
+
+def get_alert_inbox_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertInboxRepository:
+    """Return the request-scoped Alert Center repository."""
+
+    return SqlAlchemyAlertInboxRepository(session)
+
+
+def get_alert_publication_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertPublicationRepository:
+    """Return the request-scoped alert publication policy repository."""
+
+    return SqlAlchemyAlertPublicationRepository(session)
+
+
+def get_alert_simulation_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertSimulationRepository:
+    """Return the request-scoped offline alert observation repository."""
+
+    return SqlAlchemyAlertSimulationRepository(session)
+
+
+def get_alert_outcome_repository(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyAlertOutcomeRepository:
+    """Return the request-scoped offline alert outcome journal."""
+
+    return SqlAlchemyAlertOutcomeRepository(session)
+
+
+def get_market_data_connection_repository(
+    session: DatabaseSessionDependency,
+) -> MarketDataConnectionRepository:
+    """Return the request-scoped market-data connection repository."""
+
+    return SqlAlchemyMarketDataConnectionRepository(session)
+
+
+def get_background_job_repository(
+    session: DatabaseSessionDependency,
+) -> BackgroundJobRepository:
+    """Return the request-scoped durable background job repository."""
+
+    return SqlAlchemyBackgroundJobRepository(session)
+
+
+def get_market_data_import_repository(
+    session: DatabaseSessionDependency,
+) -> MarketDataImportRepository:
+    """Return the request-scoped historical import audit repository."""
+
+    return SqlAlchemyMarketDataImportRepository(session)
+
+
+def get_market_data_monitoring_reader(
+    session: DatabaseSessionDependency,
+) -> MarketDataMonitoringReader:
+    """Return the request-scoped read-only market-data health projection."""
+
+    return SqlAlchemyMarketDataMonitoringReader(session)
+
+
+def get_market_context_monitoring_reader(
+    session: DatabaseSessionDependency,
+) -> MarketContextMonitoringReader:
+    """Return the request-scoped read-only market-context health projection."""
+
+    return SqlAlchemyMarketContextMonitoringReader(session)
+
+
+def get_market_context_product_reader(
+    session: DatabaseSessionDependency,
+) -> MarketContextProductReader:
+    """Return the request-scoped product-facing market-context reader."""
+
+    return SqlAlchemyMarketContextProductReader(session)
+
+
+def get_market_data_provider_catalog() -> MarketDataProviderCatalog:
+    """Return the explicit allowlist of read-only market-data providers."""
+
+    return _market_data_provider_catalog
 
 
 def get_dataset_repository(
@@ -50,6 +163,30 @@ def get_dataset_repository(
     """Return the request-scoped dataset repository."""
 
     return SqlAlchemyDatasetRepository(session)
+
+
+def get_decision_intelligence_store(
+    session: DatabaseSessionDependency,
+) -> SqlAlchemyDecisionIntelligenceStore:
+    """Return the request-scoped read-only Decision Intelligence store."""
+
+    return SqlAlchemyDecisionIntelligenceStore(session)
+
+
+def get_dataset_file_import_enqueuer(
+    session: DatabaseSessionDependency,
+) -> DatasetFileImportEnqueuer:
+    """Return the atomic staged-upload and durable-job enqueuer."""
+
+    return SqlAlchemyDatasetFileImportEnqueuer(session)
+
+
+def get_historical_dataset_committer(
+    session: DatabaseSessionDependency,
+) -> HistoricalDatasetCommitter:
+    """Return the atomic dataset snapshot and import-history committer."""
+
+    return SqlAlchemyHistoricalDatasetCommitter(session)
 
 
 def get_experiment_registry(
@@ -68,12 +205,28 @@ def get_experiment_execution_repository(
     return SqlAlchemyExperimentExecutionRepository(session)
 
 
+def get_experiment_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> ExperimentExecutionEnqueuer:
+    """Return the atomic experiment-execution and durable-job enqueuer."""
+
+    return SqlAlchemyExperimentExecutionEnqueuer(session)
+
+
 def get_walk_forward_execution_repository(
     session: DatabaseSessionDependency,
 ) -> WalkForwardExecutionRepository:
     """Return the request-scoped walk-forward execution repository."""
 
     return SqlAlchemyWalkForwardExecutionRepository(session)
+
+
+def get_walk_forward_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> WalkForwardExecutionEnqueuer:
+    """Return the atomic walk-forward execution and durable-job enqueuer."""
+
+    return SqlAlchemyWalkForwardExecutionEnqueuer(session)
 
 
 def get_walk_forward_run_registry(
@@ -138,13 +291,28 @@ def get_monitoring_runtime_state_repository(
     return SqlAlchemyMonitoringRuntimeStateRepository(session)
 
 
-def get_experiment_execution_task() -> ExperimentExecutionTask:
-    """Return the production experiment background task."""
+def get_optimization_execution_repository(
+    session: DatabaseSessionDependency,
+) -> OptimizationExecutionRepository:
+    """Return the request-scoped optimization execution repository."""
 
-    return run_experiment_execution_job
+    return SqlAlchemyOptimizationExecutionRepository(session)
 
 
-def get_walk_forward_execution_task() -> WalkForwardExecutionTask:
-    """Return the production walk-forward background task."""
+def get_optimization_execution_enqueuer(
+    session: DatabaseSessionDependency,
+) -> OptimizationExecutionEnqueuer:
+    """Return the atomic optimization execution and job enqueuer."""
 
-    return run_walk_forward_execution_job
+    return SqlAlchemyOptimizationExecutionEnqueuer(session)
+
+
+def get_optimization_runner(
+    repository: Annotated[
+        OptimizationExecutionRepository,
+        Depends(get_optimization_execution_repository),
+    ],
+) -> OptimizationRunner:
+    """Return an optimization runner sharing the request-scoped repository."""
+
+    return OptimizationRunner(repository)

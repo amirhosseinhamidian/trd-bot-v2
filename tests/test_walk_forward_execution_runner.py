@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -11,6 +12,7 @@ from trd_bot.research.datasets import (
 )
 from trd_bot.research.experiment_executions import (
     EMACrossoverExecutionParameters,
+    RSIThresholdExecutionParameters,
 )
 from trd_bot.research.walk_forward import (
     WalkForwardConfig,
@@ -46,13 +48,17 @@ class RecordingExecutionRepository(InMemoryWalkForwardExecutionRepository):
 
 
 class FailingWalkForwardExecutor(WalkForwardExecutor):
-    def execute(self, **kwargs: object) -> WalkForwardExecutionResult:
-        callback = kwargs["on_fold_completed"]
+    def execute(self, **kwargs: Any) -> WalkForwardExecutionResult:
+        callback = kwargs["on_fold_result_completed"]
 
         assert callable(callback)
-        callback(1, 3)
 
-        raise RuntimeError("simulated fold failure")
+        def fail_after_checkpoint(*args: object) -> None:
+            callback(*args)
+            raise RuntimeError("simulated transient fold failure")
+
+        kwargs["on_fold_result_completed"] = fail_after_checkpoint
+        return super().execute(**kwargs)
 
 
 def build_parameters() -> EMACrossoverExecutionParameters:
@@ -186,6 +192,83 @@ def test_runs_queued_walk_forward_execution_to_success() -> None:
     ]
 
 
+def test_runs_queued_rsi_walk_forward_execution_to_success() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryWalkForwardExecutionRepository()
+    run_registry = InMemoryWalkForwardRunRegistry()
+    dataset = build_dataset()
+
+    dataset_repository.save(dataset)
+
+    config = build_walk_forward_config()
+    plan = WalkForwardPlanner().plan(
+        dataset=dataset,
+        config=config,
+    )
+
+    queued = WalkForwardExecutionBuilder().build(
+        dataset_id=dataset.dataset_id,
+        parameters=RSIThresholdExecutionParameters(
+            period=2,
+            oversold_threshold=Decimal("30"),
+            overbought_threshold=Decimal("70"),
+            horizon_candles=1,
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
+        walk_forward_config=config,
+        total_folds=len(plan.folds),
+    )
+    execution_repository.save(queued)
+
+    completed = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=run_registry,
+    ).run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
+    assert completed.walk_forward_run_id is not None
+
+    stored_run = run_registry.get(completed.walk_forward_run_id)
+
+    assert stored_run is not None
+    assert stored_run.result.strategy_name == "rsi-threshold"
+    assert {parameter.name for parameter in stored_run.result.strategy_parameters} == {
+        "period",
+        "oversold_threshold",
+        "overbought_threshold",
+    }
+
+
+def test_marks_walk_forward_execution_failed_for_unregistered_strategy_identity() -> None:
+    dataset_repository = InMemoryDatasetRepository()
+    execution_repository = InMemoryWalkForwardExecutionRepository()
+    dataset = build_dataset()
+
+    dataset_repository.save(dataset)
+
+    queued = build_queued_execution(dataset).model_copy(
+        update={
+            "strategy_version": "9.9.9",
+        }
+    )
+    execution_repository.save(queued)
+
+    runner = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=InMemoryWalkForwardRunRegistry(),
+    )
+
+    completed = runner.run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.FAILED
+    assert completed.error_code == "execution_failed"
+
+
 def test_marks_walk_forward_execution_failed_when_dataset_is_missing() -> None:
     execution_repository = InMemoryWalkForwardExecutionRepository()
     queued = WalkForwardExecutionBuilder().build(
@@ -215,7 +298,7 @@ def test_marks_walk_forward_execution_failed_when_dataset_is_missing() -> None:
     )
 
 
-def test_preserves_completed_fold_progress_when_execution_fails() -> None:
+def test_resumes_after_a_transient_failure_from_the_first_incomplete_fold() -> None:
     dataset_repository = InMemoryDatasetRepository()
     execution_repository = InMemoryWalkForwardExecutionRepository()
     dataset = build_dataset()
@@ -232,13 +315,26 @@ def test_preserves_completed_fold_progress_when_execution_fails() -> None:
         executor=FailingWalkForwardExecutor(),
     )
 
-    completed = runner.run(queued.execution_id)
+    with pytest.raises(RuntimeError, match="simulated transient fold failure"):
+        runner.run(queued.execution_id)
 
-    assert completed.status is WalkForwardExecutionStatus.FAILED
-    assert completed.completed_folds == 1
-    assert completed.progress_percent == 33
-    assert completed.error_code == "execution_failed"
-    assert completed.error_message == "The walk-forward execution could not be completed."
+    checkpointed = execution_repository.get(queued.execution_id)
+    assert checkpointed is not None
+    assert checkpointed.status is WalkForwardExecutionStatus.RUNNING
+    assert checkpointed.completed_folds == 1
+    assert checkpointed.progress_percent == 33
+    assert len(checkpointed.fold_checkpoints) == 1
+
+    completed = WalkForwardExecutionRunner(
+        executions=execution_repository,
+        datasets=dataset_repository,
+        runs=InMemoryWalkForwardRunRegistry(),
+    ).run(queued.execution_id)
+
+    assert completed.status is WalkForwardExecutionStatus.SUCCEEDED
+    assert completed.completed_folds == 3
+    assert len(completed.fold_checkpoints) == 3
+    assert [checkpoint.fold_number for checkpoint in completed.fold_checkpoints] == [1, 2, 3]
 
 
 def test_returns_existing_completed_execution_without_rerunning() -> None:

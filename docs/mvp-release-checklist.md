@@ -2,6 +2,10 @@
 
 This checklist is the final acceptance gate for TRD BOT v2 MVP.
 
+The current release profile is local-only. Server staging, deployment, pull-request
+merge, tag creation, and GitHub Release publication are deferred until the owner
+explicitly enables them. Local acceptance and CI on the candidate SHA remain required.
+
 The MVP is a research and historical-simulation system only. It must remain
 limited to `RESEARCH`, `BACKTEST`, `PAPER`, and `SHADOW` operation. A release
 must not add exchange credentials, account connectivity, real-money order
@@ -18,32 +22,40 @@ git diff --check
 
 Expected result: no unintended working-tree changes and no whitespace errors.
 
-## 2. Fresh PostgreSQL startup
+## 2. Local PostgreSQL startup
 
-This step intentionally removes the local development database volume. Do not
-run it when local PostgreSQL data must be preserved.
+The default local path preserves the existing development volume:
 
 ```bash
-docker compose down -v
 docker compose up -d postgres
 docker compose ps
 ```
 
 Wait until the `postgres` service reports `healthy`.
 
-## 3. Fresh schema migration
+Do not run `docker compose down -v` on a database whose data must be preserved.
+The destructive fresh-database cycle is already enforced by CI and may only be
+repeated locally against an explicitly disposable database.
 
-Load the development environment and upgrade an empty database:
+## 3. Reversible fresh schema migration
+
+This destructive cycle belongs only on a disposable database. CI performs it
+against a fresh `trd_bot_test` service for every candidate SHA. Do not point
+these commands at the local development database when its data must be kept:
 
 ```bash
-cp -n .env.example .env
+export TRD_BOT_DATABASE_URL=postgresql+psycopg://trd_bot:trd_bot_dev_password@127.0.0.1:5432/trd_bot_test
+python -m alembic upgrade head
+python -m alembic downgrade base
 python -m alembic upgrade head
 python -m alembic check
+unset TRD_BOT_DATABASE_URL
 ```
 
 Expected result:
 
 - the full migration chain upgrades successfully from an empty database;
+- the complete chain downgrades to `base` and rebuilds to `head`;
 - `alembic check` reports no pending schema operations.
 
 ## 4. Backend release gates
@@ -62,10 +74,24 @@ The MVP end-to-end acceptance test must also pass:
 
 ```bash
 python -m pytest tests/test_mvp_acceptance.py -q
+python -m pytest tests/test_release_security_boundary.py -q
 ```
 
-It verifies that a closed historical candidate lifecycle can be persisted and
-read back through candidate, lineage, portfolio, position, and timeline APIs.
+These checks verify that a closed historical candidate lifecycle can be persisted and
+read back through candidate, lineage, portfolio, position, and timeline APIs, and that
+the release exposes no live execution route, credential input, or frontend execution page.
+
+The PostgreSQL race and restart acceptance test must run against the isolated
+`trd_bot_test` database:
+
+```bash
+python -m pytest \
+  tests/test_postgresql_integration.py::test_postgresql_background_job_races_and_expired_lease_recovery \
+  -m integration -v
+```
+
+It proves idempotent concurrent enqueue, single-worker claim, expired lease reclaim, and
+rejection of the stale worker after recovery.
 
 ## 5. API smoke check
 
@@ -117,11 +143,14 @@ The MVP can be marked complete only when all of the following are true:
 
 - PostgreSQL starts cleanly through Docker Compose.
 - The complete Alembic chain upgrades an empty database.
+- The complete Alembic chain downgrades to `base` and rebuilds to `head`.
 - `alembic check` reports no pending migration.
 - Backend formatting, lint, type checking, unit tests, and integration tests pass.
 - The end-to-end MVP acceptance test passes.
+- The PostgreSQL job race/recovery and release security boundary tests pass.
 - Frontend formatting, lint, tests, and production build pass.
 - The API health smoke check returns HTTP 200.
 - Candidate journal/projection and paper portfolio dashboards remain read-only.
 - No live trading or exchange execution capability exists.
-- GitHub Actions is green on the final pull request or `main` commit.
+- GitHub Actions is green on the exact candidate SHA.
+- The candidate is accepted for local use; server deployment and publication remain deferred.

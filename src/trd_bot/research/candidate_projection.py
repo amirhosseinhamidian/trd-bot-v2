@@ -5,6 +5,11 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from trd_bot.research.candidate_decision_evidence import (
+    CandidateDecisionEvidence,
+    CandidateDecisionEvidenceBuilder,
+    CandidateRiskCompatibilityStatus,
+)
 from trd_bot.research.candidate_journal import CandidateJournalEntry
 from trd_bot.research.candidates import (
     CandidateStatus,
@@ -48,6 +53,7 @@ class CandidateJournalOccurrence(BaseModel):
     )
     exit_reason: CandidateExitReason | None = None
     candidate: ResearchCandidate
+    decision_evidence: CandidateDecisionEvidence | None = None
 
     @field_validator("recorded_at", "evaluated_at")
     @classmethod
@@ -56,6 +62,8 @@ class CandidateJournalOccurrence(BaseModel):
 
     @model_validator(mode="after")
     def validate_occurrence(self) -> Self:
+        self._validate_decision_evidence()
+
         if self.occurrence_type is CandidateOccurrenceType.SKIPPED:
             if self.replay_status is not None or self.risk_decision is not None:
                 raise ValueError("skipped occurrence cannot contain replay or risk outcomes")
@@ -89,6 +97,30 @@ class CandidateJournalOccurrence(BaseModel):
             raise ValueError("unselected occurrence cannot contain position lineage")
 
         return self
+
+    def _validate_decision_evidence(self) -> None:
+        evidence = self.decision_evidence
+        if evidence is None:
+            return
+        if evidence.candidate_id != self.candidate.candidate_id:
+            raise ValueError("candidate occurrence decision evidence identity does not match")
+        if evidence.ranking.rank != self.rank:
+            raise ValueError("candidate occurrence decision evidence rank does not match")
+        if evidence.ranking.total_score != self.ranking_score:
+            raise ValueError("candidate occurrence decision evidence score does not match")
+
+        risk = evidence.risk_compatibility
+        if self.occurrence_type is CandidateOccurrenceType.SKIPPED:
+            if risk.status is not CandidateRiskCompatibilityStatus.NOT_EVALUATED:
+                raise ValueError("skipped occurrence risk evidence must be unevaluated")
+            if risk.not_evaluated_reason is not self.skip_reason:
+                raise ValueError("skipped occurrence risk evidence reason does not match")
+            return
+
+        if risk.status is not CandidateRiskCompatibilityStatus.EVALUATED:
+            raise ValueError("attempted occurrence risk evidence must be evaluated")
+        if risk.decision is not self.risk_decision:
+            raise ValueError("attempted occurrence risk evidence decision does not match")
 
 
 class CandidateProjection(BaseModel):
@@ -140,6 +172,13 @@ class CandidateJournalProjectionReader:
         occurrences: dict[str, list[CandidateJournalOccurrence]] = {}
 
         for journal in journals:
+            peer_entries = tuple(
+                attempt.ranking_entry for attempt in journal.lifecycle.replay.attempted
+            ) + tuple(skipped.ranking_entry for skipped in journal.lifecycle.replay.skipped)
+            has_complete_ranking_evidence = (
+                len(peer_entries) == journal.lifecycle.replay.total_candidates
+            )
+
             for attempt in journal.lifecycle.replay.attempted:
                 simulation = attempt.simulation
                 selected = attempt.status is CandidateReplayStatus.OPENED
@@ -168,6 +207,15 @@ class CandidateJournalProjectionReader:
                     position_id=position_id,
                     exit_reason=exit_reason,
                     candidate=candidate,
+                    decision_evidence=(
+                        CandidateDecisionEvidenceBuilder.build(
+                            entry=attempt.ranking_entry,
+                            peer_entries=peer_entries,
+                            risk_assessment=attempt.risk_assessment,
+                        )
+                        if has_complete_ranking_evidence
+                        else None
+                    ),
                 )
                 occurrences.setdefault(candidate.candidate_id, []).append(occurrence)
 
@@ -186,6 +234,11 @@ class CandidateJournalProjectionReader:
                     skip_reason=skipped.reason,
                     selected=False,
                     candidate=candidate,
+                    decision_evidence=CandidateDecisionEvidenceBuilder.build(
+                        entry=skipped.ranking_entry,
+                        peer_entries=peer_entries,
+                        not_evaluated_reason=skipped.reason,
+                    ),
                 )
                 occurrences.setdefault(candidate.candidate_id, []).append(occurrence)
 

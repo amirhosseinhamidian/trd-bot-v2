@@ -16,11 +16,29 @@ class SqlAlchemyWalkForwardExecutionRepository:
         self,
         execution: WalkForwardExecution,
     ) -> WalkForwardExecution:
+        stored, _ = self.stage(execution)
+
+        try:
+            self._session.commit()
+        except IntegrityError as error:
+            self._session.rollback()
+
+            raise ValueError("walk-forward execution could not be persisted") from error
+
+        return stored
+
+    def stage(
+        self,
+        execution: WalkForwardExecution,
+    ) -> tuple[WalkForwardExecution, bool]:
+        """Stage an execution insert or update without committing the transaction."""
+
         row = self._session.get(
             WalkForwardExecutionRow,
             execution.execution_id,
         )
 
+        created = row is None
         if row is None:
             row = WalkForwardExecutionRow(
                 execution_id=execution.execution_id,
@@ -36,7 +54,7 @@ class SqlAlchemyWalkForwardExecutionRepository:
                 total_folds=execution.total_folds,
                 completed_folds=execution.completed_folds,
                 walk_forward_run_id=execution.walk_forward_run_id,
-                payload_json=execution.model_dump_json(),
+                payload_json=execution.persistence_json(),
             )
 
             self._session.add(row)
@@ -47,14 +65,7 @@ class SqlAlchemyWalkForwardExecutionRepository:
                 execution=execution,
             )
 
-        try:
-            self._session.commit()
-        except IntegrityError as error:
-            self._session.rollback()
-
-            raise ValueError("walk-forward execution could not be persisted") from error
-
-        return execution
+        return execution, created
 
     def get(
         self,
@@ -116,7 +127,7 @@ class SqlAlchemyWalkForwardExecutionRepository:
         row.total_folds = execution.total_folds
         row.completed_folds = execution.completed_folds
         row.walk_forward_run_id = execution.walk_forward_run_id
-        row.payload_json = execution.model_dump_json()
+        row.payload_json = execution.persistence_json()
 
     @staticmethod
     def _validate_pagination(

@@ -154,6 +154,18 @@ class CandidateRankingResult(BaseModel):
         if scores != tuple(sorted(scores, reverse=True)):
             raise ValueError("candidate ranking entries must be score ordered")
 
+        expected_order = tuple(
+            sorted(
+                self.entries,
+                key=lambda entry: (
+                    -entry.total_score,
+                    entry.candidate.candidate_id,
+                ),
+            )
+        )
+        if self.entries != expected_order:
+            raise ValueError("candidate ranking ties must use candidate ID ascending")
+
         return self
 
 

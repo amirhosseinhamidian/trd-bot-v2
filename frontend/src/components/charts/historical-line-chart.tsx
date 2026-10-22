@@ -5,6 +5,7 @@ export type HistoricalChartPoint = {
 
 export type HistoricalChartSeries = {
   color: string;
+  curve?: 'linear' | 'step_after';
   label: string;
   points: HistoricalChartPoint[];
 };
@@ -63,8 +64,8 @@ export function HistoricalLineChart({
 
   if (allPoints.length === 0) {
     return (
-      <div className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center">
-        <p className="text-sm text-slate-500">{emptyLabel}</p>
+      <div className="flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-app-border bg-app-surface-muted p-6 text-center">
+        <p className="text-sm text-app-muted">{emptyLabel}</p>
       </div>
     );
   }
@@ -116,16 +117,28 @@ export function HistoricalLineChart({
     return PADDING_TOP + (1 - (value - chartMinimumValue) / valueSpan) * chartHeight;
   }
 
-  function createPath(points: NormalizedPoint[]): string {
-    return points
-      .map((point, index) => {
-        const command = index === 0 ? 'M' : 'L';
+  function createPath(item: NormalizedSeries): string {
+    if (item.points.length === 0) {
+      return '';
+    }
 
-        return `${command} ${scaleX(point.milliseconds).toFixed(
-          2,
-        )} ${scaleY(point.value).toFixed(2)}`;
-      })
-      .join(' ');
+    const [firstPoint, ...remainingPoints] = item.points;
+    const commands = [
+      `M ${scaleX(firstPoint.milliseconds).toFixed(2)} ${scaleY(firstPoint.value).toFixed(2)}`,
+    ];
+    let previousPoint = firstPoint;
+
+    for (const point of remainingPoints) {
+      const x = scaleX(point.milliseconds).toFixed(2);
+      const y = scaleY(point.value).toFixed(2);
+      if (item.curve === 'step_after') {
+        commands.push(`L ${x} ${scaleY(previousPoint.value).toFixed(2)}`);
+      }
+      commands.push(`L ${x} ${y}`);
+      previousPoint = point;
+    }
+
+    return commands.join(' ');
   }
 
   const gridLines = Array.from(
@@ -150,7 +163,7 @@ export function HistoricalLineChart({
     <div>
       <div className="mb-4 flex flex-wrap gap-4">
         {normalizedSeries.map((item) => (
-          <div key={item.label} className="flex items-center gap-2 text-xs text-slate-400">
+          <div key={item.label} className="flex items-center gap-2 text-xs text-app-muted">
             <span
               className="h-2.5 w-2.5 rounded-full"
               style={{
@@ -163,12 +176,17 @@ export function HistoricalLineChart({
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/50 p-3">
+      <div
+        role="region"
+        aria-label={ariaLabel}
+        tabIndex={0}
+        className="w-full max-w-full min-w-0 touch-pan-x touch-pan-y [scrollbar-gutter:stable] overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl border border-app-border bg-app-surface-muted p-3 focus-visible:border-app-control-border focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none focus-visible:ring-inset"
+      >
         <svg
           role="img"
           aria-label={ariaLabel}
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-auto w-full"
+          className="h-auto w-full min-w-[40rem]"
         >
           {gridLines.map((line) => (
             <g key={line.y}>
@@ -177,14 +195,14 @@ export function HistoricalLineChart({
                 x2={WIDTH - PADDING_RIGHT}
                 y1={line.y}
                 y2={line.y}
-                stroke="#1e293b"
+                stroke="var(--app-border)"
                 strokeWidth="1"
               />
 
               <text
                 x={PADDING_LEFT - 10}
                 y={line.y + 4}
-                fill="#64748b"
+                fill="var(--app-subtle)"
                 fontSize="11"
                 textAnchor="end"
               >
@@ -198,7 +216,7 @@ export function HistoricalLineChart({
             x2={PADDING_LEFT}
             y1={PADDING_TOP}
             y2={HEIGHT - PADDING_BOTTOM}
-            stroke="#334155"
+            stroke="var(--app-border)"
             strokeWidth="1"
           />
 
@@ -207,12 +225,12 @@ export function HistoricalLineChart({
             x2={WIDTH - PADDING_RIGHT}
             y1={HEIGHT - PADDING_BOTTOM}
             y2={HEIGHT - PADDING_BOTTOM}
-            stroke="#334155"
+            stroke="var(--app-border)"
             strokeWidth="1"
           />
 
           {normalizedSeries.map((item) => {
-            const path = createPath(item.points);
+            const path = createPath(item);
 
             return (
               <g key={item.label}>
@@ -235,7 +253,7 @@ export function HistoricalLineChart({
                     cy={scaleY(point.value)}
                     r="4"
                     fill={item.color}
-                    stroke="#020617"
+                    stroke="var(--app-background)"
                     strokeWidth="2"
                     vectorEffect="non-scaling-stroke"
                   >
@@ -248,14 +266,20 @@ export function HistoricalLineChart({
             );
           })}
 
-          <text x={PADDING_LEFT} y={HEIGHT - 15} fill="#64748b" fontSize="11" textAnchor="start">
+          <text
+            x={PADDING_LEFT}
+            y={HEIGHT - 15}
+            fill="var(--app-subtle)"
+            fontSize="11"
+            textAnchor="start"
+          >
             {formatDate(firstTimestamp)}
           </text>
 
           <text
             x={WIDTH - PADDING_RIGHT}
             y={HEIGHT - 15}
-            fill="#64748b"
+            fill="var(--app-subtle)"
             fontSize="11"
             textAnchor="end"
           >

@@ -9,6 +9,17 @@ from trd_bot.api.dependencies import get_candidate_projection_repository
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.db import SqlAlchemyCandidateProjectionRepository
 from trd_bot.domain.market_data import Timeframe, TradingPair
+from trd_bot.research.candidate_comparisons import (
+    CandidateComparator,
+    CandidateComparisonRequest,
+    CandidateComparisonResult,
+)
+from trd_bot.research.candidate_decision_evidence import CandidateDecisionEvidence
+from trd_bot.research.candidate_decision_lineage import (
+    CandidateDecisionLineage,
+    CandidateDecisionLineageBuilder,
+    CandidateRankHistoryEntry,
+)
 from trd_bot.research.candidate_projection import (
     CandidateJournalOccurrence,
     CandidateOccurrenceType,
@@ -56,6 +67,9 @@ class CandidateProjectionSummary(BaseModel):
     occurrence_count: int = Field(ge=1)
     latest_journal_id: str
     latest_recorded_at: datetime
+    latest_rank: int = Field(ge=1)
+    latest_ranking_score: Decimal = Field(ge=0, le=1)
+    latest_decision_evidence: CandidateDecisionEvidence | None = None
     latest_occurrence_type: CandidateOccurrenceType
     latest_replay_status: CandidateReplayStatus | None
     latest_risk_decision: CandidateRiskDecision | None
@@ -84,6 +98,9 @@ class CandidateProjectionSummary(BaseModel):
             occurrence_count=len(projection.history),
             latest_journal_id=latest.journal_id,
             latest_recorded_at=latest.recorded_at,
+            latest_rank=latest.rank,
+            latest_ranking_score=latest.ranking_score,
+            latest_decision_evidence=latest.decision_evidence,
             latest_occurrence_type=latest.occurrence_type,
             latest_replay_status=latest.replay_status,
             latest_risk_decision=latest.risk_decision,
@@ -102,6 +119,8 @@ class CandidateProjectionDetail(BaseModel):
     candidate: ResearchCandidate
     occurrence_count: int = Field(ge=1)
     journal_ids: tuple[str, ...]
+    rank_history: tuple[CandidateRankHistoryEntry, ...]
+    decision_lineage: CandidateDecisionLineage
     latest: CandidateJournalOccurrence
 
     @classmethod
@@ -110,6 +129,10 @@ class CandidateProjectionDetail(BaseModel):
             candidate=projection.candidate,
             occurrence_count=len(projection.history),
             journal_ids=tuple(item.journal_id for item in projection.history),
+            rank_history=tuple(
+                CandidateRankHistoryEntry.from_occurrence(item) for item in projection.history
+            ),
+            decision_lineage=CandidateDecisionLineageBuilder.build(projection),
             latest=projection.latest,
         )
 
@@ -145,6 +168,44 @@ def list_candidate_projections(
         total=projections.count(),
         pagination=pagination,
     )
+
+
+@router.post(
+    "/compare",
+    response_model=CandidateComparisonResult,
+)
+def compare_candidate_projections(
+    request: CandidateComparisonRequest,
+    projections: CandidateProjectionRepositoryDependency,
+) -> CandidateComparisonResult:
+    """Compare candidates from one persisted latest decision cohort."""
+
+    selected: list[CandidateProjection] = []
+    missing_ids: list[str] = []
+
+    for candidate_id in request.candidate_ids:
+        projection = projections.get(candidate_id)
+        if projection is None:
+            missing_ids.append(candidate_id)
+        else:
+            selected.append(projection)
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "message": "candidate projections not found",
+                "candidate_ids": missing_ids,
+            },
+        )
+
+    try:
+        return CandidateComparator().compare(selected)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        ) from error
 
 
 @router.get(

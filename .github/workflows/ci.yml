@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+      - 'feature/**'
+      - 'fix/**'
+      - 'bugfix/**'
+      - 'refactor/**'
   pull_request:
     branches:
       - main
@@ -95,6 +99,12 @@ jobs:
       - name: Upgrade PostgreSQL schema
         run: python -m alembic upgrade head
 
+      - name: Downgrade PostgreSQL schema to base
+        run: python -m alembic downgrade base
+
+      - name: Rebuild PostgreSQL schema from base
+        run: python -m alembic upgrade head
+
       - name: Check pending migrations
         run: python -m alembic check
 
@@ -132,6 +142,9 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+      - name: Run TypeScript checks
+        run: npm run typecheck
 
       - name: Run frontend tests
         run: npm run test

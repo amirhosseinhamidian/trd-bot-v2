@@ -1,0 +1,158 @@
+import { getJson, postJson } from '@/lib/api/core/transport';
+import type { Page } from '@/lib/api/core/types';
+
+import type {
+  AlertExpirySummary,
+  AlertExpirySweepResult,
+  AlertInboxItem,
+  AlertInboxStatus,
+  AlertInboxSummary,
+  AlertOutcomeClassification,
+  AlertOutcomeInput,
+  AlertOutcomeRecord,
+  AlertOutcomeRecordResult,
+  AlertOutcomeSummary,
+  AlertPublicationPolicy,
+  AlertPublicationPolicyInput,
+  AlertSeverity,
+  AlertSimulationMode,
+  AlertSimulationStartResult,
+  AlertSimulationStatus,
+  AlertSimulationSummary,
+  AlertSimulationView,
+} from './types';
+
+export interface AlertFilters {
+  limit?: number;
+  offset?: number;
+  status?: AlertInboxStatus;
+  severity?: AlertSeverity;
+}
+
+export interface AlertSimulationFilters {
+  limit?: number;
+  offset?: number;
+  alertId?: string;
+  mode?: AlertSimulationMode;
+  status?: AlertSimulationStatus;
+}
+
+export interface AlertOutcomeFilters {
+  limit?: number;
+  offset?: number;
+  alertId?: string;
+  simulationId?: string;
+  classification?: AlertOutcomeClassification;
+}
+
+const ALERT_CENTER_ACTOR = 'operator:alert-center';
+
+export async function getAlerts(filters: AlertFilters = {}): Promise<Page<AlertInboxItem>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 12));
+  params.set('offset', String(filters.offset ?? 0));
+  if (filters.status) params.set('status', filters.status);
+  if (filters.severity) params.set('severity', filters.severity);
+  return getJson<Page<AlertInboxItem>>(`/api/v1/alerts?${params.toString()}`);
+}
+
+export async function getAlertSummary(): Promise<AlertInboxSummary> {
+  return getJson<AlertInboxSummary>('/api/v1/alerts/summary');
+}
+
+export async function getAlertPublicationPolicy(): Promise<AlertPublicationPolicy> {
+  return getJson<AlertPublicationPolicy>('/api/v1/alerts/publication-policy');
+}
+
+export async function updateAlertPublicationPolicy(
+  policy: AlertPublicationPolicyInput,
+): Promise<AlertPublicationPolicy> {
+  return postJson<AlertPublicationPolicy>('/api/v1/alerts/publication-policy', {
+    acted_by: ALERT_CENTER_ACTOR,
+    ...policy,
+  });
+}
+
+export async function getAlertExpirySummary(): Promise<AlertExpirySummary> {
+  return getJson<AlertExpirySummary>('/api/v1/alerts/expiry');
+}
+
+export async function sweepExpiredAlerts(limit = 100): Promise<AlertExpirySweepResult> {
+  return postJson<AlertExpirySweepResult>('/api/v1/alerts/expiry/sweep', {
+    acted_by: ALERT_CENTER_ACTOR,
+    limit,
+  });
+}
+
+export async function getAlertSimulations(
+  filters: AlertSimulationFilters = {},
+): Promise<Page<AlertSimulationView>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 100));
+  params.set('offset', String(filters.offset ?? 0));
+  if (filters.alertId) params.set('alert_id', filters.alertId);
+  if (filters.mode) params.set('mode', filters.mode);
+  if (filters.status) params.set('status', filters.status);
+  return getJson<Page<AlertSimulationView>>(`/api/v1/alerts/simulations?${params.toString()}`);
+}
+
+export async function getAlertSimulationSummary(): Promise<AlertSimulationSummary> {
+  return getJson<AlertSimulationSummary>('/api/v1/alerts/simulations/summary');
+}
+
+export async function startAlertSimulation(
+  alertId: string,
+  mode: AlertSimulationMode,
+  horizonSeconds: number,
+): Promise<AlertSimulationStartResult> {
+  return postJson<AlertSimulationStartResult>(
+    `/api/v1/alerts/${encodeURIComponent(alertId)}/simulations`,
+    {
+      acted_by: ALERT_CENTER_ACTOR,
+      mode,
+      horizon_seconds: horizonSeconds,
+    },
+  );
+}
+
+export async function getAlertOutcomes(
+  filters: AlertOutcomeFilters = {},
+): Promise<Page<AlertOutcomeRecord>> {
+  const params = new URLSearchParams();
+  params.set('limit', String(filters.limit ?? 100));
+  params.set('offset', String(filters.offset ?? 0));
+  if (filters.alertId) params.set('alert_id', filters.alertId);
+  if (filters.simulationId) params.set('simulation_id', filters.simulationId);
+  if (filters.classification) params.set('classification', filters.classification);
+  return getJson<Page<AlertOutcomeRecord>>(`/api/v1/alerts/outcomes?${params.toString()}`);
+}
+
+export async function getAlertOutcomeSummary(): Promise<AlertOutcomeSummary> {
+  return getJson<AlertOutcomeSummary>('/api/v1/alerts/outcomes/summary');
+}
+
+export async function recordAlertOutcome(
+  simulationId: string,
+  input: AlertOutcomeInput,
+): Promise<AlertOutcomeRecordResult> {
+  return postJson<AlertOutcomeRecordResult>(
+    `/api/v1/alerts/simulations/${encodeURIComponent(simulationId)}/outcome`,
+    { acted_by: ALERT_CENTER_ACTOR, ...input },
+  );
+}
+
+export async function acknowledgeAlert(alertId: string): Promise<AlertInboxItem> {
+  return postJson<AlertInboxItem>(`/api/v1/alerts/${encodeURIComponent(alertId)}/acknowledge`, {
+    acted_by: ALERT_CENTER_ACTOR,
+  });
+}
+
+export async function snoozeAlert(
+  alertId: string,
+  durationSeconds: number,
+): Promise<AlertInboxItem> {
+  return postJson<AlertInboxItem>(`/api/v1/alerts/${encodeURIComponent(alertId)}/snooze`, {
+    acted_by: ALERT_CENTER_ACTOR,
+    duration_seconds: durationSeconds,
+  });
+}

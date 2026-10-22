@@ -11,6 +11,11 @@ from pydantic import Field
 
 from trd_bot.api.dependencies import (
     get_architecture_recommendation_repository,
+    get_background_job_repository,
+    get_market_context_monitoring_reader,
+    get_market_data_connection_repository,
+    get_market_data_import_repository,
+    get_market_data_monitoring_reader,
     get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
@@ -19,6 +24,14 @@ from trd_bot.api.pagination import (
     PaginationParams,
     build_page,
 )
+from trd_bot.jobs import BackgroundJobRepository
+from trd_bot.market_context import MarketContextMonitoringReader, MarketContextMonitoringSummary
+from trd_bot.market_data import (
+    MarketDataConnectionRepository,
+    MarketDataMonitoringReader,
+    MarketDataMonitoringSummary,
+)
+from trd_bot.market_data.import_history import MarketDataImportRepository
 from trd_bot.monitoring import (
     ArchitectureRecommendation,
     ArchitectureRecommendationRepository,
@@ -51,6 +64,31 @@ RecommendationRepositoryDependency = Annotated[
 RuntimeStateRepositoryDependency = Annotated[
     MonitoringRuntimeStateRepository,
     Depends(get_monitoring_runtime_state_repository),
+]
+
+BackgroundJobRepositoryDependency = Annotated[
+    BackgroundJobRepository,
+    Depends(get_background_job_repository),
+]
+
+MarketDataConnectionRepositoryDependency = Annotated[
+    MarketDataConnectionRepository,
+    Depends(get_market_data_connection_repository),
+]
+
+MarketDataImportRepositoryDependency = Annotated[
+    MarketDataImportRepository,
+    Depends(get_market_data_import_repository),
+]
+
+MarketDataMonitoringReaderDependency = Annotated[
+    MarketDataMonitoringReader,
+    Depends(get_market_data_monitoring_reader),
+]
+
+MarketContextMonitoringReaderDependency = Annotated[
+    MarketContextMonitoringReader,
+    Depends(get_market_context_monitoring_reader),
 ]
 
 
@@ -278,6 +316,30 @@ def resolve_architecture_recommendation(
 
 
 @router.get(
+    "/market-context",
+    response_model=MarketContextMonitoringSummary,
+)
+def get_market_context_monitoring_summary(
+    reader: MarketContextMonitoringReaderDependency,
+) -> MarketContextMonitoringSummary:
+    """Return sanitized market-context freshness and durable evaluation state."""
+
+    return reader.read()
+
+
+@router.get(
+    "/market-data",
+    response_model=MarketDataMonitoringSummary,
+)
+def get_market_data_monitoring_summary(
+    reader: MarketDataMonitoringReaderDependency,
+) -> MarketDataMonitoringSummary:
+    """Return sanitized freshness, health, lag, backlog, and replay state."""
+
+    return reader.read()
+
+
+@router.get(
     "/summary",
     response_model=MonitoringSummary,
 )
@@ -285,11 +347,17 @@ def get_monitoring_summary(
     metrics: MetricRepositoryDependency,
     recommendations: (RecommendationRepositoryDependency),
     runtime_state: RuntimeStateRepositoryDependency,
+    jobs: BackgroundJobRepositoryDependency,
+    connections: MarketDataConnectionRepositoryDependency,
+    imports: MarketDataImportRepositoryDependency,
 ) -> MonitoringSummary:
-    """Return a dashboard-ready capacity summary."""
+    """Return capacity and persisted operational health evidence."""
 
     return MonitoringSummaryBuilder().build(
         metrics=metrics,
         recommendations=recommendations,
         runtime_state=runtime_state,
+        jobs=jobs,
+        connections=connections,
+        imports=imports,
     )

@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
@@ -12,23 +11,24 @@ from fastapi import (
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from trd_bot.api.background_jobs import (
-    ExperimentExecutionTask,
-    WalkForwardExecutionTask,
-)
 from trd_bot.api.dependencies import (
     get_acceptance_policy_preset_catalog,
     get_dataset_repository,
+    get_experiment_execution_enqueuer,
     get_experiment_execution_repository,
-    get_experiment_execution_task,
     get_experiment_registry,
+    get_walk_forward_execution_enqueuer,
     get_walk_forward_execution_repository,
-    get_walk_forward_execution_task,
     get_walk_forward_run_registry,
+)
+from trd_bot.api.legacy_research import (
+    LegacyResearchRetirementResponse,
+    enforce_legacy_research_route_retirement,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.domain.market_data import OHLCVCandle
+from trd_bot.jobs import BackgroundJobBuilder, BackgroundJobKind, BackgroundJobSummary
 from trd_bot.research import (
     AcceptancePolicyPreset,
     AcceptancePolicyPresetCatalog,
@@ -39,6 +39,8 @@ from trd_bot.research import (
     ExperimentAcceptanceEvaluator,
     ExperimentAcceptancePolicy,
     ExperimentAcceptanceResult,
+    ExperimentAnalyticsBuilder,
+    ExperimentAnalyticsReport,
     ExperimentBuilder,
     ExperimentCatalogQuery,
     ExperimentComparator,
@@ -46,11 +48,16 @@ from trd_bot.research import (
     ExperimentComparisonResult,
     ExperimentExecution,
     ExperimentExecutionBuilder,
+    ExperimentExecutionEnqueueError,
+    ExperimentExecutionEnqueuer,
+    ExperimentExecutionJobPayload,
     ExperimentExecutionRepository,
     ExperimentParameter,
     ExperimentPerformanceSeries,
     ExperimentPerformanceSeriesBuilder,
     ExperimentRegistry,
+    ExperimentReplayVerification,
+    ExperimentReplayVerifier,
     ExperimentReportCsvExporter,
     ExperimentResearchReport,
     ExperimentResearchReportBuilder,
@@ -61,8 +68,14 @@ from trd_bot.research import (
     ResearchExperiment,
     ResearchPipeline,
     ResearchPipelineResult,
+    RSIThresholdExecutionParameters,
+    SMACrossoverExecutionParameters,
+    StrategyExecutionParameters,
     WalkForwardConfig,
     WalkForwardDatasetMaterializer,
+    WalkForwardExecutionEnqueueError,
+    WalkForwardExecutionEnqueuer,
+    WalkForwardExecutionJobPayload,
     WalkForwardExecutionResult,
     WalkForwardExecutor,
     WalkForwardMode,
@@ -74,6 +87,8 @@ from trd_bot.research import (
     WalkForwardRunSummary,
     WalkForwardStabilityAnalyzer,
     WalkForwardStabilityReport,
+    build_experiment_execution_idempotency_key,
+    build_walk_forward_execution_idempotency_key,
 )
 from trd_bot.research.experiments import ExperimentSummary
 from trd_bot.research.walk_forward_executions import (
@@ -81,13 +96,24 @@ from trd_bot.research.walk_forward_executions import (
     WalkForwardExecutionBuilder,
     WalkForwardExecutionRepository,
 )
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import (
+    EMACrossoverStrategy,
+    StrategyMetadata,
+    build_default_strategy_registry,
+)
 from trd_bot.strategies.signals import StrategySignal
 
 router = APIRouter(
     prefix="/research",
     tags=["Research"],
 )
+
+_LEGACY_RESEARCH_RETIREMENT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    410: {
+        "model": LegacyResearchRetirementResponse,
+        "description": "The synchronous execution route is retired; use its durable successor.",
+    }
+}
 
 ExperimentRegistryDependency = Annotated[
     ExperimentRegistry,
@@ -114,9 +140,9 @@ ExperimentExecutionRepositoryDependency = Annotated[
     Depends(get_experiment_execution_repository),
 ]
 
-ExperimentExecutionTaskDependency = Annotated[
-    ExperimentExecutionTask,
-    Depends(get_experiment_execution_task),
+ExperimentExecutionEnqueuerDependency = Annotated[
+    ExperimentExecutionEnqueuer,
+    Depends(get_experiment_execution_enqueuer),
 ]
 
 WalkForwardExecutionRepositoryDependency = Annotated[
@@ -124,10 +150,54 @@ WalkForwardExecutionRepositoryDependency = Annotated[
     Depends(get_walk_forward_execution_repository),
 ]
 
-WalkForwardExecutionTaskDependency = Annotated[
-    WalkForwardExecutionTask,
-    Depends(get_walk_forward_execution_task),
+WalkForwardExecutionEnqueuerDependency = Annotated[
+    WalkForwardExecutionEnqueuer,
+    Depends(get_walk_forward_execution_enqueuer),
 ]
+
+
+@router.get(
+    "/strategies",
+    response_model=tuple[StrategyMetadata, ...],
+)
+def list_research_strategies() -> tuple[StrategyMetadata, ...]:
+    """List versioned strategies available for historical research execution."""
+
+    return build_default_strategy_registry().list_metadata()
+
+
+@router.get(
+    "/strategies/{strategy_name}/versions",
+    response_model=tuple[StrategyMetadata, ...],
+)
+def list_research_strategy_versions(
+    strategy_name: str,
+) -> tuple[StrategyMetadata, ...]:
+    """List every registered immutable version for one strategy identity."""
+
+    versions = build_default_strategy_registry().list_versions(name=strategy_name)
+    if not versions:
+        raise HTTPException(status_code=404, detail="strategy not found")
+    return versions
+
+
+@router.get(
+    "/strategies/{strategy_name}/versions/{version}",
+    response_model=StrategyMetadata,
+)
+def get_research_strategy_version(
+    strategy_name: str,
+    version: str,
+) -> StrategyMetadata:
+    """Return the canonical contract for one exact executable version."""
+
+    metadata = build_default_strategy_registry().get_metadata(
+        name=strategy_name,
+        version=version,
+    )
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="strategy version not found")
+    return metadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +257,90 @@ class StoredDatasetEMACrossoverResearchRequest(BaseModel):
     slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
 
 
+class StoredDatasetSMACrossoverResearchRequest(BaseModel):
+    """Request for running SMA research against an already stored dataset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+
+    fast_period: int = Field(default=9, ge=2)
+    slow_period: int = Field(default=21, ge=3)
+    horizon_candles: int = Field(default=1, ge=1)
+
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
+class StoredDatasetRSIThresholdResearchRequest(BaseModel):
+    """Request for running RSI research against an already stored dataset."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: str = Field(
+        min_length=1,
+        max_length=200,
+    )
+
+    period: int = Field(default=14, ge=2)
+    oversold_threshold: Decimal = Field(
+        default=Decimal("30"),
+        gt=0,
+        lt=50,
+    )
+    overbought_threshold: Decimal = Field(
+        default=Decimal("70"),
+        gt=50,
+        lt=100,
+    )
+    horizon_candles: int = Field(default=1, ge=1)
+
+    starting_balance: Decimal = Field(default=Decimal("10000"), gt=0)
+    allocation_fraction: Decimal = Field(default=Decimal("0.10"), gt=0, le=1)
+    fee_rate: Decimal = Field(default=Decimal("0.001"), ge=0, lt=1)
+    slippage_rate: Decimal = Field(default=Decimal("0.0005"), ge=0, lt=1)
+
+
+class StoredDatasetEMACrossoverExecutionRequest(
+    StoredDatasetEMACrossoverResearchRequest,
+):
+    """Versioned EMA request accepted by generic experiment execution dispatch."""
+
+    strategy_name: Literal["ema-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
+class StoredDatasetSMACrossoverExecutionRequest(
+    StoredDatasetSMACrossoverResearchRequest,
+):
+    """Versioned SMA request accepted by generic experiment execution dispatch."""
+
+    strategy_name: Literal["sma-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
+class StoredDatasetRSIThresholdExecutionRequest(
+    StoredDatasetRSIThresholdResearchRequest,
+):
+    """Versioned RSI request accepted by generic experiment execution dispatch."""
+
+    strategy_name: Literal["rsi-threshold"]
+    strategy_version: Literal["1.0.0"]
+
+
+StoredDatasetStrategyExecutionRequest = Annotated[
+    StoredDatasetEMACrossoverExecutionRequest
+    | StoredDatasetRSIThresholdExecutionRequest
+    | StoredDatasetSMACrossoverExecutionRequest,
+    Field(discriminator="strategy_name"),
+]
+
+
 class EMACrossoverWalkForwardRequest(EMACrossoverResearchRequest):
     """Request for an offline EMA walk-forward execution."""
 
@@ -207,6 +361,65 @@ class StoredDatasetEMACrossoverWalkForwardRequest(
     step_candles: int = Field(default=20, ge=1)
     gap_candles: int = Field(default=0, ge=0)
     mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetSMACrossoverWalkForwardRequest(
+    StoredDatasetSMACrossoverResearchRequest,
+):
+    """Request for SMA walk-forward analysis against a stored dataset."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetRSIThresholdWalkForwardRequest(
+    StoredDatasetRSIThresholdResearchRequest,
+):
+    """Request for RSI walk-forward analysis against a stored dataset."""
+
+    train_candles: int = Field(default=100, ge=2)
+    test_candles: int = Field(default=20, ge=1)
+    step_candles: int = Field(default=20, ge=1)
+    gap_candles: int = Field(default=0, ge=0)
+    mode: WalkForwardMode = WalkForwardMode.ROLLING
+
+
+class StoredDatasetEMACrossoverWalkForwardExecutionRequest(
+    StoredDatasetEMACrossoverWalkForwardRequest,
+):
+    """Versioned EMA request accepted by generic walk-forward dispatch."""
+
+    strategy_name: Literal["ema-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
+class StoredDatasetSMACrossoverWalkForwardExecutionRequest(
+    StoredDatasetSMACrossoverWalkForwardRequest,
+):
+    """Versioned SMA request accepted by generic walk-forward dispatch."""
+
+    strategy_name: Literal["sma-crossover"]
+    strategy_version: Literal["1.0.0"]
+
+
+class StoredDatasetRSIThresholdWalkForwardExecutionRequest(
+    StoredDatasetRSIThresholdWalkForwardRequest,
+):
+    """Versioned RSI request accepted by generic walk-forward dispatch."""
+
+    strategy_name: Literal["rsi-threshold"]
+    strategy_version: Literal["1.0.0"]
+
+
+StoredDatasetStrategyWalkForwardExecutionRequest = Annotated[
+    StoredDatasetEMACrossoverWalkForwardExecutionRequest
+    | StoredDatasetRSIThresholdWalkForwardExecutionRequest
+    | StoredDatasetSMACrossoverWalkForwardExecutionRequest,
+    Field(discriminator="strategy_name"),
+]
 
 
 class ExperimentCatalogParams(ExperimentCatalogQuery):
@@ -259,6 +472,13 @@ class ExperimentExecutionCatalogParams(BaseModel):
     )
 
 
+class ExperimentExecutionSubmission(ExperimentExecution):
+    """Backward-compatible execution state with its durable job identity."""
+
+    job: BackgroundJobSummary
+    created: bool
+
+
 ExperimentExecutionCatalogParamsQuery = Annotated[
     ExperimentExecutionCatalogParams,
     Query(),
@@ -286,6 +506,13 @@ WalkForwardExecutionCatalogParamsQuery = Annotated[
     WalkForwardExecutionCatalogParams,
     Query(),
 ]
+
+
+class WalkForwardExecutionSubmission(WalkForwardExecution):
+    """Backward-compatible execution state with its durable job identity."""
+
+    job: BackgroundJobSummary
+    created: bool
 
 
 class ExperimentSignalCatalogParams(ExperimentSignalCatalogQuery):
@@ -356,7 +583,7 @@ def _canonical_decimal(value: Decimal) -> str:
     return format(value.normalize(), "f")
 
 
-def _build_execution_parameters(
+def _build_ema_execution_parameters(
     request: StoredDatasetEMACrossoverResearchRequest,
 ) -> EMACrossoverExecutionParameters:
     try:
@@ -376,8 +603,70 @@ def _build_execution_parameters(
         ) from error
 
 
+def _build_sma_execution_parameters(
+    request: StoredDatasetSMACrossoverResearchRequest,
+) -> SMACrossoverExecutionParameters:
+    try:
+        return SMACrossoverExecutionParameters(
+            fast_period=request.fast_period,
+            slow_period=request.slow_period,
+            horizon_candles=request.horizon_candles,
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="invalid SMA execution parameters",
+        ) from error
+
+
+def _build_rsi_execution_parameters(
+    request: StoredDatasetRSIThresholdResearchRequest,
+) -> RSIThresholdExecutionParameters:
+    try:
+        return RSIThresholdExecutionParameters(
+            period=request.period,
+            oversold_threshold=request.oversold_threshold,
+            overbought_threshold=request.overbought_threshold,
+            horizon_candles=request.horizon_candles,
+            starting_balance=request.starting_balance,
+            allocation_fraction=request.allocation_fraction,
+            fee_rate=request.fee_rate,
+            slippage_rate=request.slippage_rate,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=422,
+            detail="invalid RSI execution parameters",
+        ) from error
+
+
+def _build_strategy_execution_parameters(
+    request: (
+        StoredDatasetEMACrossoverResearchRequest
+        | StoredDatasetRSIThresholdResearchRequest
+        | StoredDatasetSMACrossoverResearchRequest
+    ),
+) -> StrategyExecutionParameters:
+    if isinstance(request, StoredDatasetEMACrossoverResearchRequest):
+        return _build_ema_execution_parameters(request)
+
+    if isinstance(request, StoredDatasetSMACrossoverResearchRequest):
+        return _build_sma_execution_parameters(request)
+
+    return _build_rsi_execution_parameters(request)
+
+
 def _build_walk_forward_config(
-    request: (EMACrossoverWalkForwardRequest | StoredDatasetEMACrossoverWalkForwardRequest),
+    request: (
+        EMACrossoverWalkForwardRequest
+        | StoredDatasetEMACrossoverWalkForwardRequest
+        | StoredDatasetRSIThresholdWalkForwardRequest
+        | StoredDatasetSMACrossoverWalkForwardRequest
+    ),
 ) -> WalkForwardConfig:
     try:
         return WalkForwardConfig(
@@ -646,6 +935,9 @@ def _run_stored_dataset_walk_forward_pipeline(
 @router.post(
     "/ema-crossover",
     response_model=ResearchPipelineResult,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def run_ema_crossover_research(
     request: EMACrossoverResearchRequest,
@@ -658,6 +950,9 @@ def run_ema_crossover_research(
 @router.post(
     "/walk-forward/ema-crossover",
     response_model=WalkForwardExecutionResult,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def run_ema_crossover_walk_forward(
     request: EMACrossoverWalkForwardRequest,
@@ -670,6 +965,9 @@ def run_ema_crossover_walk_forward(
 @router.post(
     "/walk-forward/runs/ema-crossover",
     response_model=WalkForwardResearchRun,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_walk_forward_run(
     request: EMACrossoverWalkForwardRequest,
@@ -694,6 +992,9 @@ def create_ema_crossover_walk_forward_run(
 @router.post(
     "/walk-forward/runs/ema-crossover/from-dataset",
     response_model=WalkForwardResearchRun,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_walk_forward_run_from_dataset(
     request: StoredDatasetEMACrossoverWalkForwardRequest,
@@ -812,18 +1113,16 @@ def get_walk_forward_run(
 
 
 @router.post(
-    "/experiment-executions/ema-crossover",
-    response_model=ExperimentExecution,
+    "/experiment-executions",
+    response_model=ExperimentExecutionSubmission,
     status_code=202,
 )
-def create_ema_crossover_experiment_execution(
-    request: StoredDatasetEMACrossoverResearchRequest,
-    background_tasks: BackgroundTasks,
-    executions: ExperimentExecutionRepositoryDependency,
+def create_experiment_execution(
+    request: StoredDatasetStrategyExecutionRequest,
     datasets: DatasetRepositoryDependency,
-    execution_task: ExperimentExecutionTaskDependency,
-) -> ExperimentExecution:
-    """Queue a historical EMA experiment execution."""
+    enqueuer: ExperimentExecutionEnqueuerDependency,
+) -> ExperimentExecutionSubmission:
+    """Atomically persist an experiment execution and its durable worker job."""
 
     dataset = datasets.get(request.dataset_id)
 
@@ -835,23 +1134,34 @@ def create_ema_crossover_experiment_execution(
 
     execution = ExperimentExecutionBuilder().build(
         dataset_id=dataset.dataset_id,
-        parameters=_build_execution_parameters(request),
+        parameters=_build_strategy_execution_parameters(request),
+    )
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.EXPERIMENT_EXECUTION,
+        payload=ExperimentExecutionJobPayload(
+            execution_id=execution.execution_id,
+        ).model_dump(mode="json"),
+        idempotency_key=build_experiment_execution_idempotency_key(execution),
+        now=execution.created_at,
     )
 
     try:
-        stored_execution = executions.save(execution)
-    except ValueError as error:
+        result = enqueuer.enqueue(execution=execution, job=job)
+    except (ExperimentExecutionEnqueueError, ValueError) as error:
         raise HTTPException(
             status_code=409,
-            detail="experiment execution could not be stored",
+            detail={
+                "code": "experiment_execution_conflict",
+                "message": "experiment execution could not be enqueued",
+            },
         ) from error
-
-    background_tasks.add_task(
-        execution_task,
-        stored_execution.execution_id,
+    return ExperimentExecutionSubmission.model_validate(
+        {
+            **result.execution.model_dump(),
+            "job": BackgroundJobSummary.from_job(result.job),
+            "created": result.created,
+        }
     )
-
-    return stored_execution
 
 
 @router.get(
@@ -903,18 +1213,16 @@ def get_experiment_execution(
 
 
 @router.post(
-    "/walk-forward-executions/ema-crossover",
-    response_model=WalkForwardExecution,
+    "/walk-forward-executions",
+    response_model=WalkForwardExecutionSubmission,
     status_code=202,
 )
-def create_ema_crossover_walk_forward_execution(
-    request: StoredDatasetEMACrossoverWalkForwardRequest,
-    background_tasks: BackgroundTasks,
-    executions: WalkForwardExecutionRepositoryDependency,
+def create_walk_forward_execution(
+    request: StoredDatasetStrategyWalkForwardExecutionRequest,
     datasets: DatasetRepositoryDependency,
-    execution_task: WalkForwardExecutionTaskDependency,
-) -> WalkForwardExecution:
-    """Queue walk-forward analysis for a stored historical dataset."""
+    enqueuer: WalkForwardExecutionEnqueuerDependency,
+) -> WalkForwardExecutionSubmission:
+    """Atomically persist a walk-forward execution and its durable worker job."""
 
     dataset = datasets.get(request.dataset_id)
 
@@ -939,25 +1247,36 @@ def create_ema_crossover_walk_forward_execution(
 
     execution = WalkForwardExecutionBuilder().build(
         dataset_id=dataset.dataset_id,
-        parameters=_build_execution_parameters(request),
+        parameters=_build_strategy_execution_parameters(request),
         walk_forward_config=walk_forward_config,
         total_folds=len(plan.folds),
     )
-
-    try:
-        stored_execution = executions.save(execution)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=409,
-            detail="walk-forward execution could not be stored",
-        ) from error
-
-    background_tasks.add_task(
-        execution_task,
-        stored_execution.execution_id,
+    job = BackgroundJobBuilder().build(
+        kind=BackgroundJobKind.WALK_FORWARD_EXECUTION,
+        payload=WalkForwardExecutionJobPayload(
+            execution_id=execution.execution_id,
+        ).model_dump(mode="json"),
+        idempotency_key=build_walk_forward_execution_idempotency_key(execution),
+        now=execution.created_at,
     )
 
-    return stored_execution
+    try:
+        result = enqueuer.enqueue(execution=execution, job=job)
+    except (WalkForwardExecutionEnqueueError, ValueError) as error:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "walk_forward_execution_conflict",
+                "message": "walk-forward execution could not be enqueued",
+            },
+        ) from error
+    return WalkForwardExecutionSubmission.model_validate(
+        {
+            **result.execution.model_dump(),
+            "job": BackgroundJobSummary.from_job(result.job),
+            "created": result.created,
+        }
+    )
 
 
 @router.get(
@@ -1011,6 +1330,9 @@ def get_walk_forward_execution(
 @router.post(
     "/experiments/ema-crossover",
     response_model=ResearchExperiment,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_experiment(
     request: EMACrossoverResearchRequest,
@@ -1036,6 +1358,9 @@ def create_ema_crossover_experiment(
 @router.post(
     "/experiments/ema-crossover/from-dataset",
     response_model=ResearchExperiment,
+    deprecated=True,
+    dependencies=[Depends(enforce_legacy_research_route_retirement)],
+    responses=_LEGACY_RESEARCH_RETIREMENT_RESPONSES,
 )
 def create_ema_crossover_experiment_from_dataset(
     request: StoredDatasetEMACrossoverResearchRequest,
@@ -1082,6 +1407,27 @@ def get_experiment_performance_series(
         )
 
     return ExperimentPerformanceSeriesBuilder().build(experiment)
+
+
+@router.get(
+    "/experiments/{experiment_id}/analytics",
+    response_model=ExperimentAnalyticsReport,
+)
+def get_experiment_analytics(
+    experiment_id: str,
+    registry: ExperimentRegistryDependency,
+) -> ExperimentAnalyticsReport:
+    """Return versioned read-only analytics for a stored experiment."""
+
+    experiment = registry.get(experiment_id)
+
+    if experiment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="experiment not found",
+        )
+
+    return ExperimentAnalyticsBuilder().build(experiment)
 
 
 @router.get(
@@ -1288,6 +1634,16 @@ def build_experiment_report_from_preset(
 @router.get(
     "/experiments/{experiment_id}/report/presets/{preset_id}/export.csv",
     response_class=Response,
+    responses={
+        200: {
+            "description": "Deterministic v1 experiment research report CSV.",
+            "content": {
+                "text/csv": {
+                    "schema": {"type": "string"},
+                }
+            },
+        }
+    },
 )
 def export_experiment_report_csv(
     experiment_id: str,
@@ -1331,7 +1687,9 @@ def export_experiment_report_csv(
         content=csv_content,
         media_type="text/csv; charset=utf-8",
         headers={
+            "Cache-Control": "no-store",
             "Content-Disposition": (f'attachment; filename="{filename}"'),
+            "X-Content-Type-Options": "nosniff",
         },
     )
 
@@ -1381,6 +1739,31 @@ def list_experiment_signals(
 
 
 @router.get(
+    "/experiments/{experiment_id}/signals/{signal_id}",
+    response_model=StrategySignal,
+)
+def get_experiment_signal(
+    experiment_id: str,
+    signal_id: str,
+    registry: ExperimentRegistryDependency,
+) -> StrategySignal:
+    """Return one exact historical signal from a stored experiment."""
+
+    experiment = registry.get(experiment_id)
+    if experiment is None:
+        raise HTTPException(status_code=404, detail="experiment not found")
+
+    signal = next(
+        (item for item in experiment.result.signals if item.signal_id == signal_id),
+        None,
+    )
+    if signal is None:
+        raise HTTPException(status_code=404, detail="experiment signal not found")
+
+    return signal
+
+
+@router.get(
     "/experiments/{experiment_id}/summary",
     response_model=ExperimentSummary,
 )
@@ -1399,6 +1782,24 @@ def get_experiment_summary(
         )
 
     return ExperimentSummary.from_experiment(experiment)
+
+
+@router.post(
+    "/experiments/{experiment_id}/replay-verification",
+    response_model=ExperimentReplayVerification,
+)
+def verify_experiment_replay(
+    experiment_id: str,
+    registry: ExperimentRegistryDependency,
+    datasets: DatasetRepositoryDependency,
+) -> ExperimentReplayVerification:
+    """Replay one experiment and compare it without replacing historical data."""
+
+    experiment = registry.get(experiment_id)
+    if experiment is None:
+        raise HTTPException(status_code=404, detail="experiment not found")
+
+    return ExperimentReplayVerifier(datasets=datasets).verify(experiment)
 
 
 @router.get(

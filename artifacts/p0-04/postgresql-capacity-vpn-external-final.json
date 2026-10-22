@@ -1,0 +1,77 @@
+{
+  "commit_sha": "ee8d4863017162ed67e4f77769d037ea978b8524",
+  "environment_label": "macbook-pro-vpn-external-reference",
+  "evidence": [
+    {
+      "complete": true,
+      "evidence_reference": null,
+      "limitation": null,
+      "method": "synthetic_benchmark",
+      "metrics": {
+        "current_window_latency_p50_ms": "0.530164",
+        "current_window_latency_p95_ms": "0.694666",
+        "event_count": "100000",
+        "event_insert_batch_p95_ms": "53.868241",
+        "inbox_lookup_latency_p50_ms": "0.503195",
+        "inbox_lookup_latency_p95_ms": "0.680028",
+        "pool_utilization_p95_fraction": "0.2",
+        "query_samples": "200",
+        "time_range_latency_p50_ms": "0.563923",
+        "time_range_latency_p95_ms": "0.756732"
+      },
+      "observed_count": 200,
+      "scope": "database"
+    },
+    {
+      "complete": false,
+      "evidence_reference": null,
+      "limitation": "Queue lifecycle uses bounded no-op payloads. Complete evidence still requires versioned real fixtures for every job kind.",
+      "method": "synthetic_benchmark",
+      "metrics": {
+        "claim_latency_p95_ms": "4.794349",
+        "dataset_file_import.bounded_noop_lifecycle_p95_ms": "6.919802",
+        "enqueue_latency_p95_ms": "2.398921",
+        "experiment_execution.bounded_noop_lifecycle_p95_ms": "7.512708",
+        "market_data_import.bounded_noop_lifecycle_p95_ms": "8.728322",
+        "optimization_execution.bounded_noop_lifecycle_p95_ms": "9.378727",
+        "queue_wait_p50_ms": "768.378",
+        "queue_wait_p95_ms": "1154.633",
+        "synthetic_job_throughput_per_second": "143.646811",
+        "terminal_write_latency_p95_ms": "4.064453",
+        "walk_forward_execution.bounded_noop_lifecycle_p95_ms": "9.328262"
+      },
+      "observed_count": 250,
+      "scope": "background_jobs"
+    },
+    {
+      "complete": true,
+      "evidence_reference": null,
+      "limitation": "WAL delta can include concurrent activity on the same PostgreSQL cluster.",
+      "method": "synthetic_benchmark",
+      "metrics": {
+        "events_index_bytes": "24772608",
+        "events_table_bytes": "102400000",
+        "events_toast_bytes": "8192",
+        "events_total_bytes": "127229952",
+        "jobs_index_bytes": "98304",
+        "jobs_table_bytes": "49152",
+        "jobs_toast_bytes": "8192",
+        "jobs_total_bytes": "180224",
+        "wal_bytes_approximate": "143019336"
+      },
+      "observed_count": 100000,
+      "scope": "storage"
+    }
+  ],
+  "generated_at": "2026-10-10T10:07:29.046604Z",
+  "missing_scopes": [
+    "provider",
+    "event_processing",
+    "background_jobs"
+  ],
+  "platform": "macOS-26.6.2-x86_64-i386-64bit",
+  "policy_schema_version": "market-data-service-level-policy-v1",
+  "python_version": "3.12.14",
+  "ready_to_freeze": false,
+  "schema_version": "market-data-capacity-benchmark-v1"
+}

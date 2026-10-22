@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
 
-import MonitoringDashboard from '@/components/dashboard/monitoring-dashboard';
-import { getMonitoringSummary } from '@/lib/api/client';
+import {
+  getMarketContextMonitoringSummary,
+  getMarketDataMonitoringSummary,
+  getMonitoringSummary,
+} from '@/features/monitoring/api/client';
+import MonitoringDashboard from '@/features/monitoring/monitoring-dashboard';
 
 type MonitoringPageProps = {
   params: Promise<{
@@ -16,7 +20,18 @@ export default async function MonitoringPage({ params }: MonitoringPageProps) {
     notFound();
   }
 
-  const summary = await getMonitoringSummary();
+  const [summary, marketData, marketContext] = await Promise.all([
+    getMonitoringSummary(),
+    getMarketDataMonitoringSummary(),
+    getMarketContextMonitoringSummary(),
+  ]);
 
-  return <MonitoringDashboard locale={locale} summary={summary} />;
+  return (
+    <MonitoringDashboard
+      locale={locale}
+      marketContext={marketContext}
+      marketData={marketData}
+      summary={summary}
+    />
+  );
 }

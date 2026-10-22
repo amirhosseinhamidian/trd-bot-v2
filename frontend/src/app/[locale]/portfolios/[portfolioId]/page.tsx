@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation';
 
-import PortfolioDetail from '@/components/dashboard/portfolio-detail';
 import {
+  getPortfolioAnalytics,
   getSimulatedPortfolio,
   getSimulatedPortfolioPositions,
   getSimulatedPortfolioTimeline,
-} from '@/lib/api/client';
+} from '@/features/portfolios/api/client';
+import { getLatestDecisionEvaluation } from '@/features/decision-intelligence/api/client';
+import PortfolioDetail from '@/features/portfolios/portfolio-detail';
 
 type PortfolioDetailPageProps = {
   params: Promise<{
@@ -21,18 +23,23 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
     notFound();
   }
 
-  const [portfolio, initialPositions, initialTimeline] = await Promise.all([
-    getSimulatedPortfolio(portfolioId),
-    getSimulatedPortfolioPositions(portfolioId, { limit: 10, offset: 0 }),
-    getSimulatedPortfolioTimeline(portfolioId, { limit: 10, offset: 0 }),
-  ]);
+  const [portfolio, initialPositions, initialTimeline, analytics, decisionEvidence] =
+    await Promise.all([
+      getSimulatedPortfolio(portfolioId),
+      getSimulatedPortfolioPositions(portfolioId, { limit: 10, offset: 0 }),
+      getSimulatedPortfolioTimeline(portfolioId, { limit: 10, offset: 0 }),
+      getPortfolioAnalytics(portfolioId),
+      getLatestDecisionEvaluation({ portfolioId }),
+    ]);
 
   return (
     <PortfolioDetail
       portfolio={portfolio}
       initialPositions={initialPositions}
       initialTimeline={initialTimeline}
+      analytics={analytics}
       locale={locale}
+      decisionEvidence={decisionEvidence}
     />
   );
 }

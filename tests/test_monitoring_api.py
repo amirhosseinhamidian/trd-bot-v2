@@ -7,10 +7,16 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_architecture_recommendation_repository,
+    get_background_job_repository,
+    get_market_data_connection_repository,
+    get_market_data_import_repository,
     get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
+from trd_bot.jobs import BackgroundJob, BackgroundJobStatus
 from trd_bot.main import app
+from trd_bot.market_data import InMemoryMarketDataConnectionRepository
+from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
 from trd_bot.monitoring import (
     METRIC_UNITS,
     ArchitectureCandidate,
@@ -39,6 +45,22 @@ START_TIME = datetime(
 )
 
 
+class EmptyBackgroundJobRepository:
+    def count(self, *, statuses: tuple[BackgroundJobStatus, ...] | None = None) -> int:
+        del statuses
+        return 0
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        statuses: tuple[BackgroundJobStatus, ...] | None = None,
+    ) -> tuple[BackgroundJob, ...]:
+        del limit, offset, statuses
+        return ()
+
+
 @pytest.fixture
 def repositories() -> Iterator[
     tuple[
@@ -64,6 +86,13 @@ def repositories() -> Iterator[
     app.dependency_overrides[get_monitoring_runtime_state_repository] = lambda: (
         runtime_state_repository
     )
+    app.dependency_overrides[get_background_job_repository] = lambda: EmptyBackgroundJobRepository()
+    app.dependency_overrides[get_market_data_connection_repository] = lambda: (
+        InMemoryMarketDataConnectionRepository()
+    )
+    app.dependency_overrides[get_market_data_import_repository] = lambda: (
+        InMemoryMarketDataImportRepository()
+    )
 
     try:
         yield (
@@ -85,6 +114,9 @@ def repositories() -> Iterator[
             get_monitoring_runtime_state_repository,
             None,
         )
+        app.dependency_overrides.pop(get_background_job_repository, None)
+        app.dependency_overrides.pop(get_market_data_connection_repository, None)
+        app.dependency_overrides.pop(get_market_data_import_repository, None)
 
 
 def create_metric(
@@ -292,6 +324,9 @@ def test_api_builds_critical_monitoring_summary(
     assert data["warning_count"] == 0
     assert data["critical_count"] == 1
     assert len(data["latest_metrics"]) == 1
+    assert data["operations"]["summary_version"] == "operational-monitoring-v1"
+    assert data["operations"]["jobs"]["total_count"] == 0
+    assert data["operations"]["connections"]["total_count"] == 0
     assert data["interpretation"] == "capacity_planning_only"
 
 

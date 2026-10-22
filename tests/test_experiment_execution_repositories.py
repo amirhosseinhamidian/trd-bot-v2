@@ -17,6 +17,7 @@ from trd_bot.research.experiment_executions import (
     ExperimentExecutionStateMachine,
     ExperimentExecutionStatus,
     InMemoryExperimentExecutionRepository,
+    RSIThresholdExecutionParameters,
 )
 
 
@@ -153,6 +154,34 @@ def test_sqlalchemy_repository_saves_and_reads_execution(
     assert stored == execution
     assert loaded == execution
     assert repository.count() == 1
+
+
+def test_sqlalchemy_repository_round_trips_rsi_parameters(
+    session: Session,
+) -> None:
+    repository = SqlAlchemyExperimentExecutionRepository(session)
+    execution = ExperimentExecutionBuilder().build(
+        dataset_id="dataset-1234567890abcdef",
+        parameters=RSIThresholdExecutionParameters(
+            period=14,
+            oversold_threshold=Decimal("30"),
+            overbought_threshold=Decimal("70"),
+            horizon_candles=1,
+            starting_balance=Decimal("10000"),
+            allocation_fraction=Decimal("0.10"),
+            fee_rate=Decimal("0.001"),
+            slippage_rate=Decimal("0.0005"),
+        ),
+        now=datetime(2026, 8, 30, 9, tzinfo=UTC),
+    )
+
+    repository.save(execution)
+    loaded = repository.get(execution.execution_id)
+
+    assert loaded is not None
+    assert loaded.strategy_name == "rsi-threshold"
+    assert isinstance(loaded.parameters, RSIThresholdExecutionParameters)
+    assert loaded.parameters == execution.parameters
 
 
 def test_sqlalchemy_repository_updates_execution(

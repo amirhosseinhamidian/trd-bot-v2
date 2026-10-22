@@ -1,0 +1,477 @@
+import Link from 'next/link';
+
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+import type { ResearchMetricKey } from '@/features/experiments/api/types';
+import type {
+  HistoricalFoldReturnDirection,
+  WalkForwardRunSummary,
+  WalkForwardStabilityReport,
+} from '@/features/walk-forward/api/types';
+import { WalkForwardAnalyticsCharts } from '@/features/walk-forward/walk-forward-analytics-charts';
+import { getWalkForwardDetailCopy } from '@/features/walk-forward/walk-forward-detail-copy';
+import {
+  normalizeFoldOffset,
+  WALK_FORWARD_FOLD_PAGE_SIZE,
+} from '@/features/walk-forward/walk-forward-presentation';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
+import {
+  AdvancedDisclosure,
+  Badge,
+  type BadgeVariant,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui';
+import { formatStrategyParameter, getStrategyDisplayName } from '@/lib/strategies/presentation';
+
+type WalkForwardDetailProps = {
+  locale: PlatformLocale;
+  run: WalkForwardRunSummary;
+  stability: WalkForwardStabilityReport;
+  foldOffset?: number;
+};
+
+type MetricProps = {
+  label: string;
+  value: string;
+};
+
+function formatNumber(value: number, locale: PlatformLocale): string {
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US').format(value);
+}
+
+function formatPercent(value: string, locale: PlatformLocale): string {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    style: 'percent',
+    maximumFractionDigits: 2,
+  }).format(parsedValue);
+}
+
+function formatDate(value: string, locale: PlatformLocale): string {
+  return new Intl.DateTimeFormat(locale === 'fa' ? 'fa-IR' : 'en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function directionVariant(direction: HistoricalFoldReturnDirection): BadgeVariant {
+  if (direction === 'positive') {
+    return 'success';
+  }
+
+  if (direction === 'negative') {
+    return 'danger';
+  }
+
+  return 'neutral';
+}
+
+function Metric({ label, value }: MetricProps) {
+  return (
+    <div className="rounded-xl border border-app-border bg-app-surface-muted p-4">
+      <dt className="text-xs text-app-muted">{label}</dt>
+      <dd className="mt-2 text-lg font-semibold text-app-foreground">{value}</dd>
+    </div>
+  );
+}
+
+export function WalkForwardDetail({
+  locale,
+  run,
+  stability,
+  foldOffset = 0,
+}: WalkForwardDetailProps) {
+  const copy = getWalkForwardDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
+  const direction = locale === 'fa' ? 'rtl' : 'ltr';
+  const strategyDisplayName = getStrategyDisplayName(run.strategy_name, locale);
+  const metricLabel = (key: ResearchMetricKey): string =>
+    copy.metricLabels[key as keyof typeof copy.metricLabels] ?? key;
+  const metricDescription = (key: ResearchMetricKey, fallback: string): string =>
+    copy.metricDescriptions[key as keyof typeof copy.metricDescriptions] ?? fallback;
+  const normalizedFoldOffset = normalizeFoldOffset(foldOffset, stability.folds.length);
+  const visibleFolds = stability.folds.slice(
+    normalizedFoldOffset,
+    normalizedFoldOffset + WALK_FORWARD_FOLD_PAGE_SIZE,
+  );
+  const visibleFoldEnd = normalizedFoldOffset + visibleFolds.length;
+  const foldPageHref = (offset: number): string =>
+    `/${locale}/walk-forward/${encodeURIComponent(run.execution_id)}?foldOffset=${offset}#fold-details`;
+
+  return (
+    <PageFrame dir={direction} className="space-y-6">
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/walk-forward`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            <span aria-hidden="true">{locale === 'fa' ? '→' : '←'}</span> {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={strategyDisplayName}
+        actions={<Badge variant="warning">{copy.historicalOnly}</Badge>}
+      />
+
+      <Card className="border-app-warning-border bg-app-warning-soft">
+        <CardContent className="pt-6">
+          <p className="text-sm leading-7 text-app-warning">{copy.disclaimer}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{copy.summary}</CardTitle>
+          <CardDescription>{copy.summaryDescription}</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label={copy.fields.strategy} value={strategyDisplayName} />
+
+            <Metric label={copy.fields.version} value={run.strategy_version} />
+
+            <Metric label={copy.fields.horizon} value={formatNumber(run.horizon_candles, locale)} />
+
+            <Metric label={copy.fields.createdAt} value={formatDate(run.created_at, locale)} />
+
+            <Metric label={copy.fields.totalFolds} value={formatNumber(run.total_folds, locale)} />
+
+            <Metric
+              label={copy.fields.totalSignals}
+              value={formatNumber(run.total_signals, locale)}
+            />
+
+            <Metric
+              label={copy.fields.foldsWithTrades}
+              value={formatNumber(stability.folds_with_trades, locale)}
+            />
+
+            <Metric
+              label={copy.fields.foldsWithoutTrades}
+              value={formatNumber(stability.folds_without_trades, locale)}
+            />
+
+            <Metric label={copy.fields.mode} value={copy.modes[run.walk_forward_config.mode]} />
+          </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{copy.stability}</CardTitle>
+          <CardDescription>{copy.stabilityDescription}</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric
+              label={copy.fields.positiveFraction}
+              value={formatPercent(stability.positive_return_fraction, locale)}
+            />
+
+            <Metric
+              label={copy.fields.positiveFolds}
+              value={formatNumber(stability.positive_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.negativeFolds}
+              value={formatNumber(stability.negative_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.flatFolds}
+              value={formatNumber(stability.flat_return_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.tradedFoldFraction}
+              value={formatPercent(stability.traded_fold_fraction, locale)}
+            />
+
+            <Metric
+              label={copy.fields.averageReturn}
+              value={formatPercent(stability.average_strategy_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.medianReturn}
+              value={formatPercent(stability.median_strategy_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.averageExcessReturn}
+              value={formatPercent(stability.average_excess_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.bestReturn}
+              value={formatPercent(stability.best_strategy_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstReturn}
+              value={formatPercent(stability.worst_strategy_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.returnRange}
+              value={formatPercent(stability.strategy_return_range, locale)}
+            />
+
+            <Metric
+              label={copy.fields.meanAbsoluteDeviation}
+              value={formatPercent(stability.strategy_return_mean_absolute_deviation, locale)}
+            />
+
+            <Metric
+              label={copy.fields.returnConsistency}
+              value={formatPercent(stability.return_consistency, locale)}
+            />
+
+            <Metric
+              label={copy.fields.medianExcessReturn}
+              value={formatPercent(stability.median_excess_return, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstDrawdown}
+              value={formatPercent(stability.worst_max_drawdown_fraction, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstReturnFold}
+              value={formatNumber(stability.worst_return_fold_number, locale)}
+            />
+
+            <Metric
+              label={copy.fields.worstDrawdownFold}
+              value={formatNumber(stability.worst_drawdown_fold_number, locale)}
+            />
+
+            <Metric
+              label={copy.fields.outperformingFolds}
+              value={formatNumber(stability.outperforming_benchmark_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.underperformingFolds}
+              value={formatNumber(stability.underperforming_benchmark_folds, locale)}
+            />
+
+            <Metric
+              label={copy.fields.benchmarkTies}
+              value={formatNumber(stability.benchmark_ties, locale)}
+            />
+          </dl>
+        </CardContent>
+      </Card>
+
+      <WalkForwardAnalyticsCharts locale={locale} stability={stability} />
+
+      <Card id="fold-details">
+        <CardHeader>
+          <CardTitle>{copy.folds}</CardTitle>
+          <CardDescription>{copy.foldsDescription}</CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <Table scrollLabel={copy.foldsTableScrollLabel} className="min-w-[48rem]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>{copy.fields.foldNumber}</TableHead>
+                <TableHead>{copy.fields.trades}</TableHead>
+                <TableHead>{copy.fields.strategyReturn}</TableHead>
+                <TableHead>{copy.fields.benchmarkReturn}</TableHead>
+                <TableHead>{copy.fields.excessReturn}</TableHead>
+                <TableHead>{copy.fields.drawdown}</TableHead>
+                <TableHead>{copy.fields.benchmarkDrawdown}</TableHead>
+                <TableHead>{copy.fields.tradeStatus}</TableHead>
+                <TableHead>{copy.fields.direction}</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {visibleFolds.map((fold) => (
+                <TableRow key={fold.fold_number}>
+                  <TableCell>{formatNumber(fold.fold_number, locale)}</TableCell>
+
+                  <TableCell>{formatNumber(fold.total_trades, locale)}</TableCell>
+
+                  <TableCell dir="ltr">{formatPercent(fold.strategy_return, locale)}</TableCell>
+
+                  <TableCell dir="ltr">{formatPercent(fold.benchmark_return, locale)}</TableCell>
+
+                  <TableCell dir="ltr">{formatPercent(fold.excess_return, locale)}</TableCell>
+
+                  <TableCell dir="ltr">
+                    {formatPercent(fold.max_drawdown_fraction, locale)}
+                  </TableCell>
+
+                  <TableCell dir="ltr">
+                    {formatPercent(fold.benchmark_max_drawdown_fraction, locale)}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge variant={fold.has_trades ? 'success' : 'warning'}>
+                      {fold.has_trades
+                        ? copy.tradeStatuses.withTrades
+                        : copy.tradeStatuses.withoutTrades}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge variant={directionVariant(fold.return_direction)}>
+                      {copy.directions[fold.return_direction]}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {stability.folds.length > WALK_FORWARD_FOLD_PAGE_SIZE ? (
+            <nav
+              aria-label={copy.pagination.label}
+              className="mt-5 flex flex-col gap-4 border-t border-app-border pt-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p className="text-center text-xs text-app-muted sm:text-start">
+                {copy.pagination.range(
+                  formatNumber(normalizedFoldOffset + 1, locale),
+                  formatNumber(visibleFoldEnd, locale),
+                  formatNumber(stability.folds.length, locale),
+                )}
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                {normalizedFoldOffset > 0 ? (
+                  <Link
+                    href={foldPageHref(normalizedFoldOffset - WALK_FORWARD_FOLD_PAGE_SIZE)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                  >
+                    {copy.pagination.previous}
+                  </Link>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted opacity-50">
+                    {copy.pagination.previous}
+                  </span>
+                )}
+
+                {visibleFoldEnd < stability.folds.length ? (
+                  <Link
+                    href={foldPageHref(normalizedFoldOffset + WALK_FORWARD_FOLD_PAGE_SIZE)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:outline-none"
+                  >
+                    {copy.pagination.next}
+                  </Link>
+                ) : (
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted opacity-50">
+                    {copy.pagination.next}
+                  </span>
+                )}
+              </div>
+            </nav>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <AdvancedDisclosure
+        title={copy.metricDefinitions}
+        description={copy.metricDefinitionsDescription}
+      >
+        <div>
+          <dl className="grid gap-4 lg:grid-cols-2">
+            {stability.metric_definitions.map((definition) => (
+              <div
+                key={definition.key}
+                className="rounded-xl border border-app-border bg-app-surface-muted p-4"
+              >
+                <dt className="font-semibold text-app-foreground">{metricLabel(definition.key)}</dt>
+                <dd className="mt-2 text-sm leading-6 text-app-muted">
+                  {metricDescription(definition.key, definition.definition)}
+                </dd>
+                <dd dir="ltr" className="mt-3 font-mono text-xs break-all text-app-accent">
+                  {definition.formula}
+                </dd>
+                <dd className="mt-3 text-xs text-app-muted">
+                  {copy.metricPreferences[definition.preference]}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </AdvancedDisclosure>
+
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-lg font-semibold text-app-foreground">{copy.configuration}</h2>
+            <p className="mt-1.5 text-sm leading-6 text-app-muted">
+              {copy.configurationDescription}
+            </p>
+          </div>
+
+          <dl className="grid gap-4 sm:grid-cols-2">
+            <Metric label={copy.fields.executionId} value={run.execution_id} />
+            <Metric label={copy.fields.datasetId} value={run.source_dataset_id} />
+            <Metric label={copy.fields.planId} value={run.plan_id} />
+          </dl>
+
+          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric
+              label={copy.fields.trainCandles}
+              value={formatNumber(run.walk_forward_config.train_candles, locale)}
+            />
+
+            <Metric
+              label={copy.fields.testCandles}
+              value={formatNumber(run.walk_forward_config.test_candles, locale)}
+            />
+
+            <Metric
+              label={copy.fields.stepCandles}
+              value={formatNumber(run.walk_forward_config.step_candles, locale)}
+            />
+
+            <Metric
+              label={copy.fields.gapCandles}
+              value={formatNumber(run.walk_forward_config.gap_candles, locale)}
+            />
+          </dl>
+
+          <div>
+            <p className="text-xs text-app-muted">{copy.fields.parameters}</p>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {run.strategy_parameters.map((parameter) => (
+                <Badge key={parameter.name} variant="neutral">
+                  {formatStrategyParameter(parameter, locale)}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </AdvancedDisclosure>
+    </PageFrame>
+  );
+}

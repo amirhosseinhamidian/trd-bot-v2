@@ -1,5 +1,8 @@
 # TRD BOT v2
 
+Current local release candidate: **v0.3.0**. This repository is configured for
+local research use; server staging and deployment are intentionally deferred.
+
 TRD BOT v2 is a single-user research platform for:
 
 - market-data research
@@ -75,6 +78,14 @@ Start the backend API:
 python -m uvicorn trd_bot.main:app --reload
 ```
 
+Provider imports and optimization executions use the durable background queue.
+Keep a worker running in a separate terminal:
+
+```bash
+source .venv/bin/activate
+python scripts/run_background_worker.py
+```
+
 The health endpoint is:
 
 ```text
@@ -120,17 +131,51 @@ Frontend:
 cd frontend
 npm run format:check
 npm run lint
+npm run typecheck
 npm run test
 npm run build
 ```
 
 The GitHub Actions workflow runs the same backend, PostgreSQL, and frontend
-quality gates for pushes and pull requests targeting `main`.
+quality gates for pushes to `main`, `feature/**`, `fix/**`, `bugfix/**`, and
+`refactor/**`, as well as pull requests targeting `main`.
 
-## MVP release verification
+## Release verification
 
 The final fresh-start and release checklist is documented in
 [`docs/mvp-release-checklist.md`](docs/mvp-release-checklist.md).
+The local v0.2.0 candidate runbook and evidence template are documented in
+[`docs/v0.2/26-local-release-candidate.md`](docs/v0.2/26-local-release-candidate.md).
+The frozen Nexora UI contract, release notes, and upgrade guidance are documented in
+[`docs/nexora-ui-release-and-migration.md`](docs/nexora-ui-release-and-migration.md).
+
+The v0.3 scope starts from the frozen Crypto Spot market target in
+[`docs/v0.3/00-scope-and-market-target.md`](docs/v0.3/00-scope-and-market-target.md). Phase 5 is
+frozen by the committed acceptance record, and the local v0.3.0 release cut is documented in
+[`docs/v0.3/47-v0.3.0-release-cut.md`](docs/v0.3/47-v0.3.0-release-cut.md).
+The Phase 6 hardening baseline and deterministic release-surface inventory are documented in
+[`docs/v0.3/48-cross-cutting-hardening-release-inventory.md`](docs/v0.3/48-cross-cutting-hardening-release-inventory.md).
+The Phase 6 PostgreSQL capacity, overload, contention, and recovery benchmark is documented in
+[`docs/v0.3/49-capacity-overload-recovery-benchmark.md`](docs/v0.3/49-capacity-overload-recovery-benchmark.md).
+The aggregate, read-only Phase 6 outcome and learning review is documented in
+[`docs/v0.3/50-outcome-learning-review.md`](docs/v0.3/50-outcome-learning-review.md).
+The commit-bound Phase 6 retention and maintenance operations plan is documented in
+[`docs/v0.3/51-retention-maintenance-operations.md`](docs/v0.3/51-retention-maintenance-operations.md).
+The tested fresh-install, backup, upgrade, compatibility, and operational rollback guide from
+v0.2.0 to v0.3.0 is documented in
+[`docs/v0.3/52-v0.2-to-v0.3-migration-guide.md`](docs/v0.3/52-v0.2-to-v0.3-migration-guide.md).
+The fail-closed, commit-bound PostgreSQL fresh-install and v0.2-to-v0.3 upgrade verification is
+documented in
+[`docs/v0.3/53-fresh-install-upgrade-verification.md`](docs/v0.3/53-fresh-install-upgrade-verification.md).
+The final same-SHA Phase 6 acceptance gates, evidence contract, manual smokes, and artifact-only
+freeze procedure are documented in
+[`docs/v0.3/54-final-v0.3-acceptance-freeze.md`](docs/v0.3/54-final-v0.3-acceptance-freeze.md).
+The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
+tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
+The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in
+[`docs/v0.3/02-event-contract-and-window-semantics.md`](docs/v0.3/02-event-contract-and-window-semantics.md).
+The initial service-level, retention, provider-request, and capacity evidence policy is documented in
+[`docs/v0.3/03-service-level-retention-capacity-budget.md`](docs/v0.3/03-service-level-retention-capacity-budget.md).
 
 ## Project structure
 

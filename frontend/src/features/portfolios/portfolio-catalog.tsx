@@ -1,0 +1,303 @@
+'use client';
+
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  Pagination,
+  Spinner,
+} from '@/components/ui';
+import { getSimulatedPortfolios } from '@/features/portfolios/api/client';
+import type { SimulatedPortfolioSummary } from '@/features/portfolios/api/types';
+import { getPortfolioCopy } from '@/features/portfolios/portfolio-copy';
+import type { Page } from '@/lib/api/core/types';
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
+import type { PlatformLocale } from '@/platform/i18n';
+
+const PAGE_SIZE = 12;
+
+type PortfolioCatalogProps = {
+  initialPage: Page<SimulatedPortfolioSummary>;
+  locale: PlatformLocale;
+};
+
+function numberLocale(locale: PlatformLocale): string {
+  return locale === 'fa' ? 'fa-IR' : 'en-US';
+}
+
+function formatNumber(value: number, locale: PlatformLocale): string {
+  return new Intl.NumberFormat(numberLocale(locale)).format(value);
+}
+
+function formatDecimal(value: string, locale: PlatformLocale): string {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat(numberLocale(locale), {
+    maximumFractionDigits: 8,
+  }).format(parsedValue);
+}
+
+function formatDate(value: string, locale: PlatformLocale): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(numberLocale(locale), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function pnlClassName(value: string): string {
+  const parsedValue = Number(value);
+
+  if (parsedValue > 0) {
+    return 'text-app-success';
+  }
+
+  if (parsedValue < 0) {
+    return 'text-app-danger';
+  }
+
+  return 'text-app-foreground';
+}
+
+export default function PortfolioCatalog({ initialPage, locale }: PortfolioCatalogProps) {
+  const copy = getPortfolioCopy(locale);
+  const [page, setPage] = useState(initialPage);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const requestSequence = useRef(0);
+
+  async function loadPortfolios(offset: number): Promise<void> {
+    const requestId = ++requestSequence.current;
+
+    setIsLoading(true);
+    setHasError(false);
+
+    try {
+      const result = await getSimulatedPortfolios({
+        limit: PAGE_SIZE,
+        offset,
+      });
+
+      if (requestId === requestSequence.current) {
+        setPage(result);
+      }
+    } catch {
+      if (requestId === requestSequence.current) {
+        setHasError(true);
+      }
+    } finally {
+      if (requestId === requestSequence.current) {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  return (
+    <PageFrame>
+      <PageHeader
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
+        actions={
+          <>
+            <Badge variant="warning">{copy.readOnly}</Badge>
+            <Badge variant="info">
+              {copy.total}: {formatNumber(page.total, locale)}
+            </Badge>
+          </>
+        }
+      />
+
+      <section className="relative min-h-64" aria-busy={isLoading}>
+        {isLoading ? (
+          <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+            <Spinner size="lg" label={copy.loading} className="text-app-accent" />
+          </div>
+        ) : null}
+
+        {hasError ? (
+          <ErrorState
+            title={copy.errorTitle}
+            description={copy.errorDescription}
+            retryLabel={copy.retry}
+            onRetry={() => void loadPortfolios(page.offset)}
+          />
+        ) : page.items.length === 0 ? (
+          <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {page.items.map((portfolio) => (
+              <Card key={portfolio.portfolio_id} className="overflow-hidden">
+                <CardHeader className="border-b border-app-border">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <CardTitle>{copy.modes[portfolio.mode]}</CardTitle>
+
+                      <CardDescription
+                        dir="ltr"
+                        title={portfolio.portfolio_id}
+                        className="mt-2 text-left text-xs font-semibold break-all"
+                      >
+                        {portfolio.portfolio_id}
+                      </CardDescription>
+                    </div>
+
+                    <Badge variant={portfolio.status === 'completed' ? 'success' : 'info'}>
+                      {copy.statuses[portfolio.status]}
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6 pt-6">
+                  <dl className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.startingCash}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {formatDecimal(portfolio.starting_cash, locale)}
+                      </dd>
+                    </div>
+
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.cash}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {formatDecimal(portfolio.cash, locale)}
+                      </dd>
+                    </div>
+
+                    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                      <dt className="text-xs text-app-muted">{copy.fields.equity}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-2 text-left text-sm font-semibold text-app-accent"
+                      >
+                        {formatDecimal(portfolio.equity, locale)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <dl className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.fields.realizedPnl}</dt>
+                      <dd
+                        dir="ltr"
+                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.realized_pnl)}`}
+                      >
+                        {formatDecimal(portfolio.realized_pnl, locale)}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.fields.unrealizedPnl}</dt>
+                      <dd
+                        dir="ltr"
+                        className={`mt-1 text-left text-sm font-semibold ${pnlClassName(portfolio.unrealized_pnl)}`}
+                      >
+                        {formatDecimal(portfolio.unrealized_pnl, locale)}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.fields.feesPaid}</dt>
+                      <dd
+                        dir="ltr"
+                        className="mt-1 text-left text-sm font-semibold text-app-foreground"
+                      >
+                        {formatDecimal(portfolio.fees_paid, locale)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <dl className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.fields.positions}</dt>
+                      <dd className="mt-1 text-app-foreground">
+                        {formatNumber(portfolio.position_count, locale)}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt className="text-xs text-app-muted">{copy.fields.timelineEvents}</dt>
+                      <dd className="mt-1 text-app-foreground">
+                        {formatNumber(portfolio.event_count, locale)}
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <div className="grid gap-3 border-t border-app-border pt-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.datasetId}</p>
+                      <p
+                        dir="ltr"
+                        title={portfolio.dataset_id}
+                        className="mt-2 text-left text-xs font-semibold break-all text-app-muted"
+                      >
+                        {portfolio.dataset_id}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.updatedAt}</p>
+                      <p className="mt-2 text-xs text-app-muted">
+                        {formatDate(portfolio.updated_at, locale)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex border-t border-app-border pt-4">
+                    <Link
+                      href={`/${locale}/portfolios/${encodeURIComponent(portfolio.portfolio_id)}`}
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+                    >
+                      <span>{copy.viewDetails}</span>
+                      <span aria-hidden="true">{locale === 'fa' ? '←' : '→'}</span>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {!hasError && page.total > 0 ? (
+        <section className="rounded-2xl border border-app-border bg-app-surface px-5 py-4">
+          <Pagination
+            locale={locale}
+            total={page.total}
+            limit={page.limit}
+            offset={page.offset}
+            isLoading={isLoading}
+            pageLabel={copy.page}
+            previousLabel={copy.previous}
+            nextLabel={copy.next}
+            onOffsetChange={(offset) => void loadPortfolios(offset)}
+          />
+        </section>
+      ) : null}
+    </PageFrame>
+  );
+}

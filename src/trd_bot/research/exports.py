@@ -8,6 +8,9 @@ from trd_bot.research.policy_presets import (
     PresetExperimentResearchReport,
 )
 
+EXPERIMENT_REPORT_CSV_SCHEMA_VERSION = "experiment-report-csv-v1"
+EXPERIMENT_REPORT_CSV_COLUMNS = ("section", "metric", "value")
+
 
 class ExperimentReportCsvExporter:
     """Export one versioned historical experiment report as flat CSV rows."""
@@ -18,7 +21,7 @@ class ExperimentReportCsvExporter:
     ) -> str:
         output = StringIO(newline="")
         writer = csv.writer(output, lineterminator="\n")
-        writer.writerow(("section", "metric", "value"))
+        writer.writerow(EXPERIMENT_REPORT_CSV_COLUMNS)
 
         experiment = report.report.experiment
         benchmark = report.report.benchmark_context
@@ -26,6 +29,11 @@ class ExperimentReportCsvExporter:
         preset = report.preset
 
         rows: list[tuple[str, str, object]] = [
+            (
+                "metadata",
+                "export_schema_version",
+                EXPERIMENT_REPORT_CSV_SCHEMA_VERSION,
+            ),
             (
                 "metadata",
                 "interpretation",
@@ -243,4 +251,8 @@ class ExperimentReportCsvExporter:
         if isinstance(value, Enum):
             return str(value.value)
 
-        return str(value)
+        rendered = str(value)
+        trimmed = rendered.lstrip()
+        if rendered.startswith(("\t", "\r", "\n")) or trimmed.startswith(("=", "+", "-", "@")):
+            return f"'{rendered}"
+        return rendered

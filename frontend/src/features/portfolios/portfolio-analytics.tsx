@@ -1,0 +1,314 @@
+import { HistoricalLineChart } from '@/components/charts/historical-line-chart';
+import { CHART_SERIES_COLORS } from '@/components/charts/chart-colors';
+import { ResponsiveChartGroup } from '@/components/charts/responsive-chart-group';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui';
+import type { PortfolioAnalyticsReport } from '@/features/portfolios/api/types';
+import { portfolioAnalyticsCopy } from '@/features/portfolios/portfolio-analytics-copy';
+import type { PlatformLocale } from '@/platform/i18n';
+
+const metrics = [
+  'starting_equity',
+  'ending_equity',
+  'net_pnl',
+  'return_fraction',
+  'fees_paid',
+  'closed_net_pnl',
+  'open_gross_unrealized_pnl',
+  'open_entry_fees',
+  'open_net_pnl',
+  'closed_count',
+  'open_count',
+  'winning_count',
+  'losing_count',
+  'breakeven_count',
+  'win_rate',
+  'profit_factor',
+  'expectancy',
+  'average_hold_seconds',
+  'duration_seconds',
+  'max_drawdown_fraction',
+  'max_drawdown_duration_seconds',
+  'current_drawdown_duration_seconds',
+  'open_exposure',
+  'exposure_fraction',
+] as const;
+
+export function PortfolioAnalytics({
+  report,
+  locale,
+}: {
+  report: PortfolioAnalyticsReport;
+  locale: PlatformLocale;
+}) {
+  const copy = portfolioAnalyticsCopy[locale];
+  const numberLocale = locale === 'fa' ? 'fa-IR' : 'en-US';
+  const decimal = new Intl.NumberFormat(numberLocale, { maximumFractionDigits: 8 });
+  const percent = new Intl.NumberFormat(numberLocale, {
+    style: 'percent',
+    maximumFractionDigits: 4,
+  });
+  function value(raw: string | number | null, isPercent = false): string {
+    if (raw === null) return copy.unavailable;
+    return (isPercent ? percent : decimal).format(Number(raw));
+  }
+  function date(raw: string): string {
+    return new Intl.DateTimeFormat(numberLocale, {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'UTC',
+    }).format(new Date(raw));
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{copy.title}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <p className="text-sm text-app-muted">
+          {copy.asOf}: <time dateTime={report.as_of}>{date(report.as_of)}</time>
+        </p>
+        <p className="text-sm text-app-muted">{copy.accounting}</p>
+        <p className="text-sm text-app-muted">{copy.timing}</p>
+        {report.closed_count === 0 && <p role="status">{copy.noTrades}</p>}
+        {report.profit_factor_status === 'no_losses' && <p role="status">{copy.noLosses}</p>}
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {metrics.map((key) => (
+            <div key={key} className="rounded-xl border border-app-border p-3">
+              <dt className="text-xs text-app-muted">{copy[key]}</dt>
+              <dd className="mt-2 font-semibold" dir="ltr">
+                {value(report[key], key.endsWith('_fraction') || key === 'win_rate')}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-sm text-app-muted">{copy.exposureNote}</p>
+        <ResponsiveChartGroup
+          selectorLabel={copy.chartMetricSelector}
+          items={(
+            [
+              ['equity', copy.equity],
+              ['return_fraction', copy.returns],
+              ['drawdown_fraction', copy.drawdown],
+            ] as const
+          ).map(([key, label]) => ({
+            id: key,
+            label,
+            summary:
+              key === 'equity' ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.starting_equity}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.starting_equity)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.ending_equity}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.ending_equity)}
+                    </dd>
+                  </div>
+                </dl>
+              ) : key === 'return_fraction' ? (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.return_fraction}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.return_fraction, true)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.net_pnl}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.net_pnl)}
+                    </dd>
+                  </div>
+                </dl>
+              ) : (
+                <dl className="grid grid-cols-2 gap-3">
+                  <div>
+                    <dt className="text-xs text-app-muted">{copy.max_drawdown_fraction}</dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.max_drawdown_fraction, true)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-app-muted">
+                      {copy.current_drawdown_duration_seconds}
+                    </dt>
+                    <dd dir="ltr" className="mt-1 text-left font-semibold tabular-nums">
+                      {value(report.current_drawdown_duration_seconds)}
+                    </dd>
+                  </div>
+                </dl>
+              ),
+            chart: (
+              <HistoricalLineChart
+                ariaLabel={label}
+                emptyLabel={copy.empty}
+                minimumDomainSpan={key === 'equity' ? 1 : 0.01}
+                formatDate={date}
+                formatValue={(raw) => value(raw, key !== 'equity')}
+                series={[
+                  {
+                    label,
+                    color:
+                      key === 'drawdown_fraction'
+                        ? CHART_SERIES_COLORS.rose
+                        : CHART_SERIES_COLORS.cyan,
+                    curve: 'step_after',
+                    points: report.equity_points.map((point) => ({
+                      timestamp: point.timestamp,
+                      value: Number(point[key]),
+                    })),
+                  },
+                ]}
+              />
+            ),
+          }))}
+        />
+        <section>
+          <h3 className="mb-3 font-semibold">{copy.pairs}</h3>
+          {report.trades_by_pair.length === 0 ? (
+            <p>{copy.empty}</p>
+          ) : (
+            <>
+              <ul
+                aria-label={copy.pairs}
+                className="space-y-3 md:hidden"
+                data-testid="trades-by-pair-mobile-list"
+              >
+                {report.trades_by_pair.map((item) => (
+                  <li
+                    key={`${item.pair.base_asset}/${item.pair.quote_asset}/${item.pair.market_type}`}
+                    className="min-w-0 rounded-xl border border-app-border bg-app-surface p-4"
+                  >
+                    <p
+                      dir="ltr"
+                      className="min-w-0 text-left font-semibold break-all text-app-foreground"
+                    >
+                      <span className="sr-only">{copy.pair}: </span>
+                      {item.pair.base_asset}/{item.pair.quote_asset}
+                    </p>
+
+                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                      {[
+                        [copy.closed_count, item.closed_count],
+                        [copy.open_count, item.open_count],
+                        [copy.closed_net_pnl, item.net_realized_pnl],
+                        [copy.fees_paid, item.fees_paid],
+                      ].map(([label, raw]) => (
+                        <div key={label} className="min-w-0">
+                          <dt className="text-xs leading-5 text-app-muted">{label}</dt>
+                          <dd
+                            dir="ltr"
+                            className="mt-1 text-left font-semibold break-all text-app-foreground tabular-nums"
+                          >
+                            {value(raw)}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="hidden min-w-0 md:block" data-testid="trades-by-pair-table">
+                <Table scrollLabel={copy.pairs} aria-label={copy.pairs} className="min-w-[40rem]">
+                  <TableHeader>
+                    <TableRow>
+                      {[
+                        copy.pair,
+                        copy.closed_count,
+                        copy.open_count,
+                        copy.closed_net_pnl,
+                        copy.fees_paid,
+                      ].map((label) => (
+                        <TableHead key={label}>{label}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report.trades_by_pair.map((item) => (
+                      <TableRow
+                        key={`${item.pair.base_asset}/${item.pair.quote_asset}/${item.pair.market_type}`}
+                      >
+                        <TableHead className="h-auto" scope="row">
+                          {item.pair.base_asset}/{item.pair.quote_asset}
+                        </TableHead>
+                        <TableCell>{value(item.closed_count)}</TableCell>
+                        <TableCell>{value(item.open_count)}</TableCell>
+                        <TableCell>{value(item.net_realized_pnl)}</TableCell>
+                        <TableCell>{value(item.fees_paid)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </section>
+        <section>
+          <h3 className="mb-3 font-semibold">{copy.exits}</h3>
+          <p className="text-sm text-app-muted">{copy.exitNote}</p>
+          <ul>
+            {report.exit_mix.map((item) => (
+              <li key={item.reason}>
+                {copy.reasons[item.reason as keyof typeof copy.reasons] ?? item.reason}:{' '}
+                {value(item.count)}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <details>
+          <summary className="cursor-pointer rounded-sm focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none">
+            {copy.evidence}
+          </summary>
+          <Table
+            scrollLabel={copy.evidence}
+            aria-label={copy.evidence}
+            containerClassName="mt-3 max-h-96"
+          >
+            <TableHeader>
+              <TableRow>
+                {[copy.sequence, copy.asOf, copy.equity, copy.returns, copy.drawdown].map(
+                  (label) => (
+                    <TableHead key={label}>{label}</TableHead>
+                  ),
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {report.equity_points.map((point) => (
+                <TableRow key={point.event_id}>
+                  <TableHead scope="row" className="h-auto">
+                    {point.sequence_number}
+                  </TableHead>
+                  <TableCell>{date(point.timestamp)}</TableCell>
+                  <TableCell>{value(point.equity)}</TableCell>
+                  <TableCell>{value(point.return_fraction, true)}</TableCell>
+                  <TableCell>{value(point.drawdown_fraction, true)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </details>
+        <p className="text-xs text-app-muted">{report.analytics_version}</p>
+      </CardContent>
+    </Card>
+  );
+}

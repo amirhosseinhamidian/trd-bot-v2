@@ -1,6 +1,9 @@
 export { Badge } from '@/components/ui/badge';
 export type { BadgeProps, BadgeVariant } from '@/components/ui/badge';
 
+export { AdvancedDisclosure } from '@/components/ui/advanced-disclosure';
+export type { AdvancedDisclosureProps } from '@/components/ui/advanced-disclosure';
+
 export { Button } from '@/components/ui/button';
 export type { ButtonProps, ButtonSize, ButtonVariant } from '@/components/ui/button';
 
@@ -18,6 +21,9 @@ export type { EmptyStateProps } from '@/components/ui/empty-state';
 
 export { ErrorState } from '@/components/ui/error-state';
 export type { ErrorStateProps } from '@/components/ui/error-state';
+
+export { FormActionBar } from '@/components/ui/form-action-bar';
+export type { FormActionBarProps } from '@/components/ui/form-action-bar';
 
 export { Input } from '@/components/ui/input';
 export type { InputProps } from '@/components/ui/input';

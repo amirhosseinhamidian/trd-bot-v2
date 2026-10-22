@@ -1,17 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { createDataset } from '@/features/datasets/api/client';
+import type { DatasetImportRequest, DatasetSummary } from '@/features/datasets/api/types';
 import {
-  createDataset,
   getExperimentPerformanceSeries,
-  getExperimentSignals,
-} from '@/lib/api/client';
-import type {
-  DatasetImportRequest,
-  DatasetSummary,
-  ExperimentPerformanceSeries,
-  Page,
-  StrategySignal,
-} from '@/lib/api/types';
+  verifyExperimentReplay,
+} from '@/features/experiments/api/client';
+import type { ExperimentPerformanceSeries } from '@/features/experiments/api/types';
+import { getExperimentSignals } from '@/features/signals/api/client';
+import type { StrategySignal } from '@/features/signals/api/types';
+import {
+  getResearchStrategies,
+  getResearchStrategyVersion,
+  getResearchStrategyVersions,
+} from '@/features/strategies/api/client';
+import type { ResearchStrategyMetadata } from '@/features/strategies/api/types';
+import type { Page } from '@/lib/api/core/types';
 
 function jsonResponse(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
@@ -64,6 +68,98 @@ afterEach(() => {
 });
 
 describe('research API client', () => {
+  it('retrieves the read-only strategy metadata catalog', async () => {
+    const catalog: ResearchStrategyMetadata[] = [
+      {
+        name: 'rsi-threshold',
+        version: '1.0.0',
+        display_name: 'RSI Threshold',
+        description: 'Historical RSI research strategy.',
+        parameters: [
+          {
+            name: 'period',
+            kind: 'integer',
+            default_value: '14',
+            minimum: '2',
+            maximum: null,
+            minimum_exclusive: false,
+            maximum_exclusive: false,
+          },
+        ],
+      },
+    ];
+
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(catalog));
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await getResearchStrategies();
+
+    expect(result).toEqual(catalog);
+    expect(fetchMock).toHaveBeenCalledOnce();
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+
+    expect(requestUrl).toContain('/api/v1/research/strategies');
+    expect(requestInit).toMatchObject({
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+  });
+
+  it('retrieves an exact strategy version and its version lineage', async () => {
+    const strategy: ResearchStrategyMetadata = {
+      name: 'ema-crossover',
+      version: '1.0.0',
+      display_name: 'EMA Crossover',
+      description: 'Historical EMA research strategy.',
+      parameters: [],
+      lifecycle_status: 'active',
+      supersedes_version: null,
+      behavior_fingerprint: `sha256:${'a'.repeat(64)}`,
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(strategy))
+      .mockResolvedValueOnce(jsonResponse([strategy]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getResearchStrategyVersion('ema crossover', '1.0.0')).resolves.toEqual(strategy);
+    await expect(getResearchStrategyVersions('ema crossover')).resolves.toEqual([strategy]);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining('/research/strategies/ema%20crossover/versions/1.0.0'),
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/research/strategies/ema%20crossover/versions'),
+      expect.objectContaining({ method: 'GET', cache: 'no-store' }),
+    );
+  });
+
+  it('requests a non-mutating replay verification for one experiment', async () => {
+    const verification = {
+      experiment_id: 'experiment-1234567890abcdef',
+      status: 'verified',
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(verification));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(verifyExperimentReplay('experiment with space')).resolves.toEqual(verification);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/research/experiments/experiment%20with%20space/replay-verification',
+      ),
+      expect.objectContaining({ method: 'POST', cache: 'no-store' }),
+    );
+  });
+
   it('creates a historical dataset with a JSON request', async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(importedDataset, 201));
 
@@ -162,6 +258,8 @@ describe('research API client', () => {
       experiment_id: 'experiment-1234567890abcdef',
       dataset_id: 'dataset-123',
       benchmark_type: 'buy_and_hold',
+      period_start: '2026-08-01T00:00:00Z',
+      period_end: '2026-08-31T23:00:00Z',
       strategy: {
         run_id: 'backtest-123',
         starting_balance: '10000',
@@ -169,6 +267,22 @@ describe('research API client', () => {
         total_return: '0.01',
         max_drawdown_fraction: '0',
         points: [],
+        chart_points: [
+          {
+            timestamp: '2026-08-01T00:00:00Z',
+            balance: '10000',
+            drawdown_fraction: '0',
+            kind: 'period_start',
+            trade_number: null,
+          },
+          {
+            timestamp: '2026-08-31T23:00:00Z',
+            balance: '10100',
+            drawdown_fraction: '0',
+            kind: 'period_end',
+            trade_number: null,
+          },
+        ],
       },
       benchmark: {
         run_id: 'benchmark-123',
@@ -177,6 +291,22 @@ describe('research API client', () => {
         total_return: '0.005',
         max_drawdown_fraction: '0',
         points: [],
+        chart_points: [
+          {
+            timestamp: '2026-08-01T00:00:00Z',
+            balance: '10000',
+            drawdown_fraction: '0',
+            kind: 'period_start',
+            trade_number: null,
+          },
+          {
+            timestamp: '2026-08-31T23:00:00Z',
+            balance: '10050',
+            drawdown_fraction: '0',
+            kind: 'period_end',
+            trade_number: null,
+          },
+        ],
       },
       interpretation: 'historical_research_only',
     };

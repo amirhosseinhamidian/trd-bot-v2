@@ -1,0 +1,48 @@
+{
+  "environment_label": "synthetic-example",
+  "generated_at": "2026-09-19T12:00:00Z",
+  "is_synthetic": true,
+  "results": [
+    {
+      "candle_count": 2,
+      "display_name": "Bitstamp Public",
+      "dns_latency_ms": 20,
+      "endpoint_host": "www.bitstamp.net",
+      "endpoint_path": "/api/v2/ohlc/btcusd/",
+      "error_detail": null,
+      "http_latency_ms": 80,
+      "http_status_code": 200,
+      "market": "BTC/USD",
+      "observed_at": "2026-09-19T12:00:00Z",
+      "outcome": "success",
+      "payload_valid": true,
+      "provider_id": "bitstamp-public",
+      "resolved_address_count": 2,
+      "response_bytes": 350,
+      "timeframe": "1h",
+      "tls_latency_ms": 40,
+      "tls_version": "TLSv1.3"
+    },
+    {
+      "candle_count": null,
+      "display_name": "Coinbase Exchange Public",
+      "dns_latency_ms": 15,
+      "endpoint_host": "api.exchange.coinbase.com",
+      "endpoint_path": "/products/BTC-USD/candles",
+      "error_detail": "Provider returned HTTP 451",
+      "http_latency_ms": 50,
+      "http_status_code": 451,
+      "market": "BTC/USD",
+      "observed_at": "2026-09-19T12:00:00Z",
+      "outcome": "geo_blocked",
+      "payload_valid": false,
+      "provider_id": "coinbase-exchange-public",
+      "resolved_address_count": 2,
+      "response_bytes": null,
+      "timeframe": "1h",
+      "tls_latency_ms": 35,
+      "tls_version": "TLSv1.3"
+    }
+  ],
+  "schema_version": 1
+}

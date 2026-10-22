@@ -29,16 +29,20 @@ export function ErrorState({
       aria-live="assertive"
       title={title}
       description={description}
-      className={cn('border-solid border-red-400/20 bg-red-400/5', className)}
+      className={cn('border-solid border-app-danger-border bg-app-danger-soft', className)}
       icon={
-        <span aria-hidden="true" className="font-bold text-red-300">
+        <span aria-hidden="true" className="font-bold text-app-danger">
           !
         </span>
       }
       action={
         hasDetails || canRetry ? (
-          <div className="flex flex-col items-center gap-4">
-            {hasDetails ? <div className="font-mono text-xs text-slate-600">{details}</div> : null}
+          <div className="flex max-w-full min-w-0 flex-col items-center gap-4">
+            {hasDetails ? (
+              <div className="max-w-full min-w-0 text-xs leading-5 break-words text-app-subtle">
+                {details}
+              </div>
+            ) : null}
 
             {canRetry ? (
               <Button type="button" size="sm" variant="danger" onClick={onRetry}>

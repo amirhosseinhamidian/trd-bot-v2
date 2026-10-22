@@ -2,7 +2,11 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from trd_bot.domain.market_data import OHLCVCandle, Timeframe, TradingPair
-from trd_bot.market_data import DataIssueCode, MarketDataQualityChecker
+from trd_bot.market_data import (
+    DataIssueCode,
+    DataQualityReport,
+    MarketDataQualityChecker,
+)
 
 PAIR = TradingPair(
     base_asset="BTC",
@@ -50,6 +54,109 @@ def test_valid_candles_pass_quality_check() -> None:
     assert report.is_valid is True
     assert report.candles_checked == 3
     assert report.issues == ()
+    assert report.score is not None
+    assert report.score.score_version == "quality-score-v1"
+    assert report.score.coverage_percent == 100.0
+    assert report.score.integrity_percent == 100.0
+    assert report.score.score_percent == 100.0
+    assert report.acceptance is not None
+    assert report.acceptance.policy_version == "strict-quality-v1"
+    assert report.acceptance.accepted is True
+    assert report.acceptance.blocking_issue_codes == ()
+
+
+def test_complete_requested_range_records_deterministic_coverage() -> None:
+    report = MarketDataQualityChecker().check(
+        [create_candle(10), create_candle(11), create_candle(12)],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 13, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert report.is_valid is True
+    assert report.coverage is not None
+    assert report.coverage.expected_candles == 3
+    assert report.coverage.received_candles == 3
+    assert report.coverage.missing_candles == 0
+    assert report.coverage.coverage_percent == 100.0
+    assert report.coverage.complete is True
+
+
+def test_requested_range_detects_missing_head_and_tail() -> None:
+    report = MarketDataQualityChecker().check(
+        [create_candle(11)],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 13, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    codes = {issue.code for issue in report.issues}
+    assert DataIssueCode.INCOMPLETE_START in codes
+    assert DataIssueCode.INCOMPLETE_END in codes
+    assert report.coverage is not None
+    assert report.coverage.expected_candles == 3
+    assert report.coverage.received_candles == 1
+    assert report.coverage.missing_candles == 2
+    assert report.coverage.coverage_percent == 33.33
+    assert report.coverage.complete is False
+    assert report.score is not None
+    assert report.score.coverage_percent == 33.33
+    assert report.score.integrity_percent == 100.0
+    assert report.score.score_percent == 33.33
+    assert report.acceptance is not None
+    assert report.acceptance.accepted is False
+    assert report.acceptance.blocking_issue_codes == (
+        DataIssueCode.INCOMPLETE_START,
+        DataIssueCode.INCOMPLETE_END,
+    )
+
+
+def test_requested_range_uses_utc_candle_boundaries_for_partial_times() -> None:
+    report = MarketDataQualityChecker().check(
+        [create_candle(11), create_candle(12)],
+        requested_start_time=datetime(2026, 8, 21, 10, 30, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 12, 30, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert report.is_valid is True
+    assert report.coverage is not None
+    assert report.coverage.expected_first_open_time == datetime(2026, 8, 21, 11, tzinfo=UTC)
+    assert report.coverage.expected_last_open_time == datetime(2026, 8, 21, 12, tzinfo=UTC)
+
+
+def test_requested_range_rejects_candles_outside_its_half_open_bounds() -> None:
+    report = MarketDataQualityChecker().check(
+        [create_candle(9), create_candle(10)],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 11, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert DataIssueCode.OUTSIDE_REQUESTED_RANGE in {issue.code for issue in report.issues}
+    assert report.coverage is not None
+    assert report.coverage.complete is True
+
+
+def test_requested_range_rejects_unaligned_candle_open_time() -> None:
+    unaligned = create_candle(10).model_copy(
+        update={
+            "open_time": datetime(2026, 8, 21, 10, 30, tzinfo=UTC),
+            "close_time": datetime(2026, 8, 21, 11, 30, tzinfo=UTC),
+        }
+    )
+
+    report = MarketDataQualityChecker().check(
+        [unaligned],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 12, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert DataIssueCode.UNALIGNED_CANDLE in {issue.code for issue in report.issues}
+    assert report.coverage is not None
+    assert report.coverage.received_candles == 0
+    assert report.coverage.complete is False
 
 
 def test_empty_collection_is_rejected() -> None:
@@ -82,14 +189,20 @@ def test_out_of_order_candles_are_detected() -> None:
 
 
 def test_missing_candle_is_detected() -> None:
-    codes = issue_codes(
+    report = MarketDataQualityChecker().check(
         [
             create_candle(10),
             create_candle(12),
         ]
     )
 
-    assert DataIssueCode.MISSING_CANDLE in codes
+    assert DataIssueCode.MISSING_CANDLE in {issue.code for issue in report.issues}
+    assert report.score is not None
+    assert report.score.coverage_percent == 66.67
+    assert report.score.integrity_percent == 100.0
+    assert report.score.score_percent == 66.67
+    assert report.acceptance is not None
+    assert report.acceptance.accepted is False
 
 
 def test_open_candle_is_detected() -> None:
@@ -100,3 +213,34 @@ def test_open_candle_is_detected() -> None:
     )
 
     assert DataIssueCode.OPEN_CANDLE in codes
+
+
+def test_structural_issue_reduces_integrity_without_hiding_complete_coverage() -> None:
+    report = MarketDataQualityChecker().check(
+        [create_candle(10), create_candle(11, is_closed=False)],
+        requested_start_time=datetime(2026, 8, 21, 10, tzinfo=UTC),
+        requested_end_time=datetime(2026, 8, 21, 12, tzinfo=UTC),
+        requested_timeframe=Timeframe.HOUR_1,
+    )
+
+    assert report.score is not None
+    assert report.score.coverage_percent == 100.0
+    assert report.score.integrity_percent == 50.0
+    assert report.score.score_percent == 50.0
+    assert report.acceptance is not None
+    assert report.acceptance.accepted is False
+    assert report.acceptance.blocking_issue_codes == (DataIssueCode.OPEN_CANDLE,)
+
+
+def test_legacy_quality_report_remains_readable_without_score_or_policy() -> None:
+    report = DataQualityReport.model_validate(
+        {
+            "candles_checked": 2,
+            "issues": [],
+            "coverage": None,
+        }
+    )
+
+    assert report.score is None
+    assert report.acceptance is None
+    assert report.is_valid is True

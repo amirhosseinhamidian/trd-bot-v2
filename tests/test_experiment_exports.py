@@ -1,9 +1,12 @@
 import csv
+import hashlib
 from datetime import UTC, datetime
 from decimal import Decimal
 from io import StringIO
 
 from trd_bot.research import (
+    EXPERIMENT_REPORT_CSV_COLUMNS,
+    EXPERIMENT_REPORT_CSV_SCHEMA_VERSION,
     AcceptancePolicyPresetCatalog,
     ExperimentAcceptancePolicy,
     ExperimentParameter,
@@ -74,12 +77,14 @@ def parse_csv(content: str) -> list[list[str]]:
 
 
 def test_csv_export_has_stable_header_and_core_metrics() -> None:
-    rows = parse_csv(ExperimentReportCsvExporter().export(create_csv_report()))
+    content = ExperimentReportCsvExporter().export(create_csv_report())
+    rows = parse_csv(content)
 
-    assert rows[0] == [
-        "section",
-        "metric",
-        "value",
+    assert rows[0] == list(EXPERIMENT_REPORT_CSV_COLUMNS)
+    assert rows[1] == [
+        "metadata",
+        "export_schema_version",
+        EXPERIMENT_REPORT_CSV_SCHEMA_VERSION,
     ]
 
     assert [
@@ -140,3 +145,39 @@ def test_csv_export_is_deterministic() -> None:
     exporter = ExperimentReportCsvExporter()
 
     assert exporter.export(report) == exporter.export(report)
+
+
+def test_csv_export_neutralizes_untrusted_spreadsheet_formulas() -> None:
+    report = create_csv_report()
+    experiment = report.report.experiment.model_copy(
+        update={
+            "parameters": (
+                ExperimentParameter(name="formula", value='  =HYPERLINK("https://invalid")'),
+                ExperimentParameter(name="negative-number", value="-1"),
+            ),
+            "net_pnl": Decimal("-125.50"),
+        }
+    )
+    guarded = report.model_copy(
+        update={
+            "report": report.report.model_copy(update={"experiment": experiment}),
+        }
+    )
+
+    rows = parse_csv(ExperimentReportCsvExporter().export(guarded))
+
+    assert [
+        "strategy_parameter",
+        "formula",
+        '\'  =HYPERLINK("https://invalid")',
+    ] in rows
+    assert ["strategy_parameter", "negative-number", "'-1"] in rows
+    assert ["performance", "net_pnl", "-125.50"] in rows
+
+
+def test_csv_v1_golden_contract_does_not_drift() -> None:
+    content = ExperimentReportCsvExporter().export(create_csv_report())
+
+    assert hashlib.sha256(content.encode("utf-8")).hexdigest() == (
+        "e7c55417a7812ef23fc17c57f33cce0244dcbdcc5f320612f45b03eba069ffe8"
+    )

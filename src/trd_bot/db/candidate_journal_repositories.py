@@ -70,6 +70,15 @@ class SqlAlchemyCandidateJournalRepository:
 
         return tuple(CandidateJournalEntry.model_validate_json(row.payload_json) for row in rows)
 
+    def list_by_portfolio(self, portfolio_id: str) -> tuple[CandidateJournalEntry, ...]:
+        """Read only the evidence belonging to one portfolio."""
+        rows = self._session.scalars(
+            select(CandidateJournalRow)
+            .where(CandidateJournalRow.portfolio_id == portfolio_id)
+            .order_by(CandidateJournalRow.recorded_at, CandidateJournalRow.journal_id)
+        ).all()
+        return tuple(CandidateJournalEntry.model_validate_json(row.payload_json) for row in rows)
+
     def list_by_dataset(
         self,
         *,

@@ -1,8 +1,47 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseWalkForwardExecutionId } from '@/lib/walk-forward/run-params';
+import {
+  parseWalkForwardExecutionId,
+  parseWalkForwardRunSearchParams,
+} from '@/lib/walk-forward/run-params';
 
 describe('walk-forward run parameters', () => {
+  it('parses an executable strategy preselection', () => {
+    expect(
+      parseWalkForwardRunSearchParams({
+        strategy: 'rsi-threshold',
+        strategy_version: '1.0.0',
+      }),
+    ).toEqual({
+      strategyName: 'rsi-threshold',
+    });
+  });
+
+  it('does not preselect a known strategy through an unsupported version', () => {
+    expect(
+      parseWalkForwardRunSearchParams({
+        strategy: 'rsi-threshold',
+        strategy_version: '2.0.0',
+      }),
+    ).toEqual({});
+  });
+
+  it('accepts the first strategy value and ignores unsupported names', () => {
+    expect(
+      parseWalkForwardRunSearchParams({
+        strategy: ['sma-crossover', 'rsi-threshold'],
+      }),
+    ).toEqual({
+      strategyName: 'sma-crossover',
+    });
+
+    expect(
+      parseWalkForwardRunSearchParams({
+        strategy: 'future-strategy',
+      }),
+    ).toEqual({});
+  });
+
   it('parses a valid walk-forward execution ID', () => {
     expect(
       parseWalkForwardExecutionId({

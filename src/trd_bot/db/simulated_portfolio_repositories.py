@@ -34,8 +34,13 @@ class SqlAlchemySimulatedPortfolioRepository:
             self._update_portfolio_row(row=row, portfolio=portfolio)
 
         try:
+            # Persist the parent row first so PostgreSQL foreign-key constraints
+            # are satisfied before position and timeline children are inserted.
+            self._session.flush()
+
             self._replace_children(portfolio)
             self._session.flush()
+
             if commit:
                 self._session.commit()
         except IntegrityError as error:

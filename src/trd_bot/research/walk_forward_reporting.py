@@ -7,6 +7,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    computed_field,
     model_validator,
 )
 
@@ -26,6 +27,71 @@ class HistoricalFoldReturnDirection(StrEnum):
     FLAT = "flat"
 
 
+class WalkForwardMetricDefinition(BaseModel):
+    """Stable, machine-readable definition of one walk-forward metric."""
+
+    model_config = ConfigDict(frozen=True)
+
+    key: Literal[
+        "median_fold_return",
+        "worst_fold_return",
+        "traded_fold_fraction",
+        "return_consistency",
+        "fold_drawdown",
+        "excess_return",
+    ]
+    unit: Literal["fraction", "currency", "count", "ratio"]
+    preference: Literal["higher_is_better", "lower_is_better", "context_only"]
+    definition: str
+    formula: str
+
+
+WALK_FORWARD_METRIC_DEFINITIONS = (
+    WalkForwardMetricDefinition(
+        key="median_fold_return",
+        unit="fraction",
+        preference="higher_is_better",
+        definition="Median out-of-sample strategy return across folds.",
+        formula="median(fold.strategy_return)",
+    ),
+    WalkForwardMetricDefinition(
+        key="worst_fold_return",
+        unit="fraction",
+        preference="higher_is_better",
+        definition="Lowest out-of-sample strategy return across folds.",
+        formula="min(fold.strategy_return)",
+    ),
+    WalkForwardMetricDefinition(
+        key="traded_fold_fraction",
+        unit="fraction",
+        preference="higher_is_better",
+        definition="Share of folds containing at least one closed trade.",
+        formula="folds_with_trades / total_folds",
+    ),
+    WalkForwardMetricDefinition(
+        key="return_consistency",
+        unit="fraction",
+        preference="higher_is_better",
+        definition="Bounded consistency after normalizing mean absolute deviation.",
+        formula="1 - min(1, mean_absolute_deviation / return_range)",
+    ),
+    WalkForwardMetricDefinition(
+        key="fold_drawdown",
+        unit="fraction",
+        preference="lower_is_better",
+        definition="Largest peak-to-trough decline inside one test fold.",
+        formula="max(fold.max_drawdown_fraction)",
+    ),
+    WalkForwardMetricDefinition(
+        key="excess_return",
+        unit="fraction",
+        preference="higher_is_better",
+        definition="Fold strategy return minus the same fold benchmark return.",
+        formula="fold.strategy_return - fold.benchmark_return",
+    ),
+)
+
+
 class WalkForwardFoldStatistics(BaseModel):
     """Dashboard-ready historical metrics for one walk-forward fold."""
 
@@ -43,11 +109,20 @@ class WalkForwardFoldStatistics(BaseModel):
 
     return_direction: HistoricalFoldReturnDirection
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_trades(self) -> bool:
+        """Whether this fold contains at least one closed trade."""
+
+        return self.total_trades > 0
+
 
 class WalkForwardStabilityReport(BaseModel):
     """Historical fold distribution and dispersion for one stored run."""
 
     model_config = ConfigDict(frozen=True)
+
+    stability_version: Literal["walk-forward-stability-v1"] = "walk-forward-stability-v1"
 
     execution_id: str = Field(
         pattern=(
@@ -91,6 +166,62 @@ class WalkForwardStabilityReport(BaseModel):
     ] = Field(min_length=1)
 
     interpretation: Literal["historical_research_only"] = "historical_research_only"
+
+    metric_definitions: tuple[WalkForwardMetricDefinition, ...] = WALK_FORWARD_METRIC_DEFINITIONS
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def folds_with_trades(self) -> int:
+        """Number of folds containing at least one closed trade."""
+
+        return sum(fold.has_trades for fold in self.folds)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def folds_without_trades(self) -> int:
+        """Number of folds without a closed trade."""
+
+        return self.total_folds - self.folds_with_trades
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def traded_fold_fraction(self) -> Decimal:
+        """Share of folds containing at least one closed trade."""
+
+        return Decimal(self.folds_with_trades) / Decimal(self.total_folds)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def return_consistency(self) -> Decimal:
+        """Bounded inverse of fold-return dispersion relative to its range."""
+
+        if self.strategy_return_range == 0:
+            return Decimal("1")
+
+        normalized_dispersion = (
+            self.strategy_return_mean_absolute_deviation / self.strategy_return_range
+        )
+        return Decimal("1") - min(Decimal("1"), normalized_dispersion)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def worst_return_fold_number(self) -> int:
+        """First fold with the lowest strategy return."""
+
+        return min(
+            self.folds,
+            key=lambda fold: (fold.strategy_return, fold.fold_number),
+        ).fold_number
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def worst_drawdown_fold_number(self) -> int:
+        """First fold with the largest strategy drawdown."""
+
+        worst_drawdown = max(fold.max_drawdown_fraction for fold in self.folds)
+        return next(
+            fold.fold_number for fold in self.folds if fold.max_drawdown_fraction == worst_drawdown
+        )
 
     @model_validator(mode="after")
     def validate_fold_counts(self) -> Self:

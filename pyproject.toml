@@ -4,15 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trd-bot-v2"
-version = "0.1.0"
+version = "0.3.0"
 description = "Research, backtesting, paper portfolio, and position monitoring platform."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.19.1,<1.20",
     "fastapi>=0.115,<1",
+    "pyarrow>=25.0,<26",
     "psycopg[binary]>=3.2,<4",
     "pydantic-settings>=2.8,<3",
+    "python-multipart>=0.0.32,<0.1",
     "sqlalchemy>=2.0.52,<2.1",
     "uvicorn[standard]>=0.34,<1",
 ]
@@ -23,7 +25,7 @@ dev = [
     "mypy>=1.15,<2",
     "pytest>=8,<10",
     "pytest-asyncio>=0.24,<2",
-    "ruff>=0.11,<1",
+    "ruff==0.16.7",
 ]
 
 [tool.setuptools.packages.find]

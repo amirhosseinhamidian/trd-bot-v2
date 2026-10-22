@@ -4,9 +4,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from trd_bot.api.dependencies import (
+    get_experiment_execution_enqueuer,
     get_experiment_execution_repository,
 )
 from trd_bot.db.base import DatabaseBase
+from trd_bot.db.experiment_execution_enqueues import (
+    SqlAlchemyExperimentExecutionEnqueuer,
+)
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
@@ -43,6 +47,10 @@ def test_returns_sqlalchemy_execution_repository() -> None:
         assert isinstance(
             repository,
             SqlAlchemyExperimentExecutionRepository,
+        )
+        assert isinstance(
+            get_experiment_execution_enqueuer(session),
+            SqlAlchemyExperimentExecutionEnqueuer,
         )
 
         session_iterator.close()

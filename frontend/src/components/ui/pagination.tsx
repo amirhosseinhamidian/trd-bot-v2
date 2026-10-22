@@ -3,8 +3,10 @@
 import { Button } from '@/components/ui/button';
 
 export type PaginationProps = {
+  dir?: 'ltr' | 'rtl';
   isLoading?: boolean;
   limit: number;
+  locale?: 'en' | 'fa';
   nextLabel: string;
   offset: number;
   onOffsetChange: (offset: number) => void;
@@ -14,8 +16,10 @@ export type PaginationProps = {
 };
 
 export function Pagination({
+  dir,
   isLoading = false,
   limit,
+  locale = 'en',
   nextLabel,
   offset,
   onOffsetChange,
@@ -23,28 +27,47 @@ export function Pagination({
   previousLabel,
   total,
 }: PaginationProps) {
-  const hasPrevious = offset > 0;
-  const hasNext = offset + limit < total;
+  const pageSize = Math.max(1, limit);
+  const itemCount = Math.max(0, total);
+  const totalPages = itemCount === 0 ? 0 : Math.ceil(itemCount / pageSize);
+  const maximumOffset = Math.max(0, (totalPages - 1) * pageSize);
+  const currentOffset = Math.min(Math.max(0, offset), maximumOffset);
+  const hasPrevious = currentOffset > 0;
+  const hasNext = currentOffset + pageSize < itemCount;
 
-  const currentPage = total === 0 ? 0 : Math.floor(offset / limit) + 1;
-  const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+  const currentPage = itemCount === 0 ? 0 : Math.floor(currentOffset / pageSize) + 1;
+  const direction = dir ?? (locale === 'fa' ? 'rtl' : 'ltr');
+  const numberFormatter = new Intl.NumberFormat(locale === 'fa' ? 'fa-IR' : 'en-US');
 
   return (
     <nav
       aria-label={pageLabel}
       aria-busy={isLoading}
+      dir={direction}
       className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
     >
-      <p className="text-xs text-slate-500">
-        {pageLabel}: {currentPage} / {totalPages}
+      <p
+        aria-live="polite"
+        aria-atomic="true"
+        className="text-center text-xs text-app-muted sm:text-start"
+      >
+        {pageLabel}:{' '}
+        <span
+          dir="ltr"
+          aria-current="page"
+          className="font-medium text-app-foreground tabular-nums"
+        >
+          {numberFormatter.format(currentPage)} / {numberFormatter.format(totalPages)}
+        </span>
       </p>
 
-      <div className="flex gap-2">
+      <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
         <Button
           variant="secondary"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={!hasPrevious || isLoading}
-          onClick={() => onOffsetChange(Math.max(0, offset - limit))}
+          onClick={() => onOffsetChange(Math.max(0, currentOffset - pageSize))}
         >
           {previousLabel}
         </Button>
@@ -52,8 +75,9 @@ export function Pagination({
         <Button
           variant="secondary"
           size="sm"
+          className="w-full sm:w-auto"
           disabled={!hasNext || isLoading}
-          onClick={() => onOffsetChange(offset + limit)}
+          onClick={() => onOffsetChange(currentOffset + pageSize)}
         >
           {nextLabel}
         </Button>

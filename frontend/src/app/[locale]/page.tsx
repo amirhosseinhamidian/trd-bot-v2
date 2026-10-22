@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 
-import OverviewDashboard from '@/components/dashboard/overview-dashboard';
-import { getResearchActivity, getResearchOverview } from '@/lib/api/client';
+import { getResearchActivity, getResearchOverview } from '@/features/overview/api/client';
+import OverviewDashboard from '@/features/overview/overview-dashboard';
 
 type LocalePageProps = {
   params: Promise<{

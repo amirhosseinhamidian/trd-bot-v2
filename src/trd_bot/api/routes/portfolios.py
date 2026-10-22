@@ -6,10 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trd_bot.api.dependencies import (
+    get_candidate_journal_repository,
     get_dataset_repository,
     get_simulated_portfolio_repository,
 )
 from trd_bot.api.pagination import Page, PaginationParams, build_page
+from trd_bot.db import SqlAlchemyCandidateJournalRepository
 from trd_bot.paper import (
     PortfolioStatus,
     PortfolioTimelineEvent,
@@ -20,6 +22,8 @@ from trd_bot.paper import (
     SimulationMode,
 )
 from trd_bot.research import DatasetRepository
+from trd_bot.research.portfolio_analytics import PortfolioAnalyticsBuilder, PortfolioAnalyticsReport
+from trd_bot.research.position_lineage import PositionDetailBuilder, PositionDetailReport
 
 router = APIRouter(
     prefix="/research/portfolios",
@@ -168,6 +172,21 @@ def list_simulated_portfolios(
     )
 
 
+@router.get("/{portfolio_id}/analytics", response_model=PortfolioAnalyticsReport)
+def get_portfolio_analytics(
+    portfolio_id: str,
+    portfolios: PortfolioRepositoryDependency,
+    journals: Annotated[
+        SqlAlchemyCandidateJournalRepository, Depends(get_candidate_journal_repository)
+    ],
+) -> PortfolioAnalyticsReport:
+    """Project fee-aware performance without changing the stored simulation."""
+    portfolio = _get_portfolio_or_404(portfolio_id, portfolios)
+    return PortfolioAnalyticsBuilder().build(
+        portfolio, journals=journals.list_by_portfolio(portfolio_id)
+    )
+
+
 @router.get(
     "/{portfolio_id}/positions",
     response_model=Page[SimulatedPosition],
@@ -211,6 +230,34 @@ def get_simulated_position(
             detail="simulated position not found",
         )
     return position
+
+
+@router.get(
+    "/{portfolio_id}/positions/{position_id}/detail",
+    response_model=PositionDetailReport,
+)
+def get_simulated_position_detail(
+    portfolio_id: str,
+    position_id: str,
+    portfolios: PortfolioRepositoryDependency,
+    journals: Annotated[
+        SqlAlchemyCandidateJournalRepository, Depends(get_candidate_journal_repository)
+    ],
+) -> PositionDetailReport:
+    """Join one simulated position to its persisted research lineage."""
+
+    portfolio = _get_portfolio_or_404(portfolio_id, portfolios)
+    position = portfolios.get_position(position_id)
+    if position is None or position.portfolio_id != portfolio_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="simulated position not found",
+        )
+    return PositionDetailBuilder.build(
+        portfolio=portfolio,
+        position=position,
+        journals=journals.list_by_portfolio(portfolio_id),
+    )
 
 
 @router.get(

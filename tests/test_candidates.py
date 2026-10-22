@@ -37,10 +37,14 @@ def create_signal(
     *,
     direction: SignalDirection = SignalDirection.LONG,
     score: Decimal = Decimal("0.75"),
+    strategy_name: str = "ema-crossover",
+    strategy_version: str = "1.0.0",
+    reason: str = "EMA crossover produced directional evidence.",
+    features: tuple[StrategyFeature, ...] | None = None,
 ) -> StrategySignal:
     signal_id = build_signal_id(
-        strategy_name="ema-crossover",
-        strategy_version="1.0.0",
+        strategy_name=strategy_name,
+        strategy_version=strategy_version,
         dataset_id="dataset-test",
         candle_close_time=CLOSE_TIME,
         direction=direction,
@@ -48,8 +52,8 @@ def create_signal(
 
     return StrategySignal(
         signal_id=signal_id,
-        strategy_name="ema-crossover",
-        strategy_version="1.0.0",
+        strategy_name=strategy_name,
+        strategy_version=strategy_version,
         dataset_id="dataset-test",
         pair=PAIR,
         timeframe=Timeframe.HOUR_1,
@@ -58,8 +62,9 @@ def create_signal(
         generated_at=CLOSE_TIME,
         direction=direction,
         score=score,
-        reason="EMA crossover produced directional evidence.",
-        features=(
+        reason=reason,
+        features=features
+        or (
             StrategyFeature(
                 name="fast_ema",
                 value=Decimal("101.25"),
@@ -118,6 +123,40 @@ def test_builder_creates_traceable_directional_candidate() -> None:
         "fast_ema",
         "slow_ema",
     )
+
+
+def test_builder_preserves_versioned_rsi_strategy_lineage() -> None:
+    signal = create_signal(
+        strategy_name="rsi-threshold",
+        strategy_version="1.0.0",
+        reason="RSI crossed into the oversold region.",
+        features=(
+            StrategyFeature(
+                name="rsi",
+                value=Decimal("28"),
+            ),
+            StrategyFeature(
+                name="threshold",
+                value=Decimal("30"),
+            ),
+        ),
+    )
+
+    candidate = CandidateBuilder.from_signal(
+        signal=signal,
+        experiment_id=EXPERIMENT_ID,
+        horizon_candles=4,
+        confidence=Decimal("0.70"),
+        created_at=CREATED_AT,
+        valid_until=VALID_UNTIL,
+        trade_plan=long_plan(),
+    )
+
+    assert candidate.strategy_name == "rsi-threshold"
+    assert candidate.strategy_version == "1.0.0"
+    assert candidate.signal_id == signal.signal_id
+    assert candidate.dataset_id == signal.dataset_id
+    assert candidate.experiment_id == EXPERIMENT_ID
 
 
 def test_candidate_id_is_deterministic() -> None:

@@ -1,0 +1,242 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+
+import MobilePlatformNavigation from '@/components/platform/mobile-platform-navigation';
+import ThemeToggle from '@/components/theme/theme-toggle';
+import { trapTabFocus } from '@/lib/utils/focus';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+import { getAlternateLocalePathname } from '@/platform/locale-routing';
+import { getPlatformNavigation, isPlatformNavigationItemActive } from '@/platform/navigation';
+
+const PLATFORM_NAVIGATION_ID = 'platform-navigation';
+
+type PlatformShellProps = {
+  children: ReactNode;
+  locale: PlatformLocale;
+};
+
+export default function PlatformShell({ children, locale }: PlatformShellProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const openNavigationButtonRef = useRef<HTMLButtonElement>(null);
+  const closeNavigationButtonRef = useRef<HTMLButtonElement>(null);
+  const navigationRef = useRef<HTMLElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
+  const wasSidebarOpenRef = useRef(false);
+  const pathname = usePathname();
+  const copy = getPlatformCopy(locale);
+
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      if (wasSidebarOpenRef.current) {
+        openNavigationButtonRef.current?.focus();
+      }
+
+      wasSidebarOpenRef.current = false;
+      return;
+    }
+
+    wasSidebarOpenRef.current = true;
+    closeNavigationButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+        return;
+      }
+
+      trapTabFocus(event, navigationRef.current);
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSidebarOpen]);
+
+  const alternatePath = getAlternateLocalePathname(pathname, locale);
+
+  const navigation = getPlatformNavigation(locale);
+
+  return (
+    <div className="min-h-screen bg-app-background text-app-foreground">
+      <a
+        href="#main-content"
+        tabIndex={isSidebarOpen ? -1 : undefined}
+        aria-hidden={isSidebarOpen ? true : undefined}
+        className="fixed start-4 top-4 z-[60] -translate-y-24 rounded-xl bg-app-accent px-4 py-3 text-sm font-semibold text-app-background shadow-2xl transition-transform focus:translate-y-0 focus-visible:ring-2 focus-visible:ring-app-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none motion-reduce:transition-none"
+        onClick={(event) => {
+          event.preventDefault();
+          mainContentRef.current?.focus();
+        }}
+      >
+        {copy.header.skipToContent}
+      </a>
+
+      {isSidebarOpen ? (
+        <button
+          type="button"
+          aria-label={copy.header.closeNavigation}
+          tabIndex={-1}
+          className="fixed inset-0 z-40 hidden bg-app-overlay backdrop-blur-sm md:block lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      ) : null}
+
+      <aside
+        ref={navigationRef}
+        id={PLATFORM_NAVIGATION_ID}
+        aria-label={copy.header.navigation}
+        className={[
+          'fixed inset-y-0 start-0 z-50 hidden w-72 flex-col border-e border-app-border bg-app-chrome p-5 shadow-2xl backdrop-blur transition-transform duration-200 md:flex lg:visible lg:translate-x-0',
+          isSidebarOpen
+            ? 'visible translate-x-0'
+            : locale === 'fa'
+              ? 'invisible translate-x-full'
+              : 'invisible -translate-x-full',
+        ].join(' ')}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-app-border pb-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/brand/nexora-mark.jpg"
+              alt=""
+              width={48}
+              height={48}
+              loading="eager"
+              className="h-12 w-12 shrink-0 rounded-xl border border-app-accent-border object-cover shadow-app-surface"
+            />
+
+            <div className="min-w-0">
+              <p className="flex items-baseline gap-1.5 text-lg font-bold tracking-tight text-app-foreground">
+                <span>{copy.brand.platformName}</span>
+                <span aria-hidden="true" className="text-app-subtle">
+                  /
+                </span>
+                <span className="text-app-accent">{copy.brand.productName}</span>
+              </p>
+              <p className="mt-1 truncate text-xs text-app-subtle">{copy.brand.description}</p>
+            </div>
+          </div>
+
+          <button
+            ref={closeNavigationButtonRef}
+            type="button"
+            aria-label={copy.header.closeNavigation}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-app-border text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <nav className="mt-6 min-h-0 flex-1 space-y-5 overflow-y-auto pe-1">
+          {navigation.map((group) => (
+            <div key={group.key} data-navigation-group={group.key}>
+              {group.key === 'root' ? null : (
+                <h2 className="mb-2 hidden px-4 text-xs font-semibold tracking-wide text-app-subtle lg:block">
+                  {group.label}
+                </h2>
+              )}
+
+              <div className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const isActive = isPlatformNavigationItemActive(item, pathname);
+
+                  if (item.enabled) {
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        aria-current={isActive ? 'page' : undefined}
+                        onClick={() => setIsSidebarOpen(false)}
+                        className={[
+                          'rounded-xl border px-4 py-3 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none',
+                          isActive
+                            ? 'border-app-accent-border bg-app-accent-soft text-app-accent'
+                            : 'border-transparent text-app-muted hover:bg-app-hover hover:text-app-foreground',
+                        ].join(' ')}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={item.key}
+                      aria-disabled="true"
+                      className="flex cursor-not-allowed items-center justify-between rounded-xl px-4 py-3 text-sm text-app-subtle"
+                    >
+                      <span>{item.label}</span>
+
+                      <span className="rounded-full bg-app-surface-muted px-2 py-1 text-[10px] text-app-subtle">
+                        {copy.navigation.comingSoon}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-5 shrink-0 rounded-2xl border border-app-warning-border bg-app-warning-soft p-4">
+          <div className="flex items-center gap-2 text-xs font-medium text-app-warning">
+            <span className="h-2 w-2 rounded-full bg-app-warning" />
+            {copy.header.researchMode}
+          </div>
+        </div>
+      </aside>
+
+      <div inert={isSidebarOpen ? true : undefined} className="min-w-0 lg:ps-72">
+        <header className="sticky top-0 z-30 border-b border-app-border bg-app-chrome px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <button
+              ref={openNavigationButtonRef}
+              type="button"
+              aria-label={copy.header.openNavigation}
+              aria-controls={PLATFORM_NAVIGATION_ID}
+              aria-expanded={isSidebarOpen}
+              className="hidden h-11 w-11 items-center justify-center rounded-xl border border-app-border text-app-muted transition hover:bg-app-hover hover:text-app-foreground focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none md:inline-flex lg:hidden"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+
+            <div className="hidden items-center gap-2 text-xs text-app-subtle sm:flex">
+              <span className="h-2 w-2 rounded-full bg-app-success" />
+              {copy.header.researchMode}
+            </div>
+
+            <div className="ms-auto flex items-center gap-2">
+              <ThemeToggle locale={locale} />
+
+              <Link
+                href={alternatePath}
+                className="inline-flex min-h-11 items-center rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-medium text-app-foreground transition hover:border-app-accent-border hover:bg-app-hover hover:text-app-accent focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+              >
+                {copy.header.language}
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main
+          ref={mainContentRef}
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-7xl min-w-0 px-4 pt-8 pb-28 focus-visible:outline-none sm:px-6 md:pb-8 lg:px-8"
+        >
+          {children}
+        </main>
+      </div>
+
+      <MobilePlatformNavigation locale={locale} pathname={pathname} />
+    </div>
+  );
+}

@@ -4,6 +4,9 @@ from fastapi.testclient import TestClient
 
 from trd_bot.api.dependencies import (
     get_architecture_recommendation_repository,
+    get_background_job_repository,
+    get_market_data_connection_repository,
+    get_market_data_import_repository,
     get_monitoring_runtime_state_repository,
     get_system_metric_repository,
 )
@@ -14,7 +17,10 @@ from trd_bot.db import (
     create_session_factory,
 )
 from trd_bot.db.monitoring_collector_runner import SqlAlchemyMonitoringCollectorRunner
+from trd_bot.jobs import BackgroundJob, BackgroundJobStatus
 from trd_bot.main import app
+from trd_bot.market_data import InMemoryMarketDataConnectionRepository
+from trd_bot.market_data.import_history import InMemoryMarketDataImportRepository
 from trd_bot.monitoring import (
     InMemoryArchitectureRecommendationRepository,
     InMemoryMonitoringRuntimeStateRepository,
@@ -22,6 +28,22 @@ from trd_bot.monitoring import (
 )
 
 CHECKED_AT = datetime(2026, 8, 26, 12, tzinfo=UTC)
+
+
+class EmptyBackgroundJobRepository:
+    def count(self, *, statuses: tuple[BackgroundJobStatus, ...] | None = None) -> int:
+        del statuses
+        return 0
+
+    def list_page(
+        self,
+        *,
+        limit: int,
+        offset: int,
+        statuses: tuple[BackgroundJobStatus, ...] | None = None,
+    ) -> tuple[BackgroundJob, ...]:
+        del limit, offset, statuses
+        return ()
 
 
 def test_collector_runner_persists_last_successful_check() -> None:
@@ -57,6 +79,13 @@ def test_monitoring_summary_exposes_persisted_last_checked_at() -> None:
     app.dependency_overrides[get_system_metric_repository] = lambda: metrics
     app.dependency_overrides[get_architecture_recommendation_repository] = lambda: recommendations
     app.dependency_overrides[get_monitoring_runtime_state_repository] = lambda: runtime_state
+    app.dependency_overrides[get_background_job_repository] = lambda: EmptyBackgroundJobRepository()
+    app.dependency_overrides[get_market_data_connection_repository] = lambda: (
+        InMemoryMarketDataConnectionRepository()
+    )
+    app.dependency_overrides[get_market_data_import_repository] = lambda: (
+        InMemoryMarketDataImportRepository()
+    )
 
     client = TestClient(app)
 
@@ -83,3 +112,6 @@ def test_monitoring_summary_exposes_persisted_last_checked_at() -> None:
             get_monitoring_runtime_state_repository,
             None,
         )
+        app.dependency_overrides.pop(get_background_job_repository, None)
+        app.dependency_overrides.pop(get_market_data_connection_repository, None)
+        app.dependency_overrides.pop(get_market_data_import_repository, None)

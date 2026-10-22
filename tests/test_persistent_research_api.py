@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from trd_bot.api.legacy_research import enforce_legacy_research_route_retirement
 from trd_bot.db import (
     DatabaseBase,
     DatasetSnapshotRow,
@@ -34,11 +35,13 @@ def persistent_client(
             yield session
 
     app.dependency_overrides[get_database_session] = override_session
+    app.dependency_overrides[enforce_legacy_research_route_retirement] = lambda: None
     try:
         with TestClient(app) as client:
             yield client, factory
     finally:
         app.dependency_overrides.pop(get_database_session, None)
+        app.dependency_overrides.pop(enforce_legacy_research_route_retirement, None)
         engine.dispose()
 
 

@@ -56,7 +56,7 @@ def test_activity_builder_maps_experiment_metadata() -> None:
 def test_activity_builder_maps_walk_forward_metadata() -> None:
     result = WalkForwardExecutionResult.model_construct(
         source_dataset_id="dataset-one",
-        strategy_name="ema-crossover",
+        strategy_name="rsi-threshold",
         strategy_version="1.0.0",
         horizon_candles=3,
     )
@@ -72,6 +72,8 @@ def test_activity_builder_maps_walk_forward_metadata() -> None:
     assert item.activity_type is ResearchActivityType.WALK_FORWARD_RUN
     assert item.resource_id == run.execution_id
     assert item.dataset_id == "dataset-one"
+    assert item.strategy_name == "rsi-threshold"
+    assert item.strategy_version == "1.0.0"
     assert item.horizon_candles == 3
 
 

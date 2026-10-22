@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from trd_bot.indicators import exponential_moving_average
-from trd_bot.research.datasets import DatasetSnapshot
 from trd_bot.strategies.base import BaseStrategy
 from trd_bot.strategies.signals import (
     SignalDirection,
@@ -9,6 +11,9 @@ from trd_bot.strategies.signals import (
     StrategySignal,
     build_signal_id,
 )
+
+if TYPE_CHECKING:
+    from trd_bot.research.datasets import DatasetSnapshot
 
 
 class EMACrossoverStrategy(BaseStrategy):

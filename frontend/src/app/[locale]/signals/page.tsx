@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation';
 
-import SignalCatalog from '@/components/dashboard/signal-catalog';
-import { getExperiments, getExperimentSignals } from '@/lib/api/client';
-import type { Page, StrategySignal } from '@/lib/api/types';
+import { getExperiments } from '@/features/experiments/api/client';
+import { getExperimentSignals } from '@/features/signals/api/client';
+import type { StrategySignal } from '@/features/signals/api/types';
+import SignalCatalog from '@/features/signals/signal-catalog';
+import type { Page } from '@/lib/api/core/types';
 
 type SignalsPageProps = {
   params: Promise<{

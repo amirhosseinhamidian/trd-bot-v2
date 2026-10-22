@@ -1,9 +1,12 @@
+from collections.abc import Callable
+
 from trd_bot.backtesting.models import BacktestConfig
 from trd_bot.research.datasets import DatasetRepository
 from trd_bot.research.experiments import ExperimentParameter
 from trd_bot.research.walk_forward import (
     WalkForwardDatasetMaterializer,
     WalkForwardExecutor,
+    WalkForwardFoldExecution,
     WalkForwardPlanner,
 )
 from trd_bot.research.walk_forward_executions import (
@@ -16,7 +19,11 @@ from trd_bot.research.walk_forward_runs import (
     WalkForwardRunBuilder,
     WalkForwardRunRegistry,
 )
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import StrategyRegistry, build_default_strategy_registry
+
+
+class _WalkForwardCancellationRequested(RuntimeError):
+    pass
 
 
 class WalkForwardExecutionRunner:
@@ -32,6 +39,7 @@ class WalkForwardExecutionRunner:
         materializer: WalkForwardDatasetMaterializer | None = None,
         executor: WalkForwardExecutor | None = None,
         state_machine: WalkForwardExecutionStateMachine | None = None,
+        strategy_registry: StrategyRegistry | None = None,
     ) -> None:
         self._executions = executions
         self._datasets = datasets
@@ -40,21 +48,39 @@ class WalkForwardExecutionRunner:
         self._materializer = materializer or WalkForwardDatasetMaterializer()
         self._executor = executor or WalkForwardExecutor()
         self._state_machine = state_machine or WalkForwardExecutionStateMachine()
+        self._strategy_registry = strategy_registry or build_default_strategy_registry()
 
     def run(
         self,
         execution_id: str,
+        *,
+        report_progress: Callable[[int], None] | None = None,
+        cancellation_requested: Callable[[], bool] | None = None,
     ) -> WalkForwardExecution:
+        progress = report_progress or (lambda _value: None)
+        cancelled = cancellation_requested or (lambda: False)
         execution = self._executions.get(execution_id)
 
         if execution is None:
             raise ValueError("walk-forward execution not found")
 
-        if execution.status is not WalkForwardExecutionStatus.QUEUED:
+        if execution.status in {
+            WalkForwardExecutionStatus.SUCCEEDED,
+            WalkForwardExecutionStatus.FAILED,
+        }:
             return execution
 
-        running = self._state_machine.start(execution)
-        running = self._executions.save(running)
+        running = execution
+        if running.status is WalkForwardExecutionStatus.QUEUED:
+            running = self._executions.save(self._state_machine.start(running))
+
+        progress(running.progress_percent)
+        if cancelled():
+            return self._fail(
+                running,
+                error_code="walk_forward_cancelled",
+                error_message="The walk-forward execution was cancelled.",
+            )
 
         dataset = self._datasets.get(running.dataset_id)
 
@@ -83,12 +109,14 @@ class WalkForwardExecutionRunner:
             )
 
             parameters = running.parameters
-            strategy = EMACrossoverStrategy(
-                fast_period=parameters.fast_period,
-                slow_period=parameters.slow_period,
+            strategy = self._strategy_registry.create(
+                name=running.strategy_name,
+                version=running.strategy_version,
+                parameters=parameters.strategy_parameters(),
             )
 
-            def save_fold_progress(
+            def save_fold_checkpoint(
+                checkpoint: WalkForwardFoldExecution,
                 completed_folds: int,
                 total_folds: int,
             ) -> None:
@@ -97,26 +125,28 @@ class WalkForwardExecutionRunner:
                 if total_folds != running.total_folds:
                     raise ValueError("walk-forward executor reported an unexpected fold count")
 
-                progressed = self._state_machine.update_completed_folds(
+                progressed = self._state_machine.record_fold_checkpoint(
                     running,
-                    completed_folds=completed_folds,
+                    checkpoint=checkpoint,
                 )
 
                 running = self._executions.save(progressed)
+                if completed_folds != len(running.fold_checkpoints):
+                    raise ValueError("walk-forward checkpoint count is inconsistent")
+                progress(running.progress_percent)
+                if cancelled():
+                    raise _WalkForwardCancellationRequested
 
             result = self._executor.execute(
                 dataset=dataset,
                 materialization=materialization,
                 strategy=strategy,
-                strategy_parameters=(
+                strategy_parameters=tuple(
                     ExperimentParameter(
-                        name="fast_period",
-                        value=str(parameters.fast_period),
-                    ),
-                    ExperimentParameter(
-                        name="slow_period",
-                        value=str(parameters.slow_period),
-                    ),
+                        name=name,
+                        value=value,
+                    )
+                    for name, value in parameters.strategy_parameter_pairs()
                 ),
                 horizon_candles=parameters.horizon_candles,
                 backtest_config=BacktestConfig(
@@ -125,8 +155,12 @@ class WalkForwardExecutionRunner:
                     fee_rate=parameters.fee_rate,
                     slippage_rate=parameters.slippage_rate,
                 ),
-                on_fold_completed=save_fold_progress,
+                on_fold_result_completed=save_fold_checkpoint,
+                completed_fold_results=running.fold_checkpoints,
             )
+
+            if cancelled():
+                raise _WalkForwardCancellationRequested
 
             run = WalkForwardRunBuilder().build(
                 result=result,
@@ -142,12 +176,43 @@ class WalkForwardExecutionRunner:
 
             return self._executions.save(succeeded)
 
-        except Exception:
+        except _WalkForwardCancellationRequested:
+            return self._fail(
+                running,
+                error_code="walk_forward_cancelled",
+                error_message="The walk-forward execution was cancelled.",
+            )
+        except (ArithmeticError, ValueError):
             return self._fail(
                 running,
                 error_code="execution_failed",
                 error_message=("The walk-forward execution could not be completed."),
             )
+
+    def fail_active(
+        self,
+        execution_id: str,
+        *,
+        error_code: str,
+        error_message: str,
+    ) -> WalkForwardExecution:
+        """Fail a non-terminal execution after its durable retry budget is exhausted."""
+
+        execution = self._executions.get(execution_id)
+        if execution is None:
+            raise ValueError("walk-forward execution not found")
+        if execution.status in {
+            WalkForwardExecutionStatus.SUCCEEDED,
+            WalkForwardExecutionStatus.FAILED,
+        }:
+            return execution
+        if execution.status is WalkForwardExecutionStatus.QUEUED:
+            execution = self._executions.save(self._state_machine.start(execution))
+        return self._fail(
+            execution,
+            error_code=error_code,
+            error_message=error_message,
+        )
 
     def _fail(
         self,

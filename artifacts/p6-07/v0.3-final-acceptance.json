@@ -1,0 +1,332 @@
+{
+  "branch": "feature/v0.3-market-intelligence",
+  "candidate_commit_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+  "capacity": {
+    "artifact_checksum": "c6745566a9b3b11bf80dcf1b2a80a63a732d1e067f1a992072ee29825ba07905",
+    "commit_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+    "environment_label": "macbook-pro-reference",
+    "generated_at": "2026-10-22T08:12:36.498340Z",
+    "passed": true,
+    "policy_checksum": "8a6e4210cc88bdeb051fa879399a91baac6d94d4d9a143d3804c8fdf5ebdf76a",
+    "report_checksum": "e3dbd9ff61ded9d2b89deb0702ef24e8291f9914fb43880f803dabe64a285397"
+  },
+  "ci": {
+    "conclusion": "success",
+    "head_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+    "run_url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/39745569133"
+  },
+  "database_name": "trd_bot_test",
+  "environment_label": "macbook-pro-reference",
+  "failed_gates": [],
+  "freeze_commit_policy": "acceptance-artifact-only",
+  "gates": [
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_release_security_boundary.py",
+            "tests/test_release_version.py",
+            "tests/test_v0_3_release_cut.py",
+            "tests/test_v0_3_documentation.py",
+            "tests/test_phase_five_acceptance.py",
+            "tests/test_phase_six_acceptance.py",
+            "-q"
+          ],
+          "duration_ms": 8150,
+          "exit_code": 0,
+          "label": "Final release contract tests"
+        }
+      ],
+      "gate_id": "release_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_release_hardening.py",
+            "tests/test_release_capacity.py",
+            "tests/test_release_capacity_postgresql.py",
+            "tests/test_outcome_learning_review.py",
+            "tests/test_release_maintenance.py",
+            "tests/test_release_installation.py",
+            "-m",
+            "not integration",
+            "-q"
+          ],
+          "duration_ms": 6074,
+          "exit_code": 0,
+          "label": "Phase 6 hardening and operations tests"
+        }
+      ],
+      "gate_id": "phase_six_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "format",
+            "--check",
+            "."
+          ],
+          "duration_ms": 82,
+          "exit_code": 0,
+          "label": "Backend format"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "ruff",
+            "check",
+            "."
+          ],
+          "duration_ms": 79,
+          "exit_code": 0,
+          "label": "Backend lint"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "mypy"
+          ],
+          "duration_ms": 3759,
+          "exit_code": 0,
+          "label": "Backend typing"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "not integration"
+          ],
+          "duration_ms": 87458,
+          "exit_code": 0,
+          "label": "Backend tests"
+        }
+      ],
+      "gate_id": "backend",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 1640,
+          "exit_code": 0,
+          "label": "Alembic upgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "downgrade",
+            "base"
+          ],
+          "duration_ms": 2527,
+          "exit_code": 0,
+          "label": "Alembic downgrade"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 2926,
+          "exit_code": 0,
+          "label": "Alembic rebuild"
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "alembic",
+            "check"
+          ],
+          "duration_ms": 2073,
+          "exit_code": 0,
+          "label": "Alembic drift"
+        }
+      ],
+      "gate_id": "migration_cycle",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-m",
+            "integration",
+            "-q"
+          ],
+          "duration_ms": 8805,
+          "exit_code": 0,
+          "label": "PostgreSQL integration"
+        }
+      ],
+      "gate_id": "postgresql_resilience",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "npm",
+            "ci"
+          ],
+          "duration_ms": 42165,
+          "exit_code": 0,
+          "label": "Frontend install"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "duration_ms": 7709,
+          "exit_code": 0,
+          "label": "Frontend format"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "duration_ms": 10572,
+          "exit_code": 0,
+          "label": "Frontend lint"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "typecheck"
+          ],
+          "duration_ms": 8041,
+          "exit_code": 0,
+          "label": "Frontend typecheck"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "test"
+          ],
+          "duration_ms": 27879,
+          "exit_code": 0,
+          "label": "Frontend tests"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "duration_ms": 18605,
+          "exit_code": 0,
+          "label": "Frontend build"
+        }
+      ],
+      "gate_id": "frontend",
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-10-22T08:20:50.917511Z",
+  "installation": {
+    "artifact_checksum": "3896e88c869538f6acde3a079d77e63779578f80c4c7562b87543d31857602a0",
+    "commit_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+    "environment_label": "macbook-pro-reference",
+    "generated_at": "2026-10-22T08:15:35.424104Z",
+    "passed": true,
+    "release_inventory_checksum": "6684eda0f9ad36998cf183632b21b5390d40ad233c65ddb92b228179b0f6a2af",
+    "report_checksum": "3956e74f3c002ec94a7e8d2fd27525839e7273c21bc98ee3f3e54e2b76c4502a",
+    "source_migration_revision": "20260926_0017",
+    "target_migration_revision": "20261020_0036"
+  },
+  "inventory": {
+    "counts": {
+      "api_operations": 112,
+      "database_tables": 55,
+      "frontend_pages": 23,
+      "jobs": 10,
+      "migration_heads": 1,
+      "migration_revisions": 36,
+      "providers": 3
+    },
+    "definition_checksum": "6684eda0f9ad36998cf183632b21b5390d40ad233c65ddb92b228179b0f6a2af",
+    "passed": true,
+    "product_version": "0.3.0"
+  },
+  "maintenance": {
+    "artifact_checksum": "2169edf9356d2669efb24d7e892c625c262e84101b9c746f1baf3db4e872b276",
+    "automatic_maintenance_executed": false,
+    "commit_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+    "environment_label": "macbook-pro-reference",
+    "generated_at": "2026-10-22T08:13:58.019680Z",
+    "human_approval_required": false,
+    "immutable_evidence_deletion_allowed": false,
+    "policy_checksum": "37b921b7dc27e7a0cd95f66d4b5276679a5e8a07adae6b07ea0cc810119a4ade",
+    "report_checksum": "74f39f7beafde2e6bcf974f013d7bd1865d1aa2b54b96862c7c105c0ecfd2486",
+    "retention_dry_run_audit_written": true
+  },
+  "manual": {
+    "api_worker_ui_lifecycle": "pass",
+    "fresh_install_upgrade_and_restore": "pass",
+    "no_live_trading_security_inventory": "pass",
+    "outcome_learning_human_review": "pass",
+    "paper_shadow_decision_lineage": "pass",
+    "retention_maintenance_closed": "pass"
+  },
+  "outcome_learning": {
+    "artifact_checksum": "8fd8e2451a68bb348dc5d64a8f8c3e56c6c8c37a7b898ff6c7b19341df84780f",
+    "automatic_policy_updates_applied": false,
+    "commit_sha": "08865f7486e4dca75a789b1d2ca7ee9136de8cd6",
+    "environment_label": "macbook-pro-reference",
+    "generated_at": "2026-10-22T08:13:38.660935Z",
+    "human_review_required": false,
+    "offline_only": true,
+    "policy_checksum": "01a16992e6096a96ab9a2ae5fab0b7df8789cc5ecdb53365a8b1721428c9fd4c",
+    "production_ml_training_performed": false,
+    "readiness": "insufficient_data",
+    "report_checksum": "9f2caee1fe3590d4ed48845d4d99d812f263add8b7ba0327f8be88c9351f6af0"
+  },
+  "prior_freeze": {
+    "phase_five_commit_sha": "2a084063e0d4d941852d0b7c8d879241a301ef79",
+    "phase_five_ready": true,
+    "phase_five_record_checksum": "24087add65d6b13c6a1f20ae26ba5f0bd96257042bf668072e28b43924f9d1f8"
+  },
+  "ready_to_freeze_v0_3": true,
+  "record_checksum": "4eaba3626c63e595964fb3e9eb9aa1c971a55379b48a9b45759f3a72fdd94e07",
+  "release_version": "0.3.0",
+  "schema_version": "phase-six-acceptance-record-v1",
+  "scope": "crypto-spot-public-read-only-research-shadow-paper",
+  "worktree_clean_at_start": true
+}

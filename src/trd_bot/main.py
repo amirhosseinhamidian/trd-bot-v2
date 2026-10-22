@@ -1,18 +1,28 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from trd_bot.api.error_handlers import sanitized_request_validation_error_handler
 from trd_bot.api.monitoring_lifecycle import build_monitoring_lifespan
 from trd_bot.api.monitoring_middleware import ApiMetricsMiddleware
+from trd_bot.api.routes.alerts import router as alerts_router
 from trd_bot.api.routes.candidates import router as candidates_router
 from trd_bot.api.routes.datasets import router as datasets_router
+from trd_bot.api.routes.decision_intelligence import router as decision_intelligence_router
 from trd_bot.api.routes.health import router as health_router
+from trd_bot.api.routes.jobs import router as jobs_router
 from trd_bot.api.routes.journals import router as journals_router
+from trd_bot.api.routes.market_context import router as market_context_router
+from trd_bot.api.routes.market_data_connections import router as market_data_connections_router
+from trd_bot.api.routes.market_data_imports import router as market_data_imports_router
 from trd_bot.api.routes.monitoring import (
     router as monitoring_router,
 )
+from trd_bot.api.routes.optimization_executions import router as optimization_executions_router
 from trd_bot.api.routes.overview import router as overview_router
 from trd_bot.api.routes.portfolios import router as portfolios_router
 from trd_bot.api.routes.research import router as research_router
+from trd_bot.api.routes.risk import router as risk_router
 from trd_bot.core.config import get_settings
 from trd_bot.monitoring import MonitoringObservationRecorder
 
@@ -53,6 +63,10 @@ def create_app() -> FastAPI:
             "Content-Type",
         ],
     )
+    application.add_exception_handler(
+        RequestValidationError,
+        sanitized_request_validation_error_handler,
+    )
 
     application.include_router(
         health_router,
@@ -65,12 +79,47 @@ def create_app() -> FastAPI:
     )
 
     application.include_router(
+        decision_intelligence_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        market_data_connections_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        market_data_imports_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        market_context_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        alerts_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
         overview_router,
         prefix="/api/v1",
     )
 
     application.include_router(
         research_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        risk_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        optimization_executions_router,
         prefix="/api/v1",
     )
 
@@ -86,6 +135,11 @@ def create_app() -> FastAPI:
 
     application.include_router(
         journals_router,
+        prefix="/api/v1",
+    )
+
+    application.include_router(
+        jobs_router,
         prefix="/api/v1",
     )
 

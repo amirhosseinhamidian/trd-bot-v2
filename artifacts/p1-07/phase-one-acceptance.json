@@ -1,0 +1,226 @@
+{
+  "branch": "feature/v0.3-market-intelligence",
+  "ci": {
+    "conclusion": "success",
+    "head_sha": "169c6602419aa90d9a7d2eced21a5f8aab4125cf",
+    "run_url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/38447052124"
+  },
+  "commit_sha": "169c6602419aa90d9a7d2eced21a5f8aab4125cf",
+  "database_name": "trd_bot_test",
+  "environment_label": "macbook-pro-reference",
+  "failed_gates": [],
+  "gates": [
+    {
+      "commands": [
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "pytest",
+            "tests/test_release_version.py",
+            "tests/test_release_security_boundary.py",
+            "tests/test_mvp_acceptance.py",
+            "tests/test_minimum_export_baseline.py",
+            "-q"
+          ],
+          "duration_ms": 5473,
+          "exit_code": 0,
+          "label": "Focused release contract tests"
+        }
+      ],
+      "gate_id": "repository_contract",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "ruff",
+            "format",
+            "--check",
+            "."
+          ],
+          "duration_ms": 422,
+          "exit_code": 0,
+          "label": "Backend format"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "ruff",
+            "check",
+            "."
+          ],
+          "duration_ms": 95,
+          "exit_code": 0,
+          "label": "Backend lint"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "mypy"
+          ],
+          "duration_ms": 5411,
+          "exit_code": 0,
+          "label": "Backend typing"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "pytest",
+            "-m",
+            "not integration"
+          ],
+          "duration_ms": 25595,
+          "exit_code": 0,
+          "label": "Backend tests"
+        }
+      ],
+      "gate_id": "backend",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 1705,
+          "exit_code": 0,
+          "label": "Alembic upgrade"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "alembic",
+            "downgrade",
+            "base"
+          ],
+          "duration_ms": 1563,
+          "exit_code": 0,
+          "label": "Alembic downgrade"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "alembic",
+            "upgrade",
+            "head"
+          ],
+          "duration_ms": 1634,
+          "exit_code": 0,
+          "label": "Alembic rebuild"
+        },
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "alembic",
+            "check"
+          ],
+          "duration_ms": 1528,
+          "exit_code": 0,
+          "label": "Alembic drift check"
+        }
+      ],
+      "gate_id": "migration_cycle",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "/Users/amirhosseinhamidian/Projects/trd-bot-v2/.venv/bin/python",
+            "-m",
+            "pytest",
+            "-m",
+            "integration",
+            "-v"
+          ],
+          "duration_ms": 4346,
+          "exit_code": 0,
+          "label": "PostgreSQL integration and recovery"
+        }
+      ],
+      "gate_id": "postgresql_recovery",
+      "passed": true
+    },
+    {
+      "commands": [
+        {
+          "command": [
+            "npm",
+            "run",
+            "format:check"
+          ],
+          "duration_ms": 6276,
+          "exit_code": 0,
+          "label": "Frontend format"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "lint"
+          ],
+          "duration_ms": 11407,
+          "exit_code": 0,
+          "label": "Frontend lint"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "typecheck"
+          ],
+          "duration_ms": 7129,
+          "exit_code": 0,
+          "label": "Frontend typing"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "test"
+          ],
+          "duration_ms": 34492,
+          "exit_code": 0,
+          "label": "Frontend tests"
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "build"
+          ],
+          "duration_ms": 14035,
+          "exit_code": 0,
+          "label": "Frontend build"
+        }
+      ],
+      "gate_id": "frontend",
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-10-13T18:35:03.029996Z",
+  "manual": {
+    "durable_workload_restart": "pass",
+    "local_api_worker_frontend": "pass",
+    "monitoring_recovery": "pass",
+    "security_network_inventory": "pass"
+  },
+  "ready_to_enter_phase_two": true,
+  "schema_version": "phase-one-acceptance-record-v1",
+  "worktree_clean_at_start": true
+}

@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation';
 
-import { ExperimentDetail } from '@/components/dashboard/experiment-detail';
 import {
-  ApiRequestError,
   getAcceptancePolicyPresets,
+  getExperimentAnalytics,
   getExperimentPerformanceSeries,
   getExperimentSummary,
-} from '@/lib/api/client';
+} from '@/features/experiments/api/client';
+import { ExperimentDetail } from '@/features/experiments/experiment-detail';
+import { ApiRequestError } from '@/lib/api/core/transport';
 
 type ExperimentDetailPageProps = {
   params: Promise<{
@@ -21,6 +22,7 @@ async function loadExperimentDetail(experimentId: string) {
       getExperimentSummary(experimentId),
       getAcceptancePolicyPresets(),
       getExperimentPerformanceSeries(experimentId),
+      getExperimentAnalytics(experimentId),
     ]);
   } catch (error) {
     if (error instanceof ApiRequestError && error.status === 404) {
@@ -38,7 +40,7 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
     notFound();
   }
 
-  const [experiment, acceptancePolicyPresets, performanceSeries] =
+  const [experiment, acceptancePolicyPresets, performanceSeries, analytics] =
     await loadExperimentDetail(experimentId);
 
   return (
@@ -46,6 +48,7 @@ export default async function ExperimentDetailPage({ params }: ExperimentDetailP
       experiment={experiment}
       locale={locale}
       acceptancePolicyPresets={acceptancePolicyPresets}
+      analytics={analytics}
       performanceSeries={performanceSeries}
     />
   );

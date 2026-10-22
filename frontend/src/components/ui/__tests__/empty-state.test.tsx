@@ -10,6 +10,7 @@ describe('EmptyState', () => {
     const status = screen.getByRole('status');
 
     expect(status).toHaveAttribute('aria-live', 'polite');
+    expect(status).toHaveClass('border-app-border', 'bg-app-surface', 'p-5', 'sm:p-6');
     expect(screen.getByText('No results')).toBeInTheDocument();
     expect(screen.getByText('Try changing the active filters.')).toBeInTheDocument();
   });

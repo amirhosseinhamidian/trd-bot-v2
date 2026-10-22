@@ -2,8 +2,8 @@
 
 import { useParams } from 'next/navigation';
 
-import { type DashboardLocale, getDashboardCopy } from '@/components/dashboard/dashboard-copy';
 import { ErrorState } from '@/components/ui';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
 
 type ErrorPageProps = {
   error: Error & {
@@ -14,16 +14,16 @@ type ErrorPageProps = {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   const params = useParams<{ locale: string }>();
-  const locale: DashboardLocale = params.locale === 'en' ? 'en' : 'fa';
-  const copy = getDashboardCopy(locale);
+  const locale: PlatformLocale = params.locale === 'en' ? 'en' : 'fa';
+  const copy = getPlatformCopy(locale).feedback.error;
 
   return (
     <div className="flex min-h-[65vh] items-center justify-center">
       <ErrorState
         className="w-full max-w-lg"
-        title={copy.error.title}
-        description={copy.error.description}
-        retryLabel={copy.error.retry}
+        title={copy.title}
+        description={copy.description}
+        retryLabel={copy.retry}
         onRetry={reset}
         details={
           error.digest ? (

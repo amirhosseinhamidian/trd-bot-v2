@@ -20,7 +20,12 @@ from trd_bot.research import (
     ResearchPipelineResult,
 )
 from trd_bot.research.experiments import ExperimentSummary
-from trd_bot.strategies import EMACrossoverStrategy
+from trd_bot.strategies import (
+    EMACrossoverStrategy,
+    StrategyDefinition,
+    StrategyRegistry,
+    build_default_strategy_registry,
+)
 
 PAIR = TradingPair(
     base_asset="BTC",
@@ -136,8 +141,60 @@ def test_experiment_contains_research_metadata() -> None:
     assert experiment.dataset_id == result.dataset_id
     assert experiment.strategy_name == "ema-crossover"
     assert experiment.strategy_version == "1.0.0"
+    assert experiment.strategy_fingerprint is not None
+    assert experiment.strategy_fingerprint.startswith("sha256:")
     assert experiment.horizon_candles == 1
     assert experiment.result == result
+
+
+def test_experiment_identity_includes_exact_strategy_fingerprint() -> None:
+    result = create_result()
+    default_registry = build_default_strategy_registry()
+    default_definition = default_registry.require(
+        name="ema-crossover",
+        version="1.0.0",
+    )
+    assert default_definition.metadata is not None
+
+    changed_registry = StrategyRegistry()
+    changed_registry.register(
+        StrategyDefinition(
+            name=default_definition.name,
+            version=default_definition.version,
+            factory=default_definition.factory,
+            metadata=default_definition.metadata.model_copy(
+                update={"behavior_fingerprint": f"sha256:{'f' * 64}"},
+            ),
+        )
+    )
+
+    original = ExperimentBuilder(default_registry).build(
+        result=result,
+        parameters=create_parameters(),
+        created_at=CREATED_AT,
+    )
+    changed = ExperimentBuilder(changed_registry).build(
+        result=result,
+        parameters=create_parameters(),
+        created_at=CREATED_AT,
+    )
+
+    assert original.strategy_fingerprint != changed.strategy_fingerprint
+    assert original.experiment_id != changed.experiment_id
+
+
+def test_legacy_experiment_payload_without_fingerprint_remains_readable() -> None:
+    experiment = ExperimentBuilder().build(
+        result=create_result(),
+        parameters=create_parameters(),
+        created_at=CREATED_AT,
+    )
+    legacy_payload = experiment.model_dump(mode="json")
+    legacy_payload.pop("strategy_fingerprint")
+
+    restored = type(experiment).model_validate(legacy_payload)
+
+    assert restored.strategy_fingerprint is None
 
 
 def test_registry_saves_and_retrieves_experiment() -> None:
@@ -223,6 +280,7 @@ def test_experiment_summary_excludes_full_result() -> None:
 
     assert summary.experiment_id == experiment.experiment_id
     assert summary.dataset_id == experiment.dataset_id
+    assert summary.strategy_fingerprint == experiment.strategy_fingerprint
     assert summary.generated_signals == experiment.result.generated_signals
     assert summary.total_trades == experiment.result.performance_report.total_trades
     assert summary.net_pnl == experiment.result.performance_report.net_pnl

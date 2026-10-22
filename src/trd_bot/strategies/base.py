@@ -1,7 +1,12 @@
-from abc import ABC, abstractmethod
+from __future__ import annotations
 
-from trd_bot.research.datasets import DatasetSnapshot
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
 from trd_bot.strategies.signals import StrategySignal
+
+if TYPE_CHECKING:
+    from trd_bot.research.datasets import DatasetSnapshot
 
 
 class BaseStrategy(ABC):

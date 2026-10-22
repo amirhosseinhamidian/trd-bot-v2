@@ -65,12 +65,54 @@ def test_session_factory_executes_sqlite_query() -> None:
 
 def test_database_metadata_contains_research_tables() -> None:
     assert set(DatabaseBase.metadata.tables) == {
+        "alert_actions",
+        "alert_evaluations",
+        "alert_expiry_records",
+        "alert_inbox_states",
+        "alert_outcomes",
+        "alert_publication_decisions",
+        "alert_publication_policies",
+        "alert_rule_definitions",
+        "alert_simulations",
+        "alerts",
         "architecture_recommendations",
+        "background_jobs",
         "candidate_journals",
         "candidate_projections",
+        "dataset_file_stages",
         "dataset_snapshots",
+        "decision_evaluation_intents",
+        "decision_candidate_rankings",
+        "decision_policy_definitions",
+        "decision_portfolio_intelligence",
+        "decision_risk_gates",
+        "decision_stage_outcomes",
+        "decision_strategy_evaluations",
         "experiment_executions",
+        "market_data_connections",
+        "market_data_event_decisions",
+        "market_data_event_inbox",
+        "market_data_events",
+        "market_data_imports",
+        "market_data_outbox",
+        "market_data_poll_runs",
+        "market_data_provider_budgets",
+        "market_data_raw_observations",
+        "market_data_replay_requests",
+        "market_data_retention_control",
+        "market_data_retention_holds",
+        "market_data_retention_runs",
+        "market_data_watchlist",
+        "market_data_watermarks",
+        "market_data_window_finalizations",
+        "market_data_window_revisions",
+        "market_data_window_versions",
+        "market_context_feature_snapshots",
+        "market_context_input_manifests",
+        "market_context_input_windows",
+        "market_regime_assessments",
         "monitoring_runtime_state",
+        "optimization_executions",
         "portfolio_timeline_events",
         "research_experiments",
         "simulated_portfolios",
@@ -145,13 +187,44 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
 
     engine = create_database_engine(database_url)
     try:
-        table_names = set(inspect(engine).get_table_names())
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
         assert {
             "alembic_version",
             "architecture_recommendations",
+            "background_jobs",
             "candidate_journals",
             "candidate_projections",
             "dataset_snapshots",
+            "decision_evaluation_intents",
+            "decision_candidate_rankings",
+            "decision_policy_definitions",
+            "decision_portfolio_intelligence",
+            "decision_risk_gates",
+            "decision_stage_outcomes",
+            "decision_strategy_evaluations",
+            "market_data_connections",
+            "market_data_event_decisions",
+            "market_data_event_inbox",
+            "market_data_events",
+            "market_data_imports",
+            "market_data_outbox",
+            "market_data_poll_runs",
+            "market_data_provider_budgets",
+            "market_data_raw_observations",
+            "market_data_replay_requests",
+            "market_data_retention_control",
+            "market_data_retention_holds",
+            "market_data_retention_runs",
+            "market_data_watchlist",
+            "market_data_watermarks",
+            "market_data_window_finalizations",
+            "market_data_window_revisions",
+            "market_data_window_versions",
+            "market_context_feature_snapshots",
+            "market_context_input_manifests",
+            "market_context_input_windows",
+            "market_regime_assessments",
             "monitoring_runtime_state",
             "portfolio_timeline_events",
             "research_experiments",
@@ -161,6 +234,22 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
             "walk_forward_executions",
             "walk_forward_runs",
         }.issubset(table_names)
+
+        import_columns = {column["name"] for column in inspector.get_columns("market_data_imports")}
+        assert {
+            "operation",
+            "source_dataset_id",
+            "root_import_id",
+            "parent_import_id",
+            "version_number",
+            "content_changed",
+        }.issubset(import_columns)
+
+        connection_columns = {
+            column["name"] for column in inspector.get_columns("market_data_connections")
+        }
+        assert "last_error_code" in connection_columns
+
         command.check(config)
     finally:
         engine.dispose()
@@ -174,14 +263,44 @@ def test_migration_upgrades_matches_metadata_and_downgrades(
         assert "research_experiments" not in downgraded_tables
         assert "walk_forward_runs" not in downgraded_tables
         assert "architecture_recommendations" not in downgraded_tables
+        assert "background_jobs" not in downgraded_tables
         assert "candidate_journals" not in downgraded_tables
         assert "candidate_projections" not in downgraded_tables
         assert "system_metric_samples" not in downgraded_tables
         assert "monitoring_runtime_state" not in downgraded_tables
+        assert "market_data_connections" not in downgraded_tables
+        assert "market_data_imports" not in downgraded_tables
+        assert "market_data_raw_observations" not in downgraded_tables
+        assert "market_data_replay_requests" not in downgraded_tables
+        assert "market_data_retention_control" not in downgraded_tables
+        assert "market_data_retention_holds" not in downgraded_tables
+        assert "market_data_retention_runs" not in downgraded_tables
+        assert "market_data_events" not in downgraded_tables
+        assert "market_data_event_decisions" not in downgraded_tables
+        assert "market_data_event_inbox" not in downgraded_tables
+        assert "market_data_outbox" not in downgraded_tables
+        assert "market_data_poll_runs" not in downgraded_tables
+        assert "market_data_provider_budgets" not in downgraded_tables
+        assert "market_data_watchlist" not in downgraded_tables
+        assert "market_data_window_finalizations" not in downgraded_tables
+        assert "market_data_window_revisions" not in downgraded_tables
+        assert "market_data_window_versions" not in downgraded_tables
+        assert "market_data_watermarks" not in downgraded_tables
+        assert "market_context_feature_snapshots" not in downgraded_tables
+        assert "market_context_input_manifests" not in downgraded_tables
+        assert "market_context_input_windows" not in downgraded_tables
+        assert "market_regime_assessments" not in downgraded_tables
         assert "walk_forward_executions" not in downgraded_tables
         assert "simulated_portfolios" not in downgraded_tables
         assert "simulated_positions" not in downgraded_tables
         assert "portfolio_timeline_events" not in downgraded_tables
+        assert "decision_evaluation_intents" not in downgraded_tables
+        assert "decision_candidate_rankings" not in downgraded_tables
+        assert "decision_policy_definitions" not in downgraded_tables
+        assert "decision_portfolio_intelligence" not in downgraded_tables
+        assert "decision_risk_gates" not in downgraded_tables
+        assert "decision_stage_outcomes" not in downgraded_tables
+        assert "decision_strategy_evaluations" not in downgraded_tables
     finally:
         downgraded_engine.dispose()
 

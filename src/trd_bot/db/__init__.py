@@ -1,3 +1,22 @@
+from trd_bot.db.alert_inbox import SqlAlchemyAlertInboxRepository
+from trd_bot.db.alert_jobs import (
+    SqlAlchemyAlertEvaluationEnqueuer,
+    SqlAlchemyAlertEvaluationRunner,
+)
+from trd_bot.db.alert_outcomes import (
+    AlertOutcomeConflictError,
+    SqlAlchemyAlertOutcomeRepository,
+)
+from trd_bot.db.alert_publication import SqlAlchemyAlertPublicationRepository
+from trd_bot.db.alert_repositories import SqlAlchemyAlertStore
+from trd_bot.db.alert_simulations import (
+    AlertSimulationConflictError,
+    SqlAlchemyAlertSimulationRepository,
+)
+from trd_bot.db.background_job_repositories import (
+    BackgroundJobConflictError,
+    SqlAlchemyBackgroundJobRepository,
+)
 from trd_bot.db.base import DatabaseBase
 from trd_bot.db.candidate_journal_repositories import (
     SqlAlchemyCandidateJournalRepository,
@@ -8,16 +27,121 @@ from trd_bot.db.candidate_projection_rebuild import (
 from trd_bot.db.candidate_projection_repositories import (
     SqlAlchemyCandidateProjectionRepository,
 )
+from trd_bot.db.dataset_file_stage_repositories import (
+    SqlAlchemyDatasetFileImportEnqueuer,
+    SqlAlchemyDatasetFileStageRepository,
+)
+from trd_bot.db.decision_candidate_ranking import SqlAlchemyDecisionCandidateRanker
+from trd_bot.db.decision_evaluation_jobs import (
+    SqlAlchemyDecisionEvaluationEnqueuer,
+    SqlAlchemyDecisionEvaluationRunner,
+)
+from trd_bot.db.decision_intelligence_repositories import (
+    SqlAlchemyDecisionIntelligenceStore,
+)
+from trd_bot.db.decision_portfolio_intelligence import (
+    SqlAlchemyDecisionPortfolioIntelligence,
+)
+from trd_bot.db.decision_risk_gate import SqlAlchemyDecisionRiskGate
+from trd_bot.db.decision_strategy_evaluation import (
+    SqlAlchemyContextAwareStrategyEvaluator,
+)
+from trd_bot.db.experiment_execution_enqueues import (
+    SqlAlchemyExperimentExecutionEnqueuer,
+)
 from trd_bot.db.experiment_execution_repositories import (
     SqlAlchemyExperimentExecutionRepository,
 )
+from trd_bot.db.historical_dataset_commits import (
+    SqlAlchemyHistoricalDatasetCommitter,
+)
+from trd_bot.db.market_context_alignment import SqlAlchemyMarketContextAssembler
+from trd_bot.db.market_context_features import SqlAlchemyMarketContextFeatureCalculator
+from trd_bot.db.market_context_health import SqlAlchemyMarketContextMonitoringReader
+from trd_bot.db.market_context_jobs import (
+    SqlAlchemyMarketContextEvaluationEnqueuer,
+    SqlAlchemyMarketContextEvaluationRunner,
+)
+from trd_bot.db.market_context_product import SqlAlchemyMarketContextProductReader
+from trd_bot.db.market_context_regimes import SqlAlchemyMarketRegimeEvaluator
+from trd_bot.db.market_context_repositories import SqlAlchemyMarketContextStore
+from trd_bot.db.market_data_event_repositories import SqlAlchemyMarketDataEventStore
+from trd_bot.db.market_data_finalization import (
+    MarketDataWindowFinalizationError,
+    MarketDataWindowFinalizationWatermarkMissingError,
+    SqlAlchemyMarketDataWindowFinalizationRepository,
+    SqlAlchemyMarketDataWindowFinalizer,
+)
+from trd_bot.db.market_data_health import SqlAlchemyMarketDataMonitoringReader
+from trd_bot.db.market_data_ingestion import SqlAlchemyMarketDataIngestor
+from trd_bot.db.market_data_polling import (
+    SqlAlchemyMarketDataPollingScheduler,
+    SqlAlchemyMarketDataPollJobRunner,
+    SqlAlchemyMarketDataPollRunRepository,
+    SqlAlchemyMarketDataWatchlistManager,
+    SqlAlchemyMarketDataWatchlistRepository,
+    SqlAlchemyProviderRequestBudgetGate,
+)
+from trd_bot.db.market_data_replay import (
+    MarketDataReplayError,
+    MarketDataReplayRejectedError,
+    SqlAlchemyMarketDataReplayEnqueuer,
+    SqlAlchemyMarketDataReplayRequestRepository,
+    SqlAlchemyMarketDataReplayRunner,
+    SqlAlchemyMarketDataWindowRevisionRepository,
+)
+from trd_bot.db.market_data_retention import (
+    MarketDataRetentionError,
+    MarketDataRetentionHoldNotFoundError,
+    SqlAlchemyMarketDataRetentionManager,
+)
 from trd_bot.db.models import (
+    AlertActionRow,
+    AlertEvaluationRow,
+    AlertExpiryRecordRow,
+    AlertInboxStateRow,
+    AlertOutcomeRow,
+    AlertPublicationDecisionRow,
+    AlertPublicationPolicyRow,
+    AlertRow,
+    AlertRuleDefinitionRow,
+    AlertSimulationRow,
     ArchitectureRecommendationRow,
+    BackgroundJobRow,
     CandidateJournalRow,
     CandidateProjectionRow,
+    DatasetFileStageRow,
     DatasetSnapshotRow,
+    DecisionCandidateRankingRow,
+    DecisionEvaluationIntentRow,
+    DecisionPolicyDefinitionRow,
+    DecisionPortfolioIntelligenceRow,
+    DecisionRiskGateRow,
+    DecisionStageOutcomeRow,
+    DecisionStrategyEvaluationRow,
     ExperimentExecutionRow,
+    MarketContextFeatureSnapshotRow,
+    MarketContextInputManifestRow,
+    MarketContextInputWindowRow,
+    MarketDataEventDecisionRow,
+    MarketDataEventInboxRow,
+    MarketDataEventRow,
+    MarketDataOutboxRow,
+    MarketDataPollRunRow,
+    MarketDataProviderBudgetRow,
+    MarketDataRawObservationRow,
+    MarketDataReplayRequestRow,
+    MarketDataRetentionControlRow,
+    MarketDataRetentionHoldRow,
+    MarketDataRetentionRunRow,
+    MarketDataWatchlistRow,
+    MarketDataWatermarkRow,
+    MarketDataWindowFinalizationRow,
+    MarketDataWindowRevisionRow,
+    MarketDataWindowVersionRow,
+    MarketRegimeAssessmentRow,
     MonitoringRuntimeStateRow,
+    OptimizationExecutionRow,
     PortfolioTimelineEventRow,
     ResearchExperimentRow,
     SimulatedPortfolioRow,
@@ -32,6 +156,12 @@ from trd_bot.db.monitoring_repositories import (
 )
 from trd_bot.db.monitoring_runtime_state_repository import (
     SqlAlchemyMonitoringRuntimeStateRepository,
+)
+from trd_bot.db.optimization_execution_enqueues import (
+    SqlAlchemyOptimizationExecutionEnqueuer,
+)
+from trd_bot.db.optimization_execution_repositories import (
+    SqlAlchemyOptimizationExecutionRepository,
 )
 from trd_bot.db.repositories import (
     SqlAlchemyDatasetRepository,
@@ -48,32 +178,130 @@ from trd_bot.db.session import (
 from trd_bot.db.simulated_portfolio_repositories import (
     SqlAlchemySimulatedPortfolioRepository,
 )
+from trd_bot.db.walk_forward_execution_enqueues import (
+    SqlAlchemyWalkForwardExecutionEnqueuer,
+)
 from trd_bot.db.walk_forward_execution_repositories import (
     SqlAlchemyWalkForwardExecutionRepository,
 )
 
 __all__ = [
+    "AlertActionRow",
+    "AlertEvaluationRow",
+    "AlertExpiryRecordRow",
+    "AlertInboxStateRow",
+    "AlertOutcomeConflictError",
+    "AlertOutcomeRow",
+    "AlertPublicationDecisionRow",
+    "AlertPublicationPolicyRow",
+    "AlertRow",
+    "AlertRuleDefinitionRow",
+    "AlertSimulationConflictError",
+    "AlertSimulationRow",
     "ArchitectureRecommendationRow",
+    "BackgroundJobConflictError",
+    "BackgroundJobRow",
     "CandidateJournalRow",
     "CandidateProjectionRow",
     "DatabaseBase",
+    "DatasetFileStageRow",
     "DatasetSnapshotRow",
+    "DecisionCandidateRankingRow",
+    "DecisionEvaluationIntentRow",
+    "DecisionPolicyDefinitionRow",
+    "DecisionPortfolioIntelligenceRow",
+    "DecisionRiskGateRow",
+    "DecisionStageOutcomeRow",
+    "DecisionStrategyEvaluationRow",
     "ExperimentExecutionRow",
+    "MarketContextFeatureSnapshotRow",
+    "MarketContextInputManifestRow",
+    "MarketContextInputWindowRow",
+    "MarketDataEventDecisionRow",
+    "MarketDataEventInboxRow",
+    "MarketDataEventRow",
+    "MarketDataOutboxRow",
+    "MarketDataPollRunRow",
+    "MarketDataProviderBudgetRow",
+    "MarketDataRawObservationRow",
+    "MarketDataReplayError",
+    "MarketDataReplayRejectedError",
+    "MarketDataReplayRequestRow",
+    "MarketDataRetentionControlRow",
+    "MarketDataRetentionError",
+    "MarketDataRetentionHoldNotFoundError",
+    "MarketDataRetentionHoldRow",
+    "MarketDataRetentionRunRow",
+    "MarketDataWatchlistRow",
+    "MarketDataWatermarkRow",
+    "MarketDataWindowFinalizationError",
+    "MarketDataWindowFinalizationRow",
+    "MarketDataWindowFinalizationWatermarkMissingError",
+    "MarketDataWindowRevisionRow",
+    "MarketDataWindowVersionRow",
+    "MarketRegimeAssessmentRow",
     "MonitoringRuntimeStateRow",
+    "OptimizationExecutionRow",
     "PortfolioTimelineEventRow",
     "ResearchExperimentRow",
     "SimulatedPortfolioRow",
     "SimulatedPositionRow",
+    "SqlAlchemyAlertEvaluationEnqueuer",
+    "SqlAlchemyAlertEvaluationRunner",
+    "SqlAlchemyAlertInboxRepository",
+    "SqlAlchemyAlertOutcomeRepository",
+    "SqlAlchemyAlertPublicationRepository",
+    "SqlAlchemyAlertSimulationRepository",
+    "SqlAlchemyAlertStore",
     "SqlAlchemyArchitectureRecommendationRepository",
+    "SqlAlchemyBackgroundJobRepository",
     "SqlAlchemyCandidateJournalRepository",
     "SqlAlchemyCandidateProjectionRebuilder",
     "SqlAlchemyCandidateProjectionRepository",
+    "SqlAlchemyContextAwareStrategyEvaluator",
+    "SqlAlchemyDatasetFileImportEnqueuer",
+    "SqlAlchemyDatasetFileStageRepository",
     "SqlAlchemyDatasetRepository",
+    "SqlAlchemyDecisionCandidateRanker",
+    "SqlAlchemyDecisionEvaluationEnqueuer",
+    "SqlAlchemyDecisionEvaluationRunner",
+    "SqlAlchemyDecisionIntelligenceStore",
+    "SqlAlchemyDecisionPortfolioIntelligence",
+    "SqlAlchemyDecisionRiskGate",
+    "SqlAlchemyExperimentExecutionEnqueuer",
     "SqlAlchemyExperimentExecutionRepository",
     "SqlAlchemyExperimentRegistry",
+    "SqlAlchemyHistoricalDatasetCommitter",
+    "SqlAlchemyMarketContextAssembler",
+    "SqlAlchemyMarketContextEvaluationEnqueuer",
+    "SqlAlchemyMarketContextEvaluationRunner",
+    "SqlAlchemyMarketContextFeatureCalculator",
+    "SqlAlchemyMarketContextMonitoringReader",
+    "SqlAlchemyMarketContextProductReader",
+    "SqlAlchemyMarketContextStore",
+    "SqlAlchemyMarketDataEventStore",
+    "SqlAlchemyMarketDataIngestor",
+    "SqlAlchemyMarketDataMonitoringReader",
+    "SqlAlchemyMarketDataPollJobRunner",
+    "SqlAlchemyMarketDataPollRunRepository",
+    "SqlAlchemyMarketDataPollingScheduler",
+    "SqlAlchemyMarketDataReplayEnqueuer",
+    "SqlAlchemyMarketDataReplayRequestRepository",
+    "SqlAlchemyMarketDataReplayRunner",
+    "SqlAlchemyMarketDataRetentionManager",
+    "SqlAlchemyMarketDataWatchlistManager",
+    "SqlAlchemyMarketDataWatchlistRepository",
+    "SqlAlchemyMarketDataWindowFinalizationRepository",
+    "SqlAlchemyMarketDataWindowFinalizer",
+    "SqlAlchemyMarketDataWindowRevisionRepository",
+    "SqlAlchemyMarketRegimeEvaluator",
     "SqlAlchemyMonitoringRuntimeStateRepository",
+    "SqlAlchemyOptimizationExecutionEnqueuer",
+    "SqlAlchemyOptimizationExecutionRepository",
+    "SqlAlchemyProviderRequestBudgetGate",
     "SqlAlchemySimulatedPortfolioRepository",
     "SqlAlchemySystemMetricRepository",
+    "SqlAlchemyWalkForwardExecutionEnqueuer",
     "SqlAlchemyWalkForwardExecutionRepository",
     "SqlAlchemyWalkForwardRunRegistry",
     "SystemMetricSampleRow",

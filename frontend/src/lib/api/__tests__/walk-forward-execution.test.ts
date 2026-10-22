@@ -1,17 +1,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  API_BASE_URL,
-  createEmaCrossoverWalkForwardExecution,
+  createWalkForwardExecution,
   getWalkForwardExecution,
-} from '@/lib/api/client';
+} from '@/features/walk-forward/api/client';
 import type {
-  StoredDatasetEMACrossoverWalkForwardRequest,
+  StoredDatasetEMACrossoverWalkForwardExecutionRequest,
+  StoredDatasetRSIThresholdWalkForwardExecutionRequest,
   WalkForwardExecution,
-} from '@/lib/api/types';
+  WalkForwardExecutionSubmission,
+} from '@/features/walk-forward/api/types';
+import { API_BASE_URL } from '@/lib/api/core/transport';
 
-const request: StoredDatasetEMACrossoverWalkForwardRequest = {
+const request: StoredDatasetEMACrossoverWalkForwardExecutionRequest = {
   dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'ema-crossover',
+  strategy_version: '1.0.0',
   fast_period: 9,
   slow_period: 21,
   horizon_candles: 1,
@@ -60,6 +64,68 @@ const execution: WalkForwardExecution = {
   error_message: null,
 };
 
+const submission: WalkForwardExecutionSubmission = {
+  ...execution,
+  created: true,
+  job: {
+    job_id: 'job-1234567890abcdefghij',
+    kind: 'walk_forward_execution',
+    status: 'queued',
+    progress_percent: 0,
+    attempt_count: 0,
+    max_attempts: 3,
+    run_after: execution.created_at,
+    lease_expires_at: null,
+    cancel_requested: false,
+    result_reference: null,
+    error_code: null,
+    error_message: null,
+    created_at: execution.created_at,
+    updated_at: execution.created_at,
+    started_at: null,
+    finished_at: null,
+  },
+};
+
+const rsiRequest: StoredDatasetRSIThresholdWalkForwardExecutionRequest = {
+  dataset_id: 'dataset-btc-usdt-1h',
+  strategy_name: 'rsi-threshold',
+  strategy_version: '1.0.0',
+  period: 14,
+  oversold_threshold: '30',
+  overbought_threshold: '70',
+  horizon_candles: 1,
+  starting_balance: '10000',
+  allocation_fraction: '0.10',
+  fee_rate: '0.001',
+  slippage_rate: '0.0005',
+  train_candles: 120,
+  test_candles: 24,
+  step_candles: 24,
+  gap_candles: 0,
+  mode: 'rolling',
+};
+
+const rsiExecution: WalkForwardExecution = {
+  ...execution,
+  strategy_name: 'rsi-threshold',
+  parameters: {
+    period: rsiRequest.period,
+    oversold_threshold: rsiRequest.oversold_threshold,
+    overbought_threshold: rsiRequest.overbought_threshold,
+    horizon_candles: rsiRequest.horizon_candles,
+    starting_balance: rsiRequest.starting_balance,
+    allocation_fraction: rsiRequest.allocation_fraction,
+    fee_rate: rsiRequest.fee_rate,
+    slippage_rate: rsiRequest.slippage_rate,
+  },
+};
+
+const rsiSubmission: WalkForwardExecutionSubmission = {
+  ...submission,
+  ...rsiExecution,
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -67,8 +133,8 @@ afterEach(() => {
 describe('walk-forward execution client', () => {
   it('queues an EMA crossover walk-forward execution', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(execution), {
-        status: 201,
+      new Response(JSON.stringify(submission), {
+        status: 202,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -77,13 +143,13 @@ describe('walk-forward execution client', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(createEmaCrossoverWalkForwardExecution(request)).resolves.toEqual(execution);
+    await expect(createWalkForwardExecution(request)).resolves.toEqual(submission);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
 
-    expect(url).toBe(`${API_BASE_URL}/api/v1/research/walk-forward-executions/ema-crossover`);
+    expect(url).toBe(`${API_BASE_URL}/api/v1/research/walk-forward-executions`);
 
     expect(options).toEqual(
       expect.objectContaining({
@@ -97,6 +163,30 @@ describe('walk-forward execution client', () => {
       expect.objectContaining({
         Accept: 'application/json',
         'Content-Type': 'application/json',
+      }),
+    );
+  });
+
+  it('queues an RSI threshold walk-forward execution', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(rsiSubmission), {
+        status: 202,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+    );
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(createWalkForwardExecution(rsiRequest)).resolves.toEqual(rsiSubmission);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${API_BASE_URL}/api/v1/research/walk-forward-executions`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(rsiRequest),
+        cache: 'no-store',
       }),
     );
   });

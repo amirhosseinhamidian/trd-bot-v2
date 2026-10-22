@@ -1,0 +1,196 @@
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+
+import { describe, expect, it } from 'vitest';
+
+import { PRESERVED_LOCALE_ROUTE_FILES } from '@/platform/route-contract';
+
+const screenComponentPaths = [
+  'features/alerts/alert-center.tsx',
+  'features/candidates/candidate-catalog.tsx',
+  'features/candidates/candidate-detail.tsx',
+  'features/datasets/dataset-catalog.tsx',
+  'features/datasets/dataset-detail.tsx',
+  'features/experiments/experiment-catalog.tsx',
+  'features/experiments/experiment-detail.tsx',
+  'features/connections/market-data-connections-panel.tsx',
+  'features/monitoring/monitoring-dashboard.tsx',
+  'features/market-context/market-context-dashboard.tsx',
+  'features/optimizations/optimization-catalog.tsx',
+  'features/optimizations/optimization-detail.tsx',
+  'features/overview/overview-dashboard.tsx',
+  'features/portfolios/portfolio-catalog.tsx',
+  'features/portfolios/portfolio-detail.tsx',
+  'features/portfolios/position-detail.tsx',
+  'features/risk/risk-dashboard.tsx',
+  'features/signals/signal-catalog.tsx',
+  'features/signals/signal-detail.tsx',
+  'features/strategies/strategy-catalog.tsx',
+  'features/strategies/strategy-detail.tsx',
+  'features/walk-forward/walk-forward-catalog.tsx',
+  'features/walk-forward/walk-forward-detail.tsx',
+] as const;
+
+const featureBoundaries = [
+  ['alerts', [['alerts', 'alert-center']], 'alert-center-copy'],
+  [
+    'candidates',
+    [
+      ['candidates', 'candidate-catalog'],
+      ['candidates/[candidateId]', 'candidate-detail'],
+    ],
+    'candidate-copy',
+  ],
+  ['connections', [['connections', 'market-data-connections-panel']], 'connections-copy'],
+  [
+    'datasets',
+    [
+      ['datasets', 'dataset-catalog'],
+      ['datasets/[datasetId]', 'dataset-detail'],
+    ],
+    'datasets-copy',
+  ],
+  [
+    'experiments',
+    [
+      ['experiments', 'experiment-catalog'],
+      ['experiments/[experimentId]', 'experiment-detail'],
+    ],
+    'experiments-copy',
+  ],
+  ['monitoring', [['monitoring', 'monitoring-dashboard']], 'monitoring-copy'],
+  ['market-context', [['market-context', 'market-context-dashboard']], 'market-context-copy'],
+  ['overview', [['', 'overview-dashboard']], 'overview-copy'],
+  [
+    'optimizations',
+    [
+      ['optimizations', 'optimization-catalog'],
+      ['optimizations/[executionId]', 'optimization-detail'],
+    ],
+    'optimization-copy',
+  ],
+  [
+    'portfolios',
+    [
+      ['portfolios', 'portfolio-catalog'],
+      ['portfolios/[portfolioId]', 'portfolio-detail'],
+      ['portfolios/[portfolioId]/positions/[positionId]', 'position-detail'],
+    ],
+    'portfolio-copy',
+  ],
+  ['risk', [['risk', 'risk-dashboard']], 'risk-copy'],
+  [
+    'signals',
+    [
+      ['signals', 'signal-catalog'],
+      ['signals/[experimentId]/[signalId]', 'signal-detail'],
+    ],
+    'signals-copy',
+  ],
+  [
+    'strategies',
+    [
+      ['strategies', 'strategy-catalog'],
+      ['strategies/[strategyName]/[version]', 'strategy-detail'],
+    ],
+    'strategy-workspace-copy',
+  ],
+  [
+    'walk-forward',
+    [
+      ['walk-forward', 'walk-forward-catalog'],
+      ['walk-forward/[executionId]', 'walk-forward-detail'],
+    ],
+    'walk-forward-copy',
+  ],
+] as const;
+
+function collectPageFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      return collectPageFiles(path);
+    }
+
+    return entry.name === 'page.tsx' ? [path] : [];
+  });
+}
+
+describe('platform architecture contract', () => {
+  it('uses PlatformShell without restoring legacy dashboard shell identifiers', () => {
+    const layoutPath = resolve(process.cwd(), 'src/app/[locale]/layout.tsx');
+    const layoutSource = readFileSync(layoutPath, 'utf8');
+    const shellSource = readFileSync(
+      resolve(process.cwd(), 'src/components/platform/platform-shell.tsx'),
+      'utf8',
+    );
+
+    expect(existsSync(resolve(process.cwd(), 'src/components/layout/dashboard-shell.tsx'))).toBe(
+      false,
+    );
+    expect(layoutSource).toContain('@/components/platform/platform-shell');
+    expect(layoutSource).toContain('<PlatformShell');
+    expect(shellSource).not.toContain('DashboardShell');
+    expect(shellSource).not.toContain('getLegacyShellNavigation');
+    expect(shellSource).not.toContain('dashboard-navigation');
+  });
+
+  it('removes the legacy dashboard component and dictionary roots', () => {
+    expect(existsSync(resolve(process.cwd(), 'src/components/dashboard'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionary.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/get-dictionary.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionaries/en.ts'))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), 'src/i18n/dictionaries/fa.ts'))).toBe(false);
+  });
+
+  it.each(screenComponentPaths)('keeps %s on the shared page layout contract', (path) => {
+    const source = readFileSync(resolve(process.cwd(), 'src', path), 'utf8');
+
+    expect(source).toContain('@/components/platform/page-frame');
+    expect(source).toContain('@/components/platform/page-header');
+    expect(source).toContain('<PageFrame');
+    expect(source).toContain('<PageHeader');
+    expect(source).not.toContain('<h1');
+    expect(source).not.toContain('<main');
+  });
+
+  it.each(featureBoundaries)(
+    'keeps %s UI and copy inside its feature boundary',
+    (feature, screens, copy) => {
+      const copySource = readFileSync(
+        resolve(process.cwd(), `src/features/${feature}/${copy}.ts`),
+        'utf8',
+      );
+
+      for (const [route, screen] of screens) {
+        const routeSource = readFileSync(
+          resolve(process.cwd(), `src/app/[locale]/${route}/page.tsx`),
+          'utf8',
+        );
+        const screenSource = readFileSync(
+          resolve(process.cwd(), `src/features/${feature}/${screen}.tsx`),
+          'utf8',
+        );
+
+        expect(routeSource).toContain(`@/features/${feature}/${screen}`);
+        expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${screen}.tsx`))).toBe(
+          false,
+        );
+        expect(screenSource).not.toContain('@/components/dashboard');
+      }
+
+      expect(existsSync(resolve(process.cwd(), `src/components/dashboard/${copy}.ts`))).toBe(false);
+      expect(copySource).not.toContain('@/components/dashboard');
+    },
+  );
+
+  it('preserves the extended 23-route locale inventory', () => {
+    const localeRoot = resolve(process.cwd(), 'src/app/[locale]');
+    const actualRoutes = collectPageFiles(localeRoot)
+      .map((path) => relative(localeRoot, path).replaceAll('\\', '/'))
+      .sort();
+
+    expect(actualRoutes).toEqual([...PRESERVED_LOCALE_ROUTE_FILES].sort());
+  });
+});

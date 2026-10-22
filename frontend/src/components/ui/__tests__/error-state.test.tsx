@@ -10,6 +10,8 @@ describe('ErrorState', () => {
     const alert = screen.getByRole('alert');
 
     expect(alert).toHaveAttribute('aria-live', 'assertive');
+    expect(alert).toHaveClass('border-app-danger-border', 'bg-app-danger-soft');
+    expect(alert.querySelector('[aria-hidden="true"]')).toHaveClass('text-app-danger');
     expect(screen.getByText('Request failed')).toBeInTheDocument();
   });
 

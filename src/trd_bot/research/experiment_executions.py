@@ -4,7 +4,14 @@ from enum import StrEnum
 from typing import Protocol, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 
 class ExperimentExecutionStatus(StrEnum):
@@ -16,13 +23,11 @@ class ExperimentExecutionStatus(StrEnum):
     FAILED = "failed"
 
 
-class EMACrossoverExecutionParameters(BaseModel):
-    """Reproducible input parameters for one stored-dataset EMA execution."""
+class HistoricalExecutionParameters(BaseModel):
+    """Shared reproducible inputs for one historical strategy execution."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    fast_period: int = Field(ge=1)
-    slow_period: int = Field(ge=2)
     horizon_candles: int = Field(ge=1)
 
     starting_balance: Decimal = Field(gt=0)
@@ -30,12 +35,159 @@ class EMACrossoverExecutionParameters(BaseModel):
     fee_rate: Decimal = Field(ge=0, lt=1)
     slippage_rate: Decimal = Field(ge=0, lt=1)
 
+    @property
+    def strategy_name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def strategy_version(self) -> str:
+        raise NotImplementedError
+
+    def strategy_parameters(self) -> dict[str, str | int | Decimal | bool]:
+        raise NotImplementedError
+
+    def strategy_parameter_pairs(self) -> tuple[tuple[str, str], ...]:
+        raise NotImplementedError
+
+    def experiment_parameter_pairs(self) -> tuple[tuple[str, str], ...]:
+        return (
+            *self.strategy_parameter_pairs(),
+            (
+                "starting_balance",
+                _canonical_decimal(self.starting_balance),
+            ),
+            (
+                "allocation_fraction",
+                _canonical_decimal(self.allocation_fraction),
+            ),
+            (
+                "fee_rate",
+                _canonical_decimal(self.fee_rate),
+            ),
+            (
+                "slippage_rate",
+                _canonical_decimal(self.slippage_rate),
+            ),
+        )
+
+
+class EMACrossoverExecutionParameters(HistoricalExecutionParameters):
+    """Reproducible input parameters for one stored-dataset EMA execution."""
+
+    fast_period: int = Field(ge=1)
+    slow_period: int = Field(ge=2)
+
+    @property
+    def strategy_name(self) -> str:
+        return "ema-crossover"
+
+    @property
+    def strategy_version(self) -> str:
+        return "1.0.0"
+
+    def strategy_parameters(self) -> dict[str, str | int | Decimal | bool]:
+        return {
+            "fast_period": self.fast_period,
+            "slow_period": self.slow_period,
+        }
+
+    def strategy_parameter_pairs(self) -> tuple[tuple[str, str], ...]:
+        return (
+            ("fast_period", str(self.fast_period)),
+            ("slow_period", str(self.slow_period)),
+        )
+
     @model_validator(mode="after")
     def validate_period_relationship(self) -> Self:
         if self.fast_period >= self.slow_period:
             raise ValueError("fast period must be smaller than slow period")
 
         return self
+
+
+class SMACrossoverExecutionParameters(EMACrossoverExecutionParameters):
+    """Reproducible input parameters for one stored-dataset SMA execution."""
+
+    @property
+    def strategy_name(self) -> str:
+        return "sma-crossover"
+
+
+class RSIThresholdExecutionParameters(HistoricalExecutionParameters):
+    """Reproducible input parameters for one stored-dataset RSI execution."""
+
+    period: int = Field(default=14, ge=2)
+    oversold_threshold: Decimal = Field(
+        default=Decimal("30"),
+        gt=0,
+        lt=50,
+    )
+    overbought_threshold: Decimal = Field(
+        default=Decimal("70"),
+        gt=50,
+        lt=100,
+    )
+
+    @property
+    def strategy_name(self) -> str:
+        return "rsi-threshold"
+
+    @property
+    def strategy_version(self) -> str:
+        return "1.0.0"
+
+    def strategy_parameters(self) -> dict[str, str | int | Decimal | bool]:
+        return {
+            "period": self.period,
+            "oversold_threshold": self.oversold_threshold,
+            "overbought_threshold": self.overbought_threshold,
+        }
+
+    def strategy_parameter_pairs(self) -> tuple[tuple[str, str], ...]:
+        return (
+            ("period", str(self.period)),
+            (
+                "oversold_threshold",
+                _canonical_decimal(self.oversold_threshold),
+            ),
+            (
+                "overbought_threshold",
+                _canonical_decimal(self.overbought_threshold),
+            ),
+        )
+
+
+StrategyExecutionParameters = (
+    EMACrossoverExecutionParameters
+    | RSIThresholdExecutionParameters
+    | SMACrossoverExecutionParameters
+)
+
+
+def _parse_strategy_execution_parameters(
+    value: object,
+    *,
+    strategy_name: str,
+    strategy_version: str,
+) -> StrategyExecutionParameters:
+    # Keep unsupported versions representable so the runner can transition them
+    # to a controlled failed state. Registry dispatch remains version-authoritative.
+    del strategy_version
+
+    if strategy_name == "ema-crossover":
+        return EMACrossoverExecutionParameters.model_validate(value)
+
+    if strategy_name == "rsi-threshold":
+        return RSIThresholdExecutionParameters.model_validate(value)
+
+    if strategy_name == "sma-crossover":
+        return SMACrossoverExecutionParameters.model_validate(value)
+
+    raise ValueError("unsupported strategy execution parameter identity")
+
+
+def _canonical_decimal(value: Decimal) -> str:
+    return format(value.normalize(), "f")
 
 
 class ExperimentExecution(BaseModel):
@@ -60,7 +212,26 @@ class ExperimentExecution(BaseModel):
     strategy_name: str = Field(min_length=1, max_length=100)
     strategy_version: str = Field(min_length=1, max_length=30)
 
-    parameters: EMACrossoverExecutionParameters
+    parameters: StrategyExecutionParameters
+
+    @field_validator("parameters", mode="before")
+    @classmethod
+    def parameters_must_match_strategy(
+        cls,
+        value: object,
+        info: ValidationInfo,
+    ) -> StrategyExecutionParameters:
+        strategy_name = info.data.get("strategy_name")
+        strategy_version = info.data.get("strategy_version")
+
+        if not isinstance(strategy_name, str) or not isinstance(strategy_version, str):
+            raise ValueError("strategy identity must be validated before parameters")
+
+        return _parse_strategy_execution_parameters(
+            value,
+            strategy_name=strategy_name,
+            strategy_version=strategy_version,
+        )
 
     experiment_id: str | None = Field(
         default=None,
@@ -193,7 +364,7 @@ class ExperimentExecutionBuilder:
         self,
         *,
         dataset_id: str,
-        parameters: EMACrossoverExecutionParameters,
+        parameters: StrategyExecutionParameters,
         now: datetime | None = None,
     ) -> ExperimentExecution:
         created_at = now or datetime.now(UTC)
@@ -205,8 +376,8 @@ class ExperimentExecutionBuilder:
             status=ExperimentExecutionStatus.QUEUED,
             progress_percent=0,
             dataset_id=dataset_id,
-            strategy_name="ema-crossover",
-            strategy_version="1.0.0",
+            strategy_name=parameters.strategy_name,
+            strategy_version=parameters.strategy_version,
             parameters=parameters,
         )
 

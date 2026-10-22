@@ -1,11 +1,23 @@
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
+from trd_bot.api.legacy_research import enforce_legacy_research_route_retirement
 from trd_bot.main import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def allow_legacy_walk_forward_contract() -> Iterator[None]:
+    previous_overrides = app.dependency_overrides.copy()
+    app.dependency_overrides[enforce_legacy_research_route_retirement] = lambda: None
+    yield
+    app.dependency_overrides.clear()
+    app.dependency_overrides.update(previous_overrides)
 
 
 def create_candle_payload(

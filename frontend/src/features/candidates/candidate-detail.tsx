@@ -1,0 +1,465 @@
+'use client';
+
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+
+import { PageFrame } from '@/components/platform/page-frame';
+import { PageHeader } from '@/components/platform/page-header';
+import {
+  AdvancedDisclosure,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  ErrorState,
+  Pagination,
+  Spinner,
+} from '@/components/ui';
+import { getCandidateLineage } from '@/features/candidates/api/client';
+import type {
+  CandidateJournalOccurrence,
+  CandidateProjectionDetail,
+} from '@/features/candidates/api/types';
+import type { DecisionEvaluationDetail } from '@/features/decision-intelligence/api/types';
+import DecisionIntelligenceEvidence from '@/features/decision-intelligence/decision-intelligence-evidence';
+import CandidateDecisionLineageView from '@/features/candidates/candidate-decision-lineage';
+import { getCandidateDetailCopy } from '@/features/candidates/candidate-detail-copy';
+import { CandidateRankingBreakdown } from '@/features/candidates/candidate-ranking-breakdown';
+import type { Page } from '@/lib/api/core/types';
+import { getStrategyDisplayName } from '@/lib/strategies/presentation';
+import { getPlatformCopy, type PlatformLocale } from '@/platform/i18n';
+
+const LINEAGE_PAGE_SIZE = 10;
+
+type CandidateDetailProps = {
+  candidate: CandidateProjectionDetail;
+  decisionEvidence?: DecisionEvaluationDetail | null;
+  initialLineage: Page<CandidateJournalOccurrence>;
+  locale: PlatformLocale;
+};
+
+function numberLocale(locale: PlatformLocale): string {
+  return locale === 'fa' ? 'fa-IR' : 'en-US';
+}
+
+function formatNumber(value: number, locale: PlatformLocale): string {
+  return new Intl.NumberFormat(numberLocale(locale)).format(value);
+}
+
+function formatDecimal(value: string, locale: PlatformLocale): string {
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    return value;
+  }
+
+  return new Intl.NumberFormat(numberLocale(locale), {
+    maximumFractionDigits: 6,
+  }).format(parsedValue);
+}
+
+function formatDate(value: string, locale: PlatformLocale): string {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(numberLocale(locale), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+export default function CandidateDetail({
+  candidate,
+  decisionEvidence = null,
+  initialLineage,
+  locale,
+}: CandidateDetailProps) {
+  const copy = getCandidateDetailCopy(locale);
+  const platformCopy = getPlatformCopy(locale);
+  const [lineage, setLineage] = useState(initialLineage);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const requestSequence = useRef(0);
+
+  async function loadLineage(offset: number): Promise<void> {
+    const requestId = ++requestSequence.current;
+
+    setIsLoading(true);
+    setHasError(false);
+
+    try {
+      const result = await getCandidateLineage(candidate.candidate.candidate_id, {
+        limit: LINEAGE_PAGE_SIZE,
+        offset,
+      });
+
+      if (requestId === requestSequence.current) {
+        setLineage(result);
+      }
+    } catch {
+      if (requestId === requestSequence.current) {
+        setHasError(true);
+      }
+    } finally {
+      if (requestId === requestSequence.current) {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  const snapshot = candidate.candidate;
+  const latest = candidate.latest;
+
+  return (
+    <PageFrame>
+      <PageHeader
+        backLink={
+          <Link
+            href={`/${locale}/candidates`}
+            className="rounded-sm text-sm font-medium text-app-accent transition hover:opacity-80 focus-visible:ring-2 focus-visible:ring-app-accent focus-visible:ring-offset-2 focus-visible:ring-offset-app-background focus-visible:outline-none"
+          >
+            {locale === 'fa' ? '→' : '←'} {copy.back}
+          </Link>
+        }
+        eyebrow={copy.eyebrow}
+        title={`${snapshot.pair.base_asset}/${snapshot.pair.quote_asset}`}
+        actions={
+          <>
+            <Badge variant="warning">{copy.readOnly}</Badge>
+            <Badge variant={latest.selected ? 'success' : 'info'}>
+              {latest.selected ? copy.selected : copy.notSelected}
+            </Badge>
+            <Badge variant={latest.occurrence_type === 'skipped' ? 'warning' : 'info'}>
+              {copy.occurrenceTypes[latest.occurrence_type]}
+            </Badge>
+            <Badge variant="info">{copy.statuses[snapshot.status]}</Badge>
+            <Badge variant="warning">{copy.actions[snapshot.action]}</Badge>
+          </>
+        }
+      />
+
+      <DecisionIntelligenceEvidence
+        evidence={decisionEvidence}
+        focus="candidate"
+        locale={locale}
+        subjectId={candidate.candidate.signal_id}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle title={snapshot.strategy_name}>
+            {getStrategyDisplayName(snapshot.strategy_name, locale)}
+          </CardTitle>
+          <CardDescription>{snapshot.strategy_version}</CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          <dl className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.confidence}</dt>
+              <dd dir="ltr" className="mt-2 text-left text-sm font-semibold text-app-foreground">
+                {formatDecimal(snapshot.confidence, locale)}
+              </dd>
+            </div>
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.signalScore}</dt>
+              <dd dir="ltr" className="mt-2 text-left text-sm font-semibold text-app-foreground">
+                {formatDecimal(snapshot.signal_score, locale)}
+              </dd>
+            </div>
+            <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+              <dt className="text-xs text-app-muted">{copy.fields.occurrences}</dt>
+              <dd className="mt-2 text-sm text-app-foreground">
+                {formatNumber(candidate.occurrence_count, locale)}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="grid gap-3 border-t border-app-border pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-app-muted">{copy.fields.replay}</p>
+              <p className="mt-2 text-sm text-app-foreground">
+                {latest.replay_status
+                  ? copy.replayStatuses[latest.replay_status]
+                  : copy.notEvaluated}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-app-muted">{copy.fields.risk}</p>
+              <p className="mt-2 text-sm text-app-foreground">
+                {latest.risk_decision
+                  ? copy.riskDecisions[latest.risk_decision]
+                  : copy.notEvaluated}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
+              <p className="mt-2 text-sm text-app-foreground">
+                {latest.exit_reason ? copy.exitReasons[latest.exit_reason] : '—'}
+              </p>
+            </div>
+            {latest.skip_reason ? (
+              <div>
+                <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
+                <p className="mt-2 text-sm text-app-foreground">
+                  {copy.skipReasons[latest.skip_reason]}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      <AdvancedDisclosure
+        title={platformCopy.disclosure.advanced}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            [copy.fields.candidateId, snapshot.candidate_id],
+            [copy.fields.datasetId, snapshot.dataset_id],
+            [copy.fields.experimentId, snapshot.experiment_id],
+            [copy.fields.signalId, snapshot.signal_id],
+            [copy.fields.positionId, latest.position_id ?? '—'],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs text-app-muted">{label}</dt>
+              <dd
+                dir="ltr"
+                className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+              >
+                {value}
+              </dd>
+            </div>
+          ))}
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.timeframe}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">{snapshot.timeframe}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.createdAt}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">
+              {formatDate(snapshot.created_at, locale)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-app-muted">{copy.fields.validUntil}</dt>
+            <dd className="mt-1 text-sm text-app-foreground">
+              {formatDate(snapshot.valid_until, locale)}
+            </dd>
+          </div>
+        </dl>
+      </AdvancedDisclosure>
+
+      <Card id="risk-decision" className="scroll-mt-6">
+        <CardHeader>
+          <CardTitle>{copy.decisionBreakdownTitle}</CardTitle>
+          <CardDescription>{copy.decisionBreakdownDescription}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CandidateRankingBreakdown evidence={latest.decision_evidence} locale={locale} />
+        </CardContent>
+      </Card>
+
+      <CandidateDecisionLineageView lineage={candidate.decision_lineage} locale={locale} />
+
+      <AdvancedDisclosure
+        title={copy.lineageTitle}
+        description={platformCopy.disclosure.advancedDescription}
+      >
+        <div className="space-y-8">
+          <section>
+            <div>
+              <h2 className="text-xl font-semibold text-app-foreground">{copy.rankHistoryTitle}</h2>
+              <p className="mt-2 text-sm text-app-muted">{copy.rankHistoryDescription}</p>
+            </div>
+
+            <ol className="mt-5 grid gap-3 lg:grid-cols-2">
+              {candidate.rank_history.map((entry) => (
+                <li
+                  key={entry.journal_id}
+                  className="rounded-2xl border border-app-border bg-app-surface p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.journal}</p>
+                      <p
+                        dir="ltr"
+                        className="mt-1 text-left text-xs font-semibold break-all text-app-foreground"
+                      >
+                        {entry.journal_id}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="info">#{formatNumber(entry.rank, locale)}</Badge>
+                      <Badge variant={entry.selected ? 'success' : 'neutral'}>
+                        {entry.selected ? copy.selected : copy.notSelected}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                      <p dir="ltr" className="mt-1 text-left font-semibold text-app-foreground">
+                        {formatDecimal(entry.ranking_score, locale)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
+                      <p className="mt-1 text-app-foreground">
+                        {formatDate(entry.recorded_at, locale)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-xs text-app-muted">
+                    {entry.evidence_available ? copy.evidenceAvailable : copy.evidenceUnavailable}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section>
+            <div>
+              <h2 className="text-xl font-semibold text-app-foreground">{copy.lineageTitle}</h2>
+              <p className="mt-2 text-sm text-app-muted">{copy.lineageDescription}</p>
+            </div>
+
+            <div className="relative mt-5 min-h-48" aria-busy={isLoading}>
+              {isLoading ? (
+                <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-app-overlay backdrop-blur-sm">
+                  <Spinner size="lg" label={copy.lineageLoading} className="text-app-accent" />
+                </div>
+              ) : null}
+
+              {hasError ? (
+                <ErrorState
+                  title={copy.lineageErrorTitle}
+                  description={copy.lineageErrorDescription}
+                  retryLabel={copy.retry}
+                  onRetry={() => void loadLineage(lineage.offset)}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {lineage.items.map((occurrence) => (
+                    <Card key={occurrence.journal_id}>
+                      <CardContent className="grid gap-4 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.journal}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+                          >
+                            {occurrence.journal_id}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.recordedAt}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {formatDate(occurrence.recorded_at, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.strategy}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {getStrategyDisplayName(occurrence.candidate.strategy_name, locale)} ·{' '}
+                            {occurrence.candidate.strategy_version}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.rank}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {formatNumber(occurrence.rank, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.rankingScore}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-sm font-semibold text-app-foreground"
+                          >
+                            {formatDecimal(occurrence.ranking_score, locale)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.occurrence}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {copy.occurrenceTypes[occurrence.occurrence_type]}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.replay}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.replay_status
+                              ? copy.replayStatuses[occurrence.replay_status]
+                              : copy.notEvaluated}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.risk}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.risk_decision
+                              ? copy.riskDecisions[occurrence.risk_decision]
+                              : copy.notEvaluated}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.skipReason}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.skip_reason
+                              ? copy.skipReasons[occurrence.skip_reason]
+                              : '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.positionId}</p>
+                          <p
+                            dir="ltr"
+                            className="mt-2 text-left text-xs font-semibold break-all text-app-foreground"
+                          >
+                            {occurrence.position_id ?? '—'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-app-muted">{copy.fields.exitReason}</p>
+                          <p className="mt-2 text-sm text-app-foreground">
+                            {occurrence.exit_reason
+                              ? copy.exitReasons[occurrence.exit_reason]
+                              : '—'}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {!hasError && lineage.total > 0 ? (
+              <div className="mt-4 rounded-2xl border border-app-border bg-app-surface px-5 py-4">
+                <Pagination
+                  locale={locale}
+                  total={lineage.total}
+                  limit={lineage.limit}
+                  offset={lineage.offset}
+                  isLoading={isLoading}
+                  pageLabel={copy.page}
+                  previousLabel={copy.previous}
+                  nextLabel={copy.next}
+                  onOffsetChange={(offset) => void loadLineage(offset)}
+                />
+              </div>
+            ) : null}
+          </section>
+        </div>
+      </AdvancedDisclosure>
+    </PageFrame>
+  );
+}
