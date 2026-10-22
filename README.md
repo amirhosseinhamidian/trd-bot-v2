@@ -157,6 +157,8 @@ The Phase 6 hardening baseline and deterministic release-surface inventory are d
 [`docs/v0.3/48-cross-cutting-hardening-release-inventory.md`](docs/v0.3/48-cross-cutting-hardening-release-inventory.md).
 The Phase 6 PostgreSQL capacity, overload, contention, and recovery benchmark is documented in
 [`docs/v0.3/49-capacity-overload-recovery-benchmark.md`](docs/v0.3/49-capacity-overload-recovery-benchmark.md).
+The aggregate, read-only Phase 6 outcome and learning review is documented in
+[`docs/v0.3/50-outcome-learning-review.md`](docs/v0.3/50-outcome-learning-review.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

@@ -24,6 +24,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - A commit-bound PostgreSQL release-capacity benchmark covering the 100-job overload boundary,
   single-worker drain budget, concurrent claim and enqueue safety, retry, lease reclaim,
   stale-owner fencing, and cleanup.
+- A commit-bound, aggregate Outcome/Learning review across alert outcomes, candidate lifecycle,
+  decision-stage dispositions, and simulated Paper/Shadow position results, with deterministic
+  sample readiness and human-review-only warnings.
 
 ### Changed
 
