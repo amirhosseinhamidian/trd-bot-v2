@@ -172,4 +172,5 @@ command آخر نباید خروجی داشته باشد.
 - [ ] اجرای مرجع PostgreSQL 17 روی SHA کامیت‌شده `passed=true` شود.
 - [ ] backend، integration، frontend و CI روی همان SHA سبز شوند.
 
-پس از بستن این گیت، مرحله مجاز بعدی `P6-07 — Final v0.3 Acceptance and Freeze` است.
+پس از بستن این گیت، مرحله مجاز بعدی
+[`P6-07 — Final v0.3 Acceptance and Freeze`](54-final-v0.3-acceptance-freeze.md) است.

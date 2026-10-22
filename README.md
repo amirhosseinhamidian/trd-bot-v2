@@ -167,6 +167,9 @@ v0.2.0 to v0.3.0 is documented in
 The fail-closed, commit-bound PostgreSQL fresh-install and v0.2-to-v0.3 upgrade verification is
 documented in
 [`docs/v0.3/53-fresh-install-upgrade-verification.md`](docs/v0.3/53-fresh-install-upgrade-verification.md).
+The final same-SHA Phase 6 acceptance gates, evidence contract, manual smokes, and artifact-only
+freeze procedure are documented in
+[`docs/v0.3/54-final-v0.3-acceptance-freeze.md`](docs/v0.3/54-final-v0.3-acceptance-freeze.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

@@ -36,6 +36,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - A commit-bound PostgreSQL installation verifier covering an empty-schema fresh install, upgrade
   from the frozen v0.2 migration, Alembic drift, exact target schema, preserved lineage identities,
   tamper-resistant evidence, and the no-live release inventory.
+- A fail-closed final v0.3 acceptance contract binding capacity, outcome review, maintenance,
+  fresh-install/upgrade evidence, release inventory, CI, automated gates, and manual smokes to one
+  candidate SHA, with an acceptance-artifact-only freeze policy.
 
 ### Changed
 
