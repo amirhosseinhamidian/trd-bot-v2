@@ -30,6 +30,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - A commit-bound retention and maintenance plan covering audited Market Data dry-runs, bounded
   cleanup of expired dataset upload stages, append-only Alert expiry evidence, and rebuildable
   Candidate projections without automatic execution or immutable-evidence deletion.
+- A tested v0.2.0-to-v0.3.0 migration guide and machine-readable documentation manifest covering
+  fresh install, backup/restore drill, compatibility changes, verification, and operational
+  rollback without weakening the no-live boundary.
 
 ### Changed
 

@@ -161,6 +161,9 @@ The aggregate, read-only Phase 6 outcome and learning review is documented in
 [`docs/v0.3/50-outcome-learning-review.md`](docs/v0.3/50-outcome-learning-review.md).
 The commit-bound Phase 6 retention and maintenance operations plan is documented in
 [`docs/v0.3/51-retention-maintenance-operations.md`](docs/v0.3/51-retention-maintenance-operations.md).
+The tested fresh-install, backup, upgrade, compatibility, and operational rollback guide from
+v0.2.0 to v0.3.0 is documented in
+[`docs/v0.3/52-v0.2-to-v0.3-migration-guide.md`](docs/v0.3/52-v0.2-to-v0.3-migration-guide.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

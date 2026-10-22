@@ -1,0 +1,77 @@
+{
+  "schema_version": "v0.3-release-documentation-manifest-v1",
+  "source_release": {
+    "version": "0.2.0",
+    "git_tag": "v0.2.0",
+    "commit_sha": "6e101f9f66ba83720335077f409b53d012cdbf5c",
+    "migration_revision": "20260926_0017"
+  },
+  "target_release": {
+    "version": "0.3.0",
+    "migration_revision": "20261020_0036",
+    "commit_sha_required": true
+  },
+  "runtime": {
+    "python": "3.12",
+    "node": "22",
+    "postgresql": "17"
+  },
+  "documents": [
+    "README.md",
+    "frontend/README.md",
+    "docs/v0.3/47-v0.3.0-release-cut.md",
+    "docs/v0.3/50-outcome-learning-review.md",
+    "docs/v0.3/51-retention-maintenance-operations.md",
+    "docs/v0.3/52-v0.2-to-v0.3-migration-guide.md",
+    "docs/nexora-ui-release-and-migration.md"
+  ],
+  "required_environment_keys": [
+    "TRD_BOT_APP_VERSION",
+    "TRD_BOT_DATABASE_URL",
+    "TRD_BOT_TEST_DATABASE_URL",
+    "TRD_BOT_CORS_ALLOWED_ORIGINS"
+  ],
+  "retired_routes": [
+    {
+      "method": "POST",
+      "path": "/api/v1/research/ema-crossover",
+      "replacement": "/api/v1/research/experiment-executions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/research/experiments/ema-crossover",
+      "replacement": "/api/v1/research/experiment-executions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/research/experiments/ema-crossover/from-dataset",
+      "replacement": "/api/v1/research/experiment-executions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/research/walk-forward/ema-crossover",
+      "replacement": "/api/v1/research/walk-forward-executions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/research/walk-forward/runs/ema-crossover",
+      "replacement": "/api/v1/research/walk-forward-executions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/research/walk-forward/runs/ema-crossover/from-dataset",
+      "replacement": "/api/v1/research/walk-forward-executions"
+    }
+  ],
+  "safety_boundary": {
+    "supported_modes": [
+      "RESEARCH",
+      "BACKTEST",
+      "PAPER",
+      "SHADOW"
+    ],
+    "live_execution": false,
+    "exchange_credentials": false,
+    "real_asset_management": false
+  }
+}

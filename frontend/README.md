@@ -44,3 +44,6 @@ frontend checks for pull requests to `main` and supported branch pushes.
 Do not restore imports from the retired `@/lib/api/client`, `@/lib/api/types`, or
 `@/lib/api/portfolio-analytics` facades. The complete upgrade map and release boundary are in
 [`../docs/nexora-ui-release-and-migration.md`](../docs/nexora-ui-release-and-migration.md).
+The full v0.2.0-to-v0.3.0 backup, database migration, API compatibility, verification, and rollback
+runbook is in
+[`../docs/v0.3/52-v0.2-to-v0.3-migration-guide.md`](../docs/v0.3/52-v0.2-to-v0.3-migration-guide.md).
