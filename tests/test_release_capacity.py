@@ -1,8 +1,11 @@
 import json
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
+from scripts import benchmark_v0_3_release_capacity as benchmark_script
 from scripts.benchmark_v0_3_release_capacity import (
     validate_release_benchmark_database_url,
 )
@@ -22,6 +25,7 @@ from trd_bot.release_capacity import (
 COMMIT_SHA = "a" * 40
 GENERATED_AT = datetime(2026, 10, 21, 18, tzinfo=UTC)
 EXPECTED_POLICY_CHECKSUM = "8a6e4210cc88bdeb051fa879399a91baac6d94d4d9a143d3804c8fdf5ebdf76a"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def passing_observations() -> ReleaseCapacityObservations:
@@ -167,3 +171,39 @@ def test_release_capacity_accepts_dedicated_test_or_benchmark_database() -> None
 
     assert validate_release_benchmark_database_url(test_url) == test_url
     assert validate_release_benchmark_database_url(benchmark_url) == benchmark_url
+
+
+def test_release_capacity_preserves_preflight_error_without_schema_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = Mock()
+    cleanup = Mock()
+    monkeypatch.setattr(benchmark_script, "create_database_engine", lambda _: engine)
+    monkeypatch.setattr(benchmark_script, "create_session_factory", lambda _: object())
+    monkeypatch.setattr(
+        benchmark_script,
+        "_assert_current_migration_head",
+        Mock(side_effect=ValueError("database is not at migration head")),
+    )
+    monkeypatch.setattr(benchmark_script, "_cleanup", cleanup)
+
+    with pytest.raises(ValueError, match="database is not at migration head"):
+        benchmark_script.run_release_capacity_benchmark(
+            database_url="postgresql+psycopg://localhost/trd_bot_test",
+            environment_label="unit-test",
+            commit_sha=COMMIT_SHA,
+            job_count=100,
+            contention_workers=8,
+        )
+
+    cleanup.assert_not_called()
+    engine.dispose.assert_called_once_with()
+
+
+def test_release_capacity_runbook_migrates_the_explicit_benchmark_database() -> None:
+    runbook = (REPOSITORY_ROOT / "docs/v0.3/49-capacity-overload-recovery-benchmark.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'TRD_BOT_DATABASE_URL="$TRD_BOT_TEST_DATABASE_URL"' in runbook
+    assert '--database-url "$TRD_BOT_TEST_DATABASE_URL"' in runbook

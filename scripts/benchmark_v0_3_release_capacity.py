@@ -455,35 +455,37 @@ def run_release_capacity_benchmark(
                 "release benchmark requires a dedicated database with no active background jobs"
             )
 
-        job_ids, covered_kinds, enqueue_latencies = _enqueue_overload_batch(
-            factory,
-            prefix=prefix,
-            job_count=job_count,
-        )
-        overload_depth = _active_job_count(factory)
-        overload_level = classify_queue_pressure(overload_depth, active_policy)
-        cycle_latencies, queue_waits, drain_seconds = _drain_overload_batch(
-            factory,
-            job_ids=job_ids,
-        )
-        succeeded, failed, remaining = _status_counts(factory, job_ids)
-        contention_winners, contention_unique = _measure_claim_contention(
-            factory,
-            prefix=prefix,
-            workers=contention_workers,
-        )
-        recovery_attempts, recovery_same_job, stale_fenced, recovery_ms = _measure_recovery(
-            factory,
-            prefix=prefix,
-        )
-        retry_attempts, retry_same_job = _measure_retry(factory, prefix=prefix)
-        duplicate_created, duplicate_unique = _measure_duplicate_enqueue(
-            factory,
-            prefix=prefix,
-            attempts=contention_workers,
-        )
+        try:
+            job_ids, covered_kinds, enqueue_latencies = _enqueue_overload_batch(
+                factory,
+                prefix=prefix,
+                job_count=job_count,
+            )
+            overload_depth = _active_job_count(factory)
+            overload_level = classify_queue_pressure(overload_depth, active_policy)
+            cycle_latencies, queue_waits, drain_seconds = _drain_overload_batch(
+                factory,
+                job_ids=job_ids,
+            )
+            succeeded, failed, remaining = _status_counts(factory, job_ids)
+            contention_winners, contention_unique = _measure_claim_contention(
+                factory,
+                prefix=prefix,
+                workers=contention_workers,
+            )
+            recovery_attempts, recovery_same_job, stale_fenced, recovery_ms = _measure_recovery(
+                factory,
+                prefix=prefix,
+            )
+            retry_attempts, retry_same_job = _measure_retry(factory, prefix=prefix)
+            duplicate_created, duplicate_unique = _measure_duplicate_enqueue(
+                factory,
+                prefix=prefix,
+                attempts=contention_workers,
+            )
+        finally:
+            cleanup_verified = _cleanup(factory, prefix)
     finally:
-        cleanup_verified = _cleanup(factory, prefix)
         engine.dispose()
 
     observations = ReleaseCapacityObservations(

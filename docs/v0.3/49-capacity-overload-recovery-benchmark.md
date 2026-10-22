@@ -61,9 +61,14 @@ docker run --name trd-bot-p6-02-db17 \
 
 export TRD_BOT_TEST_DATABASE_URL='postgresql+psycopg://trd_p6:trd_p6_password@localhost:55441/trd_bot_test'
 
-python -m alembic upgrade head
+TRD_BOT_DATABASE_URL="$TRD_BOT_TEST_DATABASE_URL" \
+  python -m alembic upgrade head
+
+TRD_BOT_DATABASE_URL="$TRD_BOT_TEST_DATABASE_URL" \
+  python -m alembic current
 
 PYTHONPATH=src python scripts/benchmark_v0_3_release_capacity.py \
+  --database-url "$TRD_BOT_TEST_DATABASE_URL" \
   --environment-label macbook-pro-reference \
   --output /tmp/trd-bot-p6-02-release-capacity.json
 ```
@@ -71,6 +76,9 @@ PYTHONPATH=src python scripts/benchmark_v0_3_release_capacity.py \
 Database باید اختصاصی باشد، نام آن شامل `test` یا `bench` باشد، دقیقاً در migration head قرار داشته
 باشد و پیش از benchmark هیچ job فعال نداشته باشد. runner هیچ migration اجرا نمی کند و database
 ناامن، SQLite، schema عقب مانده یا output موجود را fail-closed رد می کند.
+Alembic فقط `TRD_BOT_DATABASE_URL` را برای migration می خواند؛ بنابراین prefix صریح بالا از migrate
+شدن ناخواسته database پیش فرض یا development جلوگیری می کند. خروجی `alembic current` باید
+`20261020_0036 (head)` باشد.
 
 خروجی موفق باید این ویژگی ها را داشته باشد:
 
