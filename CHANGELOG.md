@@ -2,10 +2,10 @@
 
 All notable changes to TRD BOT v2 are documented in this file.
 
-## 0.3.0 - local release candidate
+## 0.3.0 - 2026-10-22
 
-Status: untagged candidate for local research, paper, and shadow use. Server deployment, public
-release publication, exchange-account connectivity, and live execution remain deferred.
+Status: frozen and release-approved for local research, paper, and shadow use. Server deployment,
+exchange-account connectivity, and live execution remain deferred.
 
 ### Added
 
@@ -52,7 +52,7 @@ release publication, exchange-account connectivity, and live execution remain de
 - Market access remains public and read-only; no exchange credentials or private account APIs exist.
 - Portfolio Intelligence remains advisory for simulated portfolios and cannot submit orders or
   manage real assets.
-- This release cut does not create a tag, GitHub Release, deployment, or merge to `main`.
+- Publishing v0.3.0 does not create a server deployment or enable live execution.
 
 ## 0.2.0 — local release candidate
 
