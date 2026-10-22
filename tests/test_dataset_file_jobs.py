@@ -37,9 +37,15 @@ class MemoryStages:
     def delete(self, stage_id: str) -> bool:
         return self.items.pop(stage_id, None) is not None
 
-    def delete_expired(self, *, now: datetime | None = None) -> int:
+    def count_expired(self, *, now: datetime | None = None) -> int:
         observed_at = now or datetime.now(UTC)
-        expired = [key for key, value in self.items.items() if value.expires_at <= observed_at]
+        return sum(value.expires_at <= observed_at for value in self.items.values())
+
+    def delete_expired(self, *, now: datetime | None = None, limit: int = 100) -> int:
+        observed_at = now or datetime.now(UTC)
+        expired = [key for key, value in self.items.items() if value.expires_at <= observed_at][
+            :limit
+        ]
         for key in expired:
             del self.items[key]
         return len(expired)

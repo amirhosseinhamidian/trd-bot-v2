@@ -27,6 +27,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - A commit-bound, aggregate Outcome/Learning review across alert outcomes, candidate lifecycle,
   decision-stage dispositions, and simulated Paper/Shadow position results, with deterministic
   sample readiness and human-review-only warnings.
+- A commit-bound retention and maintenance plan covering audited Market Data dry-runs, bounded
+  cleanup of expired dataset upload stages, append-only Alert expiry evidence, and rebuildable
+  Candidate projections without automatic execution or immutable-evidence deletion.
 
 ### Changed
 

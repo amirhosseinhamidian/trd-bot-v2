@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import delete
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,8 @@ from trd_bot.research.dataset_file_jobs import (
     DatasetFileStage,
     validate_dataset_file_import_enqueue,
 )
+
+_DEFAULT_CLEANUP_LIMIT = 100
 
 
 def _utc(value: datetime) -> datetime:
@@ -83,10 +85,28 @@ class SqlAlchemyDatasetFileStageRepository:
         self._session.commit()
         return bool(result.rowcount)
 
-    def delete_expired(self, *, now: datetime | None = None) -> int:
+    def count_expired(self, *, now: datetime | None = None) -> int:
+        observed_at = _utc(now or datetime.now(UTC))
+        value = self._session.scalar(
+            select(func.count())
+            .select_from(DatasetFileStageRow)
+            .where(DatasetFileStageRow.expires_at <= observed_at)
+        )
+        return int(value or 0)
+
+    def delete_expired(
+        self,
+        *,
+        now: datetime | None = None,
+        limit: int = _DEFAULT_CLEANUP_LIMIT,
+    ) -> int:
+        if not 1 <= limit <= 500:
+            raise ValueError("dataset file stage cleanup limit must be between 1 and 500")
         observed_at = _utc(now or datetime.now(UTC))
         result = self._session.connection().execute(
-            delete(DatasetFileStageRow).where(DatasetFileStageRow.expires_at <= observed_at)
+            delete(DatasetFileStageRow).where(
+                DatasetFileStageRow.stage_id.in_(_expired_stage_ids(observed_at, limit=limit))
+            )
         )
         self._session.commit()
         return int(result.rowcount or 0)
@@ -110,7 +130,12 @@ class SqlAlchemyDatasetFileImportEnqueuer:
         try:
             self._session.execute(
                 delete(DatasetFileStageRow).where(
-                    DatasetFileStageRow.expires_at <= stage.created_at
+                    DatasetFileStageRow.stage_id.in_(
+                        _expired_stage_ids(
+                            stage.created_at,
+                            limit=_DEFAULT_CLEANUP_LIMIT,
+                        )
+                    )
                 )
             )
             stored_job, created = self._jobs.stage(job)
@@ -152,3 +177,12 @@ class SqlAlchemyDatasetFileImportEnqueuer:
         if existing is None:
             return None
         return DatasetFileImportEnqueueResult(job=existing, created=False)
+
+
+def _expired_stage_ids(observed_at: datetime, *, limit: int) -> Select[tuple[str]]:
+    return (
+        select(DatasetFileStageRow.stage_id)
+        .where(DatasetFileStageRow.expires_at <= observed_at)
+        .order_by(DatasetFileStageRow.expires_at, DatasetFileStageRow.stage_id)
+        .limit(limit)
+    )
