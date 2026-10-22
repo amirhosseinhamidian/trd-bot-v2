@@ -1,7 +1,7 @@
 # TRD BOT v2
 
-Current local release candidate: **v0.3.0**. This repository is configured for
-local research use; server staging and deployment are intentionally deferred.
+Current release: **v0.3.0**. This repository supports local research, backtesting,
+Paper, and Shadow workflows; server staging and deployment remain intentionally deferred.
 
 TRD BOT v2 is a single-user research platform for:
 
