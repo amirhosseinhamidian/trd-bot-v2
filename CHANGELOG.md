@@ -33,6 +33,9 @@ release publication, exchange-account connectivity, and live execution remain de
 - A tested v0.2.0-to-v0.3.0 migration guide and machine-readable documentation manifest covering
   fresh install, backup/restore drill, compatibility changes, verification, and operational
   rollback without weakening the no-live boundary.
+- A commit-bound PostgreSQL installation verifier covering an empty-schema fresh install, upgrade
+  from the frozen v0.2 migration, Alembic drift, exact target schema, preserved lineage identities,
+  tamper-resistant evidence, and the no-live release inventory.
 
 ### Changed
 
