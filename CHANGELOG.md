@@ -4,7 +4,7 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
-Status: integration roadmap candidate. Runtime compatibility is not yet claimed.
+Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
 
 ### Added
 
@@ -13,6 +13,8 @@ Status: integration roadmap candidate. Runtime compatibility is not yet claimed.
 - Defined the fail-closed `TRD-V031-00` through `TRD-V031-11` delivery sequence for service
   authentication, capabilities, snapshots, events, review commands, exports, resync, smoke, and
   the final release cut.
+- Recorded same-SHA successful roadmap, backend, frontend, PostgreSQL migration, and integration
+  evidence for the `TRD-V031-00` Freeze.
 
 ### Operating boundary
 

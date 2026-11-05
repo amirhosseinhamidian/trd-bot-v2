@@ -1,6 +1,6 @@
 # TRD-V031-00 — Nexora Integration Delivery Roadmap
 
-وضعیت: **Candidate**
+وضعیت: **Frozen**
 تاریخ تصمیم: ۲۰۲۶-۱۱-۰۵
 مبنای کد: TRD Bot `v0.3.0` در commit
 `bbb9fd4fbc25e25aa512a9fde1dda912321cdd33`
@@ -67,7 +67,25 @@ capabilityها و اجرای smoke واقعی local بین دو repository قا�
 نیست؛ همچنین سبز شدن این نسخه به معنی production readiness یا عبور از گیت استقرار
 Nexora نیست.
 
-## معیار پذیرش Candidate
+## شواهد Freeze
+
+roadmap روی candidate زیر فریز شده است:
+
+- commit: `947e0313aab25829e1944d093bc9b5e8e900b459`؛
+- tree: `93dff48c4b8b7c7f522c4500a19b99698c017922`؛
+- workflow اختصاصی roadmap: run
+  [`42025511338`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42025511338)،
+  نتیجه `success`؛
+- workflow کامل CI: run
+  [`42025511100`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42025511100)،
+  شامل backend، frontend و PostgreSQL، همگی `success`؛
+- run/job IDها و checksumهای roadmap و قرارداد upstream در
+  `artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json` ثبت شده‌اند.
+
+این Freeze فقط roadmap و قرارداد ورودی را می‌بندد. هنوز endpoint، migration،
+service token runtime یا ادعای سازگاری provider تحویل نشده است.
+
+## معیار پذیرش Freeze
 
 ```bash
 python scripts/verify_v0_3_1_integration_roadmap.py
@@ -94,11 +112,12 @@ git diff --check
 ```text
 TRD_V031_00_NEXORA_CONTRACT_ADOPTION=PASS
 TRD_V031_00_ROADMAP=PASS
+TRD_V031_00_FREEZE=PASS
 TRD_V031_00_RUNTIME_CHANGE=NONE
 TRD_V031_00_DATABASE_MIGRATION=NONE
-TRD_V031_01_IMPLEMENTATION_GATE=BLOCKED_UNTIL_FREEZE
+TRD_V031_01_IMPLEMENTATION_GATE=OPEN
 NEX_P3_03_GATE=PRESERVED_UNTIL_REAL_PROVIDER_SMOKE
 TRD_BOT_LIVE_EXECUTION=DISABLED
 ```
 
-مرحله مجاز بعدی فقط `TRD-V031-00-FREEZE` است.
+مرحله مجاز بعدی فقط `TRD-V031-01 — Service authentication and capability negotiation` است.

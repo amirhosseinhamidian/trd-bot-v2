@@ -7,6 +7,9 @@ Current development target: **v0.3.1 — Nexora Integration Compatibility**. The
 cross-repository contract and fail-closed delivery sequence start at
 [`TRD-V031-00`](docs/v0.3.1/00-nexora-integration-roadmap.md). Version `0.3.0` remains
 incompatible with Nexora runtime sync until the `0.3.1` provider passes the real local smoke.
+The roadmap is frozen by
+[`artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json`](artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json);
+the next implementation stage is `TRD-V031-01`.
 
 TRD BOT v2 is a single-user research platform for:
 

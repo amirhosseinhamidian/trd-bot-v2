@@ -21,11 +21,59 @@ class V031IntegrationRoadmapTests(unittest.TestCase):
         self.roadmap = MODULE.load_roadmap()
         self.contract = MODULE.load_contract()
         self.profile = MODULE.load_profile()
+        self.freeze = MODULE.load_freeze_record()
 
     def test_candidate_adopts_frozen_contract_and_valid_roadmap(self) -> None:
         MODULE.validate_frozen_upstream(self.roadmap, self.contract, self.profile)
         MODULE.validate_profile(self.profile)
         MODULE.validate_roadmap(self.roadmap)
+        MODULE.validate_freeze_record(
+            self.freeze,
+            self.roadmap,
+            self.contract,
+            self.profile,
+        )
+
+    def test_freeze_candidate_cannot_drift(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["candidate_commit_sha"] = "0" * 40
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.roadmap, self.contract, self.profile)
+
+    def test_freeze_cannot_accept_failed_ci_job(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["workflows"]["ci"]["jobs"]["Backend quality and tests"]["conclusion"] = "failure"
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.roadmap, self.contract, self.profile)
+
+    def test_freeze_detects_roadmap_drift(self) -> None:
+        changed_roadmap = copy.deepcopy(self.roadmap)
+        changed_roadmap["decision_date"] = "2026-11-06"
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "frozen roadmap drift"):
+            MODULE.validate_freeze_record(
+                self.freeze,
+                changed_roadmap,
+                self.contract,
+                self.profile,
+            )
+
+    def test_freeze_cannot_claim_provider_compatibility(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["acceptance"]["provider_compatibility_claimed"] = True
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.roadmap, self.contract, self.profile)
+
+    def test_freeze_cannot_open_nexora_p3_03(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["acceptance"]["nexora_p3_03_opened"] = True
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.roadmap, self.contract, self.profile)
+
+    def test_freeze_opens_only_v031_01(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["transition"]["next_allowed_stage"] = "TRD-V031-02"
+        with self.assertRaisesRegex(MODULE.V031RoadmapError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.roadmap, self.contract, self.profile)
 
     def test_canonical_checksum_is_order_independent(self) -> None:
         reversed_contract = dict(reversed(list(self.contract.items())))

@@ -1,0 +1,97 @@
+{
+  "schema_version": "trd-bot-v031-integration-roadmap-freeze-v1",
+  "decision_id": "TRD-V031-00",
+  "decision_date": "2026-11-05",
+  "status": "frozen",
+  "frozen": true,
+  "repository": "amirhosseinhamidian/trd-bot-v2",
+  "branch": "feature/v0.3.1-nexora-integration",
+  "candidate_commit_sha": "947e0313aab25829e1944d093bc9b5e8e900b459",
+  "candidate_tree_sha": "93dff48c4b8b7c7f522c4500a19b99698c017922",
+  "parent_commit_sha": "bbb9fd4fbc25e25aa512a9fde1dda912321cdd33",
+  "candidate_commit_message": "docs(trd-bot): adopt Nexora integration roadmap",
+  "roadmap": {
+    "path": "contracts/trd-bot-v0.3.1-nexora-integration-roadmap.json",
+    "canonical_checksum": "b66c7ba34a9f04ddf1880350bfb4b633b7c22d95b8d444c66ff05efa52e684f0"
+  },
+  "upstream_nexora_freeze": {
+    "repository": "amirhosseinhamidian/nexora",
+    "freeze_commit_sha": "1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8",
+    "contract_canonical_checksum": "e0c0cee635c27e52825501fd36de68cb07a6e3feeb70b8fdefeb5e5fcbbbf753",
+    "provider_profile_canonical_checksum": "48cfcd61b8f2cb866e4c921d31f5c61db83d3f08e5123d690a069a57c3aba109",
+    "frozen": true
+  },
+  "workflows": {
+    "integration_roadmap": {
+      "name": "TRD Bot v0.3.1 integration roadmap",
+      "path": ".github/workflows/v0-3-1-integration-roadmap.yml",
+      "run_id": 42025511338,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42025511338",
+      "jobs": {
+        "v0.3.1 integration roadmap contract": {
+          "job_id": 127238608374,
+          "status": "completed",
+          "conclusion": "success",
+          "verified_steps": [
+            "Verify frozen Nexora contract and delivery roadmap",
+            "Run roadmap mutation tests"
+          ]
+        }
+      }
+    },
+    "ci": {
+      "name": "CI",
+      "path": ".github/workflows/ci.yml",
+      "run_id": 42025511100,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42025511100",
+      "jobs": {
+        "Frontend quality, tests, and build": {
+          "job_id": 127238608510,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "Backend quality and tests": {
+          "job_id": 127238608798,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "PostgreSQL migrations and integration tests": {
+          "job_id": 127238609044,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    }
+  },
+  "acceptance": {
+    "failed_workflows": [],
+    "roadmap_frozen": true,
+    "frozen_contract_adopted": true,
+    "frozen_provider_profile_adopted": true,
+    "exact_capability_match_required": true,
+    "version_0_3_0_remains_incompatible": true,
+    "runtime_behavior_added": false,
+    "database_migration_added": false,
+    "release_version_bumped": false,
+    "provider_compatibility_claimed": false,
+    "real_provider_smoke_passed": false,
+    "nexora_p3_03_opened": false,
+    "live_execution_enabled": false,
+    "exchange_credentials_added": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-01",
+    "next_stage_title": "Service authentication and capability negotiation",
+    "nexora_stage_after_release_smoke": "NEX-P3-03",
+    "nexora_stage_remains_blocked_until": "compatible_real_provider_smoke"
+  }
+}
