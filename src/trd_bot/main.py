@@ -24,6 +24,7 @@ from trd_bot.api.routes.portfolios import router as portfolios_router
 from trd_bot.api.routes.research import router as research_router
 from trd_bot.api.routes.risk import router as risk_router
 from trd_bot.core.config import get_settings
+from trd_bot.integration.nexora.routes import router as nexora_integration_router
 from trd_bot.monitoring import MonitoringObservationRecorder
 
 
@@ -71,6 +72,11 @@ def create_app() -> FastAPI:
     application.include_router(
         health_router,
         prefix="/api/v1",
+    )
+
+    application.include_router(
+        nexora_integration_router,
+        prefix="/api/v1/integration/nexora",
     )
 
     application.include_router(

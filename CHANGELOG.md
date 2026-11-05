@@ -15,11 +15,17 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
   the final release cut.
 - Recorded same-SHA successful roadmap, backend, frontend, PostgreSQL migration, and integration
   evidence for the `TRD-V031-00` Freeze.
+- Added the authenticated `/api/v1/integration/nexora/capabilities` boundary with private-file
+  bearer tokens, constant-time comparison, strict transport checks, correlation/version headers,
+  and the exact frozen capability matrix.
+- Added fail-closed runtime, mutation, and CI coverage for missing or invalid credentials, unsafe
+  token files, browser delivery, non-loopback HTTP, and premature compatibility claims.
 
 ### Operating boundary
 
-- No runtime endpoint, migration, version bump, exchange credential, live order, wallet, or fund
-  transfer capability is introduced by `TRD-V031-00`.
+- `TRD-V031-01` adds only service authentication and capability negotiation; no migration, version
+  bump, snapshot/event/command/export endpoint, exchange credential, live order, wallet, or fund
+  transfer capability is introduced.
 - Nexora `NEX-P3-03` remains blocked until a compatible real provider passes the local smoke.
 
 ## 0.3.0 - 2026-10-22

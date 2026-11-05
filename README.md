@@ -9,7 +9,10 @@ cross-repository contract and fail-closed delivery sequence start at
 incompatible with Nexora runtime sync until the `0.3.1` provider passes the real local smoke.
 The roadmap is frozen by
 [`artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json`](artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json);
-the next implementation stage is `TRD-V031-01`.
+the current candidate is
+[`TRD-V031-01`](docs/v0.3.1/01-service-authentication-capabilities.md), which adds
+fail-closed private-file service authentication and the versioned capabilities endpoint while the
+provider remains version `0.3.0` and incompatible.
 
 TRD BOT v2 is a single-user research platform for:
 
@@ -181,6 +184,9 @@ freeze procedure are documented in
 The v0.3.1 Nexora integration contract adoption, implementation sequence, safety boundary, and
 cross-repository smoke gate are documented in
 [`docs/v0.3.1/00-nexora-integration-roadmap.md`](docs/v0.3.1/00-nexora-integration-roadmap.md).
+The private-file bearer authentication, loopback/HTTPS transport boundary, exact capability matrix,
+and pre-release compatibility gate are documented in
+[`docs/v0.3.1/01-service-authentication-capabilities.md`](docs/v0.3.1/01-service-authentication-capabilities.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

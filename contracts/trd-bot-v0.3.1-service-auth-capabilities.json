@@ -1,0 +1,101 @@
+{
+  "schema_version": "trd-bot-v031-service-auth-capabilities-v1",
+  "decision_id": "TRD-V031-01",
+  "decision_date": "2026-11-05",
+  "status": "candidate",
+  "title": "Nexora service authentication and capability negotiation",
+  "prerequisite": {
+    "decision_id": "TRD-V031-00",
+    "freeze_commit_sha": "7b878dec891f5cd6e540a58cdeab2bc458214491",
+    "frozen": true
+  },
+  "runtime": {
+    "api_namespace": "/api/v1/integration/nexora",
+    "capabilities_endpoint": "/api/v1/integration/nexora/capabilities",
+    "provider_release_during_stage": "0.3.0",
+    "provider_compatibility_claimed": false,
+    "database_migration_added": false
+  },
+  "service_authentication": {
+    "scheme": "bearer_service_token",
+    "provider_file_environment_variable": "TRD_BOT_NEXORA_SERVICE_TOKEN_FILE",
+    "token_source": "absolute_private_regular_file",
+    "minimum_token_bytes": 32,
+    "maximum_token_bytes": 4096,
+    "constant_time_comparison": true,
+    "symbolic_links_allowed": false,
+    "group_or_other_permissions_allowed": false,
+    "missing_or_invalid_status": 401,
+    "unavailable_or_unsafe_configuration_status": 503,
+    "production_transport": "https",
+    "development_http_scope": "loopback_only",
+    "browser_cors_delivery_allowed": false,
+    "token_in_query_cookie_log_payload_or_export_allowed": false
+  },
+  "request_contract": {
+    "required_headers": [
+      "Accept",
+      "Authorization",
+      "X-Correlation-ID"
+    ],
+    "correlation_id_format": "canonical_uuid",
+    "accepted_media_type": "application/json"
+  },
+  "response_contract": {
+    "schema_version": "nexora-integration-capabilities-v1",
+    "provider": "trd_bot",
+    "required_headers": [
+      "Content-Type",
+      "X-Contract-Version",
+      "X-Correlation-ID",
+      "X-TRD-Bot-Version"
+    ],
+    "contract_versions": [
+      "nexora-trd-integration-v1"
+    ],
+    "event_envelopes": [
+      "trd-integration-event-envelope-v1"
+    ],
+    "export_manifests": [
+      "nexora-export-manifest-v1"
+    ],
+    "source_references": [
+      "nexora-source-reference-v1"
+    ],
+    "commands": [
+      "decision_review.accept.v1",
+      "decision_review.reject.v1",
+      "decision_review.defer.v1"
+    ],
+    "cache_ttl_seconds": 300
+  },
+  "scope": {
+    "capabilities_endpoint_added": true,
+    "snapshot_endpoints_added": false,
+    "event_endpoints_added": false,
+    "command_endpoints_added": false,
+    "export_endpoints_added": false,
+    "live_execution_enabled": false,
+    "exchange_credentials_added": false,
+    "wallet_or_fund_transfer_enabled": false,
+    "nexora_p3_03_opened": false
+  },
+  "acceptance": {
+    "exact_frozen_capability_matrix_exposed": true,
+    "invalid_auth_fails_closed_without_secret_disclosure": true,
+    "unsafe_token_file_fails_closed": true,
+    "transport_boundary_enforced": true,
+    "correlation_id_echoed": true,
+    "browser_token_delivery_rejected": true,
+    "release_surface_inventory_updated": true,
+    "release_0_3_0_remains_incompatible": true,
+    "real_provider_smoke_completed": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-01-FREEZE",
+    "post_freeze_stage": "TRD-V031-02",
+    "candidate_commit_message": "feat(trd-bot): add Nexora service auth and capabilities",
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}

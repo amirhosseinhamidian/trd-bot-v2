@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
@@ -25,6 +26,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://trd_bot:trd_bot_dev_password@127.0.0.1:5432/trd_bot"
 
     test_database_url: str | None = None
+
+    nexora_service_token_file: Path | None = None
 
     monitoring_collector_enabled: bool = False
     monitoring_collector_interval_seconds: int = Field(
