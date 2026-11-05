@@ -2,6 +2,24 @@
 
 All notable changes to TRD BOT v2 are documented in this file.
 
+## Unreleased — v0.3.1
+
+Status: integration roadmap candidate. Runtime compatibility is not yet claimed.
+
+### Added
+
+- Adopted the frozen Nexora `NEX-P3-02` contract and v0.3.1 provider profile with canonical
+  checksum verification.
+- Defined the fail-closed `TRD-V031-00` through `TRD-V031-11` delivery sequence for service
+  authentication, capabilities, snapshots, events, review commands, exports, resync, smoke, and
+  the final release cut.
+
+### Operating boundary
+
+- No runtime endpoint, migration, version bump, exchange credential, live order, wallet, or fund
+  transfer capability is introduced by `TRD-V031-00`.
+- Nexora `NEX-P3-03` remains blocked until a compatible real provider passes the local smoke.
+
 ## 0.3.0 - 2026-10-22
 
 Status: frozen and release-approved for local research, paper, and shadow use. Server deployment,

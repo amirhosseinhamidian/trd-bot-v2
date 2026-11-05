@@ -1,0 +1,277 @@
+{
+  "schema_version": "trd-bot-v031-nexora-integration-roadmap-v1",
+  "decision_id": "TRD-V031-00",
+  "decision_date": "2026-11-05",
+  "status": "candidate",
+  "title": "TRD Bot v0.3.1 Nexora integration delivery roadmap",
+  "repository": {
+    "name": "amirhosseinhamidian/trd-bot-v2",
+    "baseline_release": "0.3.0",
+    "baseline_tag": "v0.3.0",
+    "baseline_commit_sha": "bbb9fd4fbc25e25aa512a9fde1dda912321cdd33",
+    "target_release": "0.3.1"
+  },
+  "upstream_freeze": {
+    "repository": "amirhosseinhamidian/nexora",
+    "freeze_commit_sha": "1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8",
+    "freeze_commit_message": "chore(nexora): freeze P3-02 TRD Bot integration contract",
+    "decision_id": "NEX-P3-02",
+    "contract_path": "contracts/integration/nexora/v1/nexora-v0.1-trd-bot-v031-integration.json",
+    "contract_canonical_checksum": "e0c0cee635c27e52825501fd36de68cb07a6e3feeb70b8fdefeb5e5fcbbbf753",
+    "provider_profile_path": "contracts/integration/nexora/v1/trd-bot-v0.3.1-provider-profile.json",
+    "provider_profile_canonical_checksum": "48cfcd61b8f2cb866e4c921d31f5c61db83d3f08e5123d690a069a57c3aba109",
+    "frozen": true,
+    "provider_implementation_deferred_to_this_repository": true
+  },
+  "objective": {
+    "summary": "Implement the frozen versioned API, event, command, export, and recovery boundary required by Nexora without changing trading scope.",
+    "compatible_release_range": ">=0.3.1,<0.4.0",
+    "api_namespace": "/api/v1/integration/nexora",
+    "contract_version": "nexora-trd-integration-v1",
+    "compatible_only_after_exact_capability_match_and_real_smoke": true
+  },
+  "stages": [
+    {
+      "id": "TRD-V031-00",
+      "title": "Roadmap and frozen contract adoption",
+      "status": "candidate",
+      "depends_on": [],
+      "delivers": [
+        "vendored_frozen_contract",
+        "vendored_provider_profile",
+        "fail_closed_roadmap_verifier"
+      ],
+      "runtime_change": false,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-00-FREEZE",
+      "title": "Roadmap acceptance and freeze",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-00"
+      ],
+      "delivers": [
+        "same_sha_ci_evidence",
+        "roadmap_freeze_record"
+      ],
+      "runtime_change": false,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-01",
+      "title": "Service authentication and capability negotiation",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-00-FREEZE"
+      ],
+      "delivers": [
+        "private_file_service_token",
+        "constant_time_authentication",
+        "capabilities_endpoint",
+        "version_headers"
+      ],
+      "runtime_change": true,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-02",
+      "title": "Stable snapshot protocol and source references",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-01"
+      ],
+      "delivers": [
+        "opaque_snapshot_cursor",
+        "stable_scan_boundary",
+        "deterministic_paging",
+        "source_reference_checksums"
+      ],
+      "runtime_change": true,
+      "migration": true
+    },
+    {
+      "id": "TRD-V031-03",
+      "title": "Portfolio snapshot resources",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-02"
+      ],
+      "delivers": [
+        "paper_shadow_portfolio",
+        "paper_shadow_position",
+        "portfolio_intelligence",
+        "simulation_outcome"
+      ],
+      "runtime_change": true,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-04",
+      "title": "Decision snapshot resources",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-03"
+      ],
+      "delivers": [
+        "market_context",
+        "decision_evaluation",
+        "candidate",
+        "risk_gate"
+      ],
+      "runtime_change": true,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-05",
+      "title": "Alert snapshot resources",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-04"
+      ],
+      "delivers": [
+        "alert",
+        "alert_outcome"
+      ],
+      "runtime_change": true,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-06",
+      "title": "Durable event feed, lookup, cursors, and replay",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-05"
+      ],
+      "delivers": [
+        "versioned_event_envelope",
+        "at_least_once_feed",
+        "event_lookup",
+        "gap_detection",
+        "expired_cursor_410"
+      ],
+      "runtime_change": true,
+      "migration": true
+    },
+    {
+      "id": "TRD-V031-07",
+      "title": "Idempotent human decision review commands",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-06"
+      ],
+      "delivers": [
+        "accept_command",
+        "reject_command",
+        "defer_command",
+        "duplicate_receipt",
+        "idempotency_conflict_409",
+        "source_evidence_guard"
+      ],
+      "runtime_change": true,
+      "migration": true
+    },
+    {
+      "id": "TRD-V031-08",
+      "title": "Export jobs, status, and manifest",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-07"
+      ],
+      "delivers": [
+        "private_export",
+        "ai_safe_export",
+        "complete_manifest",
+        "file_checksums",
+        "source_lineage"
+      ],
+      "runtime_change": true,
+      "migration": true
+    },
+    {
+      "id": "TRD-V031-09",
+      "title": "Full resync and gap recovery",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-08"
+      ],
+      "delivers": [
+        "resync_state_machine",
+        "projection_pause_signal",
+        "snapshot_event_reconciliation",
+        "operator_escalation"
+      ],
+      "runtime_change": true,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-10",
+      "title": "Cross-repository contract tests and real local smoke",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-09"
+      ],
+      "delivers": [
+        "fixture_contract_suite",
+        "real_provider_smoke",
+        "all_twelve_acceptance_scenarios",
+        "nexora_compatibility_evidence"
+      ],
+      "runtime_change": false,
+      "migration": false
+    },
+    {
+      "id": "TRD-V031-11",
+      "title": "Final acceptance and v0.3.1 release cut",
+      "status": "blocked",
+      "depends_on": [
+        "TRD-V031-10"
+      ],
+      "delivers": [
+        "same_sha_acceptance",
+        "upgrade_verification",
+        "release_notes",
+        "v0.3.1_tag"
+      ],
+      "runtime_change": false,
+      "migration": false
+    }
+  ],
+  "invariants": {
+    "supported_modes": [
+      "RESEARCH",
+      "BACKTEST",
+      "PAPER",
+      "SHADOW"
+    ],
+    "single_owner": true,
+    "direct_nexora_database_access": false,
+    "shared_database": false,
+    "browser_service_token": false,
+    "public_internet_required_for_smoke": false,
+    "live_execution": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "autonomous_ai_execution": false,
+    "strategy_behavior_materially_changed": false,
+    "risk_policy_materially_changed": false,
+    "evidence_remains_immutable": true,
+    "events_are_idempotent_and_recoverable": true,
+    "secrets_in_logs_payloads_or_exports": false
+  },
+  "acceptance": {
+    "each_stage_requires_contract_tests": true,
+    "migration_stages_require_postgresql_17_round_trip": true,
+    "ci_required_on_same_candidate_sha": true,
+    "real_provider_smoke_required_before_compatibility_claim": true,
+    "nexora_p3_03_remains_blocked_until_real_smoke": true,
+    "version_0_3_0_remains_incompatible": true,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-00-FREEZE",
+    "implementation_after_freeze": "TRD-V031-01",
+    "nexora_stage_unblocked_after_release_smoke": "NEX-P3-03",
+    "candidate_commit_message": "docs(trd-bot): adopt Nexora integration roadmap"
+  }
+}

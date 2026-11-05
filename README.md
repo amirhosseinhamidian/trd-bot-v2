@@ -3,6 +3,11 @@
 Current release: **v0.3.0**. This repository supports local research, backtesting,
 Paper, and Shadow workflows; server staging and deployment remain intentionally deferred.
 
+Current development target: **v0.3.1 — Nexora Integration Compatibility**. The frozen
+cross-repository contract and fail-closed delivery sequence start at
+[`TRD-V031-00`](docs/v0.3.1/00-nexora-integration-roadmap.md). Version `0.3.0` remains
+incompatible with Nexora runtime sync until the `0.3.1` provider passes the real local smoke.
+
 TRD BOT v2 is a single-user research platform for:
 
 - market-data research
@@ -170,6 +175,9 @@ documented in
 The final same-SHA Phase 6 acceptance gates, evidence contract, manual smokes, and artifact-only
 freeze procedure are documented in
 [`docs/v0.3/54-final-v0.3-acceptance-freeze.md`](docs/v0.3/54-final-v0.3-acceptance-freeze.md).
+The v0.3.1 Nexora integration contract adoption, implementation sequence, safety boundary, and
+cross-repository smoke gate are documented in
+[`docs/v0.3.1/00-nexora-integration-roadmap.md`](docs/v0.3.1/00-nexora-integration-roadmap.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in
