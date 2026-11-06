@@ -9,10 +9,11 @@ cross-repository contract and fail-closed delivery sequence start at
 incompatible with Nexora runtime sync until the `0.3.1` provider passes the real local smoke.
 The roadmap is frozen by
 [`artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json`](artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json);
-the current candidate is
+the first runtime boundary is frozen by
 [`TRD-V031-01`](docs/v0.3.1/01-service-authentication-capabilities.md), which adds
 fail-closed private-file service authentication and the versioned capabilities endpoint while the
-provider remains version `0.3.0` and incompatible.
+provider remains version `0.3.0` and incompatible. The next implementation stage is `TRD-V031-02`
+for the stable snapshot protocol and source references.
 
 TRD BOT v2 is a single-user research platform for:
 

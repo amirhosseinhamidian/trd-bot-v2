@@ -1,0 +1,131 @@
+{
+  "schema_version": "trd-bot-v031-service-auth-capabilities-freeze-v1",
+  "decision_id": "TRD-V031-01",
+  "decision_date": "2026-11-05",
+  "status": "frozen",
+  "frozen": true,
+  "repository": "amirhosseinhamidian/trd-bot-v2",
+  "branch": "feature/v0.3.1-nexora-integration",
+  "candidate_commit_sha": "8020a31e0caede35461c7f5684e82b06bda4bb35",
+  "candidate_tree_sha": "5c625cac1b92cbc825c2dc661839e045280eb160",
+  "parent_freeze_commit_sha": "7b878dec891f5cd6e540a58cdeab2bc458214491",
+  "candidate_commit_message": "feat(trd-bot): add Nexora service auth and capabilities",
+  "stage_contract": {
+    "path": "contracts/trd-bot-v0.3.1-service-auth-capabilities.json",
+    "canonical_checksum": "92ce5484436bf27a02d092d6670a71117c6255f46e324a7ce6864741bc84aeca"
+  },
+  "implementation": {
+    "provider_version": "0.3.0",
+    "release_inventory_checksum": "084f1a8a2507907ed0360e75718df1b91b6de96dfc522ffd62f30c6dba86cb4b",
+    "files_sha256": {
+      ".env.example": "6792591b5fbd38fc702b84b3ab267b9b4cf1679bc283a8298b5742f56ae8ea88",
+      "src/trd_bot/core/config.py": "f416d40833d1a6a01df8bdd45c3a67180ab19d8c6b5a622ce25785fa412df945",
+      "src/trd_bot/integration/nexora/auth.py": "4a4dde58faab4aeae7231db4f5201ff4834220b53de140dfe20d700f3f098ddf",
+      "src/trd_bot/integration/nexora/contracts.py": "4191434e7c66d16e7688f87eccf7041335009d3cfc2c3a6a5b78085cfb2bf8bc",
+      "src/trd_bot/integration/nexora/routes.py": "611ec8fd8ef2351ad3a38041f52b2a4acb375fb0378067f512fd69269e1cb17e",
+      "src/trd_bot/main.py": "fe95df5c6445e533a55b9099d3d986fadaa622d5323cc94410b8f371b5b1d675",
+      "tests/test_nexora_integration_capabilities.py": "efa8c95c5e8d84cf69189719a3bc8d5b761fe47a17b6cfff23dc8852d4f8302e",
+      "tests/test_release_hardening.py": "a2099688a71f6501f5f7a26126cf32b01a53bf6b00bf770fe0bf40bf043ca726"
+    }
+  },
+  "workflows": {
+    "integration_roadmap": {
+      "name": "TRD Bot v0.3.1 integration roadmap",
+      "path": ".github/workflows/v0-3-1-integration-roadmap.yml",
+      "run_id": 42032113701,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113701",
+      "jobs": {
+        "v0.3.1 integration roadmap contract": {
+          "job_id": 127260890601,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    },
+    "service_auth_capabilities": {
+      "name": "TRD Bot v0.3.1 service auth and capabilities",
+      "path": ".github/workflows/v0-3-1-service-auth-capabilities.yml",
+      "run_id": 42032113793,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113793",
+      "jobs": {
+        "v0.3.1 service auth and capabilities": {
+          "job_id": 127260890861,
+          "status": "completed",
+          "conclusion": "success",
+          "verified_steps": [
+            "Verify stage contract and security boundary",
+            "Run stage mutation tests",
+            "Run authenticated capability endpoint tests",
+            "Check stage formatting",
+            "Run stage Ruff checks",
+            "Run strict type checks"
+          ]
+        }
+      }
+    },
+    "ci": {
+      "name": "CI",
+      "path": ".github/workflows/ci.yml",
+      "run_id": 42032113886,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113886",
+      "jobs": {
+        "Frontend quality, tests, and build": {
+          "job_id": 127260891573,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "Backend quality and tests": {
+          "job_id": 127260891680,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "PostgreSQL migrations and integration tests": {
+          "job_id": 127260891055,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    }
+  },
+  "acceptance": {
+    "failed_workflows": [],
+    "stage_contract_frozen": true,
+    "service_authentication_frozen": true,
+    "constant_time_comparison_frozen": true,
+    "absolute_private_token_file_frozen": true,
+    "loopback_and_https_transport_boundary_frozen": true,
+    "browser_token_delivery_forbidden": true,
+    "capability_matrix_frozen": true,
+    "response_version_headers_frozen": true,
+    "correlation_id_boundary_frozen": true,
+    "runtime_behavior_added": true,
+    "database_migration_added": false,
+    "release_version_bumped": false,
+    "version_0_3_0_remains_incompatible": true,
+    "provider_compatibility_claimed": false,
+    "real_provider_smoke_passed": false,
+    "nexora_p3_03_opened": false,
+    "snapshot_protocol_added": false,
+    "live_execution_enabled": false,
+    "exchange_credentials_added": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-02",
+    "next_stage_title": "Stable snapshot protocol and source references",
+    "nexora_stage_after_release_smoke": "NEX-P3-03",
+    "nexora_stage_remains_blocked_until": "compatible_real_provider_smoke"
+  }
+}

@@ -20,6 +20,8 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
   and the exact frozen capability matrix.
 - Added fail-closed runtime, mutation, and CI coverage for missing or invalid credentials, unsafe
   token files, browser delivery, non-loopback HTTP, and premature compatibility claims.
+- Froze `TRD-V031-01` against the same-SHA successful roadmap, service-auth, backend, frontend,
+  PostgreSQL migration, and integration evidence, including checksums for the runtime boundary.
 
 ### Operating boundary
 

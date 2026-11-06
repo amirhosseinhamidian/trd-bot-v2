@@ -1,6 +1,6 @@
 # TRD-V031-01 — Service Authentication and Capability Negotiation
 
-وضعیت: **Candidate**
+وضعیت: **Frozen**
 تاریخ تصمیم: ۲۰۲۶-۱۱-۰۵
 پیش‌نیاز فریز‌شده: commit
 `7b878dec891f5cd6e540a58cdeab2bc458214491`
@@ -103,8 +103,45 @@ python -m pytest -m "not integration"
 git diff --check
 ```
 
+خروجی verifier باید markerهای زیر را داشته باشد:
+
+```text
+TRD_V031_01_SERVICE_AUTHENTICATION=PASS
+TRD_V031_01_CAPABILITY_NEGOTIATION=PASS
+TRD_V031_01_CONSTANT_TIME_COMPARISON=PASS
+TRD_V031_01_TRANSPORT_BOUNDARY=PASS
+TRD_V031_01_FREEZE=PASS
+TRD_V031_01_DATABASE_MIGRATION=NONE
+TRD_BOT_PROVIDER_VERSION=0.3.0_INCOMPATIBLE
+NEX_P3_03_GATE=PRESERVED_UNTIL_REAL_PROVIDER_SMOKE
+TRD_BOT_LIVE_EXECUTION=DISABLED
+NEXT_ALLOWED_STAGE=TRD-V031-02
+```
+
+## شواهد Freeze
+
+این مرحله روی candidate زیر فریز شده است:
+
+- commit: `8020a31e0caede35461c7f5684e82b06bda4bb35`؛
+- tree: `5c625cac1b92cbc825c2dc661839e045280eb160`؛
+- workflow اختصاصی service-auth: run
+  [`42032113793`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113793)،
+  نتیجه `success`؛
+- workflow roadmap: run
+  [`42032113701`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113701)،
+  نتیجه `success`؛
+- workflow کامل CI: run
+  [`42032113886`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42032113886)،
+  شامل backend، frontend و PostgreSQL، همگی `success`؛
+- checksumهای stage contract، release inventory و فایل‌های runtime در
+  `artifacts/v0.3.1/trd-v031-01-service-auth-capabilities-freeze.json` ثبت شده‌اند.
+
+این Freeze فقط service-auth و capability negotiation را می‌بندد. نسخه provider
+هنوز `0.3.0` و ناسازگار است؛ snapshot protocol، migration، smoke واقعی و ادعای
+production readiness در این مرحله وجود ندارند.
+
 ## مرحله بعد
 
-پس از CI موفق روی همان candidate SHA، فقط
-`TRD-V031-01-FREEZE` مجاز است. `TRD-V031-02`، باز شدن `NEX-P3-03`، bump نسخه
-`0.3.1` و ادعای compatibility تا Freezeهای بعدی و smoke واقعی local مسدود می‌مانند.
+پس از این Freeze، فقط `TRD-V031-02 — Stable snapshot protocol and source references`
+مجاز است. باز شدن `NEX-P3-03`، bump نسخه `0.3.1` و ادعای compatibility تا
+Freezeهای بعدی و smoke واقعی local مسدود می‌مانند.

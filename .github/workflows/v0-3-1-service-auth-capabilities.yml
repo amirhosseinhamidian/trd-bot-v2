@@ -8,6 +8,7 @@ on:
     paths:
       - '.github/workflows/v0-3-1-service-auth-capabilities.yml'
       - '.env.example'
+      - 'artifacts/v0.3.1/trd-v031-01-service-auth-capabilities-freeze.json'
       - 'contracts/integration/nexora/**'
       - 'contracts/trd-bot-v0.3.1-service-auth-capabilities.json'
       - 'docs/v0.3.1/01-service-authentication-capabilities.md'
@@ -27,6 +28,7 @@ on:
     paths:
       - '.github/workflows/v0-3-1-service-auth-capabilities.yml'
       - '.env.example'
+      - 'artifacts/v0.3.1/trd-v031-01-service-auth-capabilities-freeze.json'
       - 'contracts/integration/nexora/**'
       - 'contracts/trd-bot-v0.3.1-service-auth-capabilities.json'
       - 'docs/v0.3.1/01-service-authentication-capabilities.md'
