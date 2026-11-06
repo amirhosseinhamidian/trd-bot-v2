@@ -3054,3 +3054,46 @@ class CandidateProjectionRow(DatabaseBase):
         index=True,
     )
     payload_json: Mapped[str] = mapped_column(Text)
+
+
+class NexoraSnapshotScanRow(DatabaseBase):
+    """Durable immutable boundary for one Nexora snapshot scan."""
+
+    __tablename__ = "nexora_snapshot_scans"
+    __table_args__ = (
+        CheckConstraint("page_limit >= 1 AND page_limit <= 500", name="page_limit_bounded"),
+        CheckConstraint("expires_at > opened_at", name="expiry_after_open"),
+        CheckConstraint("boundary_at = opened_at", name="boundary_matches_open"),
+        CheckConstraint("length(boundary_key) >= 1", name="boundary_key_required"),
+        Index("ix_nexora_snapshot_scans_resource_expires_at", "resource_type", "expires_at"),
+    )
+    scan_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    resource_type: Mapped[str] = mapped_column(String(80), index=True)
+    boundary_key: Mapped[str] = mapped_column(String(512))
+    boundary_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    page_limit: Mapped[int] = mapped_column(Integer)
+    opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class NexoraSnapshotCursorRow(DatabaseBase):
+    """Opaque continuation position bound to one stable Nexora scan."""
+
+    __tablename__ = "nexora_snapshot_cursors"
+    __table_args__ = (
+        CheckConstraint("length(cursor) = 68", name="cursor_length"),
+        CheckConstraint("length(after_sort_key) >= 1", name="after_sort_key_required"),
+        CheckConstraint("expires_at > created_at", name="expiry_after_create"),
+        UniqueConstraint(
+            "scan_id", "after_sort_key", name="uq_nexora_snapshot_cursors_scan_after_sort_key"
+        ),
+        Index("ix_nexora_snapshot_cursors_scan_created_at", "scan_id", "created_at"),
+    )
+    cursor: Mapped[str] = mapped_column(String(68), primary_key=True)
+    scan_id: Mapped[str] = mapped_column(
+        String(80), ForeignKey("nexora_snapshot_scans.scan_id", ondelete="CASCADE"), index=True
+    )
+    after_sort_key: Mapped[str] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

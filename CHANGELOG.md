@@ -22,6 +22,9 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
   token files, browser delivery, non-loopback HTTP, and premature compatibility claims.
 - Froze `TRD-V031-01` against the same-SHA successful roadmap, service-auth, backend, frontend,
   PostgreSQL migration, and integration evidence, including checksums for the runtime boundary.
+- Added the `TRD-V031-02` candidate: stable high-watermark scans, opaque durable cursors,
+  deterministic paging, checksummed source references, and migration `20261106_0037`, without
+  publishing Portfolio, Decision, or Alert snapshot resources early.
 
 ### Operating boundary
 

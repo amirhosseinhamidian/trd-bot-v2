@@ -12,8 +12,10 @@ The roadmap is frozen by
 the first runtime boundary is frozen by
 [`TRD-V031-01`](docs/v0.3.1/01-service-authentication-capabilities.md), which adds
 fail-closed private-file service authentication and the versioned capabilities endpoint while the
-provider remains version `0.3.0` and incompatible. The next implementation stage is `TRD-V031-02`
-for the stable snapshot protocol and source references.
+provider remains version `0.3.0` and incompatible. The current candidate is
+[`TRD-V031-02`](docs/v0.3.1/02-stable-snapshot-protocol.md), which adds the durable stable-scan,
+opaque-cursor, deterministic-paging, and checksummed source-reference foundation. Snapshot resource
+adapters remain deferred to `TRD-V031-03` through `TRD-V031-05`.
 
 TRD BOT v2 is a single-user research platform for:
 

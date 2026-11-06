@@ -14,7 +14,7 @@ from trd_bot.release_hardening import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_INVENTORY_CHECKSUM = "084f1a8a2507907ed0360e75718df1b91b6de96dfc522ffd62f30c6dba86cb4b"
+EXPECTED_INVENTORY_CHECKSUM = "4e778fed94a2b96c87d2a652aae61bd9a699d5f90b09e1eaf8182abbabb1866d"
 
 
 @pytest.fixture(scope="module")
@@ -31,11 +31,11 @@ def test_release_inventory_is_complete_deterministic_and_frozen(
     assert release_report.failure_reasons == ()
     assert inventory.counts == {
         "api_operations": 113,
-        "database_tables": 55,
+        "database_tables": 57,
         "frontend_pages": 23,
         "jobs": 10,
         "migration_heads": 1,
-        "migration_revisions": 36,
+        "migration_revisions": 37,
         "providers": 3,
     }
     assert inventory.definition_checksum == EXPECTED_INVENTORY_CHECKSUM
