@@ -31,6 +31,10 @@ from trd_bot.integration.nexora.contracts import (
     IntegrationErrorDetail,
     IntegrationErrorEnvelope,
 )
+from trd_bot.integration.nexora.decision_snapshots import (
+    DECISION_SNAPSHOT_RESOURCE_TYPES,
+    DecisionSnapshotResourceReader,
+)
 from trd_bot.integration.nexora.portfolio_snapshots import (
     PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
     PortfolioSnapshotResourceReader,
@@ -48,6 +52,10 @@ CAPABILITIES_CACHE_TTL_SECONDS: Final = 300
 MAXIMUM_CORRELATION_ID_LENGTH: Final = 36
 
 router = APIRouter(tags=["nexora-integration"])
+SNAPSHOT_RESOURCE_TYPES: Final = (
+    *PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
+    *DECISION_SNAPSHOT_RESOURCE_TYPES,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,12 +273,12 @@ def get_snapshot_page(
     cursor: str | None = None,
     limit: int | None = None,
 ) -> Response:
-    """Return one authenticated stable page from an allowlisted portfolio resource."""
+    """Return one authenticated stable page from an allowlisted snapshot resource."""
 
     authorized = _authorize_request(request)
     if isinstance(authorized, JSONResponse):
         return authorized
-    if resource_type not in PORTFOLIO_SNAPSHOT_RESOURCE_TYPES:
+    if resource_type not in SNAPSHOT_RESOURCE_TYPES:
         return _error_response(
             status_code=status.HTTP_400_BAD_REQUEST,
             correlation_id=authorized.correlation_id,
@@ -280,8 +288,13 @@ def get_snapshot_page(
             retryable=False,
         )
 
+    reader = (
+        PortfolioSnapshotResourceReader(session)
+        if resource_type in PORTFOLIO_SNAPSHOT_RESOURCE_TYPES
+        else DecisionSnapshotResourceReader(session)
+    )
     pager = StableSnapshotPager(
-        reader=PortfolioSnapshotResourceReader(session),
+        reader=reader,
         store=SqlAlchemyNexoraSnapshotScanStore(session),
         source_version=authorized.provider_version,
     )

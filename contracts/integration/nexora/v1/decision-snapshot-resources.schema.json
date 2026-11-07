@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.local/contracts/integration/nexora/v1/decision-snapshot-resources.schema.json",
+  "title": "TRD Bot decision snapshot resource payloads",
+  "oneOf": [
+    {"$ref": "#/$defs/market_context"},
+    {"$ref": "#/$defs/decision_evaluation"},
+    {"$ref": "#/$defs/candidate"},
+    {"$ref": "#/$defs/risk_gate"}
+  ],
+  "$defs": {
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "market_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-market-context-v1"},
+        "assessment_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "manifest_id": {"type": "string", "minLength": 1},
+        "feature_snapshot_id": {"type": ["string", "null"]},
+        "source": {"type": "string", "minLength": 1},
+        "base_asset": {"type": "string", "minLength": 1},
+        "quote_asset": {"type": "string", "minLength": 1},
+        "market_type": {"type": "string", "minLength": 1},
+        "as_of": {"$ref": "#/$defs/utc_timestamp"},
+        "input_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "feature_set_version": {"type": "string", "minLength": 1},
+        "feature_set_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "feature_snapshot_checksum": {
+          "oneOf": [{"$ref": "#/$defs/sha256_hex"}, {"type": "null"}]
+        },
+        "algorithm_version": {"type": "string", "minLength": 1},
+        "status": {"enum": ["ready", "insufficient_data", "stale"]},
+        "trend": {"enum": ["trending_up", "trending_down", "ranging", "undetermined"]},
+        "volatility": {"enum": ["low", "normal", "high", "undetermined"]},
+        "confidence": {"$ref": "#/$defs/decimal"},
+        "evidence_count": {"type": "integer", "minimum": 0},
+        "issue_count": {"type": "integer", "minimum": 0},
+        "assessed_at": {"$ref": "#/$defs/utc_timestamp"},
+        "expires_at": {"$ref": "#/$defs/utc_timestamp"},
+        "record": {"type": "object"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": [
+        "resource_schema_version", "assessment_id", "record_schema_version", "manifest_id",
+        "feature_snapshot_id", "source", "base_asset", "quote_asset", "market_type", "as_of",
+        "input_checksum", "feature_set_version", "feature_set_checksum",
+        "feature_snapshot_checksum", "algorithm_version", "status", "trend", "volatility",
+        "confidence", "evidence_count", "issue_count", "assessed_at", "expires_at", "record",
+        "offline_only", "external_order_submission_allowed"
+      ]
+    },
+    "decision_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-decision-evaluation-v1"},
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "stage": {"const": "strategy_evaluation"},
+        "mode": {"enum": ["research", "shadow", "paper"]},
+        "dataset_id": {"type": "string", "minLength": 1},
+        "dataset_reference_id": {"type": "string", "minLength": 1},
+        "dataset_reference_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "strategy_reference_id": {"type": "string", "minLength": 1},
+        "strategy_name": {"type": "string", "minLength": 1},
+        "strategy_version": {"type": "string", "minLength": 1},
+        "strategy_behavior_fingerprint": {"type": "string", "minLength": 1},
+        "strategy_reference_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "market_context_reference_id": {"type": "string", "minLength": 1},
+        "market_context_assessment_id": {"type": "string", "minLength": 1},
+        "market_context_reference_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "policy_id": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "integer", "minimum": 1},
+        "policy_definition_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "source": {"type": "string", "minLength": 1},
+        "base_asset": {"type": "string", "minLength": 1},
+        "quote_asset": {"type": "string", "minLength": 1},
+        "market_type": {"type": "string", "minLength": 1},
+        "timeframe": {"type": "string", "minLength": 1},
+        "requested_at": {"$ref": "#/$defs/utc_timestamp"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "intent_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "record": {"type": "object"}
+      },
+      "required": [
+        "resource_schema_version", "evaluation_id", "record_schema_version", "stage", "mode",
+        "dataset_id", "dataset_reference_id", "dataset_reference_checksum",
+        "strategy_reference_id", "strategy_name", "strategy_version",
+        "strategy_behavior_fingerprint", "strategy_reference_checksum",
+        "market_context_reference_id", "market_context_assessment_id",
+        "market_context_reference_checksum", "policy_id", "policy_version",
+        "policy_definition_checksum", "source", "base_asset", "quote_asset", "market_type",
+        "timeframe", "requested_at", "offline_only", "external_order_submission_allowed",
+        "intent_checksum", "record"
+      ]
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-candidate-v1"},
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "outcome_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "policy_version": {"type": "string", "minLength": 1},
+        "policy_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "disposition": {"enum": ["accepted", "deferred"]},
+        "source_signal_count": {"type": "integer", "minimum": 1},
+        "candidate_count": {"type": "integer", "minimum": 0},
+        "excluded_signal_count": {"type": "integer", "minimum": 0},
+        "top_candidate_id": {"type": ["string", "null"]},
+        "ranked_at": {"$ref": "#/$defs/utc_timestamp"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "record_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "record": {"type": "object"}
+      },
+      "required": [
+        "resource_schema_version", "evaluation_id", "outcome_id", "record_schema_version",
+        "policy_version", "policy_checksum", "disposition", "source_signal_count",
+        "candidate_count", "excluded_signal_count", "top_candidate_id", "ranked_at",
+        "offline_only", "external_order_submission_allowed", "record_checksum", "record"
+      ]
+    },
+    "risk_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-risk-gate-v1"},
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "outcome_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "candidate_ranking_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "policy_version": {"type": "string", "minLength": 1},
+        "policy_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "disposition": {"enum": ["accepted", "rejected"]},
+        "decision": {"enum": ["approved", "rejected"]},
+        "assessment_id": {"type": "string", "minLength": 1},
+        "assessment_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "approved_candidate_id": {"type": ["string", "null"]},
+        "has_position_sizing": {"type": "boolean"},
+        "evaluated_at": {"$ref": "#/$defs/utc_timestamp"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "record_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "record": {"type": "object"}
+      },
+      "required": [
+        "resource_schema_version", "evaluation_id", "outcome_id", "record_schema_version",
+        "candidate_ranking_checksum", "policy_version", "policy_checksum", "disposition",
+        "decision", "assessment_id", "assessment_checksum", "approved_candidate_id",
+        "has_position_sizing", "evaluated_at", "offline_only",
+        "external_order_submission_allowed", "record_checksum", "record"
+      ]
+    }
+  }
+}
