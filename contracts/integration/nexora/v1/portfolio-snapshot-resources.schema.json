@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.local/contracts/integration/nexora/v1/portfolio-snapshot-resources.schema.json",
+  "title": "TRD Bot portfolio snapshot resource payloads",
+  "oneOf": [
+    {"$ref": "#/$defs/paper_shadow_portfolio"},
+    {"$ref": "#/$defs/paper_shadow_position"},
+    {"$ref": "#/$defs/portfolio_intelligence"},
+    {"$ref": "#/$defs/simulation_outcome"}
+  ],
+  "$defs": {
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "offline_boundary": {
+      "type": "object",
+      "properties": {
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": ["offline_only", "external_order_submission_allowed"]
+    },
+    "paper_shadow_portfolio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-paper-shadow-portfolio-v1"},
+        "portfolio_id": {"type": "string", "pattern": "^portfolio-[0-9a-f]{16}$"},
+        "mode": {"enum": ["paper", "shadow"]},
+        "status": {"enum": ["active", "completed"]},
+        "dataset_id": {"type": "string", "minLength": 1, "maxLength": 100},
+        "created_at": {"$ref": "#/$defs/utc_timestamp"},
+        "updated_at": {"$ref": "#/$defs/utc_timestamp"},
+        "starting_cash": {"$ref": "#/$defs/decimal"},
+        "cash": {"$ref": "#/$defs/decimal"},
+        "equity": {"$ref": "#/$defs/decimal"},
+        "fee_rate": {"$ref": "#/$defs/decimal"},
+        "fees_paid": {"$ref": "#/$defs/decimal"},
+        "realized_pnl": {"$ref": "#/$defs/decimal"},
+        "unrealized_pnl": {"$ref": "#/$defs/decimal"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": [
+        "resource_schema_version", "portfolio_id", "mode", "status", "dataset_id",
+        "created_at", "updated_at", "starting_cash", "cash", "equity", "fee_rate",
+        "fees_paid", "realized_pnl", "unrealized_pnl", "offline_only",
+        "external_order_submission_allowed"
+      ]
+    },
+    "paper_shadow_position": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-paper-shadow-position-v1"},
+        "position_id": {"type": "string", "pattern": "^position-[0-9a-f]{16}$"},
+        "portfolio_id": {"type": "string", "pattern": "^portfolio-[0-9a-f]{16}$"},
+        "base_asset": {"type": "string"},
+        "quote_asset": {"type": "string"},
+        "market_type": {"type": "string"},
+        "side": {"enum": ["long", "short"]},
+        "status": {"enum": ["open", "closed"]},
+        "quantity": {"$ref": "#/$defs/decimal"},
+        "entry_price": {"$ref": "#/$defs/decimal"},
+        "opened_at": {"$ref": "#/$defs/utc_timestamp"},
+        "current_price": {"$ref": "#/$defs/decimal"},
+        "current_at": {"$ref": "#/$defs/utc_timestamp"},
+        "reserved_notional": {"$ref": "#/$defs/decimal"},
+        "entry_fee": {"$ref": "#/$defs/decimal"},
+        "unrealized_pnl": {"$ref": "#/$defs/decimal"},
+        "exit_price": {"oneOf": [{"$ref": "#/$defs/decimal"}, {"type": "null"}]},
+        "closed_at": {"oneOf": [{"$ref": "#/$defs/utc_timestamp"}, {"type": "null"}]},
+        "exit_fee": {"$ref": "#/$defs/decimal"},
+        "gross_realized_pnl": {"$ref": "#/$defs/decimal"},
+        "realized_pnl": {"$ref": "#/$defs/decimal"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": [
+        "resource_schema_version", "position_id", "portfolio_id", "base_asset", "quote_asset",
+        "market_type", "side", "status", "quantity", "entry_price", "opened_at",
+        "current_price", "current_at", "reserved_notional", "entry_fee", "unrealized_pnl",
+        "exit_price", "closed_at", "exit_fee", "gross_realized_pnl", "realized_pnl",
+        "offline_only", "external_order_submission_allowed"
+      ]
+    },
+    "portfolio_intelligence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-portfolio-intelligence-v1"},
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "outcome_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "risk_gate_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "policy_version": {"type": "string", "minLength": 1},
+        "policy_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "disposition": {"enum": ["accepted", "rejected", "unavailable"]},
+        "recommendation": {"enum": ["accept", "reject", "unavailable"]},
+        "has_analysis": {"type": "boolean"},
+        "snapshot_id": {"type": ["string", "null"]},
+        "candidate_id": {"type": ["string", "null"]},
+        "analyzed_at": {"$ref": "#/$defs/utc_timestamp"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "record_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "record": {"type": "object"}
+      },
+      "required": [
+        "resource_schema_version", "evaluation_id", "outcome_id", "record_schema_version",
+        "risk_gate_checksum", "policy_version", "policy_checksum", "disposition",
+        "recommendation", "has_analysis", "snapshot_id", "candidate_id", "analyzed_at",
+        "offline_only", "external_order_submission_allowed", "record_checksum", "record"
+      ]
+    },
+    "simulation_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-simulation-outcome-v1"},
+        "event_id": {"type": "string", "pattern": "^portfolio-event-[0-9a-f]{16}$"},
+        "portfolio_id": {"type": "string", "pattern": "^portfolio-[0-9a-f]{16}$"},
+        "sequence_number": {"type": "integer", "minimum": 1},
+        "event_type": {"enum": ["position_closed", "portfolio_completed"]},
+        "occurred_at": {"$ref": "#/$defs/utc_timestamp"},
+        "equity": {"$ref": "#/$defs/decimal"},
+        "position_id": {"type": ["string", "null"]},
+        "outcome": {"type": "object"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": [
+        "resource_schema_version", "event_id", "portfolio_id", "sequence_number", "event_type",
+        "occurred_at", "equity", "position_id", "outcome", "offline_only",
+        "external_order_submission_allowed"
+      ]
+    }
+  }
+}

@@ -21,6 +21,8 @@ type IntegrationErrorCode = Literal[
     "UNAUTHORIZED",
     "FORBIDDEN",
     "SOURCE_UNAVAILABLE",
+    "CURSOR_EXPIRED",
+    "CURSOR_CONFLICT",
 ]
 
 

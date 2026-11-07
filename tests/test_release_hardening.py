@@ -14,7 +14,7 @@ from trd_bot.release_hardening import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_INVENTORY_CHECKSUM = "4e778fed94a2b96c87d2a652aae61bd9a699d5f90b09e1eaf8182abbabb1866d"
+EXPECTED_INVENTORY_CHECKSUM = "5d0451e214da19aaa9d7c93709a167f74600f1a69b5d6d89c54eb26b79c85be1"
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +30,7 @@ def test_release_inventory_is_complete_deterministic_and_frozen(
     assert release_report.passed is True
     assert release_report.failure_reasons == ()
     assert inventory.counts == {
-        "api_operations": 113,
+        "api_operations": 114,
         "database_tables": 57,
         "frontend_pages": 23,
         "jobs": 10,
@@ -50,6 +50,13 @@ def test_release_inventory_scans_real_openapi_operations(
     operations = release_report.inventory.api_operations
 
     assert ReleaseApiOperation(method="GET", path="/api/v1/health") in operations
+    assert (
+        ReleaseApiOperation(
+            method="GET",
+            path="/api/v1/integration/nexora/snapshots/{resource_type}",
+        )
+        in operations
+    )
     assert (
         ReleaseApiOperation(
             method="GET",

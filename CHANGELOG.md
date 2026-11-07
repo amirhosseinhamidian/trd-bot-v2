@@ -28,12 +28,17 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
 - Froze `TRD-V031-02` against the same-SHA successful roadmap, service-auth, snapshot-protocol,
   backend, frontend, PostgreSQL migration, and integration evidence. Only `TRD-V031-03` Portfolio
   snapshot resources are opened next; compatibility and Nexora `NEX-P3-03` remain blocked.
+- Added the `TRD-V031-03` candidate with authenticated, checksummed, stable paging for Paper/Shadow
+  Portfolio, Position, Portfolio Intelligence, and Simulation Outcome resources. Decision/Alert
+  snapshots, compatibility, external orders, live execution, and Nexora `NEX-P3-03` stay blocked.
 
 ### Operating boundary
 
 - `TRD-V031-01` adds only service authentication and capability negotiation; no migration, version
   bump, snapshot/event/command/export endpoint, exchange credential, live order, wallet, or fund
   transfer capability is introduced.
+- `TRD-V031-03` exposes read-only Paper/Shadow snapshot resources only; it adds no migration,
+  exchange credentials, order submission, fund transfer, or production-readiness claim.
 - Nexora `NEX-P3-03` remains blocked until a compatible real provider passes the local smoke.
 
 ## 0.3.0 - 2026-10-22

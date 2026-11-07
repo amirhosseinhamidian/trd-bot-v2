@@ -1,0 +1,94 @@
+{
+  "schema_version": "trd-bot-v031-portfolio-snapshot-resources-v1",
+  "decision_id": "TRD-V031-03",
+  "decision_date": "2026-11-07",
+  "status": "candidate",
+  "title": "Portfolio snapshot resources",
+  "prerequisite": {
+    "decision_id": "TRD-V031-02",
+    "freeze_commit_sha": "b4d5fb62dabffd8e74257d5b3e10148a191395a3",
+    "frozen": true
+  },
+  "endpoint": {
+    "method": "GET",
+    "path": "/api/v1/integration/nexora/snapshots/{resource_type}",
+    "authentication": "bearer_service_token",
+    "response_schema_version": "nexora-source-snapshot-page-v1",
+    "cache_control": "private, no-store",
+    "unknown_resource_status": 400,
+    "unknown_cursor_status": 400,
+    "cursor_conflict_status": 409,
+    "cursor_expired_status": 410,
+    "cursor_expired_action": "full_snapshot_resync"
+  },
+  "resources": {
+    "allowlist": [
+      "paper_shadow_portfolio",
+      "paper_shadow_position",
+      "portfolio_intelligence",
+      "simulation_outcome"
+    ],
+    "schema_contract": "contracts/integration/nexora/v1/portfolio-snapshot-resources.schema.json",
+    "schema_versions": {
+      "paper_shadow_portfolio": "trd-bot-paper-shadow-portfolio-v1",
+      "paper_shadow_position": "trd-bot-paper-shadow-position-v1",
+      "portfolio_intelligence": "trd-bot-portfolio-intelligence-v1",
+      "simulation_outcome": "trd-bot-simulation-outcome-v1"
+    },
+    "source_reference_required": true,
+    "source_checksum_required": true,
+    "deterministic_ascending_order": true,
+    "scan_time_boundary_required": true
+  },
+  "safety": {
+    "paper_shadow_only": true,
+    "offline_only_required": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "service_token_in_payload_allowed": false,
+    "service_token_in_cursor_allowed": false,
+    "direct_database_access_for_consumer": false
+  },
+  "persistence": {
+    "uses_existing_snapshot_scan_store": true,
+    "uses_existing_portfolio_tables": true,
+    "migration_added": false,
+    "migration_head": "20261106_0037"
+  },
+  "scope": {
+    "snapshot_http_endpoint_registered": true,
+    "portfolio_snapshot_resources_added": true,
+    "paper_shadow_portfolio_added": true,
+    "paper_shadow_position_added": true,
+    "portfolio_intelligence_added": true,
+    "simulation_outcome_added": true,
+    "decision_snapshot_resources_added": false,
+    "alert_snapshot_resources_added": false,
+    "event_feed_added": false,
+    "review_commands_added": false,
+    "export_protocol_added": false,
+    "release_version_bumped": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false,
+    "live_execution_enabled": false
+  },
+  "acceptance": {
+    "all_four_resources_are_pageable": true,
+    "source_reference_checksum_verified": true,
+    "cursor_retry_is_idempotent": true,
+    "cross_resource_cursor_rejected": true,
+    "expired_cursor_requires_full_resync": true,
+    "unknown_resource_fails_closed": true,
+    "service_authentication_required": true,
+    "no_secrets_in_payload_or_cursor": true,
+    "release_0_3_0_remains_incompatible": true,
+    "real_provider_smoke_completed": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-03-FREEZE",
+    "post_freeze_stage": "TRD-V031-04",
+    "candidate_commit_message": "feat(trd-bot): add Nexora portfolio snapshot resources",
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}
