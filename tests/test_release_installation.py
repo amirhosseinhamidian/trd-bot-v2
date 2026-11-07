@@ -26,7 +26,12 @@ from trd_bot.release_installation import (
 
 _NOW = datetime(2026, 10, 22, 12, tzinfo=UTC)
 _COMMIT_SHA = "c" * 40
-_POST_V0_3_TABLES = {"nexora_snapshot_cursors", "nexora_snapshot_scans"}
+_POST_V0_3_TABLES = {
+    "nexora_event_cursors",
+    "nexora_integration_events",
+    "nexora_snapshot_cursors",
+    "nexora_snapshot_scans",
+}
 _TARGET_TABLES = tuple(sorted(set(DatabaseBase.metadata.tables) - _POST_V0_3_TABLES))
 _TARGET_SCHEMA_CHECKSUM = fingerprint_strings(_TARGET_TABLES)
 _INVENTORY_CHECKSUM = "d" * 64
@@ -266,6 +271,6 @@ def test_installation_revisions_match_the_repository_migration_chain() -> None:
     head = script.get_current_head()
     revisions = {revision.revision for revision in script.iterate_revisions(head, "base")}
 
-    assert head == "20261106_0037"
+    assert head == "20261107_0038"
     assert V0_3_MIGRATION_REVISION in revisions
     assert V0_2_MIGRATION_REVISION in revisions

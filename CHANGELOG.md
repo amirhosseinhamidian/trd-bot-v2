@@ -4,6 +4,11 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
+- Added the integrated `TRD-V031-06` durable event-feed candidate with versioned checksummed
+  envelopes, at-least-once cursor replay, exact event lookup, aggregate-version gap detection, and
+  migration `20261107_0038`. Exactly-once claims, review commands, credentials, live execution,
+  compatibility claims, and `NEX-P3-03` remain excluded.
+
 - Added the integrated `TRD-V031-05` implementation and acceptance candidate for authenticated,
   stable, checksummed `alert` and `alert_outcome` snapshots. Mutable inbox state, commands,
   credentials, live execution, compatibility claims, and `NEX-P3-03` remain excluded; the same-SHA

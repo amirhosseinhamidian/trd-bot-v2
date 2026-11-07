@@ -1,0 +1,53 @@
+name: TRD Bot v0.3.1 durable event feed acceptance
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - '.github/workflows/v0-3-1-event-feed.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261107_0038_nexora_event_feed.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-06.json'
+      - 'contracts/trd-bot-v0.3.1-event-feed.json'
+      - 'docs/v0.3.1/06-durable-event-feed.md'
+      - 'scripts/verify_v0_3_1_event_feed.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_event_feed.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_v0_3_1_event_feed.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v0-3-1-event-feed.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261107_0038_nexora_event_feed.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-06.json'
+      - 'contracts/trd-bot-v0.3.1-event-feed.json'
+      - 'docs/v0.3.1/06-durable-event-feed.md'
+      - 'scripts/verify_v0_3_1_event_feed.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_event_feed.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_v0_3_1_event_feed.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    name: TRD-V031-06 implementation and acceptance
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-06

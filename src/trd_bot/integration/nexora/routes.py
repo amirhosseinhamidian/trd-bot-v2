@@ -13,6 +13,7 @@ from starlette.responses import Response
 
 from trd_bot.api.dependencies import DatabaseSessionDependency
 from trd_bot.core.config import get_settings
+from trd_bot.db.nexora_events import SqlAlchemyNexoraEventStore
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
 from trd_bot.integration.nexora.alert_snapshots import (
     ALERT_SNAPSHOT_RESOURCE_TYPES,
@@ -38,6 +39,14 @@ from trd_bot.integration.nexora.contracts import (
 from trd_bot.integration.nexora.decision_snapshots import (
     DECISION_SNAPSHOT_RESOURCE_TYPES,
     DecisionSnapshotResourceReader,
+)
+from trd_bot.integration.nexora.events import (
+    EventCursorConflictError,
+    EventCursorExpiredError,
+    EventCursorNotFoundError,
+    EventFeedError,
+    IntegrationEventEnvelope,
+    IntegrationEventPage,
 )
 from trd_bot.integration.nexora.portfolio_snapshots import (
     PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
@@ -362,3 +371,131 @@ def get_snapshot_page(
         content=page.model_dump(mode="json"),
         headers=headers,
     )
+
+
+@router.get(
+    "/events",
+    response_model=IntegrationEventPage,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        409: {"model": IntegrationErrorEnvelope},
+        410: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def get_event_page(
+    request: Request,
+    session: DatabaseSessionDependency,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> Response:
+    """Replay one authenticated page from the durable at-least-once event feed."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    try:
+        page = SqlAlchemyNexoraEventStore(session).page(
+            now=datetime.now(UTC), cursor=cursor, limit=limit
+        )
+        session.commit()
+    except EventCursorExpiredError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_410_GONE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="CURSOR_EXPIRED",
+            message="event cursor expired; full snapshot resync is required",
+            retryable=False,
+        )
+    except EventCursorConflictError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_409_CONFLICT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="CURSOR_CONFLICT",
+            message="event cursor does not match this request",
+            retryable=False,
+        )
+    except (EventCursorNotFoundError, EventFeedError):
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="event feed request is invalid",
+            retryable=False,
+        )
+    except (SQLAlchemyError, ValueError):
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="event feed is unavailable",
+            retryable=True,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(status_code=200, content=page.model_dump(mode="json"), headers=headers)
+
+
+@router.get(
+    "/events/{event_id}",
+    response_model=IntegrationEventEnvelope,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        404: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def get_event(
+    event_id: str,
+    request: Request,
+    session: DatabaseSessionDependency,
+) -> Response:
+    """Return the exact envelope used by the feed for one event ID."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    if len(event_id) != 68 or not event_id.startswith("evt_"):
+        return _error_response(
+            status_code=400,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="event ID is invalid",
+            retryable=False,
+        )
+    try:
+        event = SqlAlchemyNexoraEventStore(session).get(event_id)
+    except (SQLAlchemyError, ValueError):
+        return _error_response(
+            status_code=503,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="event lookup is unavailable",
+            retryable=True,
+        )
+    if event is None:
+        return _error_response(
+            status_code=404,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="event was not found",
+            retryable=False,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(status_code=200, content=event.model_dump(mode="json"), headers=headers)

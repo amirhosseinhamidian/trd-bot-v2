@@ -3097,3 +3097,58 @@ class NexoraSnapshotCursorRow(DatabaseBase):
     after_sort_key: Mapped[str] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class NexoraIntegrationEventRow(DatabaseBase):
+    """Append-only event envelope exposed to the Nexora integration boundary."""
+
+    __tablename__ = "nexora_integration_events"
+    __table_args__ = (
+        CheckConstraint("global_sequence >= 1", name="global_sequence_positive"),
+        CheckConstraint("aggregate_version >= 1", name="aggregate_version_positive"),
+        CheckConstraint("length(event_checksum) = 71", name="event_checksum_length"),
+        UniqueConstraint(
+            "aggregate_type",
+            "aggregate_id",
+            "aggregate_version",
+            name="uq_nexora_integration_events_aggregate_version",
+        ),
+        Index(
+            "ix_nexora_integration_events_aggregate_order",
+            "aggregate_type",
+            "aggregate_id",
+            "aggregate_version",
+        ),
+    )
+    global_sequence: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_id: Mapped[str] = mapped_column(String(68), unique=True, index=True)
+    schema_version: Mapped[str] = mapped_column(String(50))
+    event_type: Mapped[str] = mapped_column(String(120), index=True)
+    aggregate_type: Mapped[str] = mapped_column(String(80), index=True)
+    aggregate_id: Mapped[str] = mapped_column(String(160), index=True)
+    aggregate_version: Mapped[int] = mapped_column(Integer)
+    idempotency_key: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    payload_schema_version: Mapped[str] = mapped_column(String(120))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event_checksum: Mapped[str] = mapped_column(String(71), unique=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    external_order_submission_allowed: Mapped[bool] = mapped_column(Boolean, default=False)
+    payload_json: Mapped[str] = mapped_column(Text)
+
+
+class NexoraEventCursorRow(DatabaseBase):
+    """Opaque replay checkpoint for the at-least-once Nexora event feed."""
+
+    __tablename__ = "nexora_event_cursors"
+    __table_args__ = (
+        CheckConstraint("length(cursor) = 68", name="cursor_length"),
+        CheckConstraint("after_sequence >= 0", name="after_sequence_nonnegative"),
+        CheckConstraint("page_limit >= 1 AND page_limit <= 500", name="page_limit_bounded"),
+        CheckConstraint("expires_at > created_at", name="expiry_after_create"),
+    )
+    cursor: Mapped[str] = mapped_column(String(68), primary_key=True)
+    after_sequence: Mapped[int] = mapped_column(Integer, index=True)
+    page_limit: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

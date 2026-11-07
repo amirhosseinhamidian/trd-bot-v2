@@ -1,0 +1,54 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
+  "stage_id": "TRD-V031-06",
+  "title": "Durable event feed, lookup, cursors, and replay",
+  "status": "candidate",
+  "prerequisite": {
+    "mode": "ci_artifact",
+    "stage_id": "TRD-V031-05",
+    "accepted_commit_sha": "10435e4c98e59d2d616fde1c6b92a2598d20a1ee"
+  },
+  "verification": {
+    "verifier_path": "scripts/verify_v0_3_1_event_feed.py",
+    "unittest_path": "tests/test_v0_3_1_event_feed.py",
+    "focused_pytest_paths": [
+      "tests/test_nexora_event_feed.py",
+      "tests/test_nexora_snapshot_protocol.py",
+      "tests/test_nexora_snapshot_persistence.py",
+      "tests/test_database.py"
+    ]
+  },
+  "migration": {
+    "expected": true,
+    "postgresql_round_trip_required": true,
+    "alembic_check_required": true
+  },
+  "evidence_paths": [
+    ".github/workflows/v0-3-1-event-feed.yml",
+    ".github/workflows/v0-3-1-stage-acceptance.yml",
+    "alembic/versions/20261107_0038_nexora_event_feed.py",
+    "contracts/integration/nexora/v1/event-feed.schema.json",
+    "contracts/trd-bot-v0.3.1-event-feed.json",
+    "contracts/v0.3.1/stage-acceptance/trd-v031-06.json",
+    "docs/v0.3.1/06-durable-event-feed.md",
+    "scripts/verify_v0_3_1_event_feed.py",
+    "src/trd_bot/db/models.py",
+    "src/trd_bot/db/nexora_events.py",
+    "src/trd_bot/integration/nexora/events.py",
+    "src/trd_bot/integration/nexora/routes.py",
+    "tests/test_nexora_event_feed.py",
+    "tests/test_v0_3_1_event_feed.py"
+  ],
+  "transition": {
+    "next_stage": "TRD-V031-07",
+    "separate_freeze_task_required": false
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "nexora_p3_03_opened": false,
+    "provider_compatibility_claimed": false
+  }
+}

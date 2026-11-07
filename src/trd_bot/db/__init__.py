@@ -141,6 +141,8 @@ from trd_bot.db.models import (
     MarketDataWindowVersionRow,
     MarketRegimeAssessmentRow,
     MonitoringRuntimeStateRow,
+    NexoraEventCursorRow,
+    NexoraIntegrationEventRow,
     NexoraSnapshotCursorRow,
     NexoraSnapshotScanRow,
     OptimizationExecutionRow,
@@ -159,6 +161,7 @@ from trd_bot.db.monitoring_repositories import (
 from trd_bot.db.monitoring_runtime_state_repository import (
     SqlAlchemyMonitoringRuntimeStateRepository,
 )
+from trd_bot.db.nexora_events import SqlAlchemyNexoraEventStore
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
 from trd_bot.db.optimization_execution_enqueues import (
     SqlAlchemyOptimizationExecutionEnqueuer,
@@ -244,6 +247,8 @@ __all__ = [
     "MarketDataWindowVersionRow",
     "MarketRegimeAssessmentRow",
     "MonitoringRuntimeStateRow",
+    "NexoraEventCursorRow",
+    "NexoraIntegrationEventRow",
     "NexoraSnapshotCursorRow",
     "NexoraSnapshotScanRow",
     "OptimizationExecutionRow",
@@ -301,6 +306,7 @@ __all__ = [
     "SqlAlchemyMarketDataWindowRevisionRepository",
     "SqlAlchemyMarketRegimeEvaluator",
     "SqlAlchemyMonitoringRuntimeStateRepository",
+    "SqlAlchemyNexoraEventStore",
     "SqlAlchemyNexoraSnapshotScanStore",
     "SqlAlchemyOptimizationExecutionEnqueuer",
     "SqlAlchemyOptimizationExecutionRepository",

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.local/contracts/integration/nexora/v1/event-feed.schema.json",
+  "title": "TRD Bot durable integration event feed",
+  "$defs": {
+    "utc_timestamp": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "event_id": {"type": "string", "pattern": "^evt_[0-9a-f]{64}$"},
+    "cursor": {"type": "string", "pattern": "^evc_[0-9a-f]{64}$"},
+    "checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": "trd-integration-event-envelope-v1"},
+        "event_id": {"$ref": "#/$defs/event_id"},
+        "event_type": {"type": "string", "minLength": 1, "maxLength": 120},
+        "aggregate_type": {"type": "string", "minLength": 1, "maxLength": 80},
+        "aggregate_id": {"type": "string", "minLength": 1, "maxLength": 160},
+        "aggregate_version": {"type": "integer", "minimum": 1},
+        "idempotency_key": {"type": "string", "minLength": 1, "maxLength": 200},
+        "payload_schema_version": {"type": "string", "minLength": 1, "maxLength": 120},
+        "occurred_at": {"$ref": "#/$defs/utc_timestamp"},
+        "published_at": {"$ref": "#/$defs/utc_timestamp"},
+        "payload": {"type": "object"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "event_checksum": {"$ref": "#/$defs/checksum"}
+      },
+      "required": [
+        "schema_version", "event_id", "event_type", "aggregate_type", "aggregate_id",
+        "aggregate_version", "idempotency_key", "payload_schema_version", "occurred_at",
+        "published_at", "payload", "offline_only", "external_order_submission_allowed",
+        "event_checksum"
+      ]
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {"const": "trd-integration-event-page-v1"},
+        "delivery_semantics": {"const": "at_least_once"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/envelope"}},
+        "next_cursor": {"$ref": "#/$defs/cursor"},
+        "has_more": {"type": "boolean"}
+      },
+      "required": ["schema_version", "delivery_semantics", "items", "next_cursor", "has_more"]
+    }
+  },
+  "oneOf": [{"$ref": "#/$defs/envelope"}, {"$ref": "#/$defs/page"}]
+}

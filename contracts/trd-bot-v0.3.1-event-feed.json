@@ -1,0 +1,71 @@
+{
+  "schema_version": "trd-bot-v031-event-feed-v1",
+  "decision_id": "TRD-V031-06",
+  "decision_date": "2026-11-07",
+  "status": "candidate",
+  "title": "Durable event feed, lookup, cursors, and replay",
+  "prerequisite": {
+    "decision_id": "TRD-V031-05",
+    "acceptance_mode": "ci_artifact_same_sha",
+    "accepted_commit_sha": "10435e4c98e59d2d616fde1c6b92a2598d20a1ee",
+    "accepted_evidence_checksum": "c543e4cf0d2813599139d487df15e7dcbbc330cb05e3f2a261a7e25201c7f08b"
+  },
+  "endpoints": {
+    "feed": "GET /api/v1/integration/nexora/events",
+    "lookup": "GET /api/v1/integration/nexora/events/{event_id}",
+    "authentication": "bearer_service_token",
+    "cache_control": "private, no-store"
+  },
+  "protocol": {
+    "page_schema_version": "trd-integration-event-page-v1",
+    "envelope_schema_version": "trd-integration-event-envelope-v1",
+    "delivery_semantics": "at_least_once",
+    "exactly_once_claimed": false,
+    "ordering_scope": "per_aggregate",
+    "gap_detection": "aggregate_version",
+    "deduplication_keys": ["event_id", "idempotency_key"],
+    "checksum_required": true,
+    "cursor": "opaque_durable_cursor",
+    "cursor_contains_credentials": false,
+    "cursor_ttl_seconds": 3600,
+    "page_limit_default": 100,
+    "page_limit_maximum": 500,
+    "long_polling": false,
+    "acknowledgement_required": false,
+    "expired_cursor_status": 410,
+    "expired_cursor_action": "full_snapshot_resync",
+    "gap_action": "pause_projection_and_backfill"
+  },
+  "persistence": {
+    "migration_added": true,
+    "migration_revision": "20261107_0038",
+    "tables": ["nexora_integration_events", "nexora_event_cursors"],
+    "append_only_event_journal": true,
+    "idempotency_conflict_fails_closed": true,
+    "aggregate_version_gap_fails_closed": true
+  },
+  "safety": {
+    "research_shadow_paper_only": true,
+    "offline_only_required": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "service_token_in_payload_allowed": false,
+    "service_token_in_cursor_allowed": false,
+    "live_execution_enabled": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false
+  },
+  "scope": {
+    "event_feed_added": true,
+    "event_lookup_added": true,
+    "review_commands_added": false,
+    "export_protocol_added": false,
+    "release_version_bumped": false
+  },
+  "transition": {
+    "acceptance_mode": "ci_artifact_same_sha",
+    "next_allowed_stage": "TRD-V031-07_AFTER_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false,
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}

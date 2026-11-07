@@ -24,7 +24,10 @@ Decision Evaluation, Candidate ranking, and Risk Gate snapshots. The next allowe
 Alert snapshot resources are now the acceptance candidate in
 [`TRD-V031-05`](docs/v0.3.1/05-alert-snapshot-resources.md): immutable Alert publications and
 offline outcome evidence are exposed without mutable inbox state. Event feeds and review commands
-remain deferred.
+remain deferred. The current candidate is
+[`TRD-V031-06`](docs/v0.3.1/06-durable-event-feed.md), adding a durable at-least-once event
+journal, opaque replay cursors, checksummed envelopes, aggregate gap detection, and exact event
+lookup. Review commands remain deferred to `TRD-V031-07`.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable

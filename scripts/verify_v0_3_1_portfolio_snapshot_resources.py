@@ -432,8 +432,8 @@ def validate_implementation_sources() -> None:
     require(pyproject["project"]["version"] == "0.3.0", "release version advanced early")
     migrations = sorted(path.name for path in (ROOT / "alembic/versions").glob("*.py"))
     require(
-        migrations[-1] == "20261106_0037_nexora_snapshot_protocol.py",
-        "unexpected migration added",
+        "20261106_0037_nexora_snapshot_protocol.py" in migrations,
+        "snapshot protocol migration missing",
     )
 
 
