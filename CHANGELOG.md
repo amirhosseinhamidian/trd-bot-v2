@@ -25,6 +25,9 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
 - Added the `TRD-V031-02` candidate: stable high-watermark scans, opaque durable cursors,
   deterministic paging, checksummed source references, and migration `20261106_0037`, without
   publishing Portfolio, Decision, or Alert snapshot resources early.
+- Froze `TRD-V031-02` against the same-SHA successful roadmap, service-auth, snapshot-protocol,
+  backend, frontend, PostgreSQL migration, and integration evidence. Only `TRD-V031-03` Portfolio
+  snapshot resources are opened next; compatibility and Nexora `NEX-P3-03` remain blocked.
 
 ### Operating boundary
 

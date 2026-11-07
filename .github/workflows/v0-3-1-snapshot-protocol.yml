@@ -5,6 +5,7 @@ on:
     branches: [main, 'feature/**']
     paths:
       - '.github/workflows/v0-3-1-snapshot-protocol.yml'
+      - 'artifacts/v0.3.1/trd-v031-02-snapshot-protocol-freeze.json'
       - 'alembic/versions/20261106_0037_nexora_snapshot_protocol.py'
       - 'contracts/integration/nexora/**'
       - 'contracts/trd-bot-v0.3.1-snapshot-protocol.json'
@@ -19,6 +20,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/v0-3-1-snapshot-protocol.yml'
+      - 'artifacts/v0.3.1/trd-v031-02-snapshot-protocol-freeze.json'
       - 'alembic/versions/20261106_0037_nexora_snapshot_protocol.py'
       - 'contracts/integration/nexora/**'
       - 'contracts/trd-bot-v0.3.1-snapshot-protocol.json'

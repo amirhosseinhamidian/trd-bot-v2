@@ -1,6 +1,6 @@
 # TRD-V031-02 — Stable Snapshot Protocol and Source References
 
-وضعیت: **Candidate**
+وضعیت: **Frozen**
 تاریخ تصمیم: ۲۰۲۶-۱۱-۰۶
 پیش‌نیاز فریز‌شده: commit `ef45640c5bb4b1458668635404c610d776b882f7`
 
@@ -62,4 +62,20 @@ TRD_BOT_LIVE_EXECUTION=DISABLED
 NEXT_ALLOWED_STAGE=TRD-V031-02-FREEZE
 ```
 
-پس از CI موفق روی همان candidate SHA، فقط `TRD-V031-02-FREEZE` مجاز است.
+## شواهد Freeze
+
+candidate با SHA `8666b879600c06f376602c1f672ea570bf87f7ab` و tree
+`7cc5e8386f599badbdc9b0746d42d73e918ffdba` روی هر چهار workflow موردنیاز موفق شد:
+roadmap، service auth/capabilities، snapshot protocol و CI کامل شامل backend، frontend و
+PostgreSQL migrations/integration tests. شناسه‌های دقیق run/job و checksum فایل‌های پذیرفته‌شده
+در
+[`trd-v031-02-snapshot-protocol-freeze.json`](../../artifacts/v0.3.1/trd-v031-02-snapshot-protocol-freeze.json)
+ثبت شده‌اند.
+
+```text
+TRD_V031_02_FREEZE=PASS
+NEXT_ALLOWED_STAGE=TRD-V031-03
+```
+
+این Freeze فقط `TRD-V031-03` (Portfolio snapshot resources) را باز می‌کند. Decision و Alert
+resourceها، `NEX-P3-03`، ادعای compatibility و live execution همچنان بسته‌اند.
