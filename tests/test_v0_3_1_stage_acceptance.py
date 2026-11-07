@@ -97,11 +97,14 @@ class V031StageAcceptanceTests(unittest.TestCase):
         with self.assertRaisesRegex(ACCEPTANCE.StageAcceptanceError, "smoke requirement"):
             ACCEPTANCE.validate_policy(changed)
 
-    def test_planned_stage_cannot_run_as_candidate(self) -> None:
+    def test_candidate_stage_is_runnable_but_planned_stage_is_not(self) -> None:
+        ACCEPTANCE.validate_manifest(self.policy, self.manifest, require_candidate=True)
+        planned = copy.deepcopy(self.manifest)
+        planned["status"] = "planned"
         with self.assertRaisesRegex(
             ACCEPTANCE.StageAcceptanceError, "not an implementation candidate"
         ):
-            ACCEPTANCE.validate_manifest(self.policy, self.manifest, require_candidate=True)
+            ACCEPTANCE.validate_manifest(self.policy, planned, require_candidate=True)
 
     def test_successful_push_accepts_and_opens_only_the_next_stage(self) -> None:
         evidence = self.build()

@@ -132,10 +132,9 @@ compatibility و checksumهای ثبت‌شده حفظ شوند.
 6. rerun یک run transient مجاز است؛ `run_attempt` جدید در evidence ثبت می‌شود.
 7. اگر run لغو شده باشد، نبود evidence پذیرفته‌شده به‌معنی بسته‌ماندن transition است.
 
-## آماده‌سازی TRD-V031-05
+## اجرای TRD-V031-05
 
-manifest برنامه‌ریزی مرحله در
-`contracts/v0.3.1/stage-acceptance/trd-v031-05.json` قرار دارد. در مأموریت بعدی باید feature
-Alert Snapshot Resources، contract، verifier و تست‌های اعلام‌شده ایجاد، manifest به
-`candidate` تبدیل و workflow مرحله به reusable acceptance متصل شود. این ADR هیچ feature
-جدیدی از مرحلهٔ `05` را پیاده‌سازی نمی‌کند.
+manifest مرحله در `contracts/v0.3.1/stage-acceptance/trd-v031-05.json` اکنون `candidate` است.
+Alert Snapshot Resources، contract، verifier، تست‌ها و caller workflow در همان Implementation
+Task ایجاد شده‌اند. پس از push، فقط artifact پذیرش موفق و متصل به همان SHA می‌تواند stage `06`
+را باز کند؛ commit یا Freeze task جداگانه‌ای برای ثبت Run ID ساخته نمی‌شود.

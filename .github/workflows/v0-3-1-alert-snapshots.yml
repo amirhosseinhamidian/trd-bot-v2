@@ -1,0 +1,49 @@
+name: TRD Bot v0.3.1 alert snapshot acceptance
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - '.github/workflows/v0-3-1-alert-snapshots.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-05.json'
+      - 'contracts/trd-bot-v0.3.1-alert-snapshot-resources.json'
+      - 'docs/v0.3.1/05-alert-snapshot-resources.md'
+      - 'scripts/verify_v0_3_1_alert_snapshot_resources.py'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_nexora_alert_snapshots.py'
+      - 'tests/test_nexora_decision_snapshots.py'
+      - 'tests/test_nexora_portfolio_snapshots.py'
+      - 'tests/test_v0_3_1_alert_snapshot_resources.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v0-3-1-alert-snapshots.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-05.json'
+      - 'contracts/trd-bot-v0.3.1-alert-snapshot-resources.json'
+      - 'docs/v0.3.1/05-alert-snapshot-resources.md'
+      - 'scripts/verify_v0_3_1_alert_snapshot_resources.py'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_nexora_alert_snapshots.py'
+      - 'tests/test_nexora_decision_snapshots.py'
+      - 'tests/test_nexora_portfolio_snapshots.py'
+      - 'tests/test_v0_3_1_alert_snapshot_resources.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    name: TRD-V031-05 implementation and acceptance
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-05

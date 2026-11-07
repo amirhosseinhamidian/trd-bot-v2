@@ -1,0 +1,75 @@
+{
+  "schema_version": "trd-bot-v031-alert-snapshot-resources-v1",
+  "decision_id": "TRD-V031-05",
+  "decision_date": "2026-11-07",
+  "status": "candidate",
+  "title": "Alert snapshot resources",
+  "prerequisite": {
+    "decision_id": "TRD-V031-04",
+    "acceptance_mode": "legacy_freeze",
+    "freeze_commit_sha": "250d84ebd93b9999230ac316b1cb919e66be7bc5",
+    "artifact_canonical_checksum": "29428cd3813ce18af29a950137aa2b8449c377264239b164bf31cdf787a1ecde"
+  },
+  "endpoint": {
+    "method": "GET",
+    "path": "/api/v1/integration/nexora/snapshots/{resource_type}",
+    "authentication": "bearer_service_token",
+    "response_schema_version": "nexora-source-snapshot-page-v1",
+    "cache_control": "private, no-store"
+  },
+  "resources": {
+    "allowlist": ["alert", "alert_outcome"],
+    "schema_contract": "contracts/integration/nexora/v1/alert-snapshot-resources.schema.json",
+    "schema_versions": {
+      "alert": "trd-bot-alert-v1",
+      "alert_outcome": "trd-bot-alert-outcome-v1"
+    },
+    "immutable_evidence_only": true,
+    "mutable_inbox_state_excluded": true,
+    "source_reference_required": true,
+    "source_checksum_required": true,
+    "deterministic_ascending_order": true,
+    "scan_time_boundary_required": true
+  },
+  "safety": {
+    "research_shadow_paper_only": true,
+    "offline_only_required": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "service_token_in_payload_allowed": false,
+    "service_token_in_cursor_allowed": false,
+    "direct_database_access_for_consumer": false
+  },
+  "persistence": {
+    "uses_existing_snapshot_scan_store": true,
+    "uses_existing_alert_and_outcome_tables": true,
+    "migration_added": false,
+    "migration_head": "20261106_0037"
+  },
+  "scope": {
+    "alert_snapshot_resources_added": true,
+    "event_feed_added": false,
+    "review_commands_added": false,
+    "export_protocol_added": false,
+    "release_version_bumped": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false,
+    "live_execution_enabled": false
+  },
+  "acceptance": {
+    "both_resources_are_pageable": true,
+    "mutable_inbox_projection_excluded": true,
+    "source_reference_checksum_verified": true,
+    "service_authentication_required": true,
+    "unknown_resource_fails_closed": true,
+    "release_0_3_0_remains_incompatible": true,
+    "real_provider_smoke_completed": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "acceptance_mode": "ci_artifact_same_sha",
+    "next_allowed_stage": "TRD-V031-06_AFTER_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false,
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}

@@ -2,7 +2,7 @@
   "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
   "stage_id": "TRD-V031-05",
   "title": "Alert snapshot resources",
-  "status": "planned",
+  "status": "candidate",
   "prerequisite": {
     "mode": "legacy_freeze",
     "stage_id": "TRD-V031-04",
@@ -26,7 +26,9 @@
     "alembic_check_required": true
   },
   "evidence_paths": [
+    ".github/workflows/v0-3-1-alert-snapshots.yml",
     "contracts/v0.3.1/stage-acceptance/trd-v031-05.json",
+    "contracts/integration/nexora/v1/alert-snapshot-resources.schema.json",
     "contracts/trd-bot-v0.3.1-alert-snapshot-resources.json",
     "docs/v0.3.1/05-alert-snapshot-resources.md",
     "scripts/verify_v0_3_1_alert_snapshot_resources.py",

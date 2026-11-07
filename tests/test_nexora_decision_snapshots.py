@@ -281,7 +281,7 @@ def test_decision_resources_fail_closed_for_cross_resource_cursor_and_unknown_ty
         params={"cursor": cursor},
         headers=headers(),
     )
-    unavailable = client.get(f"{SNAPSHOT_ROOT}/alert", headers=headers())
+    unavailable = client.get(f"{SNAPSHOT_ROOT}/event", headers=headers())
 
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "CURSOR_CONFLICT"

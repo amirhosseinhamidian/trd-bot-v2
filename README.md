@@ -21,7 +21,10 @@ Portfolio, Position, Portfolio Intelligence, and Simulation Outcome snapshots th
 authenticated stable-paging boundary. Decision snapshot resources are frozen by
 [`TRD-V031-04`](docs/v0.3.1/04-decision-snapshot-resources.md), which adds immutable Market Context,
 Decision Evaluation, Candidate ranking, and Risk Gate snapshots. The next allowed stage is
-`TRD-V031-05` for Alert snapshot resources.
+Alert snapshot resources are now the acceptance candidate in
+[`TRD-V031-05`](docs/v0.3.1/05-alert-snapshot-resources.md): immutable Alert publications and
+offline outcome evidence are exposed without mutable inbox state. Event feeds and review commands
+remain deferred.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable

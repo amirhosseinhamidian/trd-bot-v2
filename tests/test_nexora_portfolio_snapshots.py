@@ -221,7 +221,7 @@ def test_resource_auth_allowlist_and_cursor_fail_closed(
         f"{SNAPSHOT_ROOT}/paper_shadow_position",
         headers={"Accept": "application/json", "X-Correlation-ID": str(uuid4())},
     )
-    unavailable = client.get(f"{SNAPSHOT_ROOT}/alert", headers=headers())
+    unavailable = client.get(f"{SNAPSHOT_ROOT}/event", headers=headers())
     unknown_cursor = client.get(
         f"{SNAPSHOT_ROOT}/paper_shadow_position",
         params={"cursor": "snp_" + "0" * 64},

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.local/contracts/integration/nexora/v1/alert-snapshot-resources.schema.json",
+  "title": "TRD Bot alert snapshot resource payloads",
+  "oneOf": [
+    {"$ref": "#/$defs/alert"},
+    {"$ref": "#/$defs/alert_outcome"}
+  ],
+  "$defs": {
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "alert": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-alert-v1"},
+        "alert_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "evaluation_id": {"type": "string", "minLength": 1},
+        "deduplication_key": {"type": "string", "minLength": 1},
+        "rule_id": {"type": "string", "minLength": 1},
+        "rule_version": {"type": "integer", "minimum": 1},
+        "source_kind": {"const": "market_context"},
+        "source_event_id": {"type": "string", "minLength": 1},
+        "delivery_channel": {"const": "in_app"},
+        "severity": {"enum": ["info", "warning", "critical"]},
+        "draft_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "created_at": {"$ref": "#/$defs/utc_timestamp"},
+        "expires_at": {"$ref": "#/$defs/utc_timestamp"},
+        "record": {"type": "object"},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false}
+      },
+      "required": [
+        "resource_schema_version", "alert_id", "record_schema_version", "evaluation_id",
+        "deduplication_key", "rule_id", "rule_version", "source_kind", "source_event_id",
+        "delivery_channel", "severity", "draft_checksum", "created_at", "expires_at",
+        "record", "offline_only", "external_order_submission_allowed"
+      ]
+    },
+    "alert_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource_schema_version": {"const": "trd-bot-alert-outcome-v1"},
+        "outcome_id": {"type": "string", "minLength": 1},
+        "record_schema_version": {"type": "string", "minLength": 1},
+        "simulation_id": {"type": "string", "minLength": 1},
+        "simulation_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "alert_id": {"type": "string", "minLength": 1},
+        "alert_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "mode": {"enum": ["paper", "shadow"]},
+        "expected_trend": {"type": "string", "minLength": 1},
+        "observed_trend": {"type": "string", "minLength": 1},
+        "reference_price": {"$ref": "#/$defs/decimal"},
+        "end_price": {"$ref": "#/$defs/decimal"},
+        "high_price": {"$ref": "#/$defs/decimal"},
+        "low_price": {"$ref": "#/$defs/decimal"},
+        "raw_return": {"$ref": "#/$defs/decimal"},
+        "directional_return": {"$ref": "#/$defs/decimal"},
+        "max_favorable_excursion": {"$ref": "#/$defs/decimal"},
+        "max_adverse_excursion": {"$ref": "#/$defs/decimal"},
+        "classification": {"enum": ["confirmed", "neutral", "false_positive"]},
+        "false_positive": {"type": "boolean"},
+        "drifted": {"type": "boolean"},
+        "policy_version": {"const": "alert-outcome-policy-v1"},
+        "policy_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "classification_threshold": {"$ref": "#/$defs/decimal"},
+        "observed_at": {"$ref": "#/$defs/utc_timestamp"},
+        "recorded_at": {"$ref": "#/$defs/utc_timestamp"},
+        "recorded_by": {"type": "string", "minLength": 1},
+        "offline_only": {"const": true},
+        "external_order_submission_allowed": {"const": false},
+        "record_checksum": {"$ref": "#/$defs/sha256_hex"},
+        "record": {"type": "object"}
+      },
+      "required": [
+        "resource_schema_version", "outcome_id", "record_schema_version", "simulation_id",
+        "simulation_checksum", "alert_id", "alert_checksum", "mode", "expected_trend",
+        "observed_trend", "reference_price", "end_price", "high_price", "low_price",
+        "raw_return", "directional_return", "max_favorable_excursion",
+        "max_adverse_excursion", "classification", "false_positive", "drifted",
+        "policy_version", "policy_checksum", "classification_threshold", "observed_at",
+        "recorded_at", "recorded_by", "offline_only",
+        "external_order_submission_allowed", "record_checksum", "record"
+      ]
+    }
+  }
+}

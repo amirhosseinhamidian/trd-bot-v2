@@ -4,6 +4,11 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
+- Added the integrated `TRD-V031-05` implementation and acceptance candidate for authenticated,
+  stable, checksummed `alert` and `alert_outcome` snapshots. Mutable inbox state, commands,
+  credentials, live execution, compatibility claims, and `NEX-P3-03` remain excluded; the same-SHA
+  reusable CI acceptance artifact replaces a separate stage Freeze task.
+
 Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
 
 ### Added

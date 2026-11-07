@@ -14,6 +14,10 @@ from starlette.responses import Response
 from trd_bot.api.dependencies import DatabaseSessionDependency
 from trd_bot.core.config import get_settings
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
+from trd_bot.integration.nexora.alert_snapshots import (
+    ALERT_SNAPSHOT_RESOURCE_TYPES,
+    AlertSnapshotResourceReader,
+)
 from trd_bot.integration.nexora.auth import (
     ServiceTokenConfigurationError,
     bearer_token_matches,
@@ -45,6 +49,7 @@ from trd_bot.integration.nexora.snapshots import (
     SnapshotCursorNotFoundError,
     SnapshotPage,
     SnapshotProtocolError,
+    SnapshotResourceReader,
     StableSnapshotPager,
 )
 
@@ -55,6 +60,7 @@ router = APIRouter(tags=["nexora-integration"])
 SNAPSHOT_RESOURCE_TYPES: Final = (
     *PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
     *DECISION_SNAPSHOT_RESOURCE_TYPES,
+    *ALERT_SNAPSHOT_RESOURCE_TYPES,
 )
 
 
@@ -288,11 +294,13 @@ def get_snapshot_page(
             retryable=False,
         )
 
-    reader = (
-        PortfolioSnapshotResourceReader(session)
-        if resource_type in PORTFOLIO_SNAPSHOT_RESOURCE_TYPES
-        else DecisionSnapshotResourceReader(session)
-    )
+    reader: SnapshotResourceReader
+    if resource_type in PORTFOLIO_SNAPSHOT_RESOURCE_TYPES:
+        reader = PortfolioSnapshotResourceReader(session)
+    elif resource_type in DECISION_SNAPSHOT_RESOURCE_TYPES:
+        reader = DecisionSnapshotResourceReader(session)
+    else:
+        reader = AlertSnapshotResourceReader(session)
     pager = StableSnapshotPager(
         reader=reader,
         store=SqlAlchemyNexoraSnapshotScanStore(session),
