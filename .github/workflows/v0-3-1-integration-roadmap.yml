@@ -7,10 +7,20 @@ on:
       - 'feature/**'
     paths:
       - '.github/workflows/v0-3-1-integration-roadmap.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
       - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/**'
+      - 'contracts/trd-bot-v0.3.1-stage-acceptance-policy.json'
+      - 'contracts/trd-bot-v0.3.1-stage-acceptance-evidence.schema.json'
       - 'contracts/trd-bot-v0.3.1-nexora-integration-roadmap.json'
       - 'docs/v0.3.1/**'
+      - 'scripts/fetch_v0_3_1_acceptance_evidence.py'
+      - 'scripts/generate_v0_3_1_acceptance_evidence.py'
+      - 'scripts/run_v0_3_1_stage_gate.py'
+      - 'scripts/v0_3_1_stage_acceptance.py'
+      - 'scripts/verify_v0_3_1_stage_acceptance.py'
       - 'scripts/verify_v0_3_1_integration_roadmap.py'
+      - 'tests/test_v0_3_1_stage_acceptance.py'
       - 'tests/test_v0_3_1_integration_roadmap.py'
       - 'README.md'
       - 'pyproject.toml'
@@ -19,10 +29,20 @@ on:
       - main
     paths:
       - '.github/workflows/v0-3-1-integration-roadmap.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
       - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/**'
+      - 'contracts/trd-bot-v0.3.1-stage-acceptance-policy.json'
+      - 'contracts/trd-bot-v0.3.1-stage-acceptance-evidence.schema.json'
       - 'contracts/trd-bot-v0.3.1-nexora-integration-roadmap.json'
       - 'docs/v0.3.1/**'
+      - 'scripts/fetch_v0_3_1_acceptance_evidence.py'
+      - 'scripts/generate_v0_3_1_acceptance_evidence.py'
+      - 'scripts/run_v0_3_1_stage_gate.py'
+      - 'scripts/v0_3_1_stage_acceptance.py'
+      - 'scripts/verify_v0_3_1_stage_acceptance.py'
       - 'scripts/verify_v0_3_1_integration_roadmap.py'
+      - 'tests/test_v0_3_1_stage_acceptance.py'
       - 'tests/test_v0_3_1_integration_roadmap.py'
       - 'README.md'
       - 'pyproject.toml'
@@ -55,3 +75,9 @@ jobs:
 
       - name: Run roadmap mutation tests
         run: python -m unittest tests/test_v0_3_1_integration_roadmap.py -v
+
+      - name: Verify integrated stage acceptance policy
+        run: python scripts/verify_v0_3_1_stage_acceptance.py
+
+      - name: Run stage acceptance mutation tests
+        run: python -m unittest tests/test_v0_3_1_stage_acceptance.py -v

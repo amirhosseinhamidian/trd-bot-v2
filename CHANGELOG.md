@@ -42,6 +42,13 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
   portfolio-resource, decision-resource, backend, frontend, and PostgreSQL evidence. Only
   `TRD-V031-05` Alert snapshot resources are opened next; compatibility and Nexora `NEX-P3-03`
   remain blocked.
+- Replaced routine stage-by-stage Freeze tasks from `TRD-V031-05` onward with one reusable
+  Implementation + Acceptance workflow. Successful same-SHA gates now produce versioned CI
+  evidence with explicit 90-day retention, while failed, cancelled, skipped, incomplete, PR-only,
+  or checksum-invalid evidence cannot open the next stage.
+- Preserved the immutable `TRD-V031-00` through `TRD-V031-04` Freeze history and reserved
+  future formal Freezes for release, incompatible-contract, high-risk architecture/security, or
+  audit milestones.
 
 ### Operating boundary
 

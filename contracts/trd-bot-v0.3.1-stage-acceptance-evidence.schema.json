@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trd-bot.local/contracts/v0.3.1/stage-acceptance-evidence.schema.json",
+  "title": "TRD BOT v0.3.1 stage acceptance evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "stage_id",
+    "generated_at",
+    "repository",
+    "git",
+    "workflow",
+    "gates",
+    "test_results",
+    "artifact_checksums",
+    "overall_result",
+    "accepted",
+    "transition",
+    "safety",
+    "evidence_checksum"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trd-bot-v031-stage-acceptance-evidence-v1"
+    },
+    "stage_id": {
+      "type": "string",
+      "pattern": "^TRD-V031-(0[5-9]|1[0-1])$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repository": {
+      "type": "string",
+      "const": "amirhosseinhamidian/trd-bot-v2"
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit_sha", "tree_sha", "ref"],
+      "properties": {
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "run_attempt", "event"],
+      "properties": {
+        "run_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "run_attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "event": {
+          "enum": ["push", "pull_request", "workflow_dispatch"]
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["required", "conclusion"],
+        "properties": {
+          "required": {
+            "const": true
+          },
+          "conclusion": {
+            "enum": ["success", "failure", "cancelled", "skipped", "missing"]
+          }
+        }
+      }
+    },
+    "test_results": {
+      "type": "object"
+    },
+    "artifact_checksums": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "overall_result": {
+      "enum": ["accepted", "rejected", "incomplete", "validation_only"]
+    },
+    "accepted": {
+      "type": "boolean"
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["next_stage", "opened"],
+      "properties": {
+        "next_stage": {
+          "type": ["string", "null"]
+        },
+        "opened": {
+          "type": "boolean"
+        }
+      }
+    },
+    "safety": {
+      "type": "object"
+    },
+    "evidence_checksum": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

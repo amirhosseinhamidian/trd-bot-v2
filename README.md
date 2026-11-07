@@ -23,6 +23,13 @@ authenticated stable-paging boundary. Decision snapshot resources are frozen by
 Decision Evaluation, Candidate ranking, and Risk Gate snapshots. The next allowed stage is
 `TRD-V031-05` for Alert snapshot resources.
 
+Starting with `TRD-V031-05`, stages use one
+[`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable
+GitHub Actions gate records versioned, same-SHA evidence after backend, PostgreSQL, frontend,
+contract, and security checks. Routine stage Freeze tasks are no longer required; historical
+Freezes `00` through `04` remain immutable, and formal Freezes are reserved for release or
+explicitly high-risk milestones.
+
 TRD BOT v2 is a single-user research platform for:
 
 - market-data research
@@ -193,6 +200,9 @@ freeze procedure are documented in
 The v0.3.1 Nexora integration contract adoption, implementation sequence, safety boundary, and
 cross-repository smoke gate are documented in
 [`docs/v0.3.1/00-nexora-integration-roadmap.md`](docs/v0.3.1/00-nexora-integration-roadmap.md).
+The integrated development cycle, stage evidence contract, transition rules, release Freeze
+policy, and failed-CI recovery procedure are documented in
+[`docs/v0.3.1/development-workflow.md`](docs/v0.3.1/development-workflow.md).
 The private-file bearer authentication, loopback/HTTPS transport boundary, exact capability matrix,
 and pre-release compatibility gate are documented in
 [`docs/v0.3.1/01-service-authentication-capabilities.md`](docs/v0.3.1/01-service-authentication-capabilities.md).

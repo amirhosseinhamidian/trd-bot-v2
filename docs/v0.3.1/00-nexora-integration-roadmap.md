@@ -42,8 +42,14 @@ capabilityها و اجرای smoke واقعی local بین دو repository قا�
 | `TRD-V031-10` | contract fixtures و smoke واقعی با Nexora |
 | `TRD-V031-11` | پذیرش نهایی و release cut نسخه `0.3.1` |
 
-هر مرحله فقط پس از Freeze مرحله قبلی باز می‌شود. مرحله‌هایی که migration دارند باید
-روی PostgreSQL 17 از schema خالی و upgrade path موجود آزمایش شوند.
+مراحل `00` تا `04` در تاریخ واقعی repository با چرخهٔ مستقل Freeze تکمیل شده‌اند و artifactهای
+آن‌ها immutable باقی می‌مانند. از مرحلهٔ `TRD-V031-05` به بعد، هر مرحله فقط پس از
+`CI Acceptance PASS` همان commit باز می‌شود و Freeze مستقل stage حذف شده است. جزئیات این
+تصمیم در [ADR فرایند یکپارچه](development-workflow.md) ثبت شده است.
+
+مرحله‌هایی که migration دارند باید روی PostgreSQL 17 از schema خالی و upgrade path موجود
+آزمایش شوند. PostgreSQL round-trip و `alembic check` حتی در مرحله‌های بدون migration نیز
+به‌عنوان gate تشخیص drift اجرا می‌شوند.
 
 ## مرز امنیتی و عملیاتی
 
@@ -121,3 +127,7 @@ TRD_BOT_LIVE_EXECUTION=DISABLED
 ```
 
 مرحله مجاز بعدی فقط `TRD-V031-01 — Service authentication and capability negotiation` است.
+
+> این marker، خروجی تاریخی Freeze مرحلهٔ `00` است. وضعیت جاری repository در commit
+> `250d84ebd93b9999230ac316b1cb919e66be7bc5` مراحل `00` تا `04` را تکمیل‌شده نگه
+> می‌دارد و مرحلهٔ جاری `TRD-V031-05` را با مدل `Implementation + Acceptance` باز می‌کند.

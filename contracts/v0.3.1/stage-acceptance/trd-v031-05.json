@@ -1,0 +1,49 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
+  "stage_id": "TRD-V031-05",
+  "title": "Alert snapshot resources",
+  "status": "planned",
+  "prerequisite": {
+    "mode": "legacy_freeze",
+    "stage_id": "TRD-V031-04",
+    "artifact_path": "artifacts/v0.3.1/trd-v031-04-decision-snapshot-resources-freeze.json",
+    "artifact_canonical_checksum": "29428cd3813ce18af29a950137aa2b8449c377264239b164bf31cdf787a1ecde",
+    "repository_state_commit_sha": "250d84ebd93b9999230ac316b1cb919e66be7bc5"
+  },
+  "verification": {
+    "verifier_path": "scripts/verify_v0_3_1_alert_snapshot_resources.py",
+    "unittest_path": "tests/test_v0_3_1_alert_snapshot_resources.py",
+    "focused_pytest_paths": [
+      "tests/test_nexora_alert_snapshots.py",
+      "tests/test_nexora_decision_snapshots.py",
+      "tests/test_nexora_snapshot_protocol.py",
+      "tests/test_nexora_snapshot_persistence.py"
+    ]
+  },
+  "migration": {
+    "expected": false,
+    "postgresql_round_trip_required": true,
+    "alembic_check_required": true
+  },
+  "evidence_paths": [
+    "contracts/v0.3.1/stage-acceptance/trd-v031-05.json",
+    "contracts/trd-bot-v0.3.1-alert-snapshot-resources.json",
+    "docs/v0.3.1/05-alert-snapshot-resources.md",
+    "scripts/verify_v0_3_1_alert_snapshot_resources.py",
+    "src/trd_bot/integration/nexora",
+    "tests/test_nexora_alert_snapshots.py",
+    "tests/test_v0_3_1_alert_snapshot_resources.py"
+  ],
+  "transition": {
+    "next_stage": "TRD-V031-06",
+    "separate_freeze_task_required": false
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "nexora_p3_03_opened": false,
+    "provider_compatibility_claimed": false
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-policy-v1",
+  "decision_id": "TRD-V031-WORKFLOW-01",
+  "decision_date": "2026-11-07",
+  "status": "active",
+  "repository": "amirhosseinhamidian/trd-bot-v2",
+  "development_branch": "feature/v0.3.1-nexora-integration",
+  "effective_from_stage": "TRD-V031-05",
+  "migration_base_commit_sha": "250d84ebd93b9999230ac316b1cb919e66be7bc5",
+  "workflow": {
+    "model": "implementation_plus_acceptance",
+    "reusable_workflow": ".github/workflows/v0-3-1-stage-acceptance.yml",
+    "evidence_schema": "contracts/trd-bot-v0.3.1-stage-acceptance-evidence.schema.json",
+    "artifact_name_pattern": "{stage_id}-acceptance-{commit_sha}",
+    "artifact_retention_days": 90,
+    "accepted_events": [
+      "push",
+      "workflow_dispatch"
+    ],
+    "required_gates": [
+      "prerequisite",
+      "stage_contract",
+      "backend",
+      "postgresql",
+      "frontend",
+      "security"
+    ],
+    "failed_cancelled_or_missing_gate_opens_next_stage": false,
+    "pull_request_run_can_open_next_stage": false,
+    "separate_stage_freeze_required": false,
+    "release_milestone_evidence_committed_to_git": true
+  },
+  "historical_freezes": [
+    {
+      "stage_id": "TRD-V031-00",
+      "freeze_commit_sha": "7b878dec891f5cd6e540a58cdeab2bc458214491",
+      "artifact_path": "artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json",
+      "canonical_checksum": "5cd32cf0d8176d35bc4cba92ead6865cc7c52b0e2f487b19400d31ecd042e0e9",
+      "immutable": true
+    },
+    {
+      "stage_id": "TRD-V031-01",
+      "freeze_commit_sha": "ef45640c5bb4b1458668635404c610d776b882f7",
+      "artifact_path": "artifacts/v0.3.1/trd-v031-01-service-auth-capabilities-freeze.json",
+      "canonical_checksum": "86415f16cc21cf0650916fb201cecc0b5ff397cd090c81038e7ddfa519ed3251",
+      "immutable": true
+    },
+    {
+      "stage_id": "TRD-V031-02",
+      "freeze_commit_sha": "b4d5fb62dabffd8e74257d5b3e10148a191395a3",
+      "artifact_path": "artifacts/v0.3.1/trd-v031-02-snapshot-protocol-freeze.json",
+      "canonical_checksum": "51c681b89cdae8e16837a8310441266a3cbb98e57d2bf6bdd753e917068a1ee2",
+      "immutable": true
+    },
+    {
+      "stage_id": "TRD-V031-03",
+      "freeze_commit_sha": "7069a554d603d492434f8bf0f5d33ecca8798f71",
+      "artifact_path": "artifacts/v0.3.1/trd-v031-03-portfolio-snapshot-resources-freeze.json",
+      "canonical_checksum": "dc67927d747637facb1bd971f38094efced45b1025c37a18115a320794ee0d6a",
+      "immutable": true
+    },
+    {
+      "stage_id": "TRD-V031-04",
+      "freeze_commit_sha": "250d84ebd93b9999230ac316b1cb919e66be7bc5",
+      "artifact_path": "artifacts/v0.3.1/trd-v031-04-decision-snapshot-resources-freeze.json",
+      "canonical_checksum": "29428cd3813ce18af29a950137aa2b8449c377264239b164bf31cdf787a1ecde",
+      "immutable": true
+    }
+  ],
+  "stages": [
+    {
+      "id": "TRD-V031-05",
+      "title": "Alert snapshot resources",
+      "depends_on": "TRD-V031-04",
+      "next_stage": "TRD-V031-06",
+      "migration_expected": false,
+      "formal_freeze_allowed": false
+    },
+    {
+      "id": "TRD-V031-06",
+      "title": "Durable event feed, lookup, cursors, and replay",
+      "depends_on": "TRD-V031-05",
+      "next_stage": "TRD-V031-07",
+      "migration_expected": true,
+      "formal_freeze_allowed": false
+    },
+    {
+      "id": "TRD-V031-07",
+      "title": "Idempotent human decision review commands",
+      "depends_on": "TRD-V031-06",
+      "next_stage": "TRD-V031-08",
+      "migration_expected": true,
+      "formal_freeze_allowed": false
+    },
+    {
+      "id": "TRD-V031-08",
+      "title": "Export jobs, status, and manifest",
+      "depends_on": "TRD-V031-07",
+      "next_stage": "TRD-V031-09",
+      "migration_expected": true,
+      "formal_freeze_allowed": false
+    },
+    {
+      "id": "TRD-V031-09",
+      "title": "Full resync and gap recovery",
+      "depends_on": "TRD-V031-08",
+      "next_stage": "TRD-V031-10",
+      "migration_expected": false,
+      "formal_freeze_allowed": false
+    },
+    {
+      "id": "TRD-V031-10",
+      "title": "Cross-repository contract tests and real local smoke",
+      "depends_on": "TRD-V031-09",
+      "next_stage": "TRD-V031-11",
+      "migration_expected": false,
+      "formal_freeze_allowed": true
+    },
+    {
+      "id": "TRD-V031-11",
+      "title": "Final acceptance and v0.3.1 release cut",
+      "depends_on": "TRD-V031-10",
+      "next_stage": null,
+      "migration_expected": false,
+      "formal_freeze_allowed": true
+    }
+  ],
+  "safety": {
+    "live_execution": false,
+    "real_money_order_execution": false,
+    "exchange_trading_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "shared_database_with_nexora": false,
+    "secret_exposure": false,
+    "premature_compatibility_claim": false,
+    "nexora_p3_03_blocked_until_stage": "TRD-V031-10",
+    "nexora_p3_03_requires_real_local_provider_smoke": true
+  },
+  "transition": {
+    "active_stage": "TRD-V031-05",
+    "source_stage": "TRD-V031-04",
+    "source_evidence_mode": "legacy_freeze",
+    "source_freeze_commit_sha": "250d84ebd93b9999230ac316b1cb919e66be7bc5",
+    "next_stage_requires_accepted_ci_evidence": true
+  }
+}
