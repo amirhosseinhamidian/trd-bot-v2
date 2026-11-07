@@ -1,0 +1,53 @@
+name: TRD Bot v0.3.1 decision review commands acceptance
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - '.github/workflows/v0-3-1-decision-reviews.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261107_0039_nexora_decision_reviews.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-07.json'
+      - 'contracts/trd-bot-v0.3.1-decision-review-commands.json'
+      - 'docs/v0.3.1/07-decision-review-commands.md'
+      - 'scripts/verify_v0_3_1_decision_review_commands.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_decision_reviews.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_v0_3_1_decision_review_commands.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v0-3-1-decision-reviews.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261107_0039_nexora_decision_reviews.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-07.json'
+      - 'contracts/trd-bot-v0.3.1-decision-review-commands.json'
+      - 'docs/v0.3.1/07-decision-review-commands.md'
+      - 'scripts/verify_v0_3_1_decision_review_commands.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_decision_reviews.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_v0_3_1_decision_review_commands.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    name: TRD-V031-07 implementation and acceptance
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-07

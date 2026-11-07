@@ -20,14 +20,17 @@ snapshot resources are frozen by
 Portfolio, Position, Portfolio Intelligence, and Simulation Outcome snapshots through the
 authenticated stable-paging boundary. Decision snapshot resources are frozen by
 [`TRD-V031-04`](docs/v0.3.1/04-decision-snapshot-resources.md), which adds immutable Market Context,
-Decision Evaluation, Candidate ranking, and Risk Gate snapshots. The next allowed stage is
-Alert snapshot resources are now the acceptance candidate in
+Decision Evaluation, Candidate ranking, and Risk Gate snapshots. Alert snapshot resources were
+delivered in
 [`TRD-V031-05`](docs/v0.3.1/05-alert-snapshot-resources.md): immutable Alert publications and
-offline outcome evidence are exposed without mutable inbox state. Event feeds and review commands
-remain deferred. The current candidate is
+offline outcome evidence are exposed without mutable inbox state. Durable event delivery was
+accepted through
 [`TRD-V031-06`](docs/v0.3.1/06-durable-event-feed.md), adding a durable at-least-once event
 journal, opaque replay cursors, checksummed envelopes, aggregate gap detection, and exact event
-lookup. Review commands remain deferred to `TRD-V031-07`.
+lookup. The current candidate is
+[`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md), adding idempotent Paper/Shadow
+accept/reject/defer feedback with duplicate receipts, 409 conflict handling, and immutable source
+evidence guards. Export jobs remain deferred to `TRD-V031-08`.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable

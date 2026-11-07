@@ -4,6 +4,12 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
+- Added the integrated `TRD-V031-07` decision-review command candidate for idempotent Paper/Shadow
+  accept, reject, and defer feedback, durable duplicate receipts, 409 payload-conflict handling,
+  immutable source-evidence guards, and migration `20261107_0039`. Commands cannot authorize
+  execution, create live orders, post portfolio transactions, claim compatibility, or open
+  `NEX-P3-03`.
+
 - Added the integrated `TRD-V031-06` durable event-feed candidate with versioned checksummed
   envelopes, at-least-once cursor replay, exact event lookup, aggregate-version gap detection, and
   migration `20261107_0038`. Exactly-once claims, review commands, credentials, live execution,

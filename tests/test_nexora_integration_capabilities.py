@@ -215,6 +215,7 @@ def test_v031_stage_does_not_claim_provider_compatibility(service_token_file: Pa
     }
     assert integration_paths == {
         CAPABILITIES_PATH,
+        "/api/v1/integration/nexora/commands/decision-reviews",
         "/api/v1/integration/nexora/events",
         "/api/v1/integration/nexora/events/{event_id}",
         "/api/v1/integration/nexora/snapshots/{resource_type}",

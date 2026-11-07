@@ -190,6 +190,7 @@ def test_postgresql_connection_and_migrations() -> None:
             "market_context_input_windows",
             "market_regime_assessments",
             "monitoring_runtime_state",
+            "nexora_decision_reviews",
             "nexora_event_cursors",
             "nexora_integration_events",
             "nexora_snapshot_cursors",

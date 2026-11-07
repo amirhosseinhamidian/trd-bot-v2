@@ -39,7 +39,7 @@ def test_documentation_manifest_matches_release_and_migration_chain() -> None:
     assert manifest["target_release"]["version"] == pyproject["project"]["version"]
     assert manifest["target_release"]["version"] == frontend_package["version"]
     assert manifest["target_release"]["migration_revision"] in revision_chain
-    assert head == "20261107_0038"
+    assert head == "20261107_0039"
     assert manifest["target_release"]["commit_sha_required"] is True
 
 

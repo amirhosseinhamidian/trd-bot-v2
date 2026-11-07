@@ -1,0 +1,79 @@
+{
+  "schema_version": "trd-bot-v031-decision-review-commands-v1",
+  "decision_id": "TRD-V031-07",
+  "decision_date": "2026-11-07",
+  "status": "candidate",
+  "title": "Idempotent human decision review commands",
+  "prerequisite": {
+    "decision_id": "TRD-V031-06",
+    "acceptance_mode": "ci_artifact_same_sha",
+    "accepted_commit_sha": "ee96c73ead801a93497b1cb9b06decb5eac5842a",
+    "accepted_evidence_checksum": "84948fc942e4621ba8345ae62f808c5231851a05f01444e72448e9a47343ad7b"
+  },
+  "endpoint": {
+    "operation": "POST /api/v1/integration/nexora/commands/decision-reviews",
+    "authentication": "bearer_service_token",
+    "content_type": "application/json",
+    "idempotency_header": "Idempotency-Key",
+    "idempotency_key_minimum_length": 16,
+    "idempotency_key_maximum_length": 160,
+    "success_status": 202,
+    "cache_control": "private, no-store"
+  },
+  "protocol": {
+    "command_schema_version": "nexora-decision-review-command-v1",
+    "receipt_schema_version": "nexora-command-receipt-v1",
+    "command_types": [
+      "decision_review.accept.v1",
+      "decision_review.reject.v1",
+      "decision_review.defer.v1"
+    ],
+    "portfolio_modes": ["paper", "shadow"],
+    "exact_retry_status": "duplicate",
+    "same_key_different_body_status": 409,
+    "source_evidence_mismatch_status": 412,
+    "source_evidence_checksum_required": true,
+    "optimistic_concurrency_owner": "nexora",
+    "provider_expected_version_required": false
+  },
+  "persistence": {
+    "migration_added": true,
+    "migration_revision": "20261107_0039",
+    "table": "nexora_decision_reviews",
+    "append_only_journal": true,
+    "idempotency_key_unique": true,
+    "request_checksum_recorded": true,
+    "source_reference_recorded": true
+  },
+  "ownership": {
+    "owner_review_source_of_truth": "nexora",
+    "provider_feedback_only": true,
+    "execution_authorization_created": false,
+    "live_order_created": false,
+    "portfolio_transaction_posted": false
+  },
+  "safety": {
+    "research_shadow_paper_only": true,
+    "offline_only_required": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "wallet_or_fund_transfer_allowed": false,
+    "shared_database_allowed": false,
+    "live_execution_enabled": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false
+  },
+  "scope": {
+    "decision_review_commands_added": true,
+    "duplicate_receipt_added": true,
+    "source_evidence_guard_added": true,
+    "export_protocol_added": false,
+    "release_version_bumped": false
+  },
+  "transition": {
+    "acceptance_mode": "ci_artifact_same_sha",
+    "next_allowed_stage": "TRD-V031-08_AFTER_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false,
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}

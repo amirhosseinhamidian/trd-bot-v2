@@ -3,16 +3,22 @@ from __future__ import annotations
 import ipaddress
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Final
+from typing import Annotated, Final
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Header, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import Response
 
 from trd_bot.api.dependencies import DatabaseSessionDependency
 from trd_bot.core.config import get_settings
+from trd_bot.db.nexora_decision_reviews import (
+    DecisionReviewError,
+    DecisionReviewIdempotencyConflictError,
+    DecisionReviewSourceEvidenceError,
+    SqlAlchemyNexoraDecisionReviewStore,
+)
 from trd_bot.db.nexora_events import SqlAlchemyNexoraEventStore
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
 from trd_bot.integration.nexora.alert_snapshots import (
@@ -36,6 +42,7 @@ from trd_bot.integration.nexora.contracts import (
     IntegrationErrorDetail,
     IntegrationErrorEnvelope,
 )
+from trd_bot.integration.nexora.decision_reviews import CommandReceipt, DecisionReviewCommand
 from trd_bot.integration.nexora.decision_snapshots import (
     DECISION_SNAPSHOT_RESOURCE_TYPES,
     DecisionSnapshotResourceReader,
@@ -138,6 +145,13 @@ def _accepts_json(request: Request) -> bool:
         return False
     media_types = {item.split(";", 1)[0].strip().lower() for item in accepted.split(",")}
     return "application/json" in media_types or "*/*" in media_types
+
+
+def _has_json_content_type(request: Request) -> bool:
+    content_type = request.headers.get("Content-Type")
+    if content_type is None:
+        return False
+    return content_type.split(";", 1)[0].strip().lower() == "application/json"
 
 
 def _is_loopback_host(host: str | None) -> bool:
@@ -499,3 +513,98 @@ def get_event(
     headers = _response_headers(authorized.correlation_header, authorized.provider_version)
     headers["Cache-Control"] = "private, no-store"
     return JSONResponse(status_code=200, content=event.model_dump(mode="json"), headers=headers)
+
+
+@router.post(
+    "/commands/decision-reviews",
+    response_model=CommandReceipt,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        409: {"model": IntegrationErrorEnvelope},
+        412: {"model": IntegrationErrorEnvelope},
+        422: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def submit_decision_review(
+    command: DecisionReviewCommand,
+    request: Request,
+    session: DatabaseSessionDependency,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=16, max_length=160),
+    ],
+) -> Response:
+    """Durably accept idempotent Paper/Shadow feedback from the Nexora owner review."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    if not _has_json_content_type(request):
+        return _error_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="Content-Type must be application/json",
+            retryable=False,
+        )
+    try:
+        receipt = SqlAlchemyNexoraDecisionReviewStore(session).submit(
+            command=command,
+            idempotency_key=idempotency_key,
+            correlation_id=authorized.correlation_id,
+            accepted_at=datetime.now(UTC),
+            source_version=authorized.provider_version,
+        )
+        session.commit()
+    except DecisionReviewIdempotencyConflictError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_409_CONFLICT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="IDEMPOTENCY_CONFLICT",
+            message="Idempotency-Key belongs to a different decision review",
+            retryable=False,
+        )
+    except DecisionReviewSourceEvidenceError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_412_PRECONDITION_FAILED,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="CHECKSUM_MISMATCH",
+            message="decision review source evidence is missing, stale, or mismatched",
+            retryable=False,
+        )
+    except DecisionReviewError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="decision review command is invalid",
+            retryable=False,
+        )
+    except (SQLAlchemyError, ValueError):
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="decision review journal is unavailable",
+            retryable=True,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content=receipt.model_dump(mode="json"),
+        headers=headers,
+    )

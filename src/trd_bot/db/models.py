@@ -3152,3 +3152,80 @@ class NexoraEventCursorRow(DatabaseBase):
     page_limit: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class NexoraDecisionReviewRow(DatabaseBase):
+    """Append-only Paper/Shadow review feedback received from Nexora."""
+
+    __tablename__ = "nexora_decision_reviews"
+    __table_args__ = (
+        CheckConstraint(
+            "command_type IN ('decision_review.accept.v1', "
+            "'decision_review.reject.v1', 'decision_review.defer.v1')",
+            name="command_type_supported",
+        ),
+        CheckConstraint("action IN ('accept', 'reject', 'defer')", name="action_supported"),
+        CheckConstraint("portfolio_mode IN ('paper', 'shadow')", name="portfolio_mode_supported"),
+        CheckConstraint(
+            "(action = 'accept' AND command_type = 'decision_review.accept.v1') OR "
+            "(action = 'reject' AND command_type = 'decision_review.reject.v1') OR "
+            "(action = 'defer' AND command_type = 'decision_review.defer.v1')",
+            name="command_action_consistent",
+        ),
+        CheckConstraint("source_product = 'trd_bot'", name="source_product_trd_bot"),
+        CheckConstraint(
+            "source_resource_type = 'decision_evaluation'",
+            name="source_resource_type_decision_evaluation",
+        ),
+        CheckConstraint("decision_id = source_resource_id", name="source_identity_consistent"),
+        CheckConstraint("reviewed_at >= source_observed_at", name="review_after_source"),
+        CheckConstraint(
+            "length(source_evidence_checksum) = 71",
+            name="source_evidence_checksum_length",
+        ),
+        CheckConstraint("length(request_checksum) = 71", name="request_checksum_length"),
+        CheckConstraint("offline_only", name="offline_only_required"),
+        CheckConstraint(
+            "NOT execution_authorization",
+            name="execution_authorization_forbidden",
+        ),
+        CheckConstraint("NOT creates_live_order", name="live_order_forbidden"),
+        CheckConstraint(
+            "NOT posts_portfolio_transaction",
+            name="portfolio_transaction_forbidden",
+        ),
+        Index(
+            "ix_nexora_decision_reviews_decision_accepted_at",
+            "decision_id",
+            "accepted_at",
+        ),
+    )
+    command_id: Mapped[str] = mapped_column(String(75), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    decision_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("decision_evaluation_intents.evaluation_id", ondelete="RESTRICT"),
+        index=True,
+    )
+    command_schema_version: Mapped[str] = mapped_column(String(50))
+    command_type: Mapped[str] = mapped_column(String(50))
+    action: Mapped[str] = mapped_column(String(20), index=True)
+    portfolio_mode: Mapped[str] = mapped_column(String(20), index=True)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    reason: Mapped[str] = mapped_column(Text)
+    source_reference_schema_version: Mapped[str] = mapped_column(String(50))
+    source_product: Mapped[str] = mapped_column(String(30))
+    source_version: Mapped[str] = mapped_column(String(30))
+    source_resource_type: Mapped[str] = mapped_column(String(80))
+    source_resource_id: Mapped[str] = mapped_column(String(160))
+    source_resource_schema_version: Mapped[str] = mapped_column(String(120))
+    source_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    source_evidence_checksum: Mapped[str] = mapped_column(String(71), index=True)
+    request_checksum: Mapped[str] = mapped_column(String(71), index=True)
+    correlation_id: Mapped[str] = mapped_column(String(36))
+    accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    offline_only: Mapped[bool] = mapped_column(Boolean, default=True)
+    execution_authorization: Mapped[bool] = mapped_column(Boolean, default=False)
+    creates_live_order: Mapped[bool] = mapped_column(Boolean, default=False)
+    posts_portfolio_transaction: Mapped[bool] = mapped_column(Boolean, default=False)
+    request_json: Mapped[str] = mapped_column(Text)

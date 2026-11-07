@@ -89,6 +89,50 @@ class DecisionSnapshotResourceReader:
         self._require_resource_type(resource_type)
         return _canonical_timestamp(captured_at)
 
+    def get_record(self, *, resource_type: str, resource_id: str) -> SnapshotRecord | None:
+        """Resolve one immutable resource for command source-evidence validation."""
+
+        self._require_resource_type(resource_type)
+        if resource_type == MARKET_CONTEXT:
+            context = self._session.get(MarketRegimeAssessmentRow, resource_id)
+            if context is None:
+                return None
+            return self._record(
+                resource_type=resource_type,
+                resource_id=context.assessment_id,
+                observed_at=context.assessed_at,
+                payload=self._market_context_payload(context),
+            )
+        if resource_type == DECISION_EVALUATION:
+            evaluation = self._session.get(DecisionEvaluationIntentRow, resource_id)
+            if evaluation is None:
+                return None
+            return self._record(
+                resource_type=resource_type,
+                resource_id=evaluation.evaluation_id,
+                observed_at=evaluation.requested_at,
+                payload=self._decision_evaluation_payload(evaluation),
+            )
+        if resource_type == CANDIDATE:
+            candidate = self._session.get(DecisionCandidateRankingRow, resource_id)
+            if candidate is None:
+                return None
+            return self._record(
+                resource_type=resource_type,
+                resource_id=candidate.evaluation_id,
+                observed_at=candidate.ranked_at,
+                payload=self._candidate_payload(candidate),
+            )
+        risk_gate = self._session.get(DecisionRiskGateRow, resource_id)
+        if risk_gate is None:
+            return None
+        return self._record(
+            resource_type=resource_type,
+            resource_id=risk_gate.evaluation_id,
+            observed_at=risk_gate.evaluated_at,
+            payload=self._risk_gate_payload(risk_gate),
+        )
+
     def list_records(
         self,
         *,

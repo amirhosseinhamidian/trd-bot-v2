@@ -23,6 +23,8 @@ type IntegrationErrorCode = Literal[
     "SOURCE_UNAVAILABLE",
     "CURSOR_EXPIRED",
     "CURSOR_CONFLICT",
+    "IDEMPOTENCY_CONFLICT",
+    "CHECKSUM_MISMATCH",
 ]
 
 
