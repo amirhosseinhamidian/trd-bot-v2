@@ -38,6 +38,10 @@ Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
   Context, Decision Evaluation, immutable Candidate ranking evidence, and Risk Gate resources.
   Alert snapshots, review commands, compatibility, external orders, live execution, and Nexora
   `NEX-P3-03` stay blocked.
+- Froze `TRD-V031-04` against same-SHA successful roadmap, service-auth, snapshot-protocol,
+  portfolio-resource, decision-resource, backend, frontend, and PostgreSQL evidence. Only
+  `TRD-V031-05` Alert snapshot resources are opened next; compatibility and Nexora `NEX-P3-03`
+  remain blocked.
 
 ### Operating boundary
 

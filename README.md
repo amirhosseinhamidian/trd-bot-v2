@@ -18,9 +18,10 @@ opaque-cursor, deterministic-paging, and checksummed source-reference foundation
 snapshot resources are frozen by
 [`TRD-V031-03`](docs/v0.3.1/03-portfolio-snapshot-resources.md), which exposes only Paper/Shadow
 Portfolio, Position, Portfolio Intelligence, and Simulation Outcome snapshots through the
-authenticated stable-paging boundary. The current candidate is
+authenticated stable-paging boundary. Decision snapshot resources are frozen by
 [`TRD-V031-04`](docs/v0.3.1/04-decision-snapshot-resources.md), which adds immutable Market Context,
-Decision Evaluation, Candidate ranking, and Risk Gate snapshots. Alert adapters remain deferred.
+Decision Evaluation, Candidate ranking, and Risk Gate snapshots. The next allowed stage is
+`TRD-V031-05` for Alert snapshot resources.
 
 TRD BOT v2 is a single-user research platform for:
 
