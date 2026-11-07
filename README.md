@@ -14,10 +14,12 @@ the first runtime boundary is frozen by
 fail-closed private-file service authentication and the versioned capabilities endpoint while the
 provider remains version `0.3.0` and incompatible. The stable snapshot foundation is frozen by
 [`TRD-V031-02`](docs/v0.3.1/02-stable-snapshot-protocol.md), which adds the durable stable-scan,
-opaque-cursor, deterministic-paging, and checksummed source-reference foundation. The current
-candidate is [`TRD-V031-03`](docs/v0.3.1/03-portfolio-snapshot-resources.md), which exposes only
-Paper/Shadow Portfolio, Position, Portfolio Intelligence, and Simulation Outcome snapshots through
-the authenticated stable-paging boundary. Decision and Alert adapters remain deferred.
+opaque-cursor, deterministic-paging, and checksummed source-reference foundation. Portfolio
+snapshot resources are frozen by
+[`TRD-V031-03`](docs/v0.3.1/03-portfolio-snapshot-resources.md), which exposes only Paper/Shadow
+Portfolio, Position, Portfolio Intelligence, and Simulation Outcome snapshots through the
+authenticated stable-paging boundary. The next allowed stage is `TRD-V031-04` for Decision
+snapshot resources; Alert adapters remain deferred.
 
 TRD BOT v2 is a single-user research platform for:
 

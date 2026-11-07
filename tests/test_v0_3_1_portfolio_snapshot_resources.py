@@ -21,12 +21,14 @@ class V031PortfolioSnapshotResourceTests(unittest.TestCase):
         self.contract = MODULE.load_contract()
         self.profile = MODULE.load_profile()
         self.schema = MODULE.load_schema()
+        self.freeze = MODULE.load_freeze_record()
 
     def test_candidate_matches_frozen_profile_and_previous_freeze(self) -> None:
         MODULE.validate_previous_freeze(MODULE.load_previous_freeze())
         MODULE.validate_contract(self.contract, self.profile)
         MODULE.validate_schema(self.schema)
         MODULE.validate_implementation_sources()
+        MODULE.validate_freeze_record(self.freeze, self.contract, self.schema)
 
     def test_contract_checksum_rejects_drift(self) -> None:
         changed = copy.deepcopy(self.contract)
@@ -82,6 +84,45 @@ class V031PortfolioSnapshotResourceTests(unittest.TestCase):
             MODULE.validate_contract(
                 changed,
                 self.profile,
+                expected_checksum=MODULE.canonical_checksum(changed),
+            )
+
+    def test_freeze_checksum_rejects_drift(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["candidate_tree_sha"] = "0" * 40
+        with self.assertRaisesRegex(MODULE.V031PortfolioSnapshotError, "Freeze artifact drift"):
+            MODULE.validate_freeze_record(changed, self.contract, self.schema)
+
+    def test_freeze_rejects_failed_same_sha_workflow(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["workflows"]["portfolio_snapshot_resources"]["conclusion"] = "failure"
+        with self.assertRaisesRegex(MODULE.V031PortfolioSnapshotError, "workflow failed"):
+            MODULE.validate_freeze_record(
+                changed,
+                self.contract,
+                self.schema,
+                expected_checksum=MODULE.canonical_checksum(changed),
+            )
+
+    def test_freeze_does_not_open_nexora_before_real_provider_smoke(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["acceptance"]["nexora_p3_03_opened"] = True
+        with self.assertRaisesRegex(MODULE.V031PortfolioSnapshotError, "premature Freeze claim"):
+            MODULE.validate_freeze_record(
+                changed,
+                self.contract,
+                self.schema,
+                expected_checksum=MODULE.canonical_checksum(changed),
+            )
+
+    def test_freeze_opens_only_decision_snapshot_resources(self) -> None:
+        changed = copy.deepcopy(self.freeze)
+        changed["transition"]["next_allowed_stage"] = "TRD-V031-05"
+        with self.assertRaisesRegex(MODULE.V031PortfolioSnapshotError, "post-Freeze stage drift"):
+            MODULE.validate_freeze_record(
+                changed,
+                self.contract,
+                self.schema,
                 expected_checksum=MODULE.canonical_checksum(changed),
             )
 

@@ -1,0 +1,176 @@
+{
+  "schema_version": "trd-bot-v031-portfolio-snapshot-resources-freeze-v1",
+  "decision_id": "TRD-V031-03",
+  "decision_date": "2026-11-07",
+  "status": "frozen",
+  "frozen": true,
+  "repository": "amirhosseinhamidian/trd-bot-v2",
+  "branch": "feature/v0.3.1-nexora-integration",
+  "candidate_commit_sha": "e42add51039ea7243672cc4cbfb1b7f6a2a862fb",
+  "candidate_tree_sha": "d26e8f4a9392c643c1b5629b5480b0c6fb4b7ee4",
+  "parent_freeze_commit_sha": "b4d5fb62dabffd8e74257d5b3e10148a191395a3",
+  "candidate_commit_message": "feat(trd-bot): add Nexora portfolio snapshot resources",
+  "stage_contract": {
+    "path": "contracts/trd-bot-v0.3.1-portfolio-snapshot-resources.json",
+    "canonical_checksum": "ba47facd32990e9e8b8644eec0b2d513a655b6b504eb1c6a26685b948da6d981"
+  },
+  "schemas": {
+    "portfolio_snapshot_resources": {
+      "path": "contracts/integration/nexora/v1/portfolio-snapshot-resources.schema.json",
+      "canonical_checksum": "5a523d248e20bad484cfdf6ff5b5b31501237e9e7d3f45a3a056e3db9e557fa5"
+    }
+  },
+  "implementation": {
+    "provider_version": "0.3.0",
+    "migration_revision": "20261106_0037",
+    "database_migration_added": false,
+    "release_inventory_checksum": "5d0451e214da19aaa9d7c93709a167f74600f1a69b5d6d89c54eb26b79c85be1",
+    "files_sha256": {
+      "contracts/integration/nexora/v1/portfolio-snapshot-resources.schema.json": "feb4274d768f4dc2f5b23e422e53a8b4aef8fdf21ef838cd0d43b21ec4b0fee3",
+      "contracts/trd-bot-v0.3.1-portfolio-snapshot-resources.json": "881a7481272c0ccafe32bda3678fe7ffb1a0656f49861bfc0dbd55b8039ab3f2",
+      "src/trd_bot/integration/nexora/contracts.py": "c7ea94a12ab005d3553b6c66ef303ad45881de91dd18669cd887db025f8566f7",
+      "src/trd_bot/integration/nexora/portfolio_snapshots.py": "68949811918178f4ff679ded20d17ddbfe79952f0479a4b8293fe6897713ab40",
+      "src/trd_bot/integration/nexora/routes.py": "f32b5cadf48b8ef50e99d652a8c53a6c530618b8c0c1fd8dcbbf503be34e7287",
+      "tests/test_nexora_integration_capabilities.py": "e782fa9724ca63c0a12e3b9f27e4b0270ade8f4433a94cc4f3c631b7c8ae3b91",
+      "tests/test_nexora_portfolio_snapshots.py": "d5802cc50463da3606f5c3b8253d41099d8bff8252f9acfb7c5bd64b9edcea95",
+      "tests/test_release_hardening.py": "36c17d3960e080e41ce38f6d8445b887b8b385f6bd2baf5dcb4464f3ee3e93e2",
+      "tests/test_v0_3_1_portfolio_snapshot_resources.py": "f7d86752ca4ee15cf2aa9899f394fa0dea416f7f5e59b8cc5f950b7c44f5b5d1"
+    }
+  },
+  "workflows": {
+    "integration_roadmap": {
+      "name": "TRD Bot v0.3.1 integration roadmap",
+      "path": ".github/workflows/v0-3-1-integration-roadmap.yml",
+      "run_id": 42349603979,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603979",
+      "jobs": {
+        "v0.3.1 integration roadmap contract": {
+          "job_id": 128334718450,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    },
+    "service_auth_capabilities": {
+      "name": "TRD Bot v0.3.1 service auth and capabilities",
+      "path": ".github/workflows/v0-3-1-service-auth-capabilities.yml",
+      "run_id": 42349603880,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603880",
+      "jobs": {
+        "v0.3.1 service auth and capabilities": {
+          "job_id": 128334717847,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    },
+    "snapshot_protocol": {
+      "name": "TRD Bot v0.3.1 snapshot protocol",
+      "path": ".github/workflows/v0-3-1-snapshot-protocol.yml",
+      "run_id": 42349603881,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603881",
+      "jobs": {
+        "v0.3.1 stable snapshot protocol": {
+          "job_id": 128334717612,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    },
+    "portfolio_snapshot_resources": {
+      "name": "TRD Bot v0.3.1 portfolio snapshot resources",
+      "path": ".github/workflows/v0-3-1-portfolio-snapshots.yml",
+      "run_id": 42349603997,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603997",
+      "jobs": {
+        "v0.3.1 portfolio snapshot resources": {
+          "job_id": 128334717690,
+          "status": "completed",
+          "conclusion": "success",
+          "verified_steps": [
+            "Verify stage contract and portfolio resource boundary",
+            "Run stage mutation tests",
+            "Run authenticated portfolio snapshot tests",
+            "Check formatting",
+            "Run Ruff",
+            "Run strict type checks"
+          ]
+        }
+      }
+    },
+    "ci": {
+      "name": "CI",
+      "path": ".github/workflows/ci.yml",
+      "run_id": 42349603882,
+      "run_attempt": 1,
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603882",
+      "jobs": {
+        "Backend quality and tests": {
+          "job_id": 128334717885,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "PostgreSQL migrations and integration tests": {
+          "job_id": 128334717959,
+          "status": "completed",
+          "conclusion": "success"
+        },
+        "Frontend quality, tests, and build": {
+          "job_id": 128334717732,
+          "status": "completed",
+          "conclusion": "success"
+        }
+      }
+    }
+  },
+  "acceptance": {
+    "failed_workflows": [],
+    "stage_contract_frozen": true,
+    "portfolio_resource_allowlist_frozen": true,
+    "portfolio_resource_schemas_frozen": true,
+    "authenticated_snapshot_endpoint_frozen": true,
+    "stable_paging_frozen": true,
+    "source_reference_checksum_frozen": true,
+    "paper_shadow_only_frozen": true,
+    "runtime_behavior_added": true,
+    "database_migration_added": false,
+    "decision_snapshot_resources_added": false,
+    "alert_snapshot_resources_added": false,
+    "event_feed_added": false,
+    "review_commands_added": false,
+    "export_protocol_added": false,
+    "release_version_bumped": false,
+    "version_0_3_0_remains_incompatible": true,
+    "provider_compatibility_claimed": false,
+    "real_provider_smoke_passed": false,
+    "nexora_p3_03_opened": false,
+    "external_order_submission_allowed": false,
+    "live_execution_enabled": false,
+    "production_readiness_claimed": false
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-04",
+    "next_stage_title": "Decision snapshot resources",
+    "nexora_stage_after_release_smoke": "NEX-P3-03",
+    "nexora_stage_remains_blocked_until": "compatible_real_provider_smoke"
+  }
+}

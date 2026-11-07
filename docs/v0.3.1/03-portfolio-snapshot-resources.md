@@ -1,6 +1,6 @@
 # TRD-V031-03 — Portfolio Snapshot Resources
 
-وضعیت: **Candidate**
+وضعیت: **Frozen**
 تاریخ تصمیم: ۲۰۲۶-۱۱-۰۷
 پیش‌نیاز فریز‌شده: commit `b4d5fb62dabffd8e74257d5b3e10148a191395a3`
 
@@ -76,4 +76,26 @@ TRD_BOT_LIVE_EXECUTION=DISABLED
 NEXT_ALLOWED_STAGE=TRD-V031-03-FREEZE
 ```
 
-پس از CI موفق روی همان candidate SHA، فقط `TRD-V031-03-FREEZE` مجاز است.
+## Freeze و شواهد همان SHA
+
+candidate با commit `e42add51039ea7243672cc4cbfb1b7f6a2a862fb` و tree
+`d26e8f4a9392c643c1b5629b5480b0c6fb4b7ee4` پذیرفته شد. artifact تغییرناپذیر
+[`trd-v031-03-portfolio-snapshot-resources-freeze.json`](../../artifacts/v0.3.1/trd-v031-03-portfolio-snapshot-resources-freeze.json)
+موفقیت همان SHA را برای workflowهای roadmap، service auth، snapshot protocol، portfolio
+resources و CI ثبت می‌کند.
+
+```text
+TRD_V031_03_FREEZE=PASS
+NEXT_ALLOWED_STAGE=TRD-V031-04
+```
+
+runهای پذیرفته‌شده:
+
+- roadmap: [`42349603979`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603979)
+- service auth: [`42349603880`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603880)
+- snapshot protocol: [`42349603881`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603881)
+- portfolio resources: [`42349603997`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603997)
+- CI: [`42349603882`](https://github.com/amirhosseinhamidian/trd-bot-v2/actions/runs/42349603882)
+
+این Freeze فقط `TRD-V031-04` (Decision snapshot resources) را باز می‌کند. Alert resources،
+event feed، command، export، ادعای compatibility، `NEX-P3-03` و live execution همچنان بسته‌اند.
