@@ -4,6 +4,12 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
+- Added the integrated `TRD-V031-09` full-resync candidate with structured projection-pause
+  signals, complete ten-resource snapshot scans, checksum validation, idempotent event replay,
+  contiguous aggregate-version recovery, operator escalation, and atomic projection/checkpoint
+  publication guards. No endpoint or migration was added; compatibility and `NEX-P3-03` remain
+  blocked pending Stage 10 real local smoke.
+
 - Added the integrated `TRD-V031-08` export-job candidate with idempotent private and AI-safe
   exports, five deterministic output formats, durable status, atomic complete-only manifests,
   SHA-256 file evidence, source lineage, secret rejection/redaction, and migration

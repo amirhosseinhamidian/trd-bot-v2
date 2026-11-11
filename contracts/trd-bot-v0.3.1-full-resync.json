@@ -1,0 +1,65 @@
+{
+  "schema_version": "trd-bot-v031-full-resync-v1",
+  "decision_id": "TRD-V031-09",
+  "decision_date": "2026-11-11",
+  "status": "candidate",
+  "title": "Full resync and gap recovery",
+  "prerequisite": {
+    "decision_id": "TRD-V031-08",
+    "acceptance_mode": "ci_artifact_same_sha",
+    "accepted_commit_sha": "2ca62661fc80096e03c16e2b02cc19a997ba2d07",
+    "accepted_evidence_checksum": "00c7b9b88b1b99940f87bd7059bea8ef911a95ca93f85c273185871af61c63f4"
+  },
+  "api_boundary": {
+    "new_operations": [],
+    "frozen_operations_changed": false,
+    "cursor_expired_status": 410,
+    "cursor_expired_details_action": "full_snapshot_resync",
+    "projection_publication_signal": "pause"
+  },
+  "state_machine": {
+    "states": [
+      "projection_paused",
+      "snapshot_scanning",
+      "event_replay",
+      "reconciling",
+      "ready_to_publish",
+      "operator_intervention_required",
+      "published"
+    ],
+    "triggers": [
+      "cursor_expired_response",
+      "aggregate_version_gap",
+      "checksum_mismatch"
+    ],
+    "all_snapshot_resources_required": true,
+    "snapshot_resource_count": 10,
+    "event_deduplication_keys": ["event_id", "idempotency_key"],
+    "aggregate_versions_must_be_contiguous": true,
+    "partial_snapshot_publish_allowed": false,
+    "checkpoint_and_projection_publish_atomically": true,
+    "unresolved_gap_requires_operator_intervention": true,
+    "stale_or_degraded_state_must_be_visible": true
+  },
+  "persistence": {
+    "migration_revision": null,
+    "new_tables": [],
+    "uses_existing_snapshot_and_event_evidence": true
+  },
+  "safety": {
+    "research_shadow_paper_only": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "wallet_or_fund_transfer_allowed": false,
+    "shared_database_allowed": false,
+    "live_execution_enabled": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false
+  },
+  "transition": {
+    "acceptance_mode": "ci_artifact_same_sha",
+    "next_allowed_stage": "TRD-V031-10_AFTER_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false,
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}

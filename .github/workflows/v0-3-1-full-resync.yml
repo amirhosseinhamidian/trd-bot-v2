@@ -1,0 +1,53 @@
+name: TRD Bot v0.3.1 full resync acceptance
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - '.github/workflows/v0-3-1-full-resync.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-09.json'
+      - 'contracts/trd-bot-v0.3.1-full-resync.json'
+      - 'docs/v0.3.1/09-full-resync-gap-recovery.md'
+      - 'scripts/verify_v0_3_1_full_resync.py'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_nexora_event_feed.py'
+      - 'tests/test_nexora_portfolio_snapshots.py'
+      - 'tests/test_nexora_resync.py'
+      - 'tests/test_nexora_snapshot_protocol.py'
+      - 'tests/test_release_hardening.py'
+      - 'tests/test_v0_3_1_full_resync.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v0-3-1-full-resync.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-09.json'
+      - 'contracts/trd-bot-v0.3.1-full-resync.json'
+      - 'docs/v0.3.1/09-full-resync-gap-recovery.md'
+      - 'scripts/verify_v0_3_1_full_resync.py'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_nexora_event_feed.py'
+      - 'tests/test_nexora_portfolio_snapshots.py'
+      - 'tests/test_nexora_resync.py'
+      - 'tests/test_nexora_snapshot_protocol.py'
+      - 'tests/test_release_hardening.py'
+      - 'tests/test_v0_3_1_full_resync.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    name: TRD-V031-09 implementation and acceptance
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-09

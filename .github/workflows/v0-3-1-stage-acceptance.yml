@@ -191,6 +191,7 @@ jobs:
             tests/test_nexora_decision_reviews.py \
             tests/test_nexora_exports.py \
             tests/test_nexora_event_feed.py \
+            tests/test_nexora_resync.py \
             tests/test_nexora_snapshot_protocol.py \
             tests/test_nexora_snapshot_persistence.py \
             -v

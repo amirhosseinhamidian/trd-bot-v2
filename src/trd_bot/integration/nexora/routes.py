@@ -3,7 +3,7 @@ from __future__ import annotations
 import ipaddress
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Annotated, Final
+from typing import Annotated, Any, Final
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Header, Request, status
@@ -68,6 +68,7 @@ from trd_bot.integration.nexora.portfolio_snapshots import (
     PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
     PortfolioSnapshotResourceReader,
 )
+from trd_bot.integration.nexora.resync import resync_required_details
 from trd_bot.integration.nexora.snapshots import (
     SnapshotCursorConflictError,
     SnapshotCursorExpiredError,
@@ -112,6 +113,7 @@ def _error_response(
     code: IntegrationErrorCode,
     message: str,
     retryable: bool,
+    details: dict[str, Any] | None = None,
     authenticate: bool = False,
 ) -> JSONResponse:
     envelope = IntegrationErrorEnvelope(
@@ -122,7 +124,7 @@ def _error_response(
             code=code,
             message=message,
             retryable=retryable,
-            details={},
+            details={} if details is None else details,
         ),
     )
     headers = _response_headers(str(correlation_id), provider_version)
@@ -355,6 +357,7 @@ def get_snapshot_page(
             code="CURSOR_EXPIRED",
             message="snapshot cursor expired; full resync is required",
             retryable=False,
+            details=resync_required_details("cursor_expired_response"),
         )
     except SnapshotCursorConflictError:
         session.rollback()
@@ -433,6 +436,7 @@ def get_event_page(
             code="CURSOR_EXPIRED",
             message="event cursor expired; full snapshot resync is required",
             retryable=False,
+            details=resync_required_details("cursor_expired_response"),
         )
     except EventCursorConflictError:
         session.rollback()

@@ -28,10 +28,12 @@ accepted through
 [`TRD-V031-06`](docs/v0.3.1/06-durable-event-feed.md), adding a durable at-least-once event
 journal, opaque replay cursors, checksummed envelopes, aggregate gap detection, and exact event
 lookup. Decision-review commands were accepted through
-[`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md). The current candidate is
+[`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md). Export jobs were accepted through
 [`TRD-V031-08`](docs/v0.3.1/08-export-jobs.md), adding durable idempotent private/AI-safe export
-jobs, lifecycle status, atomic complete manifests, file checksums, and source lineage. Full resync
-and gap recovery remain deferred to `TRD-V031-09`.
+jobs, lifecycle status, atomic complete manifests, file checksums, and source lineage. The current
+candidate is [`TRD-V031-09`](docs/v0.3.1/09-full-resync-gap-recovery.md), adding fail-closed
+projection pause signals, complete snapshot/event reconciliation, aggregate gap detection,
+operator escalation, and atomic publication guards without a new API operation or migration.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable

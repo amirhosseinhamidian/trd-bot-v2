@@ -269,3 +269,10 @@ def test_expired_cursor_returns_410_and_requires_full_resync(
     assert expired.status_code == 410
     assert expired.json()["error"]["code"] == "CURSOR_EXPIRED"
     assert "full resync" in expired.json()["error"]["message"]
+    assert expired.json()["error"]["details"] == {
+        "action": "full_snapshot_resync",
+        "partial_snapshot_publish_allowed": False,
+        "projection_publication": "pause",
+        "stale_or_degraded_state_visible": True,
+        "trigger": "cursor_expired_response",
+    }

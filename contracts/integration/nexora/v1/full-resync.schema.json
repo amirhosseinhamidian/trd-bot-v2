@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trd-bot.local/contracts/integration/nexora/v1/full-resync.schema.json",
+  "title": "Nexora Full Resync and Gap Recovery",
+  "$defs": {
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "trigger",
+        "state",
+        "started_at",
+        "reconciled_at",
+        "projection_publication",
+        "stale_or_degraded_state_visible",
+        "partial_snapshot_publish_allowed",
+        "snapshot_resource_counts",
+        "snapshot_checksum",
+        "replayed_event_ids",
+        "deduplicated_event_ids",
+        "event_cursor",
+        "aggregate_versions",
+        "publication_token",
+        "checkpoint_and_projection_publish_atomically",
+        "operator_intervention_required",
+        "escalation_reason",
+        "live_execution_enabled",
+        "external_order_submission_allowed"
+      ],
+      "properties": {
+        "schema_version": {"const": "nexora-full-resync-report-v1"},
+        "trigger": {
+          "enum": ["cursor_expired_response", "aggregate_version_gap", "checksum_mismatch"]
+        },
+        "state": {"enum": ["ready_to_publish", "operator_intervention_required"]},
+        "started_at": {"type": "string", "format": "date-time"},
+        "reconciled_at": {"type": "string", "format": "date-time"},
+        "projection_publication": {"const": "paused"},
+        "stale_or_degraded_state_visible": {"const": true},
+        "partial_snapshot_publish_allowed": {"const": false},
+        "snapshot_resource_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "snapshot_checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "replayed_event_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^evt_[0-9a-f]{64}$"}
+        },
+        "deduplicated_event_ids": {
+          "type": "array",
+          "items": {"type": "string", "pattern": "^evt_[0-9a-f]{64}$"}
+        },
+        "event_cursor": {"type": "string", "pattern": "^evc_[0-9a-f]{64}$"},
+        "aggregate_versions": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "publication_token": {
+          "oneOf": [
+            {"type": "string", "pattern": "^rsy_[0-9a-f]{64}$"},
+            {"type": "null"}
+          ]
+        },
+        "checkpoint_and_projection_publish_atomically": {"const": true},
+        "operator_intervention_required": {"type": "boolean"},
+        "escalation_reason": {
+          "oneOf": [
+            {
+              "enum": [
+                "missing_snapshot_resource",
+                "snapshot_resource_conflict",
+                "event_identity_conflict",
+                "aggregate_version_gap"
+              ]
+            },
+            {"type": "null"}
+          ]
+        },
+        "live_execution_enabled": {"const": false},
+        "external_order_submission_allowed": {"const": false}
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "state",
+        "publication_token",
+        "projection_checksum",
+        "checkpoint_checksum",
+        "published_at",
+        "checkpoint_and_projection_published_atomically",
+        "live_execution_enabled",
+        "external_order_submission_allowed"
+      ],
+      "properties": {
+        "schema_version": {"const": "nexora-full-resync-publication-v1"},
+        "state": {"const": "published"},
+        "publication_token": {"type": "string", "pattern": "^rsy_[0-9a-f]{64}$"},
+        "projection_checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "checkpoint_checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "published_at": {"type": "string", "format": "date-time"},
+        "checkpoint_and_projection_published_atomically": {"const": true},
+        "live_execution_enabled": {"const": false},
+        "external_order_submission_allowed": {"const": false}
+      }
+    }
+  },
+  "oneOf": [
+    {"$ref": "#/$defs/report"},
+    {"$ref": "#/$defs/publication"}
+  ]
+}
