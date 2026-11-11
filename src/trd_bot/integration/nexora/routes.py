@@ -20,6 +20,7 @@ from trd_bot.db.nexora_decision_reviews import (
     SqlAlchemyNexoraDecisionReviewStore,
 )
 from trd_bot.db.nexora_events import SqlAlchemyNexoraEventStore
+from trd_bot.db.nexora_exports import SqlAlchemyNexoraExportStore
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
 from trd_bot.integration.nexora.alert_snapshots import (
     ALERT_SNAPSHOT_RESOURCE_TYPES,
@@ -54,6 +55,14 @@ from trd_bot.integration.nexora.events import (
     EventFeedError,
     IntegrationEventEnvelope,
     IntegrationEventPage,
+)
+from trd_bot.integration.nexora.exports import (
+    ExportIdempotencyConflictError,
+    ExportManifest,
+    ExportNotCompleteError,
+    ExportNotFoundError,
+    ExportRequest,
+    ExportStatus,
 )
 from trd_bot.integration.nexora.portfolio_snapshots import (
     PORTFOLIO_SNAPSHOT_RESOURCE_TYPES,
@@ -606,5 +615,188 @@ def submit_decision_review(
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
         content=receipt.model_dump(mode="json"),
+        headers=headers,
+    )
+
+
+@router.post(
+    "/exports",
+    response_model=ExportStatus,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        409: {"model": IntegrationErrorEnvelope},
+        422: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def create_export(
+    export_request: ExportRequest,
+    request: Request,
+    session: DatabaseSessionDependency,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=16, max_length=160),
+    ],
+) -> Response:
+    """Atomically enqueue one private or AI-safe export."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    if not _has_json_content_type(request):
+        return _error_response(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="Content-Type must be application/json",
+            retryable=False,
+        )
+    try:
+        export_status = SqlAlchemyNexoraExportStore(session).submit(
+            request=export_request,
+            idempotency_key=idempotency_key,
+            provider_version=authorized.provider_version,
+            requested_at=datetime.now(UTC),
+        )
+        session.commit()
+    except ExportIdempotencyConflictError:
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_409_CONFLICT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="IDEMPOTENCY_CONFLICT",
+            message="Idempotency-Key belongs to a different export request",
+            retryable=False,
+        )
+    except (SQLAlchemyError, ValueError):
+        session.rollback()
+        return _error_response(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="export queue is unavailable",
+            retryable=True,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content=export_status.model_dump(mode="json"),
+        headers=headers,
+    )
+
+
+@router.get(
+    "/exports/{export_id}",
+    response_model=ExportStatus,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        404: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def get_export_status(
+    export_id: str,
+    request: Request,
+    session: DatabaseSessionDependency,
+) -> Response:
+    """Return the durable export lifecycle without exposing file contents."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    try:
+        export_status = SqlAlchemyNexoraExportStore(session).get_status(export_id)
+    except ExportNotFoundError:
+        return _error_response(
+            status_code=status.HTTP_404_NOT_FOUND,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="export was not found",
+            retryable=False,
+        )
+    except (SQLAlchemyError, ValueError):
+        return _error_response(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="export status is unavailable",
+            retryable=True,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(
+        status_code=200,
+        content=export_status.model_dump(mode="json"),
+        headers=headers,
+    )
+
+
+@router.get(
+    "/exports/{export_id}/manifest",
+    response_model=ExportManifest,
+    responses={
+        400: {"model": IntegrationErrorEnvelope},
+        401: {"model": IntegrationErrorEnvelope},
+        403: {"model": IntegrationErrorEnvelope},
+        404: {"model": IntegrationErrorEnvelope},
+        409: {"model": IntegrationErrorEnvelope},
+        503: {"model": IntegrationErrorEnvelope},
+    },
+)
+def get_export_manifest(
+    export_id: str,
+    request: Request,
+    session: DatabaseSessionDependency,
+) -> Response:
+    """Expose a manifest only after every file is durably checksum-bound."""
+
+    authorized = _authorize_request(request)
+    if isinstance(authorized, JSONResponse):
+        return authorized
+    try:
+        manifest = SqlAlchemyNexoraExportStore(session).get_manifest(export_id)
+    except ExportNotCompleteError:
+        return _error_response(
+            status_code=status.HTTP_409_CONFLICT,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="export manifest is not complete",
+            retryable=True,
+        )
+    except ExportNotFoundError:
+        return _error_response(
+            status_code=status.HTTP_404_NOT_FOUND,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="INVALID_REQUEST",
+            message="export was not found",
+            retryable=False,
+        )
+    except (SQLAlchemyError, ValueError):
+        return _error_response(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            correlation_id=authorized.correlation_id,
+            provider_version=authorized.provider_version,
+            code="SOURCE_UNAVAILABLE",
+            message="export manifest is unavailable",
+            retryable=True,
+        )
+    headers = _response_headers(authorized.correlation_header, authorized.provider_version)
+    headers["Cache-Control"] = "private, no-store"
+    return JSONResponse(
+        status_code=200,
+        content=manifest.model_dump(mode="json"),
         headers=headers,
     )

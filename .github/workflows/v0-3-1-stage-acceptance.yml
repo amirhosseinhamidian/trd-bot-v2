@@ -189,6 +189,7 @@ jobs:
             tests/test_release_hardening.py \
             tests/test_nexora_integration_capabilities.py \
             tests/test_nexora_decision_reviews.py \
+            tests/test_nexora_exports.py \
             tests/test_nexora_event_feed.py \
             tests/test_nexora_snapshot_protocol.py \
             tests/test_nexora_snapshot_persistence.py \

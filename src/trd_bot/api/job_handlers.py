@@ -40,11 +40,13 @@ from trd_bot.db.market_data_replay import (
     MarketDataReplayRejectedError,
     SqlAlchemyMarketDataReplayRunner,
 )
+from trd_bot.db.nexora_exports import SqlAlchemyNexoraExportStore
 from trd_bot.decision_intelligence import (
     DecisionEvaluationJobCancelled,
     DecisionEvaluationJobError,
     DecisionEvaluationJobPayload,
 )
+from trd_bot.integration.nexora.exports import NexoraExportJobPayload
 from trd_bot.jobs import (
     PRODUCTION_BACKGROUND_JOB_KINDS,
     BackgroundJobContext,
@@ -478,6 +480,45 @@ def run_optimization_execution_job(
     return execution.execution_id
 
 
+def run_nexora_export_job(
+    context: BackgroundJobContext,
+    payload: Mapping[str, object],
+) -> str:
+    request = _validate_job_payload(
+        NexoraExportJobPayload,
+        payload,
+        error_code="invalid_nexora_export_job_payload",
+        error_message="Nexora export job payload is invalid.",
+    )
+    context.heartbeat(5)
+    with get_session_factory()() as session:
+        store = SqlAlchemyNexoraExportStore(session)
+        store.mark_running(request.export_id)
+        session.commit()
+        try:
+            manifest = store.run(request.export_id, generated_at=datetime.now(UTC))
+            session.commit()
+        except Exception as error:
+            session.rollback()
+            if context.job.attempt_count < context.job.max_attempts:
+                store.reset_accepted(request.export_id)
+                session.commit()
+                raise
+            store.mark_failed(
+                request.export_id,
+                error_code="nexora_export_attempts_exhausted",
+                failed_at=datetime.now(UTC),
+            )
+            session.commit()
+            raise BackgroundJobHandlerError(
+                error_code="nexora_export_attempts_exhausted",
+                error_message="Nexora export stopped after exhausting its retry budget.",
+                retryable=False,
+            ) from error
+    context.heartbeat(95)
+    return manifest.export_id
+
+
 def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
     """Build the production allowlist of durable job handlers."""
 
@@ -493,6 +534,7 @@ def build_background_job_handler_registry() -> BackgroundJobHandlerRegistry:
             BackgroundJobKind.DECISION_EVALUATION: run_decision_evaluation_job,
             BackgroundJobKind.DATASET_FILE_IMPORT: run_dataset_file_import_job,
             BackgroundJobKind.OPTIMIZATION_EXECUTION: run_optimization_execution_job,
+            BackgroundJobKind.NEXORA_EXPORT: run_nexora_export_job,
         }
     )
     registry.require_exact_allowlist(PRODUCTION_BACKGROUND_JOB_KINDS)

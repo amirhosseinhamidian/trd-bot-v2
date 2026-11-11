@@ -143,6 +143,8 @@ from trd_bot.db.models import (
     MonitoringRuntimeStateRow,
     NexoraDecisionReviewRow,
     NexoraEventCursorRow,
+    NexoraExportArtifactRow,
+    NexoraExportJobRow,
     NexoraIntegrationEventRow,
     NexoraSnapshotCursorRow,
     NexoraSnapshotScanRow,
@@ -164,6 +166,7 @@ from trd_bot.db.monitoring_runtime_state_repository import (
 )
 from trd_bot.db.nexora_decision_reviews import SqlAlchemyNexoraDecisionReviewStore
 from trd_bot.db.nexora_events import SqlAlchemyNexoraEventStore
+from trd_bot.db.nexora_exports import SqlAlchemyNexoraExportStore
 from trd_bot.db.nexora_snapshot_scans import SqlAlchemyNexoraSnapshotScanStore
 from trd_bot.db.optimization_execution_enqueues import (
     SqlAlchemyOptimizationExecutionEnqueuer,
@@ -251,6 +254,8 @@ __all__ = [
     "MonitoringRuntimeStateRow",
     "NexoraDecisionReviewRow",
     "NexoraEventCursorRow",
+    "NexoraExportArtifactRow",
+    "NexoraExportJobRow",
     "NexoraIntegrationEventRow",
     "NexoraSnapshotCursorRow",
     "NexoraSnapshotScanRow",
@@ -311,6 +316,7 @@ __all__ = [
     "SqlAlchemyMonitoringRuntimeStateRepository",
     "SqlAlchemyNexoraDecisionReviewStore",
     "SqlAlchemyNexoraEventStore",
+    "SqlAlchemyNexoraExportStore",
     "SqlAlchemyNexoraSnapshotScanStore",
     "SqlAlchemyOptimizationExecutionEnqueuer",
     "SqlAlchemyOptimizationExecutionRepository",

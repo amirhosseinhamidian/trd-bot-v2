@@ -129,5 +129,5 @@ TRD_BOT_LIVE_EXECUTION=DISABLED
 مرحله مجاز بعدی فقط `TRD-V031-01 — Service authentication and capability negotiation` است.
 
 > این marker، خروجی تاریخی Freeze مرحلهٔ `00` است. وضعیت جاری repository در commit
-> `ee96c73ead801a93497b1cb9b06decb5eac5842a` مراحل `00` تا `06` را پذیرفته‌شده نگه
-> می‌دارد و مرحلهٔ جاری `TRD-V031-07` را با مدل `Implementation + Acceptance` باز می‌کند.
+> `b26913e7147d2867d0855a92f4e9518aff254e96` مراحل `00` تا `07` را پذیرفته‌شده نگه
+> می‌دارد و مرحلهٔ جاری `TRD-V031-08` را با مدل `Implementation + Acceptance` باز می‌کند.

@@ -75,6 +75,7 @@ def test_builder_uses_the_kind_specific_retry_budget() -> None:
         BackgroundJobKind.DECISION_EVALUATION: 3,
         BackgroundJobKind.DATASET_FILE_IMPORT: 3,
         BackgroundJobKind.OPTIMIZATION_EXECUTION: 3,
+        BackgroundJobKind.NEXORA_EXPORT: 3,
     }
 
     assert {

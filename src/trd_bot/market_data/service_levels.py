@@ -326,6 +326,7 @@ def default_market_data_service_level_policy() -> MarketDataServiceLevelPolicy:
                 "market_context_evaluation": Decimal("30"),
                 "market_data_poll": Decimal("30"),
                 "market_data_replay": Decimal("30"),
+                "nexora_export": Decimal("120"),
                 "optimization_execution": Decimal("600"),
                 "walk_forward_execution": Decimal("300"),
             },

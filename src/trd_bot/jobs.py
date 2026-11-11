@@ -22,6 +22,7 @@ class BackgroundJobKind(StrEnum):
     DECISION_EVALUATION = "decision_evaluation"
     DATASET_FILE_IMPORT = "dataset_file_import"
     OPTIMIZATION_EXECUTION = "optimization_execution"
+    NEXORA_EXPORT = "nexora_export"
 
 
 class BackgroundJobCancellationMode(StrEnum):
@@ -119,6 +120,11 @@ BACKGROUND_JOB_POLICIES: Mapping[BackgroundJobKind, BackgroundJobPolicy] = Mappi
         ),
         BackgroundJobKind.OPTIMIZATION_EXECUTION: BackgroundJobPolicy(
             kind=BackgroundJobKind.OPTIMIZATION_EXECUTION,
+            max_attempts=3,
+            retry_delays=_STANDARD_RETRY_DELAYS,
+        ),
+        BackgroundJobKind.NEXORA_EXPORT: BackgroundJobPolicy(
+            kind=BackgroundJobKind.NEXORA_EXPORT,
             max_attempts=3,
             retry_delays=_STANDARD_RETRY_DELAYS,
         ),

@@ -3229,3 +3229,73 @@ class NexoraDecisionReviewRow(DatabaseBase):
     creates_live_order: Mapped[bool] = mapped_column(Boolean, default=False)
     posts_portfolio_transaction: Mapped[bool] = mapped_column(Boolean, default=False)
     request_json: Mapped[str] = mapped_column(Text)
+
+
+class NexoraExportJobRow(DatabaseBase):
+    """Durable, idempotent request and terminal manifest for one Nexora export."""
+
+    __tablename__ = "nexora_export_jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('accepted', 'running', 'complete', 'failed')",
+            name="status_supported",
+        ),
+        CheckConstraint(
+            "mode IN ('full', 'incremental', 'selected')",
+            name="mode_supported",
+        ),
+        CheckConstraint("profile IN ('private', 'ai_safe')", name="profile_supported"),
+        CheckConstraint("length(request_checksum) = 71", name="request_checksum_length"),
+        CheckConstraint(
+            "(status = 'complete' AND completed_at IS NOT NULL AND manifest_json IS NOT NULL "
+            "AND error_code IS NULL) OR "
+            "(status = 'failed' AND completed_at IS NOT NULL AND manifest_json IS NULL "
+            "AND error_code IS NOT NULL) OR "
+            "(status IN ('accepted', 'running') AND completed_at IS NULL "
+            "AND manifest_json IS NULL AND error_code IS NULL)",
+            name="lifecycle_consistent",
+        ),
+        CheckConstraint("NOT contains_secrets", name="secrets_forbidden"),
+        Index("ix_nexora_export_jobs_status_requested_at", "status", "requested_at"),
+    )
+    export_id: Mapped[str] = mapped_column(String(68), primary_key=True)
+    idempotency_key: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    background_job_id: Mapped[str] = mapped_column(
+        String(24), ForeignKey("background_jobs.job_id", ondelete="RESTRICT"), unique=True
+    )
+    request_checksum: Mapped[str] = mapped_column(String(71), index=True)
+    request_schema_version: Mapped[str] = mapped_column(String(50))
+    mode: Mapped[str] = mapped_column(String(20))
+    profile: Mapped[str] = mapped_column(String(20))
+    provider_version: Mapped[str] = mapped_column(String(30))
+    request_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    manifest_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    contains_secrets: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class NexoraExportArtifactRow(DatabaseBase):
+    """Immutable export file bytes covered by a manifest SHA-256 checksum."""
+
+    __tablename__ = "nexora_export_artifacts"
+    __table_args__ = (
+        CheckConstraint("row_count >= 0", name="row_count_nonnegative"),
+        CheckConstraint("size_bytes >= 0", name="size_bytes_nonnegative"),
+        CheckConstraint("length(sha256) = 64", name="sha256_length"),
+    )
+    export_id: Mapped[str] = mapped_column(
+        String(68),
+        ForeignKey("nexora_export_jobs.export_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    path: Mapped[str] = mapped_column(String(240), primary_key=True)
+    media_type: Mapped[str] = mapped_column(String(120))
+    row_count: Mapped[int] = mapped_column(Integer)
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64), index=True)
+    schema_version: Mapped[str] = mapped_column(String(120))
+    content: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

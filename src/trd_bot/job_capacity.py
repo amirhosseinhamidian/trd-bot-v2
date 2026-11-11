@@ -32,6 +32,7 @@ from trd_bot.db import (
 from trd_bot.db.market_data_connection_repositories import (
     SqlAlchemyMarketDataConnectionRepository,
 )
+from trd_bot.db.nexora_exports import render_export_artifacts
 from trd_bot.decision_intelligence import (
     DecisionEvaluationIntent,
     DecisionMode,
@@ -40,6 +41,7 @@ from trd_bot.decision_intelligence import (
     evaluate_strategy_intent,
 )
 from trd_bot.domain.market_data import MarketType, OHLCVCandle, Timeframe, TradingPair
+from trd_bot.integration.nexora.exports import ExportRequest, ExportResourceType
 from trd_bot.jobs import BackgroundJobKind
 from trd_bot.market_context import (
     MarketContextAssessmentStatus,
@@ -840,6 +842,23 @@ def _optimization_workload(candles: Sequence[OHLCVCandle]) -> Callable[[], None]
     return execute
 
 
+def _nexora_export_workload() -> Callable[[], None]:
+    request = ExportRequest(
+        mode="full",
+        formats=("json", "jsonl", "csv", "parquet", "zip_bundle"),
+        profile="ai_safe",
+        scope=(ExportResourceType.MARKET_CONTEXT,),
+        filters={"base_currency": "USDT"},
+    )
+
+    def execute() -> None:
+        artifacts = render_export_artifacts(request, ())
+        if len(artifacts) != len(request.formats):
+            raise RuntimeError("Nexora export workload did not render every format")
+
+    return execute
+
+
 def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJobWorkload]:
     """Build the complete v1 fixture set without using external state or credentials."""
 
@@ -906,6 +925,12 @@ def build_background_job_workloads() -> Mapping[BackgroundJobKind, BackgroundJob
             fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
             dimensions=(("candles", len(research_candles)), ("trials", 4)),
             execute=_optimization_workload(research_candles),
+        ),
+        BackgroundJobWorkload(
+            kind=BackgroundJobKind.NEXORA_EXPORT,
+            fixture_version=BACKGROUND_JOB_WORKLOAD_FIXTURE_VERSION,
+            dimensions=(("records", 0), ("format_count", 5)),
+            execute=_nexora_export_workload(),
         ),
     )
     result = {workload.kind: workload for workload in workloads}

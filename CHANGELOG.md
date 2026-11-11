@@ -4,6 +4,11 @@ All notable changes to TRD BOT v2 are documented in this file.
 
 ## Unreleased — v0.3.1
 
+- Added the integrated `TRD-V031-08` export-job candidate with idempotent private and AI-safe
+  exports, five deterministic output formats, durable status, atomic complete-only manifests,
+  SHA-256 file evidence, source lineage, secret rejection/redaction, and migration
+  `20261111_0040`. Provider compatibility and `NEX-P3-03` remain blocked.
+
 - Added the integrated `TRD-V031-07` decision-review command candidate for idempotent Paper/Shadow
   accept, reject, and defer feedback, durable duplicate receipts, 409 payload-conflict handling,
   immutable source-evidence guards, and migration `20261107_0039`. Commands cannot authorize

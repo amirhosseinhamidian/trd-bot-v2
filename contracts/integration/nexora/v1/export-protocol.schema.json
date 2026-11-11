@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trd-bot.local/contracts/integration/nexora/v1/export-protocol.schema.json",
+  "title": "Nexora export protocol v1",
+  "oneOf": [
+    {"$ref": "#/$defs/request"},
+    {"$ref": "#/$defs/status"},
+    {"$ref": "#/$defs/manifest"}
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "mode", "formats", "profile", "scope", "filters"],
+      "properties": {
+        "schema_version": {"const": "nexora-export-request-v1"},
+        "mode": {"enum": ["full", "incremental", "selected"]},
+        "formats": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["json", "jsonl", "csv", "parquet", "zip_bundle"]}},
+        "profile": {"enum": ["private", "ai_safe"]},
+        "scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["market_context", "decision_evaluation", "candidate", "risk_gate", "portfolio_intelligence", "alert", "alert_outcome", "paper_shadow_portfolio", "paper_shadow_position", "simulation_outcome"]}},
+        "filters": {"type": "object"}
+      }
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "export_id", "status", "requested_at", "completed_at"],
+      "properties": {
+        "schema_version": {"const": "nexora-export-status-v1"},
+        "export_id": {"type": "string", "pattern": "^exp_[A-Za-z0-9_-]{16,64}$"},
+        "status": {"enum": ["accepted", "running", "complete", "failed"]},
+        "requested_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "source_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "source_product", "source_version", "resource_type", "resource_id", "resource_schema_version", "observed_at", "checksum"],
+      "properties": {
+        "schema_version": {"const": "nexora-source-reference-v1"},
+        "source_product": {"const": "trd_bot"},
+        "source_version": {"type": "string"},
+        "resource_type": {"type": "string"},
+        "resource_id": {"type": "string"},
+        "resource_schema_version": {"type": "string"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "checksum": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "media_type", "row_count", "size_bytes", "sha256", "schema_version"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "media_type": {"type": "string", "minLength": 1},
+        "row_count": {"type": "integer", "minimum": 0},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "schema_version": {"type": "string", "minLength": 1}
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "export_id", "generated_at", "mode", "profile", "source_versions", "scope", "filters", "timezone", "currency_unit_context", "lineage_references", "files", "redaction_profile", "completion_status"],
+      "properties": {
+        "schema_version": {"const": "nexora-export-manifest-v1"},
+        "export_id": {"type": "string", "pattern": "^exp_[A-Za-z0-9_-]{16,64}$"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "mode": {"enum": ["full", "incremental", "selected"]},
+        "profile": {"enum": ["private", "ai_safe"]},
+        "source_versions": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}},
+        "scope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "filters": {"type": "object"},
+        "timezone": {"const": "UTC"},
+        "currency_unit_context": {"type": "object", "additionalProperties": false, "required": ["base_currency", "quantity_units_explicit"], "properties": {"base_currency": {"type": "string", "pattern": "^[A-Z0-9]{2,12}$"}, "quantity_units_explicit": {"const": true}}},
+        "lineage_references": {"type": "array", "items": {"$ref": "#/$defs/source_reference"}},
+        "files": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/file"}},
+        "redaction_profile": {"type": "string", "minLength": 1},
+        "completion_status": {"const": "complete"}
+      }
+    }
+  }
+}

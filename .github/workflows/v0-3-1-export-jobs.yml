@@ -1,0 +1,59 @@
+name: TRD Bot v0.3.1 export jobs acceptance
+
+on:
+  push:
+    branches: [main, 'feature/**']
+    paths:
+      - '.github/workflows/v0-3-1-export-jobs.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261111_0040_nexora_exports.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-08.json'
+      - 'contracts/trd-bot-v0.3.1-export-jobs.json'
+      - 'docs/v0.3.1/08-export-jobs.md'
+      - 'scripts/verify_v0_3_1_export_jobs.py'
+      - 'src/trd_bot/api/job_handlers.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'src/trd_bot/jobs.py'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_exports.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_release_hardening.py'
+      - 'tests/test_v0_3_1_export_jobs.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v0-3-1-export-jobs.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'alembic/versions/20261111_0040_nexora_exports.py'
+      - 'contracts/integration/nexora/**'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-08.json'
+      - 'contracts/trd-bot-v0.3.1-export-jobs.json'
+      - 'docs/v0.3.1/08-export-jobs.md'
+      - 'scripts/verify_v0_3_1_export_jobs.py'
+      - 'src/trd_bot/api/job_handlers.py'
+      - 'src/trd_bot/db/**'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'src/trd_bot/jobs.py'
+      - 'tests/test_database.py'
+      - 'tests/test_nexora_exports.py'
+      - 'tests/test_postgresql_integration.py'
+      - 'tests/test_release_hardening.py'
+      - 'tests/test_v0_3_1_export_jobs.py'
+      - 'README.md'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    name: TRD-V031-08 implementation and acceptance
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-08

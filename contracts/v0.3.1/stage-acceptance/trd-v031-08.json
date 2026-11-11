@@ -1,0 +1,54 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
+  "stage_id": "TRD-V031-08",
+  "title": "Export jobs, status, and manifest",
+  "status": "candidate",
+  "prerequisite": {
+    "mode": "ci_artifact",
+    "stage_id": "TRD-V031-07",
+    "accepted_commit_sha": "b26913e7147d2867d0855a92f4e9518aff254e96"
+  },
+  "verification": {
+    "verifier_path": "scripts/verify_v0_3_1_export_jobs.py",
+    "unittest_path": "tests/test_v0_3_1_export_jobs.py",
+    "focused_pytest_paths": [
+      "tests/test_nexora_exports.py",
+      "tests/test_nexora_snapshot_protocol.py",
+      "tests/test_database.py",
+      "tests/test_release_hardening.py"
+    ]
+  },
+  "migration": {
+    "expected": true,
+    "postgresql_round_trip_required": true,
+    "alembic_check_required": true
+  },
+  "evidence_paths": [
+    ".github/workflows/v0-3-1-export-jobs.yml",
+    ".github/workflows/v0-3-1-stage-acceptance.yml",
+    "alembic/versions/20261111_0040_nexora_exports.py",
+    "contracts/integration/nexora/v1/export-protocol.schema.json",
+    "contracts/trd-bot-v0.3.1-export-jobs.json",
+    "contracts/v0.3.1/stage-acceptance/trd-v031-08.json",
+    "docs/v0.3.1/08-export-jobs.md",
+    "scripts/verify_v0_3_1_export_jobs.py",
+    "src/trd_bot/db/models.py",
+    "src/trd_bot/db/nexora_exports.py",
+    "src/trd_bot/integration/nexora/exports.py",
+    "src/trd_bot/integration/nexora/routes.py",
+    "tests/test_nexora_exports.py",
+    "tests/test_v0_3_1_export_jobs.py"
+  ],
+  "transition": {
+    "next_stage": "TRD-V031-09",
+    "separate_freeze_task_required": false
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "nexora_p3_03_opened": false,
+    "provider_compatibility_claimed": false
+  }
+}

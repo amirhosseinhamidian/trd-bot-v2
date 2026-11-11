@@ -28,6 +28,8 @@ _NOW = datetime(2026, 10, 22, 12, tzinfo=UTC)
 _COMMIT_SHA = "c" * 40
 _POST_V0_3_TABLES = {
     "nexora_decision_reviews",
+    "nexora_export_artifacts",
+    "nexora_export_jobs",
     "nexora_event_cursors",
     "nexora_integration_events",
     "nexora_snapshot_cursors",
@@ -272,6 +274,6 @@ def test_installation_revisions_match_the_repository_migration_chain() -> None:
     head = script.get_current_head()
     revisions = {revision.revision for revision in script.iterate_revisions(head, "base")}
 
-    assert head == "20261107_0039"
+    assert head == "20261111_0040"
     assert V0_3_MIGRATION_REVISION in revisions
     assert V0_2_MIGRATION_REVISION in revisions

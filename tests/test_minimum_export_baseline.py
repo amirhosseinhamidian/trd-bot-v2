@@ -15,7 +15,7 @@ def test_v02_minimum_export_surface_is_one_versioned_csv_operation() -> None:
         (method.upper(), path)
         for path, path_item in paths.items()
         for method in path_item
-        if "export" in path
+        if "export" in path and path.startswith("/api/v1/research/")
     }
 
     assert export_operations == {("GET", MINIMUM_EXPORT_PATH)}

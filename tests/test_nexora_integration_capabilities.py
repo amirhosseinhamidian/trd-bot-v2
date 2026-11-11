@@ -218,6 +218,9 @@ def test_v031_stage_does_not_claim_provider_compatibility(service_token_file: Pa
         "/api/v1/integration/nexora/commands/decision-reviews",
         "/api/v1/integration/nexora/events",
         "/api/v1/integration/nexora/events/{event_id}",
+        "/api/v1/integration/nexora/exports",
+        "/api/v1/integration/nexora/exports/{export_id}",
+        "/api/v1/integration/nexora/exports/{export_id}/manifest",
         "/api/v1/integration/nexora/snapshots/{resource_type}",
     }
     assert openapi["info"]["version"] == "0.3.0"

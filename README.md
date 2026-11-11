@@ -27,10 +27,11 @@ offline outcome evidence are exposed without mutable inbox state. Durable event 
 accepted through
 [`TRD-V031-06`](docs/v0.3.1/06-durable-event-feed.md), adding a durable at-least-once event
 journal, opaque replay cursors, checksummed envelopes, aggregate gap detection, and exact event
-lookup. The current candidate is
-[`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md), adding idempotent Paper/Shadow
-accept/reject/defer feedback with duplicate receipts, 409 conflict handling, and immutable source
-evidence guards. Export jobs remain deferred to `TRD-V031-08`.
+lookup. Decision-review commands were accepted through
+[`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md). The current candidate is
+[`TRD-V031-08`](docs/v0.3.1/08-export-jobs.md), adding durable idempotent private/AI-safe export
+jobs, lifecycle status, atomic complete manifests, file checksums, and source lineage. Full resync
+and gap recovery remain deferred to `TRD-V031-09`.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable

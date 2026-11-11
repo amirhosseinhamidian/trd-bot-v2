@@ -1,0 +1,56 @@
+{
+  "schema_version": "trd-bot-v031-export-jobs-v1",
+  "decision_id": "TRD-V031-08",
+  "decision_date": "2026-11-11",
+  "status": "candidate",
+  "title": "Export jobs, status, and complete manifest",
+  "prerequisite": {
+    "decision_id": "TRD-V031-07",
+    "acceptance_mode": "ci_artifact_same_sha",
+    "accepted_commit_sha": "b26913e7147d2867d0855a92f4e9518aff254e96",
+    "accepted_evidence_checksum": "dce1e4abd2db8ad03cef88152db16cfaaaac8934c51c33e07f404347d56494dd"
+  },
+  "operations": [
+    "POST /api/v1/integration/nexora/exports",
+    "GET /api/v1/integration/nexora/exports/{export_id}",
+    "GET /api/v1/integration/nexora/exports/{export_id}/manifest"
+  ],
+  "protocol": {
+    "request_schema_version": "nexora-export-request-v1",
+    "status_schema_version": "nexora-export-status-v1",
+    "manifest_schema_version": "nexora-export-manifest-v1",
+    "profiles": ["private", "ai_safe"],
+    "formats": ["json", "jsonl", "csv", "parquet", "zip_bundle"],
+    "completion_status": "complete",
+    "partial_manifest_allowed": false,
+    "file_checksums_required": true,
+    "source_lineage_required": true,
+    "idempotency_header": "Idempotency-Key",
+    "same_key_different_body_status": 409,
+    "secret_fields_allowed": false
+  },
+  "persistence": {
+    "migration_revision": "20261111_0040",
+    "job_table": "nexora_export_jobs",
+    "artifact_table": "nexora_export_artifacts",
+    "atomic_completion": true,
+    "immutable_file_bytes": true,
+    "request_checksum_recorded": true
+  },
+  "safety": {
+    "research_shadow_paper_only": true,
+    "external_order_submission_allowed": false,
+    "exchange_credentials_allowed": false,
+    "wallet_or_fund_transfer_allowed": false,
+    "shared_database_allowed": false,
+    "live_execution_enabled": false,
+    "provider_compatibility_claimed": false,
+    "nexora_p3_03_opened": false
+  },
+  "transition": {
+    "acceptance_mode": "ci_artifact_same_sha",
+    "next_allowed_stage": "TRD-V031-09_AFTER_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false,
+    "requires_successful_ci_on_candidate_sha": true
+  }
+}
