@@ -31,9 +31,13 @@ lookup. Decision-review commands were accepted through
 [`TRD-V031-07`](docs/v0.3.1/07-decision-review-commands.md). Export jobs were accepted through
 [`TRD-V031-08`](docs/v0.3.1/08-export-jobs.md), adding durable idempotent private/AI-safe export
 jobs, lifecycle status, atomic complete manifests, file checksums, and source lineage. The current
-candidate is [`TRD-V031-09`](docs/v0.3.1/09-full-resync-gap-recovery.md), adding fail-closed
+accepted recovery boundary is
+[`TRD-V031-09`](docs/v0.3.1/09-full-resync-gap-recovery.md), adding fail-closed
 projection pause signals, complete snapshot/event reconciliation, aggregate gap detection,
-operator escalation, and atomic publication guards without a new API operation or migration.
+operator escalation, and atomic publication guards without a new API operation or migration. The
+current candidate is
+[`TRD-V031-10`](docs/v0.3.1/10-cross-repository-contract-tests.md): pinned cross-repository
+fixtures plus the 12-scenario real local Nexora consumer/provider smoke and auditable CI evidence.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable
@@ -218,6 +222,9 @@ policy, and failed-CI recovery procedure are documented in
 The private-file bearer authentication, loopback/HTTPS transport boundary, exact capability matrix,
 and pre-release compatibility gate are documented in
 [`docs/v0.3.1/01-service-authentication-capabilities.md`](docs/v0.3.1/01-service-authentication-capabilities.md).
+The pinned consumer, event wire projection, 12-scenario loopback smoke, and Stage 10 evidence are
+documented in
+[`docs/v0.3.1/10-cross-repository-contract-tests.md`](docs/v0.3.1/10-cross-repository-contract-tests.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

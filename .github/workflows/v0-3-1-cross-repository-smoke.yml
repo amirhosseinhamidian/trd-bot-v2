@@ -1,0 +1,29 @@
+name: TRD Bot v0.3.1 cross-repository smoke
+
+on:
+  push:
+    branches:
+      - feature/v0.3.1-nexora-integration
+    paths:
+      - '.github/workflows/v0-3-1-cross-repository-smoke.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'contracts/integration/nexora/v1/**'
+      - 'contracts/trd-bot-v0.3.1-cross-repository-smoke.json'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-10.json'
+      - 'docs/v0.3.1/10-cross-repository-contract-tests.md'
+      - 'scripts/run_v0_3_1_cross_repository_smoke.py'
+      - 'scripts/verify_v0_3_1_cross_repository_smoke.py'
+      - 'src/trd_bot/integration/nexora/**'
+      - 'tests/test_nexora_event_feed.py'
+      - 'tests/test_v0_3_1_cross_repository_smoke.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-10

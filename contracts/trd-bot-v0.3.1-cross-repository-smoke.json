@@ -1,0 +1,47 @@
+{
+  "schema_version": "trd-bot-v031-cross-repository-acceptance-v1",
+  "decision_id": "TRD-V031-10",
+  "status": "candidate",
+  "prerequisite": {
+    "stage_id": "TRD-V031-09",
+    "accepted_commit_sha": "5bad863b19685a8fdb3d10474e9c834319addc13",
+    "accepted_evidence_checksum": "67793095863eb6656bfd02d3893c2c314f0d86587ea2503bc9ae307cfa47152c"
+  },
+  "consumer": {
+    "repository": "amirhosseinhamidian/nexora",
+    "commit_sha": "1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8",
+    "tree_sha": "6c5756f177c2f0025faeb776515e99c077630177",
+    "provider_profile_sha256": "2d21e80db378c2dc2c1b3a6fbb1f44bcbbad0c34d89f4d073b25e179a55fbcc8",
+    "profile_must_be_byte_identical": true
+  },
+  "acceptance": {
+    "fixture_contract_suite": true,
+    "real_provider_smoke": true,
+    "required_scenario_count": 12,
+    "all_required_scenarios_must_pass": true,
+    "transport": "http_loopback_only",
+    "external_network_required": false,
+    "same_ci_run_as_stage_contract": true,
+    "release_inventory_checksum": "799eb5b8216ceafa60b1783b9c1d278c5f140c3ad972b11681f645033eedf6f2",
+    "artifact_retention_days": 90
+  },
+  "event_compatibility": {
+    "durable_internal_model_preserved": true,
+    "frozen_wire_projection_required": true,
+    "migration_revision": null
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "shared_database_with_nexora": false,
+    "secrets_in_evidence": false,
+    "provider_compatibility_requires_all_gates": true
+  },
+  "transition": {
+    "next_allowed_stage": "TRD-V031-11_AFTER_CI_ACCEPTANCE",
+    "nex_p3_03_eligibility": "AFTER_STAGE_10_CI_ACCEPTANCE",
+    "separate_freeze_task_required": false
+  }
+}

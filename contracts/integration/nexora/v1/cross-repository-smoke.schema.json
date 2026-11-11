@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trd-bot.local/contracts/integration/nexora/v1/cross-repository-smoke.schema.json",
+  "title": "TRD Bot v0.3.1 cross-repository smoke evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "stage_id",
+    "generated_at",
+    "trd_bot",
+    "nexora",
+    "workflow",
+    "provider_profile_sha256",
+    "provider_version",
+    "transport",
+    "external_network_required",
+    "scenarios",
+    "passed",
+    "provider_compatibility_evidence",
+    "live_execution_enabled",
+    "external_order_submission_allowed",
+    "secrets_recorded",
+    "report_checksum"
+  ],
+  "properties": {
+    "schema_version": {"const": "trd-bot-v031-cross-repository-smoke-v1"},
+    "stage_id": {"const": "TRD-V031-10"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "trd_bot": {"$ref": "#/$defs/revision"},
+    "nexora": {"$ref": "#/$defs/revision"},
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "run_attempt"],
+      "properties": {
+        "run_id": {"type": ["string", "null"]},
+        "run_attempt": {"type": ["string", "null"]}
+      }
+    },
+    "provider_profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "provider_version": {"const": "0.3.1"},
+    "transport": {"const": "http_loopback_only"},
+    "external_network_required": {"const": false},
+    "scenarios": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/scenario"}
+    },
+    "passed": {"const": true},
+    "provider_compatibility_evidence": {"const": true},
+    "live_execution_enabled": {"const": false},
+    "external_order_submission_allowed": {"const": false},
+    "secrets_recorded": {"const": false},
+    "report_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit_sha", "tree_sha"],
+      "properties": {
+        "commit_sha": {"type": "string", "minLength": 5},
+        "tree_sha": {"type": "string", "minLength": 5}
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario", "mode", "status"],
+      "properties": {
+        "scenario": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["real_local_provider", "cross_repository_fixture_contract"]},
+        "status": {"const": "passed"}
+      }
+    }
+  }
+}

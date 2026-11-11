@@ -1,0 +1,55 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
+  "stage_id": "TRD-V031-10",
+  "title": "Cross-repository contract tests and real local smoke",
+  "status": "candidate",
+  "prerequisite": {
+    "mode": "ci_artifact",
+    "stage_id": "TRD-V031-09",
+    "accepted_commit_sha": "5bad863b19685a8fdb3d10474e9c834319addc13"
+  },
+  "verification": {
+    "verifier_path": "scripts/verify_v0_3_1_cross_repository_smoke.py",
+    "unittest_path": "tests/test_v0_3_1_cross_repository_smoke.py",
+    "focused_pytest_paths": [
+      "tests/test_nexora_event_feed.py",
+      "tests/test_nexora_decision_reviews.py",
+      "tests/test_nexora_exports.py",
+      "tests/test_nexora_resync.py",
+      "tests/test_release_hardening.py"
+    ]
+  },
+  "migration": {
+    "expected": false,
+    "postgresql_round_trip_required": true,
+    "alembic_check_required": true
+  },
+  "evidence_paths": [
+    ".github/workflows/v0-3-1-cross-repository-smoke.yml",
+    ".github/workflows/v0-3-1-stage-acceptance.yml",
+    "contracts/integration/nexora/v1/cross-repository-smoke.schema.json",
+    "contracts/integration/nexora/v1/trd-bot-v0.3.1-provider-profile.json",
+    "contracts/trd-bot-v0.3.1-cross-repository-smoke.json",
+    "contracts/v0.3.1/stage-acceptance/trd-v031-10.json",
+    "docs/v0.3.1/10-cross-repository-contract-tests.md",
+    "scripts/run_v0_3_1_cross_repository_smoke.py",
+    "scripts/verify_v0_3_1_cross_repository_smoke.py",
+    "src/trd_bot/integration/nexora/events.py",
+    "src/trd_bot/integration/nexora/routes.py",
+    "tests/test_nexora_event_feed.py",
+    "tests/test_release_hardening.py",
+    "tests/test_v0_3_1_cross_repository_smoke.py"
+  ],
+  "transition": {
+    "next_stage": "TRD-V031-11",
+    "separate_freeze_task_required": false
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "nexora_p3_03_opened": false,
+    "provider_compatibility_claimed": false
+  }
+}

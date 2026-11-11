@@ -14,7 +14,7 @@ from trd_bot.release_hardening import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_INVENTORY_CHECKSUM = "bb0e116dd5a2ecc23a3e3256933ad4b844af30a9ca781bbd1cbb1e04c8cd38bc"
+EXPECTED_INVENTORY_CHECKSUM = "799eb5b8216ceafa60b1783b9c1d278c5f140c3ad972b11681f645033eedf6f2"
 
 
 @pytest.fixture(scope="module")

@@ -22,7 +22,9 @@ from trd_bot.integration.nexora.events import (
     EventAggregateGapError,
     EventIdempotencyConflictError,
     IntegrationEventEnvelope,
-    IntegrationEventPage,
+    ProviderEventEnvelope,
+    ProviderEventPage,
+    to_provider_event,
 )
 from trd_bot.main import create_app
 
@@ -79,7 +81,7 @@ def append_event(
     version: int,
 ) -> IntegrationEventEnvelope:
     event, _ = store.append(
-        event_type="decision.evaluated.v1",
+        event_type="decision.evaluation.completed.v1",
         aggregate_type="decision_evaluation",
         aggregate_id="decision-evaluation-1",
         aggregate_version=version,
@@ -116,7 +118,7 @@ def test_event_journal_is_idempotent_contiguous_and_checksumming(
             append_event(store, version=3)
         with pytest.raises(EventIdempotencyConflictError):
             store.append(
-                event_type="decision.evaluated.v1",
+                event_type="decision.evaluation.completed.v1",
                 aggregate_type="decision_evaluation",
                 aggregate_id="decision-evaluation-1",
                 aggregate_version=2,
@@ -143,22 +145,22 @@ def test_authenticated_feed_replays_at_least_once_and_lookup_matches(
     first = client.get(EVENTS_ROOT, params={"limit": 1}, headers=headers())
     assert first.status_code == 200
     assert first.headers["cache-control"] == "private, no-store"
-    first_page = IntegrationEventPage.model_validate(first.json())
-    assert first_page.delivery_semantics == "at_least_once"
-    assert first_page.items == (first_event,)
+    first_page = ProviderEventPage.model_validate(first.json())
+    assert first_page.events == (to_provider_event(first_event, source_version="0.3.0"),)
     assert first_page.has_more is True
     continuation = client.get(
         EVENTS_ROOT, params={"cursor": first_page.next_cursor}, headers=headers()
     )
     replay = client.get(EVENTS_ROOT, params={"cursor": first_page.next_cursor}, headers=headers())
-    continuation_page = IntegrationEventPage.model_validate(continuation.json())
-    replay_page = IntegrationEventPage.model_validate(replay.json())
+    continuation_page = ProviderEventPage.model_validate(continuation.json())
+    replay_page = ProviderEventPage.model_validate(replay.json())
     assert continuation.status_code == replay.status_code == 200
-    assert continuation_page.items == replay_page.items == (second_event,)
+    expected_second = to_provider_event(second_event, source_version="0.3.0")
+    assert continuation_page.events == replay_page.events == (expected_second,)
     assert continuation_page.has_more is replay_page.has_more is False
     lookup = client.get(f"{EVENTS_ROOT}/{second_event.event_id}", headers=headers())
     assert lookup.status_code == 200
-    assert IntegrationEventEnvelope.model_validate(lookup.json()) == second_event
+    assert ProviderEventEnvelope.model_validate(lookup.json()) == expected_second
 
 
 def test_event_feed_fails_closed_for_auth_cursor_conflict_and_lookup(
@@ -166,7 +168,7 @@ def test_event_feed_fails_closed_for_auth_cursor_conflict_and_lookup(
 ) -> None:
     seed_events(factory)
     denied = client.get(EVENTS_ROOT, headers=headers(token="wrong-token"))
-    first = IntegrationEventPage.model_validate(
+    first = ProviderEventPage.model_validate(
         client.get(EVENTS_ROOT, params={"limit": 1}, headers=headers()).json()
     )
     conflict = client.get(
@@ -183,6 +185,26 @@ def test_event_feed_fails_closed_for_auth_cursor_conflict_and_lookup(
     assert unknown.status_code == 400
     assert malformed.status_code == 400
     assert missing.status_code == 404
+
+
+def test_event_feed_fails_closed_for_unfrozen_wire_event_type(
+    factory: sessionmaker[Session], client: TestClient
+) -> None:
+    with factory.begin() as session:
+        SqlAlchemyNexoraEventStore(session).append(
+            event_type="legacy.unfrozen.v1",
+            aggregate_type="decision_evaluation",
+            aggregate_id="legacy-decision-1",
+            aggregate_version=1,
+            idempotency_key="legacy-unfrozen-event-0001",
+            payload_schema_version="legacy-event-v1",
+            occurred_at=NOW,
+            published_at=NOW + timedelta(seconds=1),
+            payload={"offline_only": True, "external_order_submission_allowed": False},
+        )
+    response = client.get(EVENTS_ROOT, headers=headers())
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SOURCE_UNAVAILABLE"
 
 
 def test_expired_event_cursor_requires_full_snapshot_resync(

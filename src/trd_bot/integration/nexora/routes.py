@@ -53,8 +53,10 @@ from trd_bot.integration.nexora.events import (
     EventCursorExpiredError,
     EventCursorNotFoundError,
     EventFeedError,
-    IntegrationEventEnvelope,
-    IntegrationEventPage,
+    ProviderEventEnvelope,
+    ProviderEventPage,
+    to_provider_event,
+    to_provider_event_page,
 )
 from trd_bot.integration.nexora.exports import (
     ExportIdempotencyConflictError,
@@ -401,7 +403,7 @@ def get_snapshot_page(
 
 @router.get(
     "/events",
-    response_model=IntegrationEventPage,
+    response_model=ProviderEventPage,
     responses={
         400: {"model": IntegrationErrorEnvelope},
         401: {"model": IntegrationErrorEnvelope},
@@ -426,6 +428,7 @@ def get_event_page(
         page = SqlAlchemyNexoraEventStore(session).page(
             now=datetime.now(UTC), cursor=cursor, limit=limit
         )
+        provider_page = to_provider_event_page(page, source_version=authorized.provider_version)
         session.commit()
     except EventCursorExpiredError:
         session.rollback()
@@ -470,12 +473,16 @@ def get_event_page(
         )
     headers = _response_headers(authorized.correlation_header, authorized.provider_version)
     headers["Cache-Control"] = "private, no-store"
-    return JSONResponse(status_code=200, content=page.model_dump(mode="json"), headers=headers)
+    return JSONResponse(
+        status_code=200,
+        content=provider_page.model_dump(mode="json"),
+        headers=headers,
+    )
 
 
 @router.get(
     "/events/{event_id}",
-    response_model=IntegrationEventEnvelope,
+    response_model=ProviderEventEnvelope,
     responses={
         400: {"model": IntegrationErrorEnvelope},
         401: {"model": IntegrationErrorEnvelope},
@@ -505,6 +512,11 @@ def get_event(
         )
     try:
         event = SqlAlchemyNexoraEventStore(session).get(event_id)
+        provider_event = (
+            None
+            if event is None
+            else to_provider_event(event, source_version=authorized.provider_version)
+        )
     except (SQLAlchemyError, ValueError):
         return _error_response(
             status_code=503,
@@ -514,7 +526,7 @@ def get_event(
             message="event lookup is unavailable",
             retryable=True,
         )
-    if event is None:
+    if provider_event is None:
         return _error_response(
             status_code=404,
             correlation_id=authorized.correlation_id,
@@ -525,7 +537,11 @@ def get_event(
         )
     headers = _response_headers(authorized.correlation_header, authorized.provider_version)
     headers["Cache-Control"] = "private, no-store"
-    return JSONResponse(status_code=200, content=event.model_dump(mode="json"), headers=headers)
+    return JSONResponse(
+        status_code=200,
+        content=provider_event.model_dump(mode="json"),
+        headers=headers,
+    )
 
 
 @router.post(
