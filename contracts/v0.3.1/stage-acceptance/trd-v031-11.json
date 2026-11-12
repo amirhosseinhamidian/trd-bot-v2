@@ -1,0 +1,53 @@
+{
+  "schema_version": "trd-bot-v031-stage-acceptance-manifest-v1",
+  "stage_id": "TRD-V031-11",
+  "title": "Final acceptance and v0.3.1 release cut",
+  "status": "candidate",
+  "prerequisite": {
+    "mode": "ci_artifact",
+    "stage_id": "TRD-V031-10",
+    "accepted_commit_sha": "9d2bbf2caa8fa1281efaf053d33c73c5e495d3ef"
+  },
+  "verification": {
+    "verifier_path": "scripts/verify_v0_3_1_final_release.py",
+    "unittest_path": "tests/test_v0_3_1_final_release.py",
+    "focused_pytest_paths": [
+      "tests/test_release_version.py",
+      "tests/test_release_hardening.py",
+      "tests/test_nexora_integration_capabilities.py",
+      "tests/test_nexora_event_feed.py"
+    ]
+  },
+  "migration": {
+    "expected": false,
+    "postgresql_round_trip_required": true,
+    "alembic_check_required": true
+  },
+  "evidence_paths": [
+    ".github/workflows/v0-3-1-final-release.yml",
+    ".github/workflows/v0-3-1-stage-acceptance.yml",
+    "CHANGELOG.md",
+    "README.md",
+    "artifacts/v0.3.1/trd-v031-11-release-basis.json",
+    "contracts/trd-bot-v0.3.1-final-release.json",
+    "contracts/v0.3.1/stage-acceptance/trd-v031-11.json",
+    "docs/v0.3.1/11-final-acceptance-release-cut.md",
+    "scripts/run_v0_3_1_cross_repository_smoke.py",
+    "scripts/verify_v0_3_1_final_release.py",
+    "tests/test_release_hardening.py",
+    "tests/test_release_version.py",
+    "tests/test_v0_3_1_final_release.py"
+  ],
+  "transition": {
+    "next_stage": null,
+    "separate_freeze_task_required": false
+  },
+  "safety": {
+    "live_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "nexora_p3_03_opened": false,
+    "provider_compatibility_claimed": false
+  }
+}

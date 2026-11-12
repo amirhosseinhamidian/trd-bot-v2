@@ -1,5 +1,4 @@
 import json
-import tomllib
 from pathlib import Path
 from typing import Any, cast
 
@@ -17,12 +16,6 @@ def _load_manifest() -> dict[str, Any]:
 
 def test_documentation_manifest_matches_release_and_migration_chain() -> None:
     manifest = _load_manifest()
-    with (REPOSITORY_ROOT / "pyproject.toml").open("rb") as stream:
-        pyproject: dict[str, Any] = tomllib.load(stream)
-    frontend_package: dict[str, Any] = json.loads(
-        (REPOSITORY_ROOT / "frontend/package.json").read_text(encoding="utf-8")
-    )
-
     alembic_config = Config(str(REPOSITORY_ROOT / "alembic.ini"))
     script = ScriptDirectory.from_config(alembic_config)
     head = script.get_current_head()
@@ -36,8 +29,7 @@ def test_documentation_manifest_matches_release_and_migration_chain() -> None:
         "migration_revision": "20260926_0017",
     }
     assert manifest["source_release"]["migration_revision"] in revision_chain
-    assert manifest["target_release"]["version"] == pyproject["project"]["version"]
-    assert manifest["target_release"]["version"] == frontend_package["version"]
+    assert manifest["target_release"]["version"] == "0.3.0"
     assert manifest["target_release"]["migration_revision"] in revision_chain
     assert head == "20261111_0040"
     assert manifest["target_release"]["commit_sha_required"] is True

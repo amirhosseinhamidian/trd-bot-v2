@@ -2,7 +2,22 @@
 
 All notable changes to TRD BOT v2 are documented in this file.
 
-## Unreleased — v0.3.1
+## 0.3.1 - 2026-11-12
+
+Status: final release cut. The release is valid only when the `v0.3.1` tag targets the same commit
+accepted by `TRD-V031-11` CI. Compatibility covers the frozen local/private Nexora v1 contract;
+production deployment, live execution, and opening Nexora-owned `NEX-P3-03` are not claimed.
+
+- Added the integrated `TRD-V031-11` final release cut: converged backend, frontend, lockfile and
+  environment versions to `0.3.1`; committed the auditable release basis; retained full backend,
+  frontend, PostgreSQL migration, security and deterministic inventory gates; and required a fresh
+  12-scenario real local Nexora smoke on the same SHA before the `v0.3.1` tag may be created. No
+  separate Freeze commit is required.
+
+- Accepted `TRD-V031-10` on commit `9d2bbf2caa8fa1281efaf053d33c73c5e495d3ef` with pinned
+  fixture contracts, a frozen event wire projection and all 12 real local consumer/provider smoke
+  scenarios. The successful workflow and both smoke/acceptance artifact IDs and digests are pinned
+  by the Stage 11 release contract.
 
 - Added the integrated `TRD-V031-09` full-resync candidate with structured projection-pause
   signals, complete ten-resource snapshot scans, checksum validation, idempotent event replay,
@@ -30,8 +45,6 @@ All notable changes to TRD BOT v2 are documented in this file.
   stable, checksummed `alert` and `alert_outcome` snapshots. Mutable inbox state, commands,
   credentials, live execution, compatibility claims, and `NEX-P3-03` remain excluded; the same-SHA
   reusable CI acceptance artifact replaces a separate stage Freeze task.
-
-Status: integration roadmap frozen. Runtime compatibility is not yet claimed.
 
 ### Added
 

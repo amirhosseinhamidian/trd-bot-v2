@@ -1,0 +1,36 @@
+name: TRD Bot v0.3.1 final release acceptance
+
+on:
+  push:
+    branches:
+      - feature/v0.3.1-nexora-integration
+    paths:
+      - '.env.example'
+      - '.github/workflows/v0-3-1-final-release.yml'
+      - '.github/workflows/v0-3-1-stage-acceptance.yml'
+      - 'CHANGELOG.md'
+      - 'README.md'
+      - 'artifacts/v0.3.1/trd-v031-11-release-basis.json'
+      - 'contracts/trd-bot-v0.3.1-final-release.json'
+      - 'contracts/v0.3.1/stage-acceptance/trd-v031-11.json'
+      - 'docs/v0.3.1/11-final-acceptance-release-cut.md'
+      - 'frontend/package-lock.json'
+      - 'frontend/package.json'
+      - 'pyproject.toml'
+      - 'scripts/verify_v0_3_1_final_release.py'
+      - 'src/trd_bot/__init__.py'
+      - 'src/trd_bot/release_hardening.py'
+      - 'tests/test_release_hardening.py'
+      - 'tests/test_release_version.py'
+      - 'tests/test_v0_3_1_final_release.py'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  acceptance:
+    uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
+    with:
+      stage_id: TRD-V031-11

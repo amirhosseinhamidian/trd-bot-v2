@@ -191,7 +191,7 @@ def validate_implementation(
         "Checkout pinned Nexora consumer",
         PINNED_NEXORA_COMMIT,
         "run_v0_3_1_cross_repository_smoke.py",
-        "TRD-V031-10-smoke-${{ github.sha }}",
+        "${{ inputs.stage_id }}-smoke-${{ github.sha }}",
         "retention-days: 90",
     ):
         require(marker in reusable, f"same-run smoke evidence missing: {marker}")

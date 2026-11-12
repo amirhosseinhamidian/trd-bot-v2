@@ -58,28 +58,28 @@ jobs:
       - name: Run stage contract and focused tests
         run: python scripts/run_v0_3_1_stage_gate.py --stage-id "${{ inputs.stage_id }}"
       - name: Checkout pinned Nexora consumer
-        if: ${{ inputs.stage_id == 'TRD-V031-10' }}
+        if: ${{ inputs.stage_id == 'TRD-V031-10' || inputs.stage_id == 'TRD-V031-11' }}
         uses: actions/checkout@v6
         with:
           repository: amirhosseinhamidian/nexora
           ref: 1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8
           path: nexora-consumer
       - name: Run real local cross-repository smoke
-        if: ${{ inputs.stage_id == 'TRD-V031-10' }}
+        if: ${{ inputs.stage_id == 'TRD-V031-10' || inputs.stage_id == 'TRD-V031-11' }}
         run: |
           python scripts/run_v0_3_1_cross_repository_smoke.py \
             --nexora-root nexora-consumer \
-            --output stage10-smoke-evidence.json \
+            --output release-smoke-evidence.json \
             --trd-commit-sha "${{ github.sha }}" \
             --trd-tree-sha "$(git rev-parse HEAD^{tree})" \
             --nexora-commit-sha 1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8 \
             --nexora-tree-sha 6c5756f177c2f0025faeb776515e99c077630177
       - name: Upload same-run real smoke evidence
-        if: ${{ inputs.stage_id == 'TRD-V031-10' }}
+        if: ${{ inputs.stage_id == 'TRD-V031-10' || inputs.stage_id == 'TRD-V031-11' }}
         uses: actions/upload-artifact@v4
         with:
-          name: TRD-V031-10-smoke-${{ github.sha }}
-          path: stage10-smoke-evidence.json
+          name: ${{ inputs.stage_id }}-smoke-${{ github.sha }}
+          path: release-smoke-evidence.json
           if-no-files-found: error
           retention-days: 90
 

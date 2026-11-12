@@ -19,7 +19,7 @@ from trd_bot.market_data.providers import MARKET_DATA_PROVIDER_USER_AGENT
 
 RELEASE_SCOPE = "crypto-spot-public-read-only-research-shadow-paper"
 RELEASE_INVENTORY_SCHEMA_VERSION = "v0.3-release-inventory-v1"
-V0_3_RELEASE_VERSION = "0.3.0"
+V0_3_RELEASE_VERSION = "0.3.1"
 
 PROHIBITED_LIVE_ROUTE_SEGMENTS = frozenset(
     {
@@ -309,7 +309,7 @@ def build_release_surface_inventory(repository_root: Path) -> ReleaseSurfaceInve
 def evaluate_release_inventory(inventory: ReleaseSurfaceInventory) -> tuple[str, ...]:
     reasons: list[str] = []
     if inventory.product_version != V0_3_RELEASE_VERSION:
-        reasons.append("release product version is not v0.3.0")
+        reasons.append("release product version is not v0.3.1")
     if any(version != inventory.product_version for _, version in inventory.version_sources):
         reasons.append("release version sources are inconsistent")
     if any(item.method not in _ALLOWED_RELEASE_API_METHODS for item in inventory.api_operations):

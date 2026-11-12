@@ -379,7 +379,7 @@ def validate_implementation_sources() -> None:
     ):
         require(marker in combined, f"snapshot implementation missing: {marker}")
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    require(pyproject["project"]["version"] == "0.3.0", "release version advanced early")
+    require(pyproject["project"]["version"] in {"0.3.0", "0.3.1"}, "release version drift")
 
 
 def main() -> int:

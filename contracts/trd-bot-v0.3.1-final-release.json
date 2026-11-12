@@ -1,0 +1,76 @@
+{
+  "schema_version": "trd-bot-v031-final-release-v1",
+  "decision_id": "TRD-V031-11",
+  "decision_date": "2026-11-12",
+  "status": "candidate",
+  "prerequisite": {
+    "stage_id": "TRD-V031-10",
+    "accepted_commit_sha": "9d2bbf2caa8fa1281efaf053d33c73c5e495d3ef",
+    "accepted_tree_sha": "f2392c9cca0d9e3e58db350d8ba8d7cc3aafa7dd",
+    "workflow_run_id": 43088041255,
+    "workflow_run_attempt": 1,
+    "workflow_conclusion": "success",
+    "smoke_artifact": {
+      "id": 13887128030,
+      "name": "TRD-V031-10-smoke-9d2bbf2caa8fa1281efaf053d33c73c5e495d3ef",
+      "digest": "sha256:e637befa2a1f980fdf44699c67336f1b3651218d78c15d2f1de838cf38ed65ae"
+    },
+    "acceptance_artifact": {
+      "id": 13886738889,
+      "name": "TRD-V031-10-acceptance-9d2bbf2caa8fa1281efaf053d33c73c5e495d3ef",
+      "digest": "sha256:4e180637a356d98d9a4439eea8a6afafd9476355ddf3da0ef1d157fd6c435c8c"
+    }
+  },
+  "release": {
+    "version": "0.3.1",
+    "tag": "v0.3.1",
+    "tag_must_target_stage_11_accepted_commit": true,
+    "tag_creation_requires_successful_same_sha_acceptance": true,
+    "separate_freeze_commit_required": false,
+    "release_inventory_checksum": "7c97e85703da7c312d24deabec9c3f9b7a3d1be19694a69a1c003f458996df68",
+    "version_sources": [
+      ".env.example",
+      "frontend/package-lock.json",
+      "frontend/package.json",
+      "pyproject.toml",
+      "src/trd_bot/__init__.py"
+    ]
+  },
+  "acceptance": {
+    "same_sha_ci_acceptance_required": true,
+    "same_run_real_local_provider_smoke_required": true,
+    "required_smoke_scenarios": 12,
+    "required_gates": [
+      "prerequisite",
+      "stage_contract",
+      "backend",
+      "postgresql",
+      "frontend",
+      "security"
+    ],
+    "fresh_install_migration_required": true,
+    "upgrade_path_migration_required": true,
+    "alembic_check_required": true,
+    "artifact_retention_days": 90
+  },
+  "compatibility": {
+    "contract_version": "nexora-trd-integration-v1",
+    "provider_release_range": ">=0.3.1,<0.4.0",
+    "pinned_nexora_commit_sha": "1e114b58b1a9cfc4ef91280c6506aa58bb2f53e8",
+    "pinned_nexora_tree_sha": "6c5756f177c2f0025faeb776515e99c077630177",
+    "provider_profile_sha256": "2d21e80db378c2dc2c1b3a6fbb1f44bcbbad0c34d89f4d073b25e179a55fbcc8",
+    "trd_provider_compatibility_requires_stage_11_acceptance_and_tag": true,
+    "nexora_p3_03_owned_by_nexora_repository": true,
+    "nexora_p3_03_opened_by_this_release": false
+  },
+  "safety": {
+    "live_execution": false,
+    "real_money_order_execution": false,
+    "external_order_submission": false,
+    "exchange_credentials": false,
+    "wallet_or_fund_transfer": false,
+    "shared_database_with_nexora": false,
+    "secrets_in_evidence": false,
+    "production_deployment_claimed": false
+  }
+}

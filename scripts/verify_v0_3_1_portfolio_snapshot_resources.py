@@ -429,7 +429,7 @@ def validate_implementation_sources() -> None:
     ):
         require(marker in routes, f"snapshot route implementation missing: {marker}")
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    require(pyproject["project"]["version"] == "0.3.0", "release version advanced early")
+    require(pyproject["project"]["version"] in {"0.3.0", "0.3.1"}, "release version drift")
     migrations = sorted(path.name for path in (ROOT / "alembic/versions").glob("*.py"))
     require(
         "20261106_0037_nexora_snapshot_protocol.py" in migrations,

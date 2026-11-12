@@ -14,7 +14,7 @@ from trd_bot.release_hardening import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_INVENTORY_CHECKSUM = "799eb5b8216ceafa60b1783b9c1d278c5f140c3ad972b11681f645033eedf6f2"
+EXPECTED_INVENTORY_CHECKSUM = "7c97e85703da7c312d24deabec9c3f9b7a3d1be19694a69a1c003f458996df68"
 
 
 @pytest.fixture(scope="module")
@@ -156,6 +156,6 @@ def test_network_clients_identify_the_current_release(
     release_report: ReleaseHardeningReport,
 ) -> None:
     assert dict(release_report.inventory.network_user_agents) == {
-        "market-data-provider": "trd-bot-v2-research/0.3.0",
-        "provider-probe": "trd-bot-v2-provider-probe/0.3.0",
+        "market-data-provider": "trd-bot-v2-research/0.3.1",
+        "provider-probe": "trd-bot-v2-provider-probe/0.3.1",
     }

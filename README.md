@@ -1,12 +1,15 @@
 # TRD BOT v2
 
-Current release: **v0.3.0**. This repository supports local research, backtesting,
-Paper, and Shadow workflows; server staging and deployment remain intentionally deferred.
+Current release: **v0.3.1**. Its release identity is valid only when the `v0.3.1` tag targets the
+same commit accepted by the final CI workflow. This repository supports local research,
+backtesting, Paper, Shadow, and private local Nexora integration workflows; production deployment
+and live execution remain intentionally deferred.
 
-Current development target: **v0.3.1 — Nexora Integration Compatibility**. The frozen
+The completed development target is **v0.3.1 — Nexora Integration Compatibility**. The frozen
 cross-repository contract and fail-closed delivery sequence start at
 [`TRD-V031-00`](docs/v0.3.1/00-nexora-integration-roadmap.md). Version `0.3.0` remains
-incompatible with Nexora runtime sync until the `0.3.1` provider passes the real local smoke.
+incompatible with Nexora runtime sync; the `0.3.1` provider must retain same-SHA final acceptance
+and the real local smoke evidence.
 The roadmap is frozen by
 [`artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json`](artifacts/v0.3.1/trd-v031-00-integration-roadmap-freeze.json);
 the first runtime boundary is frozen by
@@ -35,9 +38,14 @@ accepted recovery boundary is
 [`TRD-V031-09`](docs/v0.3.1/09-full-resync-gap-recovery.md), adding fail-closed
 projection pause signals, complete snapshot/event reconciliation, aggregate gap detection,
 operator escalation, and atomic publication guards without a new API operation or migration. The
-current candidate is
+cross-repository boundary was accepted in
 [`TRD-V031-10`](docs/v0.3.1/10-cross-repository-contract-tests.md): pinned cross-repository
 fixtures plus the 12-scenario real local Nexora consumer/provider smoke and auditable CI evidence.
+The final release cut is
+[`TRD-V031-11`](docs/v0.3.1/11-final-acceptance-release-cut.md), which converges version sources,
+re-runs every quality/security/migration gate and the real smoke on one SHA, and permits the
+`v0.3.1` tag only on that accepted commit. Nexora `NEX-P3-03` remains owned by the Nexora
+repository and is not opened automatically by this release.
 
 Starting with `TRD-V031-05`, stages use one
 [`Implementation + Acceptance` workflow](docs/v0.3.1/development-workflow.md). The reusable
@@ -225,6 +233,9 @@ and pre-release compatibility gate are documented in
 The pinned consumer, event wire projection, 12-scenario loopback smoke, and Stage 10 evidence are
 documented in
 [`docs/v0.3.1/10-cross-repository-contract-tests.md`](docs/v0.3.1/10-cross-repository-contract-tests.md).
+The same-SHA final acceptance, release tag rule, committed milestone basis, compatibility scope,
+and failed-CI recovery procedure are documented in
+[`docs/v0.3.1/11-final-acceptance-release-cut.md`](docs/v0.3.1/11-final-acceptance-release-cut.md).
 The verified v0.2 baseline, deferred debt, existing guardrails, and capacity-observability gaps are
 tracked in [`docs/v0.3/01-baseline-debt-capacity-inventory.md`](docs/v0.3/01-baseline-debt-capacity-inventory.md).
 The versioned event envelope, watermark, late-arrival, and immutable window contracts are frozen in

@@ -325,9 +325,12 @@ def validate_contract(contract: dict[str, Any], profile: dict[str, Any]) -> None
 
 def validate_implementation_sources() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    require(pyproject["project"]["version"] == "0.3.0", "release version advanced early")
+    require(pyproject["project"]["version"] in {"0.3.0", "0.3.1"}, "release version drift")
     package = (ROOT / "src/trd_bot/__init__.py").read_text(encoding="utf-8")
-    require('__version__ = "0.3.0"' in package, "runtime version advanced early")
+    require(
+        any(f'__version__ = "{version}"' in package for version in ("0.3.0", "0.3.1")),
+        "runtime version drift",
+    )
 
     auth = AUTH_PATH.read_text(encoding="utf-8")
     require("hmac.compare_digest" in auth, "constant-time comparison missing")

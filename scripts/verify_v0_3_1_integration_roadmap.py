@@ -337,7 +337,7 @@ def validate_roadmap(roadmap: dict[str, Any]) -> None:
 
     with (ROOT / "pyproject.toml").open("rb") as stream:
         pyproject = tomllib.load(stream)
-    require(pyproject["project"]["version"] == "0.3.0", "V031-00 must not bump runtime version")
+    require(pyproject["project"]["version"] in {"0.3.0", "0.3.1"}, "release version drift")
 
     stages = roadmap.get("stages")
     require(isinstance(stages, list), "roadmap stages must be a list")
