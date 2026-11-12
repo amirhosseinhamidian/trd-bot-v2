@@ -48,6 +48,12 @@ class V031FinalReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(VERIFIER.V031FinalReleaseError, "same-SHA"):
             VERIFIER.validate_contract(changed)
 
+    def test_release_tag_automation_cannot_be_disabled(self) -> None:
+        changed = copy.deepcopy(self.contract)
+        cast(dict[str, Any], changed["release"])["tag_creation_automated_in_final_workflow"] = False
+        with self.assertRaisesRegex(VERIFIER.V031FinalReleaseError, "automation"):
+            VERIFIER.validate_contract(changed)
+
     def test_real_provider_smoke_cannot_be_replaced_with_fixtures(self) -> None:
         changed = copy.deepcopy(self.contract)
         cast(dict[str, Any], changed["acceptance"])[

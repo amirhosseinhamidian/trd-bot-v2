@@ -20,7 +20,7 @@
   },
   "committed_checksums": {
     "contracts/integration/nexora/v1/trd-bot-v0.3.1-provider-profile.json": "2d21e80db378c2dc2c1b3a6fbb1f44bcbbad0c34d89f4d073b25e179a55fbcc8",
-    "contracts/trd-bot-v0.3.1-final-release.json": "6aa9480c3ef8f564c4adc81db14d15207f663db31213b09eafc66d54096cfa95",
+    "contracts/trd-bot-v0.3.1-final-release.json": "b5c58e0adc9bd149ce16141a3d287d52654dba7280f3f87def2665891019c4c4",
     "contracts/trd-bot-v0.3.1-nexora-integration-roadmap.json": "30c02e477d32691d3792b8b2a7c5cfc42c339d14772afe1b713e680325f88e96",
     "contracts/trd-bot-v0.3.1-stage-acceptance-policy.json": "e7bffae487c6fa3bf2a81aac95c0a41a6d5154b9f8d072a55b4f9835b72ffaf8"
   },

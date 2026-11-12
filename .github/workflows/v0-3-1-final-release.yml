@@ -27,10 +27,40 @@ on:
 
 permissions:
   actions: read
-  contents: read
+  contents: write
 
 jobs:
   acceptance:
     uses: ./.github/workflows/v0-3-1-stage-acceptance.yml
     with:
       stage_id: TRD-V031-11
+
+  release_tag:
+    name: Create immutable v0.3.1 tag
+    if: >-
+      ${{ github.event_name == 'push' &&
+          github.ref == 'refs/heads/feature/v0.3.1-nexora-integration' }}
+    needs: acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout accepted commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Create same-SHA release tag
+        env:
+          RELEASE_TAG: v0.3.1
+        run: |
+          existing="$(git ls-remote --tags --refs origin "refs/tags/${RELEASE_TAG}" | awk '{print $1}')"
+          if [ -n "$existing" ] && [ "$existing" != "$GITHUB_SHA" ]; then
+            echo "${RELEASE_TAG} already targets ${existing}, not ${GITHUB_SHA}" >&2
+            exit 1
+          fi
+          if [ "$existing" = "$GITHUB_SHA" ]; then
+            echo "${RELEASE_TAG} already targets accepted commit ${GITHUB_SHA}"
+            exit 0
+          fi
+          git tag "$RELEASE_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/${RELEASE_TAG}"
+          test "$(git ls-remote --tags --refs origin "refs/tags/${RELEASE_TAG}" | awk '{print $1}')" = "$GITHUB_SHA"

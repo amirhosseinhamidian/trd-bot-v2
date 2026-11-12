@@ -25,8 +25,9 @@ verifier مرحله، Ruff، mypy strict، تست‌های backend، چرخهٔ 
 - `TRD-V031-11-acceptance-<commit>` برای نتیجهٔ تمام gateها، SHA commit/tree، run ID/attempt و
   checksum فایل‌های evidence.
 
-فقط وقتی artifact پذیرش روی همان SHA وضعیت `accepted` دارد، tag سبک `v0.3.1` باید دقیقاً روی همان
-commit ساخته شود. tag روی SHA دیگر، CI ناموفق/لغوشده/ناقص، اجرای pull request یا smoke محلی به‌تنهایی
+فقط وقتی artifact پذیرش روی همان SHA وضعیت `accepted` دارد، job نهایی workflow با دسترسی محدود
+`contents: write` tag سبک `v0.3.1` را دقیقاً روی همان commit می‌سازد. tag موجود روی SHA دیگر باعث
+شکست می‌شود و overwrite نمی‌شود. CI ناموفق/لغوشده/ناقص، اجرای pull request یا smoke محلی به‌تنهایی
 release محسوب نمی‌شود. Run ID جاری داخل commit ثبت نمی‌شود تا circular dependency ایجاد نشود؛ هویت
 run در artifact CI و مرجع immutable انتشار در Git tag نگهداری می‌شود.
 

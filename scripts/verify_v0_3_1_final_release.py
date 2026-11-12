@@ -89,6 +89,10 @@ def validate_contract(contract: Mapping[str, Any]) -> None:
         release.get("tag_creation_requires_successful_same_sha_acceptance") is True,
         "tag can bypass same-SHA acceptance",
     )
+    require(
+        release.get("tag_creation_automated_in_final_workflow") is True,
+        "release tag automation missing",
+    )
     require(release.get("separate_freeze_commit_required") is False, "separate Freeze restored")
     require(
         release.get("release_inventory_checksum") == RELEASE_INVENTORY_CHECKSUM,
@@ -242,6 +246,15 @@ def validate_implementation(workflow: str, reusable: str, readme: str, changelog
         "reusable acceptance not called",
     )
     require("stage_id: TRD-V031-11" in workflow, "workflow stage drift")
+    for marker in (
+        "contents: write",
+        "needs: acceptance",
+        "Create same-SHA release tag",
+        'git tag "$RELEASE_TAG" "$GITHUB_SHA"',
+        'git push origin "refs/tags/${RELEASE_TAG}"',
+        "already targets ${existing}, not ${GITHUB_SHA}",
+    ):
+        require(marker in workflow, f"fail-closed release tag automation missing: {marker}")
     for marker in (
         "inputs.stage_id == 'TRD-V031-10' || inputs.stage_id == 'TRD-V031-11'",
         "run_v0_3_1_cross_repository_smoke.py",

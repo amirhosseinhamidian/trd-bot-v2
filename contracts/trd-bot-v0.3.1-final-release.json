@@ -26,6 +26,7 @@
     "tag": "v0.3.1",
     "tag_must_target_stage_11_accepted_commit": true,
     "tag_creation_requires_successful_same_sha_acceptance": true,
+    "tag_creation_automated_in_final_workflow": true,
     "separate_freeze_commit_required": false,
     "release_inventory_checksum": "7c97e85703da7c312d24deabec9c3f9b7a3d1be19694a69a1c003f458996df68",
     "version_sources": [
